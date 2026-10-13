@@ -1,6 +1,26 @@
-{% extends 'base.html' %}{% block title %}Anmelden · Anthias Hub{% endblock %}
-{% block content %}<div class="login card"><h1>Willkommen zurück</h1><p class="muted">IT verwaltet Geräte. Marketing verwaltet die Playlists.</p>
-<form method="post" action="{{ url_for('login') }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
-<label>Benutzername<input name="username" required autofocus autocomplete="username" maxlength="32"></label>
-<label>Passwort<input name="password" type="password" required autocomplete="current-password"></label>
-<button class="primary">Anmelden</button></form></div>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Anmelden · Anthias Hub{% endblock %}
+{% block content %}
+<div class="auth-layout">
+  <section class="auth-story" aria-labelledby="auth-welcome">
+    <div class="auth-star" aria-hidden="true">✳</div>
+    <p class="eyebrow">WILLKOMMEN IM STUDIO</p>
+    <h1 id="auth-welcome">Deine Ideen.<br>Auf jedem Bildschirm.</h1>
+    <p>Alles für deine digitalen Displays an einem Ort. Inhalte gestalten, Playlists verwalten und jederzeit den Überblick behalten.</p>
+    <div class="auth-story-bottom"><span class="auth-story-line" aria-hidden="true">✦</span><span>Einfach für Marketing. Klar für IT.</span></div>
+  </section>
+  <section class="auth-card card" aria-labelledby="auth-title">
+    <div class="auth-card-icon" aria-hidden="true">↗</div>
+    <p class="eyebrow">SCHÖN, DASS DU DA BIST</p>
+    <h2 id="auth-title">Willkommen zurück!</h2>
+    <p class="muted">Melde dich an und mach dort weiter, wo du aufgehört hast.</p>
+    <form method="post" action="{{ url_for('login') }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <label>Benutzername<input name="username" required autofocus autocomplete="username" maxlength="32" placeholder="Dein Benutzername"></label>
+      <label>Passwort<input name="password" type="password" required autocomplete="current-password" placeholder="Dein Passwort"></label>
+      <button class="primary auth-submit">Zum Studio <span aria-hidden="true">→</span></button>
+    </form>
+    <p class="auth-help">Deinen Zugang erhältst du von der IT.</p>
+  </section>
+</div>
+{% endblock %}

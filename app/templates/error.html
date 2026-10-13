@@ -1,1 +1,12 @@
-{% extends 'base.html' %}{% block content %}<div class="card section"><h1>Gerät nicht verfügbar</h1><p>{{ message }}</p><a href="{{ url_for('dashboard') }}">Zurück zur Übersicht</a></div>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Verbindung prüfen · Anthias Hub{% endblock %}
+{% block content %}
+<div class="studio-error">
+  <div class="studio-error-symbol" aria-hidden="true">◌</div>
+  <p class="eyebrow">UPS, DA HAKT ETWAS</p>
+  <h1>Gerade nicht erreichbar.</h1>
+  <p class="muted">Die Verbindung oder die Player-Antwort hat nicht funktioniert. Deine Playlist wurde durch diesen Seitenaufruf nicht verändert.</p>
+  <div class="notice error" role="alert">{{ message }}</div>
+  <a class="button primary" href="{{ url_for('dashboard') }}">Zur Bildschirmübersicht <span aria-hidden="true">→</span></a>
+</div>
+{% endblock %}

@@ -2,6 +2,8 @@
 
 **Stand:** 13.10.2026 · **Umfang:** eigenständiger Docker-Dienst. Nicht der Anthias-Player und nicht die separate RSS-/Content-Webseite.
 
+**VM-Lebenszyklus:** Die gegenwärtige gemeinsame Test-VM ist ausdrücklich keine Produktivvorlage. Für eine Neuinstallation siehe [reproducible-production.md](reproducible-production.md).
+
 **Teststatus:** Der Betreiber hat die Geräteübersicht, API-Erreichbarkeit und reale Playlist-Anzeige eines Anthias-Pis bestätigt. Schreibende API-Operationen, Datei-Uploads und der Betrieb mit Marketing im Firmennetz sind weiterhin **nicht produktiv nachgewiesen**.
 
 ## 1. Systemübersicht und Verantwortlichkeit
@@ -147,6 +149,9 @@ Für IT die letzten beiden Argumente in 'it it' ändern; optional 'viewer viewer
 **Hinweis zur Sitzungssicherheit:** Ein reiner Passwortwechsel widerruft bereits signierte Sessions möglicherweise nicht. Für einen Sicherheitsvorfall zusätzlich den APP_SECRET_KEY in .env ändern, den Container neu erstellen (nicht bloß 'restart') und die Anmeldung aller Benutzer erzwingen.
 
 ## 7. Aktualisierung und Rückweg
+
+> **Achtung: Die folgenden Befehle aktualisieren ausschließlich den lokal gebauten Test-Piloten mit `compose.yaml`.** Die aktuelle VM ist wegwerfbar. Für einen **neuen, reproduzierbaren Produktiv-Host**: [Release-/Neuinstallations-Runbook](reproducible-production.md) mit freigegebenem SHA-Image, `compose.cd.yaml`, manueller Bereitstellung, Backup, Verifikation und Rückweg. **Keine** `:main`-Auto-Deploy-Timer auf Produktivsystemen. Auch das Konto-/Passwort-CLI in Abschnitt 6 verwendet bisher das lokale `anthias-hub:pilot`-Image; bei einem neuen Host mit gepinntem GHCR-Image die entsprechende freigegebene Image-Referenz für den manuellen `docker run`-Aufruf verwenden.
+
 
 Nur im **Anthias-Hub-Checkout**, niemals im Repo einer anderen Anwendung:
 

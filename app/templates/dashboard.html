@@ -1,21 +1,106 @@
-{% extends 'base.html' %}{% block content %}
-<div class="heading dashboard-heading"><div><p class="eyebrow">ANTHIAS HUB / ÜBERSICHT</p><h1>Bildschirme</h1><p class="muted">{{ devices|length }} registrierte Geräte · {% if logged_user.role == 'marketing' %}Bildschirm wählen und Playlist bearbeiten{% elif logged_user.role == 'it' %}Geräte verwalten und Verbindungen prüfen{% else %}Playlists und Verbindungen ansehen{% endif %}</p></div></div>
-<div class="grid">{% for device in devices %}
-<article class="card device"><div class="card-head"><div><h2>{{ device.name }}</h2><p class="muted">{{ device.location or 'Ohne Standort' }}</p></div>
-{% if statuses[device.id].ok %}<span class="pill ok">API erreichbar</span>{% else %}<span class="pill bad">Nicht erreichbar</span>{% endif %}</div>
-<p class="meta"><strong>{{ statuses[device.id].count if statuses[device.id].ok else '–' }}</strong> Playlist-Einträge</p>
-{% if logged_user.role == 'it' %}<p class="code muted">{{ device.url }}</p>{% endif %}
-<a class="button primary" href="{{ url_for('playlist', device_id=device.id) }}">{% if logged_user.role == 'marketing' %}Playlist bearbeiten{% else %}Playlist ansehen{% endif %} →</a>
-{% if logged_user.role == 'it' %}<div class="toolbar"><a href="{{ device.url }}" target="_blank" rel="noopener noreferrer">Original Anthias ↗</a>
-<form method="post" action="{{ url_for('remove_device', device_id=device.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="confirm" value="{{ device.id }}"><button class="link-btn danger" onclick="return confirm('Nur aus Hub entfernen? Die Playlist auf dem Pi bleibt erhalten.')">Entfernen</button></form></div>
-<details class="it-edit"><summary>Gerät konfigurieren</summary><form method="post" action="{{ url_for('edit_device', device_id=device.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
-<label>Anzeigename<input required name="name" maxlength="80" value="{{ device.name }}"></label><label>Geräteadresse<input required name="url" type="url" value="{{ device.url }}"></label><label>Standort<input name="location" maxlength="80" value="{{ device.location }}"></label><button class="primary">Gerät aktualisieren</button></form></details>{% endif %}
-</article>{% else %}<div class="card"><h2>Noch keine Geräte</h2><p>IT kann hier den ersten Anthias-Player registrieren.</p></div>{% endfor %}</div>
-{% if logged_user.role == 'it' %}<section class="card section"><h2>Gerät hinzufügen</h2><p class="muted">Feste, private IP-Adresse. Nur IT kann die Verbindung konfigurieren.</p>
-<form method="post" action="{{ url_for('add_device') }}" class="form-grid"><input type="hidden" name="csrf" value="{{ csrf() }}">
-<label>Anzeigename<input name="name" placeholder="Bistro TV" required maxlength="80"></label>
-<label>Geräte-ID<input name="id" placeholder="bistro" required pattern="[a-z0-9][a-z0-9-]*" maxlength="40"></label>
-<label>Anthias-Adresse<input name="url" placeholder="http://192.168.1.50" required type="url"></label>
-<label>Standort<input name="location" placeholder="Bistro" maxlength="80"></label>
-<button class="primary">Gerät registrieren</button></form></section>{% endif %}
+{% extends 'base.html' %}
+{% block title %}Bildschirme · Anthias Hub{% endblock %}
+{% block content %}
+{% set online_count = statuses.values()|selectattr('ok')|list|length %}
+<div class="fleet-workspace">
+  <section class="fleet-hero" aria-labelledby="fleet-title">
+    <div class="fleet-hero-copy">
+      <p class="eyebrow">DEIN DIGITAL SIGNAGE STUDIO</p>
+      <h1 id="fleet-title">Deine Bildschirme <span class="fleet-sparkle" aria-hidden="true">✳</span></h1>
+      <p class="muted">
+        {% if logged_user.role == 'marketing' %}Wähle einen Bildschirm, gestalte die Playlist und zeig, was wichtig ist.
+        {% elif logged_user.role == 'it' %}Alle Geräte und ihre Verbindungen an einem Ort. Die Inhalte verwaltet Marketing.
+        {% else %}Ein Überblick über deine Bildschirme und ihre Inhalte.{% endif %}
+      </p>
+    </div>
+    {% if logged_user.role == 'it' %}
+      <a class="button primary fleet-add-button" href="#device-setup"><span aria-hidden="true">＋</span> Bildschirm verbinden</a>
+    {% endif %}
+  </section>
+
+  <div class="fleet-summary" aria-label="Geräteübersicht">
+    <div class="fleet-stat"><span class="fleet-stat-icon" aria-hidden="true">▣</span><span class="fleet-stat-value">{{ devices|length }}</span><span class="fleet-stat-label">Bildschirme</span></div>
+    <div class="fleet-stat"><span class="fleet-stat-icon online" aria-hidden="true">●</span><span class="fleet-stat-value">{{ online_count }}</span><span class="fleet-stat-label">API erreichbar</span></div>
+    <div class="fleet-stat"><span class="fleet-stat-icon offline" aria-hidden="true">○</span><span class="fleet-stat-value">{{ (devices|length) - online_count }}</span><span class="fleet-stat-label">Nicht erreichbar</span></div>
+    <p class="fleet-summary-hint">Verbindung ≠ Livebild am TV</p>
+  </div>
+
+  <div class="fleet-section-heading">
+    <div><p class="eyebrow">ALLE STANDORTE</p><h2>Bildschirmübersicht <span class="count">{{ devices|length }}</span></h2></div>
+    <p class="muted">Einfach Bildschirm auswählen und loslegen.</p>
+  </div>
+
+  <div class="fleet-grid">
+    {% for device in devices %}
+      {% set online = statuses[device.id].ok %}
+      <article class="fleet-device card {{ 'fleet-device-offline' if not online else '' }}">
+        <div class="fleet-device-top">
+          <div class="fleet-device-icon" aria-hidden="true">▣</div>
+          <span class="pill {{ 'ok' if online else 'bad' }}">{{ 'API erreichbar' if online else 'Offline' }}</span>
+        </div>
+        <p class="eyebrow fleet-location">{{ device.location or 'OHNE STANDORT' }}</p>
+        <h3>{{ device.name }}</h3>
+        <div class="fleet-device-line"><span aria-hidden="true">▤</span>
+          <strong>{{ statuses[device.id].count if online else '–' }}</strong>
+          <span>Playlist-Inhalte</span>
+        </div>
+        <p class="fleet-screen-note"><span aria-hidden="true">◌</span> Keine Live-Vorschau verfügbar</p>
+        {% if logged_user.role == 'it' %}<p class="code fleet-device-address">{{ device.url }}</p>{% endif %}
+        <a class="button primary fleet-open" href="{{ url_for('playlist', device_id=device.id) }}">{{ 'Playlist bearbeiten' if logged_user.role == 'marketing' else 'Playlist ansehen' }} <span aria-hidden="true">→</span></a>
+
+        {% if logged_user.role == 'it' %}
+          <details class="fleet-settings">
+            <summary><span aria-hidden="true">⚙</span> Gerät verwalten <span aria-hidden="true" class="settings-chevron">⌄</span></summary>
+            <div class="fleet-settings-content">
+              <a class="fleet-native-link" href="{{ device.url }}" target="_blank" rel="noopener noreferrer">Original Anthias ↗</a>
+              <form method="post" action="{{ url_for('edit_device', device_id=device.id) }}">
+                <input type="hidden" name="csrf" value="{{ csrf() }}">
+                <label>Anzeigename<input required name="name" maxlength="80" value="{{ device.name }}"></label>
+                <label>Geräteadresse<input required name="url" type="url" value="{{ device.url }}"></label>
+                <label>Standort<input name="location" maxlength="80" value="{{ device.location }}"></label>
+                <button class="primary">Verbindung aktualisieren</button>
+              </form>
+              <details class="fleet-danger-zone">
+                <summary>Gerät aus Hub entfernen …</summary>
+                <p>Entfernt nur den Hub-Eintrag. Inhalte auf dem Pi bleiben erhalten.</p>
+                <form method="post" action="{{ url_for('remove_device', device_id=device.id) }}">
+                  <input type="hidden" name="csrf" value="{{ csrf() }}">
+                  <input type="hidden" name="confirm" value="{{ device.id }}">
+                  <label class="fleet-ack"><input type="checkbox" name="ack" value="yes" required> Dieses Gerät aus dem Hub entfernen.</label>
+                  <button class="danger-btn">Gerät entfernen</button>
+                </form>
+              </details>
+            </div>
+          </details>
+        {% endif %}
+      </article>
+    {% else %}
+      <div class="fleet-empty card">
+        <div class="fleet-empty-icon" aria-hidden="true">✳</div>
+        <h3>Noch keine Bildschirme – aber jede Menge Platz für Ideen.</h3>
+        <p class="muted">{% if logged_user.role == 'it' %}Verbinde deinen ersten Anthias-Player und starte die Verwaltung direkt hier.{% else %}Sobald IT einen Bildschirm verbunden hat, taucht er hier auf.{% endif %}</p>
+        {% if logged_user.role == 'it' %}<a class="button primary" href="#device-setup">Ersten Bildschirm verbinden →</a>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if logged_user.role == 'it' %}
+    <section id="device-setup" class="fleet-setup" aria-labelledby="setup-title">
+      <div class="fleet-setup-intro">
+        <span class="fleet-setup-symbol" aria-hidden="true">✦</span>
+        <p class="eyebrow">NUR FÜR IT</p>
+        <h2 id="setup-title">Noch einen Bildschirm verbinden?</h2>
+        <p class="muted">Registriere einen Anthias-Player mit seiner privaten Management-IP. Die vorhandene Playlist bleibt unverändert.</p>
+      </div>
+      <form method="post" action="{{ url_for('add_device') }}" class="fleet-setup-form">
+        <input type="hidden" name="csrf" value="{{ csrf() }}">
+        <label>Anzeigename<input name="name" placeholder="z. B. Bistro TV" required maxlength="80"></label>
+        <label>Geräte-ID <span class="field-note">eindeutig</span><input name="id" placeholder="bistro" required pattern="[a-z0-9][a-z0-9-]*" maxlength="40"></label>
+        <label>Anthias-Adresse<input name="url" placeholder="http://192.168.1.50" required type="url"></label>
+        <label>Standort <span class="field-note">optional</span><input name="location" placeholder="z. B. Bistro" maxlength="80"></label>
+        <button class="primary fleet-submit"><span aria-hidden="true">＋</span> Bildschirm registrieren</button>
+      </form>
+    </section>
+  {% endif %}
+</div>
 {% endblock %}

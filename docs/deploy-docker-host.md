@@ -1,5 +1,8 @@
 # Docker host pilot deployment (isolated Docker stack)
 
+> **Disposable test system:** This page describes the current pilot. For a newly installed long-term VM, pinned images, explicit deployment approval and repeatable disaster recovery, follow **[Reproducible VM installation & controlled releases](reproducible-production.md)**. Do not carry test credentials or the existing `:main` auto-update timer into the new production VM.
+
+
 This is a **test installation only**. The operator has confirmed that an existing Pi's playlist loads in the hub; mutations and broad deployment remain unverified. It must **not** modify the existing RSS2Slideshow
 repository or Compose stack. Anthias player endpoints and their API semantics must
 be verified against your actual test Pi before making any playlist changes.

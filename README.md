@@ -21,6 +21,14 @@ The hub connects to **Anthias REST API v2** on each registered player. Media and
 
 **There is no dependency on RSS2Slideshow or any other news-kiosk software.** Any reachable webpage may be used as an ordinary Anthias website asset. This repository does **not** bundle Anthias itself.
 
+## Deployment modes: test VM versus future production
+
+**Our current VM is a disposable test environment, not the long-term production server.** Reinstall the final VM from a documented source commit/image instead of cloning experiments from the test host.
+
+- **Test/staging:** use the existing local `compose.yaml` or the optional `:main`-following automatic updater in [the test-only CD guide](docs/auto-deploy.md). Every green `main` push currently publishes a new image; if the timer is installed, it may then deploy it.
+- **Future production:** use [the reproducible new-VM and release runbook](docs/reproducible-production.md). Pin `ANTHIAS_HUB_IMAGE=ghcr.io/ffworker/anthias-hub:sha-<APPROVED_FULL_SHA>` with `compose.cd.yaml`, deploy only after manual approval and keep a tested rollback image. **Do not enable today's auto-deploy timer on production:** the script currently forces `:main`.
+- **Image names:** `:main` tracks the integration branch today. Future `:latest` could mean *latest built* (not production-safe), `:stable` *latest approved release* (moving pointer), and `:vX.Y.Z` *named, approved version*. For a truly reproducible VM pin `:sha-<FULL_SHA>` today, ideally an OCI `@sha256:...` digest. `:stable`, `:latest` and `:vX.Y.Z` **are not currently published by CI**; a Git tag alone does not create those image tags. No separate `live` Git branch is needed.
+
 ## Quick deployment (Linux/Docker; internal test only)
 
 Requirements: Docker Engine + Compose plugin, Git, OpenSSL, curl, route from the host to the authorized Pi network.
@@ -37,7 +45,7 @@ The interactive setup creates a random session secret and prompts for **distinct
 
 **Updating an existing checkout:** `git pull --ff-only && docker compose -p anthias-hub up -d --build`. Do **not** run `docker compose pull` for this Compose file: its `image: anthias-hub:pilot` is a locally built tag, not a Docker Hub repository. The CI-published image is separately available as `ghcr.io/ffworker/anthias-hub:main`; using it requires an explicit Compose image change, not a pull of `anthias-hub:pilot`.
 
-**Automatic pull-based CD (optional):** After the first manual migration to `compose.cd.yaml`, install the host-side systemd timer from [the CD runbook](docs/auto-deploy.md). It pulls the public GHCR image outbound after green CI, only restarts on a new image, checks local `/healthz`, rolls back on failure and quarantines a failing image. No inbound GitHub SSH access and no registry login are needed. The timer is **not** installed just by pulling this repository.
+**Automatic pull-based CD (test VM only, optional):** After manual migration to `compose.cd.yaml`, the timer in [the test-only CD runbook](docs/auto-deploy.md) follows `:main`, checks `/healthz`, and attempts rollback on failure. That is convenient for a **disposable test VM** but does **not** constitute an approval-gated production release process. It is not installed by cloning the repository. See [controlled releases](docs/reproducible-production.md) for the future VM.
 
 **Access from Windows:** Open PowerShell on the client:
 
@@ -73,6 +81,7 @@ The current Marketing role applies to **all** registered screens; no per-locatio
 
 - **[IT Administrator Guide](docs/IT_ADMIN_GUIDE.md):** architecture, deployment, permission model, account/password maintenance, backups/restores, updates, logs, troubleshooting, operational checks.
 - [First Docker deployment](docs/deploy-docker-host.md): isolated pilot, SSH tunnel and safe access.
+- **[Reproducible fresh VM & controlled releases](docs/reproducible-production.md):** approved SHA-pinned image, backups, manual promotion, verification, rollback and future release-channel design.
 - [Security boundary](SECURITY.md): roles, firewall/HTTPS, session and upload limitations.
 - [License and independence](docs/LICENSING.md): GPLv2 upstream, independent MIT API client, attribution, employer-rights and release checklist.
 - [Official Anthias API](https://anthias.screenly.io/api/)
