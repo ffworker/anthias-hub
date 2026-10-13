@@ -1,0 +1,33 @@
+{% extends 'base.html' %}{% block title %}{{ device.name }} · Anthias Hub{% endblock %}
+{% block content %}<div class="heading"><div><a class="back" href="{{ url_for('dashboard') }}">← Alle Bildschirme</a><h1>{{ device.name }}</h1><p class="muted">{{ device.location or 'Standort unbekannt' }} · Playlist direkt auf diesem Anthias-Pi</p></div></div>
+{% if error %}<div class="notice error">Gerät nicht erreichbar: {{ error }}</div>{% endif %}
+{% if logged_user.role == 'marketing' and not error %}
+<div class="two-col"><section class="card section"><h2>Webseite hinzufügen</h2>
+<form method="post" action="{{ url_for('add_url', device_id=device.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
+<label>Name<input name="name" required maxlength="100" placeholder="Bistro News"></label>
+<label>URL<input name="url" required type="url" placeholder="https://example.org/anzeige"></label>
+<label>Anzeigedauer (Sek.)<input name="duration" type="number" min="5" max="3600" value="30" required></label>
+<button class="primary">Webseite hinzufügen</button></form></section>
+<section class="card section"><h2>Bild oder Video hinzufügen</h2><p class="muted">PNG/JPG/WebP/MP4 · maximal 50 MB</p>
+<form method="post" enctype="multipart/form-data" action="{{ url_for('upload', device_id=device.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
+<label>Datei<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label>
+<label>Titel (optional)<input name="name" maxlength="100" placeholder="Aktuelle Ankündigung"></label>
+<label>Bilddauer (Sek.)<input name="duration" type="number" min="5" max="3600" value="15"></label>
+<button class="primary">Hochladen</button></form></section></div>
+{% endif %}
+<section class="section"><div class="heading"><div><h2>Playlist</h2><p class="muted">{{ assets|length }} Elemente · Sortierung und Einstellungen liegen direkt auf dem Pi</p></div></div>
+<div class="stack">{% for asset in assets %}<article class="card asset"><div class="asset-summary"><div><p class="eyebrow">#{{ loop.index }} · {{ asset.mimetype or 'Medium' }}</p><h3>{{ asset.name or 'Ohne Titel' }}</h3><p class="muted clip">{{ asset.uri or 'Lokales Medium' }}</p></div>
+<span class="pill {{ 'ok' if asset.is_enabled else 'off' }}">{{ 'Aktiv' if asset.is_enabled else 'Deaktiviert' }}</span></div>
+{% if logged_user.role == 'marketing' %}
+<div class="asset-actions"><form method="post" action="{{ url_for('move_asset', device_id=device.id, asset_id=asset.asset_id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="direction" value="up"><button {% if loop.first %}disabled{% endif %}>↑ Hoch</button></form>
+<form method="post" action="{{ url_for('move_asset', device_id=device.id, asset_id=asset.asset_id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="direction" value="down"><button {% if loop.last %}disabled{% endif %}>↓ Runter</button></form></div>
+<form method="post" class="asset-edit" action="{{ url_for('edit_asset', device_id=device.id, asset_id=asset.asset_id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
+<label>Titel<input name="name" required maxlength="100" value="{{ asset.name or '' }}"></label>
+{% if not (asset.mimetype or '').startswith('video/') %}<label>Sekunden<input type="number" name="duration" min="5" max="3600" required value="{{ asset.duration or 15 }}"></label>{% endif %}
+<label class="check"><input type="checkbox" name="enabled" {% if asset.is_enabled %}checked{% endif %}> Aktiv</label>
+<button class="primary">Speichern</button></form>
+<details><summary>Element endgültig löschen</summary><form method="post" action="{{ url_for('delete_asset', device_id=device.id, asset_id=asset.asset_id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="confirm" value="{{ asset.asset_id }}"><p class="muted">Löscht das Element vom Anthias-Player, möglicherweise inklusive Datei.</p><button class="danger-btn" onclick="return confirm('Dieses Element wirklich vom Pi löschen?')">Löschen bestätigen</button></form></details>
+{% else %}<p class="muted">Anzeigedauer: {{ asset.duration }} Sekunden · Nur Marketing darf den Inhalt verändern.</p>{% endif %}</article>
+{% else %}<div class="card"><p>Die Playlist ist leer oder konnte nicht geladen werden.</p></div>{% endfor %}</div>
+</section>
+{% endblock %}

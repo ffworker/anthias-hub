@@ -1,0 +1,14 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+config/
+data/
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.zip
+PROJECT_PUBLICATION.md
+tests/

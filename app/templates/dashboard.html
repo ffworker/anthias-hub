@@ -1,0 +1,21 @@
+{% extends 'base.html' %}{% block content %}
+<div class="heading"><div><h1>Deine Bildschirme</h1><p class="muted">{{ devices|length }} registrierte Anthias-Geräte · Änderungen am Inhalt nur durch Marketing</p></div></div>
+<div class="grid">{% for device in devices %}
+<article class="card device"><div class="card-head"><div><h2>{{ device.name }}</h2><p class="muted">{{ device.location or 'Ohne Standort' }}</p></div>
+{% if statuses[device.id].ok %}<span class="pill ok">API erreichbar</span>{% else %}<span class="pill bad">Nicht erreichbar</span>{% endif %}</div>
+<p class="meta">{{ statuses[device.id].count if statuses[device.id].ok else '–' }} Playlist-Einträge</p>
+{% if logged_user.role == 'it' %}<p class="code muted">{{ device.url }}</p>{% endif %}
+<a class="button primary" href="{{ url_for('playlist', device_id=device.id) }}">{% if logged_user.role == 'marketing' %}Playlist bearbeiten{% else %}Playlist ansehen{% endif %} →</a>
+{% if logged_user.role == 'it' %}<div class="toolbar"><a href="{{ device.url }}" target="_blank" rel="noopener noreferrer">Original Anthias ↗</a>
+<form method="post" action="{{ url_for('remove_device', device_id=device.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="confirm" value="{{ device.id }}"><button class="link-btn danger" onclick="return confirm('Nur aus Hub entfernen? Die Playlist auf dem Pi bleibt erhalten.')">Entfernen</button></form></div>
+<details class="it-edit"><summary>Gerät konfigurieren</summary><form method="post" action="{{ url_for('edit_device', device_id=device.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
+<label>Anzeigename<input required name="name" maxlength="80" value="{{ device.name }}"></label><label>Geräteadresse<input required name="url" type="url" value="{{ device.url }}"></label><label>Standort<input name="location" maxlength="80" value="{{ device.location }}"></label><button class="primary">Gerät aktualisieren</button></form></details>{% endif %}
+</article>{% else %}<div class="card"><h2>Noch keine Geräte</h2><p>IT kann hier den ersten Anthias-Player registrieren.</p></div>{% endfor %}</div>
+{% if logged_user.role == 'it' %}<section class="card section"><h2>Gerät hinzufügen</h2><p class="muted">Feste, private IP-Adresse. Nur IT kann die Verbindung konfigurieren.</p>
+<form method="post" action="{{ url_for('add_device') }}" class="form-grid"><input type="hidden" name="csrf" value="{{ csrf() }}">
+<label>Anzeigename<input name="name" placeholder="Bistro TV" required maxlength="80"></label>
+<label>Geräte-ID<input name="id" placeholder="bistro" required pattern="[a-z0-9][a-z0-9-]*" maxlength="40"></label>
+<label>Anthias-Adresse<input name="url" placeholder="http://192.168.1.50" required type="url"></label>
+<label>Standort<input name="location" placeholder="Bistro" maxlength="80"></label>
+<button class="primary">Gerät registrieren</button></form></section>{% endif %}
+{% endblock %}
