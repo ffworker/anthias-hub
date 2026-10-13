@@ -1,0 +1,18 @@
+# Pull-based CD variant. Use this file instead of compose.yaml after a one-time migration.
+# Keep .env, config/ and data/ from the existing installation unchanged.
+services:
+  anthias-hub:
+    image: ${ANTHIAS_HUB_IMAGE:-ghcr.io/ffworker/anthias-hub:main}
+    env_file: .env
+    ports:
+      - "127.0.0.1:8765:8765"
+    user: "${HUB_UID:-1000}:${HUB_GID:-1000}"
+    volumes:
+      - ./config:/config:ro
+      - ./data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped

@@ -37,6 +37,8 @@ The interactive setup creates a random session secret and prompts for **distinct
 
 **Updating an existing checkout:** `git pull --ff-only && docker compose -p anthias-hub up -d --build`. Do **not** run `docker compose pull` for this Compose file: its `image: anthias-hub:pilot` is a locally built tag, not a Docker Hub repository. The CI-published image is separately available as `ghcr.io/ffworker/anthias-hub:main`; using it requires an explicit Compose image change, not a pull of `anthias-hub:pilot`.
 
+**Automatic pull-based CD (optional):** After the first manual migration to `compose.cd.yaml`, install the host-side systemd timer from [the CD runbook](docs/auto-deploy.md). It pulls the public GHCR image outbound after green CI, only restarts on a new image, checks local `/healthz`, rolls back on failure and quarantines a failing image. No inbound GitHub SSH access and no registry login are needed. The timer is **not** installed just by pulling this repository.
+
 **Access from Windows:** Open PowerShell on the client:
 
 ~~~powershell
