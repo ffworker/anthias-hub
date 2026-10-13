@@ -4,12 +4,9 @@ This is a **test installation only**. It must **not** modify the existing RSS2Sl
 repository or Compose stack. Anthias player endpoints and their API semantics must
 be verified against your actual test Pi before making any playlist changes.
 
-## 0. Publish the separate repository first
+## 0. Repository
 
-On Windows: extract `anthias-hub-public-source.zip`, create a **public, empty**
-GitHub repository called `anthias-hub` under your account, and push the files.
-The [README](../README.md) and [publication guide](../PROJECT_PUBLICATION.md)
-explain the process. Never publish `.env`, `config/` or `data/`.
+Public source: https://github.com/ffworker/anthias-hub . Never publish `.env`, `config/` or `data/`.
 
 ## 1. Check host and Pi route (read-only)
 
@@ -38,10 +35,19 @@ cd anthias-hub
 bash scripts/setup-pilot.sh
 ```
 
-The script uses the current host UID/GID, creates a strong random session key,
-sets `COOKIE_SECURE=0` **only for localhost HTTP over SSH tunneling**, makes
-`config/` and `data/` writable by that host user, builds the container, and
-prompts interactively for separate IT and Marketing passwords.
+The script uses the current host UID/GID for normal Docker-capable users. **When run
+as root** (for example after `su -`), it instead configures the application
+container to run as unprivileged UID/GID **10001:10001** and owns `config/` and
+`data/` accordingly. This allows a privileged one-time deployment without
+running the service itself as root. It creates a strong random session key,
+sets `COOKIE_SECURE=0` **only for localhost HTTP over SSH tunneling**, builds
+the image, and prompts for separate IT and Marketing passwords.
+
+If your normal account can run `docker ps`, no `sudo` permissions are
+required: use that account. If it cannot, log into root separately and run the
+script there. You can `git pull --ff-only` as the repo-owning user **before**
+switching to root to avoid Git's dubious ownership protection. Do not give a
+normal account sudo solely to launch the Hub.
 
 Do not run this in the existing RSS2Slideshow directory. The Compose project is
 explicitly named `anthias-hub`. The `signage` Compose service is untouched.
