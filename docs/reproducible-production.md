@@ -78,6 +78,35 @@ Open `http://localhost:8765`. Verify login, IT/Marketing roles, devices, and a *
 
 Do not clone the throwaway VM or carry over its test users/devices by default. If you intentionally migrate state, first review it and move it through a secure backup.
 
+### Optional: RSS2Slideshow on the same new VM
+
+The two applications are **separate**, even on one VM. Their hostnames, proxy routes, source revisions, local state and backups must be recorded independently. **RSS2Slideshow is a private repository**, requiring an explicitly authorized GitHub credential or read-only deploy key on the new VM. Never commit that key or the runtime configuration.
+
+After the Hub has been deployed, use a **different directory** for the RSS application:
+
+~~~bash
+cd ~/apps
+# Requires prior access to the private ffworker/rss2slideshow repository:
+git clone git@github.com:ffworker/rss2slideshow.git
+cd rss2slideshow
+# Choose/document an explicitly approved RSS2Slideshow commit before starting:
+git rev-parse HEAD
+cp .env.example .env
+cp config.example.yaml config.yaml
+cp content/feeds.example.txt content/feeds.txt
+chmod 600 .env
+# Edit .env, config.yaml and content/feeds.txt for the new installation.
+# Set a unique strong ADMIN_USER and ADMIN_PASSWORD if /admin is required.
+docker compose config --quiet
+docker compose -p rss2slideshow up -d --build
+docker compose -p rss2slideshow ps
+curl -fsS --max-time 10 http://127.0.0.1:8085/healthz
+~~~
+
+The example RSS feeds, configuration and branding are **not** a restore of the existing Bistro installation; check source rights and the [RSS configuration guide](https://github.com/ffworker/rss2slideshow/blob/main/docs/configuration.md) before real use. For an actual migration, securely restore the separately backed-up runtime `.env`, `config.yaml`, `content/`, optional local assets and branding overrides with proper ownership; do **not** overwrite runtime data with examples. The RSS repo's older `docs/deployment.md` contains a **specific historical gh-bistro update** and is **not** a generic installer for a fresh VM.
+
+The RSS Compose project uses **host port 8085 on 127.0.0.1 by default**, versus **8765 for the Hub**, avoiding port conflicts. For actual Anthias players to display the RSS site, publish only the approved internal URL via a tightly scoped reverse proxy/internal routing and verify that the Pis can reach it. The Hub's localhost-only admin access must stay restricted. Do not expose RSS `/admin` to untrusted clients. Maintain separate upgrade/release tracking for RSS2Slideshow instead of assuming the Hub's GHCR releases also version its content app.
+
 ## 3. Backups, promotion and rollback
 
 Hub's confidential persistent state is `.env`, `config/users.json`, `data/devices.json` and `data/audit.jsonl` (some files might not yet exist on an empty installation). Store encrypted/off-host backups with correct UID/GID. **Anthias player playlists, media and schedules live on the Pis and must be backed up separately.** Follow the [IT backup guide](IT_ADMIN_GUIDE.md#5-backup-vor-jedem-upgrade).
