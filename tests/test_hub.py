@@ -64,6 +64,17 @@ def login(client, name):
     assert r.status_code==302
 
 
+def test_frontend_is_independent_from_other_projects(env):
+    _, client, _ = env
+    login_page = client.get('/login').data.decode('utf-8')
+    assert 'https://github.com/ffworker/anthias-hub' in login_page
+    assert 'Nicht von Screenly entwickelt oder unterstützt' in login_page
+    assert 'rss2slideshow' not in login_page.lower()
+    login(client, 'it')
+    dashboard = client.get('/').data.decode('utf-8')
+    assert 'rss2slideshow' not in dashboard.lower()
+
+
 def test_requires_auth(env):
     app,client,_=env
     assert client.get('/').status_code==302

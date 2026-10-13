@@ -1,149 +1,89 @@
 # Anthias Hub
 
-**IT configures devices. Marketing controls the content.** A compact, self-hosted hub to manage playlists across multiple [Anthias](https://anthias.screenly.io/) players from one website — without rebuilding a complete digital signage player.
+**Independent self-hosted management interface for multiple Anthias players.**
 
-> **Status:** Public-ready source / internal pilot. The Anthias API integration has **not yet been verified against a real company player**. Deploy to an isolated test environment first, back up the Pi playlist, then test writes. Do not expose directly to the internet.
+**IT manages devices. Marketing manages individual playlists.** No central CMS, database, media-server rewrite, or per-screen license. Anthias Hub is a **third-party project** and is **not affiliated with, sponsored by, or officially supported by Screenly, Inc. / Anthias**.
 
-## What it does
+> **Pilot status (13 October 2026):** API reachability and reading a real Anthias Pi playlist have been confirmed by the operator. Writing, upload, delete, player compatibility across versions, and company-wide Marketing deployment have **not yet been fully validated**. Do not expose the pilot directly to the internet.
+
+## Features
 
 | Feature | IT | Marketing | Viewer |
-|---|---|---|---|
-| Sign in with a static username/password | ✓ | ✓ | ✓ |
-| See all devices, status and playlists | ✓ | ✓ | ✓ |
-| Register, edit or remove an Anthias Pi | ✓ | — | — |
-| Open the original Anthias admin screen | ✓ | — | — |
-| Add website URLs and upload PNG/JPG/WebP/MP4 | — | ✓ | — |
-| Rename, enable/disable, change duration, reorder and delete playlist items | — | ✓ | — |
+| --- | :---: | :---: | :---: |
+| Sign in with a static account | ✓ | ✓ | ✓ |
+| Device list, API status and playlist preview/list | ✓ | ✓ | ✓ |
+| Register, edit and remove device connections | ✓ | — | — |
+| Link to the native Anthias administration | ✓ | — | — |
+| Add websites / upload PNG, JPEG, WebP, MP4 (max 50 MB) | — | ✓ | — |
+| Rename, activate/deactivate, reorder, delete playlist items | — | ✓ | — |
 
-The app calls **Anthias API v2** directly from its backend. No device credentials, URLs or internal network addresses are included in this repository. Devices and account hashes remain in untracked local files; playlist changes apply to the original Pi, not to a separate database.
+The hub connects to **Anthias REST API v2** on each registered player. Media and playlists stay on the player, and edits take effect directly there. Changes are **per device**; group actions may be considered later. A playlist list is *not* a real screenshot or verification of what the TV is displaying.
+
+**There is no dependency on RSS2Slideshow or any other news-kiosk software.** Any reachable webpage may be used as an ordinary Anthias website asset. This repository does **not** bundle Anthias itself.
+
+## Quick deployment (Linux/Docker; internal test only)
+
+Requirements: Docker Engine + Compose plugin, Git, OpenSSL, curl, route from the host to the authorized Pi network.
+
+~~~bash
+git clone https://github.com/ffworker/anthias-hub.git
+cd anthias-hub
+bash scripts/setup-pilot.sh
+docker compose -p anthias-hub ps
+curl -fsS http://127.0.0.1:8765/healthz
+~~~
+
+The interactive setup creates a random session secret and prompts for **distinct** IT and Marketing passwords (minimum 12 characters). It works for a normal Docker-capable host user **or as root**; the container still runs with an unprivileged UID/GID (10001:10001 after root-driven setup). The script refuses to overwrite an existing .env. Re-running it is not the update procedure.
+
+**Access from Windows:** Open PowerShell on the client:
+
+~~~powershell
+ssh -N -L 8765:127.0.0.1:8765 ADMIN@YOUR-DOCKER-HOST
+~~~
+
+Then open http://localhost:8765 in the browser. The Compose port intentionally binds to **127.0.0.1** on the server. Connecting directly to the host's LAN IP on port 8765 will not work and must not be "fixed" with a broad firewall rule.
+
+For ordinary company-user access, first set up a restricted internal **HTTPS reverse proxy / VPN**, set COOKIE_SECURE=1, and isolate Anthias player-management ports. Direct access to the Pi can otherwise bypass the hub's role checks.
 
 ## Architecture
 
-```text
-IT login --------> Anthias Hub --------> Device registration / troubleshooting
-Marketing login -> Anthias Hub --v2 API--> Anthias Pi A --> TV A
-                           |----v2 API--> Anthias Pi B --> TV B
-Viewer login ----> Anthias Hub (read only)
+~~~text
+IT -----------------------------------> Hub web UI -> device inventory/diagnostics
+Marketing --login-> Anthias Hub ------> Anthias Pi #1 -> Screen #1
+                     (REST API v2) +--> Anthias Pi #2 -> Screen #2
+                                  +--> Anthias Pi #N -> Screen #N
 
-RSS2Slideshow (independent web application) --> website asset on any Anthias Pi
-```
+Website assets are external URLs independently configured on Anthias.
+~~~
 
-**Companion application:** [RSS2Slideshow](https://github.com/ffworker/rss2slideshow) is the independent news kiosk with article QR codes; Anthias Hub can add its kiosk URL as a website asset just like any other URL. It does not need RSS2Slideshow to function.
+The hub is a small Flask + Gunicorn service with file-based storage. No PostgreSQL, Redis, Kubernetes, cloud account or proprietary signage backend is needed. Local instance state (not in Git):
 
-## GitHub repository
+- .env — session secret, cookie/network and runtime UID/GID settings
+- config/users.json — scrypt password hashes and roles
+- data/devices.json — device inventory (private IPs)
+- data/audit.jsonl — basic write-event history
 
-Public project: **[ffworker/anthias-hub](https://github.com/ffworker/anthias-hub)**.
-RSS2Slideshow remains an independent application. Keep `.env`, `config/` and `data/` private.
+The current Marketing role applies to **all** registered screens; no per-location authorization yet.
 
-## First test on a separate Compose stack (recommended: an existing Docker host)
+## Documentation
 
-For a quick internal pilot, use an existing Docker host, but keep this
-project completely separate from RSS2Slideshow (its directory, Compose project,
-volumes and ports). The hub is only bound to `127.0.0.1:8765`; use an SSH tunnel.
-No firewall rules, RSS feed configuration, kiosk assets or running signage
-containers need to be changed.
+- **[IT Administrator Guide](docs/IT_ADMIN_GUIDE.md):** architecture, deployment, permission model, account/password maintenance, backups/restores, updates, logs, troubleshooting, operational checks.
+- [First Docker deployment](docs/deploy-docker-host.md): isolated pilot, SSH tunnel and safe access.
+- [Security boundary](SECURITY.md): roles, firewall/HTTPS, session and upload limitations.
+- [License and independence](docs/LICENSING.md): GPLv2 upstream, independent MIT API client, attribution, employer-rights and release checklist.
+- [Official Anthias API](https://anthias.screenly.io/api/)
 
-See **[Docker host pilot setup](docs/deploy-docker-host.md)** for the concise,
-Docker-only procedure. No Flask or Python environment needs to be installed
-on the host. Add a second VM only if isolation becomes a real requirement.
-For a one-time setup, the script also supports running as host **root**, while
-keeping the container under **UID/GID 10001:10001**. A normal user who already
-has Docker access does not need sudo. See the deployment guide.
+## Developers / CI
 
-## Quick start (Docker Compose)
-
-Requirements: Docker + Compose, a trusted server that can reach the Anthias device subnet, and a browser able to reach the management site.
-
-1. Copy this repo and configure a random session secret:
-
-   ```bash
-   cp .env.example .env
-   python3 -c 'import secrets; print(secrets.token_urlsafe(48))'
-   # Paste the generated value into APP_SECRET_KEY in .env.
-   mkdir -p config data
-   # Check `id -u` and `id -g`, set HUB_UID/HUB_GID in .env to match.
-   # Run Docker Compose as this same non-root host user.
-   ```
-
-2. Configure **individual static logins** using Python 3.12+ and a temporary venv. Passwords are never committed or stored as plaintext:
-
-   ```bash
-   python3 -m venv .venv
-   .venv/bin/pip install -r requirements.txt
-   .venv/bin/python -m scripts.create_user config/users.json it it
-   .venv/bin/python -m scripts.create_user config/users.json marketing marketing
-   # Optional: viewer account
-   # .venv/bin/python -m scripts.create_user config/users.json viewer viewer
-   ```
-
-   The CLI prompts twice for a password (minimum 12 characters) and stores an `scrypt` hash. Never share the passwords among departments. `config/users.json` remains excluded from Git.
-
-3. **Start locally**, not publicly:
-
-   ```bash
-   docker compose up -d --build
-   docker compose ps
-   curl -fsS http://127.0.0.1:8765/healthz
-   ```
-
-   Default bind is `127.0.0.1:8765`. For your first remote test, connect over SSH tunnel:
-
-   ```bash
-   ssh -L 8765:127.0.0.1:8765 user@YOUR_DOCKER_HOST
-   # Browse http://localhost:8765/ via that SSH tunnel.
-   ```
-
-   **Cookie rule:** For a plain HTTP localhost/SSH tunnel pilot set `COOKIE_SECURE=0` in `.env` and restart. For actual company users, deploy behind an **HTTPS reverse proxy**, keep `COOKIE_SECURE=1`, and enforce network restrictions and access controls. Never publish the hub unauthenticated or over plaintext company Wi-Fi.
-
-4. Sign in as **IT**, register one existing Anthias test Pi by its private IP, then confirm the playlist loads. Switch to the **Marketing** account to test content changes after taking a backup. Real Pi compatibility must be confirmed first.
-
-5. The `ANTHIAS_ALLOWED_CIDRS` setting restricts which IP ranges IT may register. Default is RFC1918 (10/8, 172.16/12, 192.168/16). Restrict it to your actual management VLAN(s). **IP literals only** in v0.1 — no dynamic DNS and no redirects to other servers.
-
-## Critical network boundary
-
-Anthias' API is designed for trusted local networks and may not require its own authentication. **A Marketing account in this hub is not a network firewall.** If Marketing clients can reach Pi management ports directly, they can bypass the hub's role restrictions. Put the Pis' management API behind firewall rules that permit only the hub and IT administration paths; serve the hub itself only over HTTPS/VPN to authorized users.
-
-This app deliberately does **not** proxy the full Anthias UI to Marketing, because that would expose player/system configuration. All playlist editing is implemented through allowlisted server-side Anthias asset API calls. IT can still open the original player dashboard to troubleshoot.
-
-## Playlist operations
-
-Per device, Marketing can:
-
-- add an ordinary website by name, HTTPS/HTTP URL and duration
-- upload a picture or MP4 up to 50 MB (simple signature + extension checks, not full malware scanning)
-- rename, enable/disable and change non-video duration
-- move individual items up/down (Anthias `/api/v2/assets/order`)
-- delete individual assets after confirmation
-
-Date/time schedules and advanced display settings are **not yet exposed** in the marketing UI; existing schedules are preserved when an asset is edited. Content is edited **one Pi at a time**. There is no central playlist database, group-write operation, cloud service, billing or AD integration in this version.
-
-## Security and operational notes
-
-- Static accounts (`it`, `marketing`, optionally `viewer`) are created by the CLI; no default password, no password management inside the UI.
-- Session cookies: HttpOnly, SameSite=Lax, Secure when configured; signed Flask sessions; CSRF token on all POST forms.
-- Basic in-memory login rate limit; the system is intended for internal use behind a reverse proxy, **not** internet-facing multi-tenant production.
-- All device writes enforce roles server-side. User-controlled URLs cannot select device API endpoints.
-- IP-restricted device inventory, no remote redirects, short API timeouts, audit log in `/data/audit.jsonl`.
-- Device inventory is persistent in host-owned `./data/devices.json` and the audit trail in `./data/audit.jsonl`. Back up `./data/` and `./config/`, and the Anthias devices independently.
-- Logging is intentionally minimal and avoids storing passwords. Static accounts are read from the local config file on requests.
-- Device API reachable ≠ display content verified. Check the TV after significant changes.
-- Upload security and access protections should be hardened further before broader deployments.
-
-## Development & tests
-
-```bash
+~~~bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt pytest
-.venv/bin/pytest -q
+.venv/bin/python -m pytest -q
 .venv/bin/python -m compileall -q app scripts wsgi.py
-```
+~~~
 
-Run on a test Pi before enabling Marketing in a production network. See [SECURITY.md](SECURITY.md) for deployment requirements. Anthias API reference: https://anthias.screenly.io/api/
+CI uses Python 3.12 and runs offline tests; **green unit tests are not proof of compatibility with any particular installed Pi**. Pilot write operations should be tested on a spare player and backed up independently.
 
-## Future (only if needed)
+## License and upstream credit
 
-Screen groups and deliberate batch API operations. Keep this release simple until you have demonstrated a need.
-
-## License
-
-MIT — see `LICENSE`. This project is independent of Anthias; Anthias has its own separate license. No company branding, company credentials, or private network inventory should be committed.
+Project-authored Anthias Hub source is under **MIT** ([LICENSE](LICENSE)). The separate Anthias player is **dual-licensed GPLv2/commercial** and has its own terms. Anthias and Screenly names are used to identify compatibility, not sponsorship. See [licensing and rights considerations](docs/LICENSING.md), especially if employer-developed code or bundled commercial appliances are involved.
