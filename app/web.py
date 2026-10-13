@@ -229,7 +229,7 @@ def create_app(config=None):
             if not 1 <= len(name) <= 100:
                 raise ValueError('Ungültiger Titel')
             changes = {'name': name, 'is_enabled': request.form.get('enabled') == 'on'}
-            if not str(asset.get('mimetype') or '').startswith('video/'):
+            if asset.get('mimetype') != 'video' and not str(asset.get('mimetype') or '').startswith('video/'):
                 changes['duration'] = validate_duration(request.form.get('duration'))
             # Keep device-specific date schedules unchanged unless editing is intentionally added later.
             api.patch(asset_id, changes)

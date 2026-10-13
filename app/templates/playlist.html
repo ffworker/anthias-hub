@@ -1,33 +1,65 @@
-{% extends 'base.html' %}{% block title %}{{ device.name }} · Anthias Hub{% endblock %}
-{% block content %}<div class="heading"><div><a class="back" href="{{ url_for('dashboard') }}">← Alle Bildschirme</a><h1>{{ device.name }}</h1><p class="muted">{{ device.location or 'Standort unbekannt' }} · Playlist direkt auf diesem Anthias-Pi</p></div></div>
-{% if error %}<div class="notice error">Gerät nicht erreichbar: {{ error }}</div>{% endif %}
-{% if logged_user.role == 'marketing' and not error %}
-<div class="two-col"><section class="card section"><h2>Webseite hinzufügen</h2>
-<form method="post" action="{{ url_for('add_url', device_id=device.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
-<label>Name<input name="name" required maxlength="100" placeholder="Aktuelle Mitteilungen"></label>
-<label>URL<input name="url" required type="url" placeholder="https://example.org/anzeige"></label>
-<label>Anzeigedauer (Sek.)<input name="duration" type="number" min="5" max="3600" value="30" required></label>
-<button class="primary">Webseite hinzufügen</button></form></section>
-<section class="card section"><h2>Bild oder Video hinzufügen</h2><p class="muted">PNG/JPG/WebP/MP4 · maximal 50 MB</p>
-<form method="post" enctype="multipart/form-data" action="{{ url_for('upload', device_id=device.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
-<label>Datei<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label>
-<label>Titel (optional)<input name="name" maxlength="100" placeholder="Aktuelle Ankündigung"></label>
-<label>Bilddauer (Sek.)<input name="duration" type="number" min="5" max="3600" value="15"></label>
-<button class="primary">Hochladen</button></form></section></div>
-{% endif %}
-<section class="section"><div class="heading"><div><h2>Playlist</h2><p class="muted">{{ assets|length }} Elemente · Sortierung und Einstellungen liegen direkt auf dem Pi</p></div></div>
-<div class="stack">{% for asset in assets %}<article class="card asset"><div class="asset-summary"><div><p class="eyebrow">#{{ loop.index }} · {{ asset.mimetype or 'Medium' }}</p><h3>{{ asset.name or 'Ohne Titel' }}</h3><p class="muted clip">{{ asset.uri or 'Lokales Medium' }}</p></div>
-<span class="pill {{ 'ok' if asset.is_enabled else 'off' }}">{{ 'Aktiv' if asset.is_enabled else 'Deaktiviert' }}</span></div>
-{% if logged_user.role == 'marketing' %}
-<div class="asset-actions"><form method="post" action="{{ url_for('move_asset', device_id=device.id, asset_id=asset.asset_id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="direction" value="up"><button {% if loop.first %}disabled{% endif %}>↑ Hoch</button></form>
-<form method="post" action="{{ url_for('move_asset', device_id=device.id, asset_id=asset.asset_id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="direction" value="down"><button {% if loop.last %}disabled{% endif %}>↓ Runter</button></form></div>
-<form method="post" class="asset-edit" action="{{ url_for('edit_asset', device_id=device.id, asset_id=asset.asset_id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
-<label>Titel<input name="name" required maxlength="100" value="{{ asset.name or '' }}"></label>
-{% if not (asset.mimetype or '').startswith('video/') %}<label>Sekunden<input type="number" name="duration" min="5" max="3600" required value="{{ asset.duration or 15 }}"></label>{% endif %}
-<label class="check"><input type="checkbox" name="enabled" {% if asset.is_enabled %}checked{% endif %}> Aktiv</label>
-<button class="primary">Speichern</button></form>
-<details><summary>Element endgültig löschen</summary><form method="post" action="{{ url_for('delete_asset', device_id=device.id, asset_id=asset.asset_id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="confirm" value="{{ asset.asset_id }}"><p class="muted">Löscht das Element vom Anthias-Player, möglicherweise inklusive Datei.</p><button class="danger-btn" onclick="return confirm('Dieses Element wirklich vom Pi löschen?')">Löschen bestätigen</button></form></details>
-{% else %}<p class="muted">Anzeigedauer: {{ asset.duration }} Sekunden · Nur Marketing darf den Inhalt verändern.</p>{% endif %}</article>
-{% else %}<div class="card"><p>Die Playlist ist leer oder konnte nicht geladen werden.</p></div>{% endfor %}</div>
-</section>
+{% extends 'base.html' %}
+{% block title %}{{ device.name }} · Playlist · Anthias Hub{% endblock %}
+{% block content %}
+<nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Bildschirme</a><span aria-hidden="true">/</span><span>{{ device.name }}</span></nav>
+<div class="page-intro">
+  <div><p class="eyebrow">PLAYLIST / {{ device.location or 'Standort unbekannt' }}</p><h1>{{ device.name }}</h1><p class="muted">Inhalte für diesen Bildschirm verwalten. Änderungen werden direkt an das Gerät übertragen.</p></div>
+  <span class="pill {{ 'bad' if error else 'ok' }}">{{ 'Nicht erreichbar' if error else 'Verbunden' }}</span>
+</div>
+{% if error %}<div class="notice error" role="alert">Gerät nicht erreichbar: {{ error }}. Die Playlist kann derzeit nicht bearbeitet werden.</div>{% endif %}
+<div class="editor-layout">
+  <section id="playlist-queue" class="queue" aria-labelledby="queue-title">
+    <div class="section-title"><div><p class="eyebrow">REIHENFOLGE</p><h2 id="queue-title">Playlist <span class="count">{{ assets|length }}</span></h2></div>{% if logged_user.role == 'marketing' and not error %}<a class="button jump-link" href="#add-content">+ Inhalt hinzufügen</a>{% endif %}</div>
+    {% if assets %}<p class="section-hint">Von oben nach unten abgespielt. Mit den Pfeilen sortieren, über „Bearbeiten“ Titel, Dauer und Status ändern.</p>{% endif %}
+    <div class="stack">
+    {% for asset in assets %}
+      <article class="card asset" id="asset-{{ asset.asset_id }}">
+        <div class="asset-main">
+          <div class="asset-index" aria-label="Position {{ loop.index }}">{{ '%02d'|format(loop.index) }}</div>
+          <div class="asset-body"><div class="asset-meta"><span class="type-label">{% if (asset.mimetype or '') == 'video' or (asset.mimetype or '').startswith('video/') %}VIDEO{% elif (asset.mimetype or '') == 'image' or (asset.mimetype or '').startswith('image/') %}BILD{% elif (asset.mimetype or '') in ('webpage', 'text/html') %}WEBSEITE{% else %}MEDIUM{% endif %}</span><span class="meta-sep">·</span><span>{% if (asset.mimetype or '') == 'video' or (asset.mimetype or '').startswith('video/') %}Automatische Dauer{% else %}{{ asset.duration or 15 }} Sek.{% endif %}</span></div><h3>{{ asset.name or 'Ohne Titel' }}</h3><p class="muted clip">{{ asset.uri or 'Lokales Medium' }}</p></div>
+          <span class="pill {{ 'ok' if asset.is_enabled else 'off' }}">{{ 'Aktiv' if asset.is_enabled else 'Pausiert' }}</span>
+        </div>
+        {% if logged_user.role == 'marketing' and not error %}
+        <div class="asset-toolbar">
+          <div class="move-controls" aria-label="Reihenfolge für {{ asset.name or 'Element' }}">
+            <form method="post" action="{{ url_for('move_asset', device_id=device.id, asset_id=asset.asset_id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="direction" value="up"><button title="Nach oben" aria-label="{{ asset.name or 'Element' }} nach oben" {% if loop.first %}disabled{% endif %}>↑</button></form>
+            <form method="post" action="{{ url_for('move_asset', device_id=device.id, asset_id=asset.asset_id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="direction" value="down"><button title="Nach unten" aria-label="{{ asset.name or 'Element' }} nach unten" {% if loop.last %}disabled{% endif %}>↓</button></form>
+          </div>
+          <details class="edit-panel"><summary>Bearbeiten <span aria-hidden="true">↗</span></summary>
+            <form method="post" class="asset-edit" action="{{ url_for('edit_asset', device_id=device.id, asset_id=asset.asset_id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
+              <label>Titel<input name="name" required maxlength="100" value="{{ asset.name or '' }}"></label>
+              {% if asset.mimetype != 'video' and not (asset.mimetype or '').startswith('video/') %}<label>Dauer in Sekunden<input type="number" name="duration" min="5" max="3600" required value="{{ asset.duration or 15 }}"></label>{% endif %}
+              <label class="check"><input type="checkbox" name="enabled" {% if asset.is_enabled %}checked{% endif %}> Aktiv</label>
+              <button class="primary">Änderungen speichern</button>
+            </form>
+            <details class="delete-panel"><summary>Element endgültig löschen</summary><form method="post" action="{{ url_for('delete_asset', device_id=device.id, asset_id=asset.asset_id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="confirm" value="{{ asset.asset_id }}"><p class="muted">Löscht das Element vom Player, möglicherweise inklusive Datei.</p><button class="danger-btn" onclick="return confirm('Dieses Element wirklich vom Pi löschen?')">Löschen bestätigen</button></form></details>
+          </details>
+        </div>
+        {% endif %}
+      </article>
+    {% else %}<div class="card empty-state"><div class="empty-symbol" aria-hidden="true">▤</div><h3>{{ 'Playlist nicht verfügbar' if error else 'Hier ist noch Platz.' }}</h3><p class="muted">{{ 'Die Verbindung zum Gerät prüfen und die Seite neu laden.' if error else 'Füge eine Webseite, ein Bild oder ein Video hinzu, um loszulegen.' }}</p></div>{% endfor %}
+    </div>
+  </section>
+  {% if logged_user.role == 'marketing' and not error %}
+  <aside id="add-content" class="composer" aria-labelledby="add-title">
+    <div class="composer-head"><p class="eyebrow">NEUER INHALT</p><h2 id="add-title">Zur Playlist hinzufügen</h2><p class="muted">Aktionen am Player bleiben im Hub. Kein direkter Gerätezugang für Marketing nötig.</p></div>
+    <div class="composer-form"><div class="composer-form-head"><span class="composer-icon" aria-hidden="true">↗</span><div><h3>Webseite</h3><p class="muted">Eine URL auf dem Bildschirm anzeigen</p></div></div>
+      <form method="post" action="{{ url_for('add_url', device_id=device.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
+        <label>Titel<input name="name" required maxlength="100" placeholder="z. B. Aktuelle Mitteilungen"></label>
+        <label>Webadresse<input name="url" required type="url" placeholder="https://example.org/anzeige"></label>
+        <label>Anzeigedauer <span class="label-note">Sekunden</span><input name="duration" type="number" min="5" max="3600" value="30" required></label>
+        <button class="primary full-width">Webseite hinzufügen <span aria-hidden="true">→</span></button>
+      </form>
+    </div>
+    <details class="upload-panel"><summary><span class="composer-icon" aria-hidden="true">＋</span><span><strong>Bild oder Video</strong><small>PNG, JPG, WebP oder MP4 hochladen</small></span><span class="upload-chevron" aria-hidden="true">⌄</span></summary>
+      <form method="post" enctype="multipart/form-data" action="{{ url_for('upload', device_id=device.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
+        <label>Datei <span class="label-note">max. 50 MB</span><input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label>
+        <label>Titel <span class="label-note">optional</span><input name="name" maxlength="100" placeholder="Aktuelle Ankündigung"></label>
+        <label>Bilddauer <span class="label-note">Sekunden; Videos automatisch</span><input name="duration" type="number" min="5" max="3600" value="15"></label>
+        <button class="primary full-width">Datei hochladen <span aria-hidden="true">→</span></button>
+      </form>
+    </details>
+  </aside>
+  {% endif %}
+</div>
 {% endblock %}

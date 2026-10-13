@@ -174,6 +174,7 @@ Bei Git-Meldung 'dubious ownership': Original-Repo-Eigentümer und Admin-Kontext
 | Nach Root-Setup Permission denied | ls -ld config data; UID/GID in .env | Containerzugriff 10001:10001, nicht chmod 777 |
 | Geräte offline | Route/Firewall Host→Pi, GET /api/v2/assets, Pi-Status | Kein Live-Screen-Status |
 | Playlist lesbar, Schreibaktion scheitert | Hub-Logs, reale Pi-API-Version, HTTP-Code | Schreiben/Upload separat gegen Test-Pi validieren |
+| Website hinzufügen meldet HTTP 500 | Pi-Logs und Playlist sofort neu laden; Anthias-Version notieren | Ältere Anthias-Versionen können das Asset trotz 500 erstellt haben ([Upstream #2190](https://github.com/Screenly/Anthias/issues/2190)). Der Hub legt neue Assets deaktiviert an und aktiviert sie danach per PATCH; bei Fehlern nicht blind erneut senden. Auf dem Test-Pi prüfen. |
 | Inhalt fehlt auf TV | Pi-Zeitplan, Aktivierung, Dauer, URL, Viewer, HDMI | Hub kann TV-Bild nicht direkt feststellen |
 | Neue Logins plötzlich ungültig | APP_SECRET_KEY geändert? | Session-Signaturen hängen am Key |
 | Upload scheitert | Dateityp/Signatur, Größenlimit 50 MB, Anthias-Schema | Keine automatische Malware-Prüfung |

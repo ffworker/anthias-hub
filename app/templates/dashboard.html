@@ -1,9 +1,9 @@
 {% extends 'base.html' %}{% block content %}
-<div class="heading"><div><h1>Deine Bildschirme</h1><p class="muted">{{ devices|length }} registrierte Anthias-Geräte · Änderungen am Inhalt nur durch Marketing</p></div></div>
+<div class="heading dashboard-heading"><div><p class="eyebrow">ANTHIAS HUB / ÜBERSICHT</p><h1>Bildschirme</h1><p class="muted">{{ devices|length }} registrierte Geräte · {% if logged_user.role == 'marketing' %}Bildschirm wählen und Playlist bearbeiten{% elif logged_user.role == 'it' %}Geräte verwalten und Verbindungen prüfen{% else %}Playlists und Verbindungen ansehen{% endif %}</p></div></div>
 <div class="grid">{% for device in devices %}
 <article class="card device"><div class="card-head"><div><h2>{{ device.name }}</h2><p class="muted">{{ device.location or 'Ohne Standort' }}</p></div>
 {% if statuses[device.id].ok %}<span class="pill ok">API erreichbar</span>{% else %}<span class="pill bad">Nicht erreichbar</span>{% endif %}</div>
-<p class="meta">{{ statuses[device.id].count if statuses[device.id].ok else '–' }} Playlist-Einträge</p>
+<p class="meta"><strong>{{ statuses[device.id].count if statuses[device.id].ok else '–' }}</strong> Playlist-Einträge</p>
 {% if logged_user.role == 'it' %}<p class="code muted">{{ device.url }}</p>{% endif %}
 <a class="button primary" href="{{ url_for('playlist', device_id=device.id) }}">{% if logged_user.role == 'marketing' %}Playlist bearbeiten{% else %}Playlist ansehen{% endif %} →</a>
 {% if logged_user.role == 'it' %}<div class="toolbar"><a href="{{ device.url }}" target="_blank" rel="noopener noreferrer">Original Anthias ↗</a>

@@ -202,3 +202,57 @@ def test_url_input_rejected(env):
             validate_website_url(value)
     with pytest.raises(ValueError):
         validate_device('bad','bad','http://8.8.8.8')
+
+
+def test_playlist_editor_keeps_actions_in_hub_and_prioritizes_queue(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    assert page.index('id="playlist-queue"') < page.index('id="add-content"')
+    assert 'id="asset-one123"' in page
+    assert 'id="asset-two123"' in page
+    assert 'name="direction" value="up"' in page
+    assert 'name="direction" value="down"' in page
+    assert 'name="enabled"' in page
+    assert 'type="file"' in page
+    assert 'href="http://127.0.0.1:9999"' not in page
+    assert 'Aktionen am Player bleiben im Hub' in page
+
+
+def test_playlist_read_only_roles_do_not_get_edit_controls(env):
+    _, client, _ = env
+    login(client, 'viewer')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    assert 'id="playlist-queue"' in page
+    assert 'id="add-content"' not in page
+    assert 'name="direction"' not in page
+    assert 'name="enabled"' not in page
+
+
+def test_playlist_error_does_not_offer_writes(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    with patch.object(FakeAnthias, 'assets', side_effect=anthias.PlayerError('offline')):
+        page = client.get('/devices/lab').data.decode('utf-8')
+    assert 'offline' in page
+    assert 'id="add-content"' not in page
+    assert 'name="direction"' not in page
+
+
+def test_upstream_media_types_show_correct_editor_controls(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    with patch.object(FakeAnthias, 'assets_data', [
+        {'asset_id': 'web123', 'name': 'Site', 'mimetype': 'webpage', 'uri': 'https://example.org', 'duration': 30, 'is_enabled': True},
+        {'asset_id': 'vid123', 'name': 'Film', 'mimetype': 'video', 'uri': '/media/film.mp4', 'duration': 0, 'is_enabled': True},
+    ]):
+        page = client.get('/devices/lab').data.decode('utf-8')
+        assert 'WEBSEITE' in page
+        assert 'VIDEO' in page
+        video = page.split('id="asset-vid123"', 1)[1].split('</article>', 1)[0]
+        assert 'name="duration"' not in video
+        result = client.post('/devices/lab/assets/vid123/edit', data={
+            'csrf': token(client), 'name': 'Updated film', 'enabled': 'on',
+        })
+    assert result.status_code == 302
+    assert FakeAnthias.changes[-1] == ('patch', ('vid123', {'name': 'Updated film', 'is_enabled': True}), {})

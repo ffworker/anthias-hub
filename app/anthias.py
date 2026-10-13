@@ -43,15 +43,35 @@ class Anthias:
     def info(self):
         return self.call('GET', '/api/v2/info', timeout=3)
 
-    def create(self, name, uri, duration, mimetype='text/html', ext=None):
+    def create(self, name, uri, duration, mimetype='webpage', ext=None):
         body = {
             'name': name, 'uri': uri, 'duration': duration,
-            'mimetype': mimetype, 'is_enabled': True, 'is_processing': False,
+            'mimetype': self._asset_mimetype(mimetype),
+            # Anthias' pre-refresh v2 create path can compare the serialized
+            # date strings in its newly-created instance with datetimes when
+            # is_enabled is true (upstream GH #2190).  The native UI also
+            # creates disabled; enabling only after persistence keeps this
+            # compatible with both the fixed and older API implementations.
+            'is_enabled': False, 'is_processing': False,
             'start_date': DEFAULT_FROM, 'end_date': DEFAULT_TO,
         }
         if ext:
             body['ext'] = ext
-        return self.call('POST', '/api/v2/assets', payload=body, timeout=15)
+        result = self.call('POST', '/api/v2/assets', payload=body, timeout=15)
+        if not isinstance(result, dict) or not result.get('asset_id'):
+            raise PlayerError('Anthias-Antwort enthält keine Asset-ID; Playlist prüfen, bevor du erneut speicherst')
+        self.patch(result['asset_id'], {'is_enabled': True})
+        return result
+
+    @staticmethod
+    def _asset_mimetype(mimetype):
+        if mimetype == 'text/html':
+            return 'webpage'
+        if mimetype.startswith('image/'):
+            return 'image'
+        if mimetype.startswith('video/'):
+            return 'video'
+        return mimetype
 
     def upload(self, storage, filename, mimetype):
         result = self.call('POST', '/api/v2/file_asset', files={'file_upload': (filename, storage, mimetype)}, timeout=120)
