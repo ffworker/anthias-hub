@@ -4,7 +4,7 @@
 {% if logged_user.role == 'marketing' and not error %}
 <div class="two-col"><section class="card section"><h2>Webseite hinzufügen</h2>
 <form method="post" action="{{ url_for('add_url', device_id=device.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
-<label>Name<input name="name" required maxlength="100" placeholder="Bistro News"></label>
+<label>Name<input name="name" required maxlength="100" placeholder="Aktuelle Mitteilungen"></label>
 <label>URL<input name="url" required type="url" placeholder="https://example.org/anzeige"></label>
 <label>Anzeigedauer (Sek.)<input name="duration" type="number" min="5" max="3600" value="30" required></label>
 <button class="primary">Webseite hinzufügen</button></form></section>

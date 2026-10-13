@@ -49,8 +49,8 @@ script there. You can `git pull --ff-only` as the repo-owning user **before**
 switching to root to avoid Git's dubious ownership protection. Do not give a
 normal account sudo solely to launch the Hub.
 
-Do not run this in the existing RSS2Slideshow directory. The Compose project is
-explicitly named `anthias-hub`. The `signage` Compose service is untouched.
+Do not run this in the existing another application's directory. The Compose project is
+explicitly named `anthias-hub`. Other Compose projects and their services are untouched.
 
 ## 3. Open from Windows PowerShell
 
@@ -76,7 +76,7 @@ git pull --ff-only
 docker compose -p anthias-hub up -d --build
 ```
 
-Never use `docker compose down` from the RSS2Slideshow directory to manage this
+Never use `docker compose down` from the another application's directory to manage this
 Hub. Do not use `docker system prune` just to update it.
 
 ## 5. Before Marketing uses this from normal company workstations
