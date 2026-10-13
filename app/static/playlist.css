@@ -1,0 +1,67 @@
+/* Playlist Studio — lightweight, friendly, progressive-enhancement UI.
+ * Scoped to playlist-workspace to leave dashboard and login unchanged. */
+.playlist-workspace{--studio-aqua:#87f0d9;--studio-peach:#ffc9a7;--studio-line:#304559;--studio-muted:#bdcadb;padding-bottom:35px}
+.playlist-workspace .breadcrumbs{margin-bottom:23px}
+.playlist-hero{position:relative;display:flex;align-items:center;justify-content:space-between;gap:30px;margin-bottom:30px;padding:27px 32px;border:1px solid #3c5769;border-radius:22px;background:radial-gradient(circle at 86% 17%,#2a585767,transparent 38%),linear-gradient(130deg,#18283d,#13212f 70%,#173c3a);overflow:hidden;box-shadow:0 22px 45px #0003}
+.playlist-hero::after{content:'✳';position:absolute;right:170px;top:-90px;font:280px/1 system-ui;color:#a5eedd0a;pointer-events:none}
+.playlist-hero-copy,.hero-status{position:relative;z-index:1}.playlist-hero h1{font-size:clamp(28px,3.7vw,44px);margin-bottom:11px}.hero-sparkle{font-size:.65em;color:var(--studio-peach);vertical-align:middle}.playlist-hero .muted{font-size:14px;color:#c2d2df;max-width:590px}
+.hero-status{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:none}.hero-status small{font-size:10px;color:#98aebd}
+.live-warning{margin:15px 0 0;color:#ffdcbf;font-size:12px}.live-warning span{color:#ffc28c;margin-right:7px}
+.playlist-workspace .editor-layout{grid-template-columns:minmax(0,1fr) minmax(310px,350px);gap:24px}
+.playlist-workspace .section-title{margin-bottom:17px;align-items:flex-start}.playlist-workspace .section-title h2{margin:0 0 5px;font-size:27px}.playlist-workspace .section-hint{margin:0;line-height:1.5;max-width:630px}
+.playlist-overview{display:flex;align-items:center;gap:9px;flex-wrap:wrap;color:var(--studio-muted);font-size:12px;background:#131f2e;border:1px solid #2b3b4f;border-radius:11px;padding:11px 15px;margin-bottom:14px}.playlist-overview strong{color:var(--ink)}.overview-dot{width:7px;height:7px;background:var(--studio-aqua);border-radius:50%;box-shadow:0 0 10px #87f0d988}.overview-note{margin-left:auto;color:#89b6ae;font-size:11px}
+.playlist-workspace .queue .stack{gap:10px}
+.playlist-workspace .asset{border:1px solid #32475a;background:#111d2c;border-radius:15px;transition:border-color .15s,transform .15s,box-shadow .15s;overflow:hidden}
+.playlist-workspace .asset:hover{border-color:#538d88;box-shadow:0 12px 35px #0004}
+.playlist-workspace .asset.is-paused{background:#101a27;border-color:#2b3849}
+.playlist-workspace .asset.is-paused .asset-kind,.playlist-workspace .asset.is-paused .asset-body{opacity:.6}
+.playlist-workspace .asset-main{gap:12px;padding:15px 17px}
+.playlist-workspace .drag-handle{flex:none;width:29px;min-width:29px;min-height:43px;padding:0;cursor:grab;border:0;background:transparent;color:#9bb5c6;font-size:26px;letter-spacing:-8px;box-shadow:none;touch-action:auto}
+.playlist-workspace .drag-handle:hover{background:#203547;color:var(--studio-aqua)}
+.playlist-workspace .drag-handle:active{cursor:grabbing}
+.playlist-workspace .asset-index{width:26px;height:auto;background:transparent;border:0;color:#8aa2b3;font-size:12px}
+.playlist-workspace .asset-kind{display:grid;place-items:center;flex:none;width:48px;height:48px;border-radius:13px;font-size:22px;font-weight:800;border:1px solid #496374;color:#9ff7e9;background:linear-gradient(135deg,#1b4548,#183443)}
+.playlist-workspace .kind-image{color:#ffe0b4;background:linear-gradient(135deg,#564032,#302c3b);border-color:#6f5642}
+.playlist-workspace .kind-video{color:#e7c7ff;background:linear-gradient(135deg,#49395b,#2c2946);border-color:#67527c}
+.playlist-workspace .asset-body .asset-meta{font-size:11px;margin:0 0 3px;gap:6px}.playlist-workspace .asset-body h3{font-size:15px;margin-bottom:3px}.playlist-workspace .asset-body .clip{font-size:11px;color:#91a5b6}
+.playlist-workspace .asset-side{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:none;margin-left:8px}
+.playlist-workspace .asset-status{font-size:10px;padding:4px 9px}
+.playlist-workspace .quick-toggle{border:1px solid #496276;background:#1b2c3e;color:#e0ebf4;border-radius:8px;min-height:32px;padding:5px 9px;font-size:11px;gap:6px;box-shadow:none}
+.playlist-workspace .quick-toggle:hover:not(:disabled){border-color:var(--studio-aqua);background:#27443f}
+.playlist-workspace .quick-toggle-form{margin:0}.playlist-workspace .quick-toggle-form button:disabled{opacity:.55}
+.playlist-workspace .asset-toolbar{padding:6px 14px;border-top:1px solid #293b4e;background:#0e1827;gap:13px}
+.playlist-workspace .move-controls button{width:34px;min-height:32px;font-size:15px;border:0;background:#1a2a3a;color:#c7d8df;padding:0;border-radius:7px}
+.playlist-workspace .edit-panel>summary{font-size:12px;color:#d9f4ed;width:fit-content;min-height:32px;display:flex;gap:9px;align-items:center}
+.playlist-workspace .edit-panel[open]{padding:8px 0 13px}
+.playlist-workspace .asset-edit{margin:10px 0 0;grid-template-columns:minmax(145px,1fr) minmax(100px,.55fr);gap:11px}
+.playlist-workspace .asset-edit button{align-self:end}
+.playlist-workspace .delete-panel{border-top:1px dashed #3b4658;margin-top:17px}
+.playlist-workspace .delete-ack{display:flex;align-items:center;gap:9px;color:#e8b8bf;font-size:12px;line-height:1.4}.playlist-workspace .delete-ack input{flex:none;width:18px;min-height:18px;margin:0;accent-color:#fcafb9}
+.playlist-workspace .is-dragging{opacity:.45;border-style:dashed}
+.playlist-workspace .asset.drop-before{box-shadow:0 -4px 0 0 var(--studio-aqua)}
+.playlist-workspace .asset.drop-after{box-shadow:0 4px 0 0 var(--studio-aqua)}
+.playlist-workspace .composer{top:18px;border:1px solid #456a65;border-radius:20px;background:#132335;box-shadow:0 18px 55px #0004}
+.playlist-workspace .composer-head{position:relative;padding:25px 24px 20px;background:linear-gradient(140deg,#215253,#172e3e 65%,#172536)}
+.playlist-workspace .composer-head .eyebrow{font-size:10px}.playlist-workspace .composer-head h2{font-size:23px;margin:0 0 7px}.playlist-workspace .composer-head .muted{color:#c8e1df;font-size:12px}
+.composer-bubble{position:absolute;right:21px;top:17px;display:grid;place-items:center;background:#89f0d42a;color:#a6f8e5;width:39px;height:39px;border-radius:50%;font-size:20px}
+.add-type-switch{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:18px 22px 8px;background:#0b1926;border:1px solid #2b4454;border-radius:12px;padding:5px}
+.playlist-workspace .add-mode{min-width:0;min-height:42px;border:0;border-radius:9px;background:transparent;color:#acc0cf;font-size:12px;padding:8px 5px;box-shadow:none}
+.playlist-workspace .add-mode.selected{background:#31584f;color:#ddfff7;box-shadow:inset 0 1px #b6f1df2c}
+.playlist-workspace .add-mode:hover{color:#f1fff9}
+.playlist-workspace .composer-pane{padding:14px 23px 18px}.playlist-workspace .composer-pane[hidden]{display:none!important}
+.playlist-workspace .composer-explainer{font-size:12px;color:#b8cbda;margin:2px 0 18px;line-height:1.5}
+.playlist-workspace .composer-pane label{margin-bottom:16px;color:#d9e5f0}
+.playlist-workspace .composer-pane input{background:#0b1725}
+.playlist-workspace .composer-pane input:focus{border-color:var(--studio-aqua)}
+.playlist-workspace .composer-pane .full-width{margin-top:7px;min-height:47px}
+.playlist-workspace .input-support{font-size:11px;margin:-12px 0 15px}
+.playlist-workspace .composer-footnote{color:#91a9b9;font-size:11px;padding:14px 23px 19px;margin:0;border-top:1px solid #293f4e}
+.playlist-workspace .empty-state{padding:55px 24px;border-style:dashed}
+.playlist-workspace .empty-symbol{font-size:35px;color:var(--studio-peach)}
+.playlist-workspace .empty-state .button{margin-top:17px}
+.playlist-feedback{position:fixed;right:24px;bottom:24px;z-index:30;background:#1d453d;color:#eafff5;border:1px solid #77e3ba;border-radius:13px;padding:13px 18px;box-shadow:0 12px 35px #0008;max-width:min(410px,calc(100vw - 48px));font-size:13px}
+.playlist-feedback.is-error{background:#4b2834;border-color:#ea8595;color:#ffe8eb}
+.playlist-feedback[hidden]{display:none}
+@media(max-width:1080px){.playlist-workspace .editor-layout{grid-template-columns:1fr}.playlist-workspace .composer{position:static}.playlist-workspace .composer-pane{max-width:560px}.playlist-workspace .add-type-switch{max-width:520px}}
+@media(max-width:680px){.playlist-hero{padding:21px;align-items:flex-start;flex-direction:column;gap:17px}.hero-status{align-items:flex-start}.playlist-hero h1{font-size:31px}.playlist-workspace .section-title{gap:8px}.playlist-workspace .asset-main{padding:13px 12px;gap:8px;flex-wrap:wrap}.playlist-workspace .asset-kind{width:37px;height:40px;font-size:18px}.playlist-workspace .asset-index{display:none}.playlist-workspace .drag-handle{width:26px;min-width:26px}.playlist-workspace .asset-side{flex-direction:row;align-items:center;justify-content:flex-end;width:100%;margin:3px 0 0}.playlist-workspace .asset-toolbar{display:flex;align-items:center;flex-wrap:wrap}.playlist-workspace .move-controls{float:none;margin-right:0}.playlist-workspace .edit-panel{flex:1}.playlist-workspace .edit-panel[open]{flex-basis:100%}.overview-note{display:none}.playlist-workspace .asset-edit{grid-template-columns:1fr}.playlist-workspace .asset-edit button{width:100%}.playlist-workspace .section-title .jump-link{font-size:11px;padding:9px}.playlist-workspace .composer-pane{padding:12px 17px 17px}.add-type-switch{margin:15px 15px 5px}}
+@media(prefers-reduced-motion:reduce){.playlist-workspace .asset{transition:none}}

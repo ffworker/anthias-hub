@@ -6,7 +6,7 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import (Flask, abort, flash, g, redirect, render_template, request,
+from flask import (Flask, abort, flash, g, jsonify, redirect, render_template, request,
                    session, url_for)
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.utils import secure_filename
@@ -234,8 +234,12 @@ def create_app(config=None):
             # Keep device-specific date schedules unchanged unless editing is intentionally added later.
             api.patch(asset_id, changes)
             audit('asset.edit', device_id, asset_id)
+            if request.accept_mimetypes.best == 'application/json':
+                return jsonify({'ok': True, 'asset': changes})
             flash('Playlist-Element aktualisiert.', 'success')
         except (ValueError, PlayerError) as exc:
+            if request.accept_mimetypes.best == 'application/json':
+                return jsonify({'ok': False, 'error': str(exc)}), 422
             flash(str(exc), 'error')
         return redirect(url_for('playlist', device_id=device_id))
 
@@ -259,12 +263,57 @@ def create_app(config=None):
             flash('Reihenfolge aktualisiert.', 'success')
         return redirect(url_for('playlist', device_id=device_id))
 
+    @app.post('/devices/<device_id>/reorder')
+    @login_required('marketing')
+    def reorder_assets(device_id):
+        """One atomic order call; reject stale editors instead of overwriting another user."""
+        _, api = player_or_404(device_id)
+        wanted = request.form.getlist('ids')
+        baseline = request.form.getlist('baseline')
+        current = [str(a['asset_id']) for a in api.assets()]
+        if (not current or len(current) != len(set(current))
+                or len(wanted) != len(current) or len(wanted) != len(set(wanted))
+                or set(wanted) != set(current)):
+            return jsonify({'ok': False, 'error': 'Playlist geändert. Bitte neu laden.'}), 409
+        if baseline != current:
+            return jsonify({'ok': False, 'error': 'Playlist wurde inzwischen geändert. Bitte neu laden.'}), 409
+        if wanted != current:
+            api.order(wanted)
+            audit('asset.reorder', device_id)
+        return jsonify({'ok': True, 'ids': wanted})
+
+    @app.post('/devices/<device_id>/assets/<asset_id>/toggle')
+    @login_required('marketing')
+    def toggle_asset(device_id, asset_id):
+        """Explicit desired state, with a stale-state check to avoid surprise writes."""
+        _, api = player_or_404(device_id)
+        desired, expected = request.form.get('enabled'), request.form.get('expected')
+        if desired not in ('0', '1') or expected not in ('0', '1'):
+            abort(400, 'Status ungültig')
+        asset, _ = chosen_asset(api, asset_id)
+        if asset is None:
+            abort(404)
+        before = bool(asset.get('is_enabled'))
+        if before != (expected == '1'):
+            if request.accept_mimetypes.best == 'application/json':
+                return jsonify({'ok': False, 'error': 'Status wurde geändert. Bitte neu laden.'}), 409
+            flash('Status wurde geändert. Bitte Seite neu laden.', 'error')
+            return redirect(url_for('playlist', device_id=device_id))
+        after = desired == '1'
+        if before != after:
+            api.patch(asset_id, {'is_enabled': after})
+            audit('asset.toggle', device_id, asset_id)
+        if request.accept_mimetypes.best == 'application/json':
+            return jsonify({'ok': True, 'enabled': after})
+        flash('Inhalt aktiviert.' if after else 'Inhalt pausiert.', 'success')
+        return redirect(url_for('playlist', device_id=device_id))
+
     @app.post('/devices/<device_id>/assets/<asset_id>/delete')
     @login_required('marketing')
     def delete_asset(device_id, asset_id):
         _, api = player_or_404(device_id)
-        if request.form.get('confirm') != asset_id:
-            abort(400, 'Element-ID bestätigen')
+        if request.form.get('confirm') != asset_id or request.form.get('ack') != 'yes':
+            abort(400, 'Löschung ausdrücklich bestätigen')
         asset, _ = chosen_asset(api, asset_id)
         if asset is None:
             abort(404)
