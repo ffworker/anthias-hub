@@ -161,6 +161,8 @@ docker compose -p anthias-hub ps
 curl -fsS http://127.0.0.1:8765/healthz
 ~~~
 
+`docker compose pull` ist hier **nicht** der Update-Befehl. `anthias-hub:pilot` ist ein lokal gebautes Image; Docker sucht beim Pull sonst fälschlich auf Docker Hub und meldet „pull access denied“. Das veröffentlichte GHCR-Image heißt `ghcr.io/ffworker/anthias-hub:main` und ist nicht die Image-Referenz dieser Pilot-Compose-Datei. Keine Registry-Anmeldedaten nötig, um den lokalen Build zu aktualisieren.
+
 Vorherige Git-SHA im Änderungsprotokoll notieren. Kein 'docker compose down -v', kein 'docker system prune', kein blindes 'git reset --hard'. Bei Regression vorherigen getesteten Commit in separatem Checkout vorbereiten und Hub-Datenrestore gezielt ausführen. **Ein Hub-Rollback macht zuvor durchgeführte Pi-Playliständerungen nicht rückgängig!**
 
 Bei Git-Meldung 'dubious ownership': Original-Repo-Eigentümer und Admin-Kontext prüfen; nicht pauschal alle Pfade als safe markieren.

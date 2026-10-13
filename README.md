@@ -35,6 +35,8 @@ curl -fsS http://127.0.0.1:8765/healthz
 
 The interactive setup creates a random session secret and prompts for **distinct** IT and Marketing passwords (minimum 12 characters). It works for a normal Docker-capable host user **or as root**; the container still runs with an unprivileged UID/GID (10001:10001 after root-driven setup). The script refuses to overwrite an existing .env. Re-running it is not the update procedure.
 
+**Updating an existing checkout:** `git pull --ff-only && docker compose -p anthias-hub up -d --build`. Do **not** run `docker compose pull` for this Compose file: its `image: anthias-hub:pilot` is a locally built tag, not a Docker Hub repository. The CI-published image is separately available as `ghcr.io/ffworker/anthias-hub:main`; using it requires an explicit Compose image change, not a pull of `anthias-hub:pilot`.
+
 **Access from Windows:** Open PowerShell on the client:
 
 ~~~powershell
