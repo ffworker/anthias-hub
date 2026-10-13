@@ -30,27 +30,10 @@ RSS2Slideshow (independent web application) --> website asset on any Anthias Pi
 
 **Companion application:** [RSS2Slideshow](https://github.com/ffworker/rss2slideshow) is the independent news kiosk with article QR codes; Anthias Hub can add its kiosk URL as a website asset just like any other URL. It does not need RSS2Slideshow to function.
 
-## Publish as a new public GitHub repository
+## GitHub repository
 
-This project is provided independently from the RSS2Slideshow repository. **A separate public GitHub repo still needs to be created by an authenticated account.** After extracting the source ZIP, install [GitHub CLI](https://cli.github.com/), run `gh auth login`, review the files and then:
-
-```bash
-bash scripts/publish_to_github.sh anthias-hub
-```
-
-The script verifies that tracked runtime secrets are absent, requires explicit `PUBLISH` confirmation, creates a **new public repository**, and pushes the project. It needs your GitHub account's authorization. Once GitHub returns the actual URL, add it to the link in RSS2Slideshow's [Anthias Hub integration note](https://github.com/ffworker/rss2slideshow/blob/main/docs/anthias-hub.md).
-
-**Windows / PowerShell without GitHub CLI:** Create a new **empty, public** GitHub repository named `anthias-hub` on [GitHub → New repository](https://github.com/new) (do not add a generated README or license). Unpack the ZIP, then from the project folder run:
-
-```powershell
-git init -b main
-git add .
-git commit -m "feat: initial Anthias Hub"
-git remote add origin https://github.com/ffworker/anthias-hub.git
-git push -u origin main
-```
-
-Use your own GitHub username instead of `ffworker` if publishing under another account. Verify the newly created public repo URL before adding it elsewhere.
+Public project: **[ffworker/anthias-hub](https://github.com/ffworker/anthias-hub)**.
+RSS2Slideshow remains an independent application. Keep `.env`, `config/` and `data/` private.
 
 ## First test on a separate Compose stack (recommended: an existing Docker host)
 
@@ -63,6 +46,9 @@ containers need to be changed.
 See **[Docker host pilot setup](docs/deploy-docker-host.md)** for the concise,
 Docker-only procedure. No Flask or Python environment needs to be installed
 on the host. Add a second VM only if isolation becomes a real requirement.
+For a one-time setup, the script also supports running as host **root**, while
+keeping the container under **UID/GID 10001:10001**. A normal user who already
+has Docker access does not need sudo. See the deployment guide.
 
 ## Quick start (Docker Compose)
 
