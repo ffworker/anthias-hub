@@ -36,7 +36,7 @@
       <article class="fleet-device card {{ 'fleet-device-offline' if not online else '' }}">
         <div class="fleet-device-top">
           <div class="fleet-device-icon" aria-hidden="true">▣</div>
-          <span class="pill {{ 'ok' if online else 'bad' }}">{{ 'API erreichbar' if online else 'Offline' }}</span>
+          <span class="pill {{ 'ok' if online else 'bad' }}">{{ 'API erreichbar' if online else 'API nicht erreichbar' }}</span>
         </div>
         <p class="eyebrow fleet-location">{{ device.location or 'OHNE STANDORT' }}</p>
         <h3>{{ device.name }}</h3>
