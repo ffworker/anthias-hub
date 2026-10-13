@@ -69,5 +69,7 @@ def csrf_token():
 
 
 def require_csrf():
-    if not secrets.compare_digest(str(session.get('csrf', '')), str(request.form.get('csrf', ''))):
+    expected = session.get('csrf')
+    supplied = request.form.get('csrf')
+    if not expected or not supplied or not secrets.compare_digest(str(expected), str(supplied)):
         abort(400, 'Invalid CSRF token')
