@@ -134,7 +134,7 @@ def test_marketing_changes_each_devices_playlist(env):
     assert client.post('/devices/lab/add-url',data={'csrf':t,'name':'News','url':'https://example.org/news','duration':'45'}).status_code==302
     assert client.post('/devices/lab/assets/one123/edit',data={'csrf':t,'name':'New title','duration':'20','enabled':'on'}).status_code==302
     assert client.post('/devices/lab/assets/one123/move',data={'csrf':t,'direction':'down'}).status_code==302
-    assert client.post('/devices/lab/assets/one123/delete',data={'csrf':t,'confirm':'one123'}).status_code==302
+    assert client.post('/devices/lab/assets/one123/delete',data={'csrf':t,'confirm':'one123','ack':'yes'}).status_code==302
     assert [c[0] for c in FakeAnthias.changes]==['create','patch','order','remove']
     assert FakeAnthias.changes[2][1]==(['two123','one123'],)
 
@@ -256,3 +256,63 @@ def test_upstream_media_types_show_correct_editor_controls(env):
         })
     assert result.status_code == 302
     assert FakeAnthias.changes[-1] == ('patch', ('vid123', {'name': 'Updated film', 'is_enabled': True}), {})
+
+def test_reorder_is_single_call_and_rejects_stale_or_missing_ids(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    route = '/devices/lab/reorder'
+    headers = {'Accept': 'application/json'}
+    original = [('baseline', 'one123'), ('baseline', 'two123')]
+    desired = [('ids', 'two123'), ('ids', 'one123')]
+    response = client.post(route, data={'csrf': token(client), 'baseline': ['one123', 'two123'], 'ids': ['two123', 'one123']}, headers=headers)
+    assert response.status_code == 200
+    assert response.json == {'ok': True, 'ids': ['two123', 'one123']}
+    assert FakeAnthias.changes == [('order', (['two123', 'one123'],), {})]
+    FakeAnthias.changes.clear()
+    bad = client.post(route, data={'csrf': token(client), 'baseline': ['two123', 'one123'], 'ids': ['one123', 'two123']}, headers=headers)
+    assert bad.status_code == 409
+    assert not FakeAnthias.changes
+    missing = client.post(route, data={'csrf': token(client), 'baseline': ['one123', 'two123'], 'ids': ['one123']}, headers=headers)
+    assert missing.status_code == 409
+    assert not FakeAnthias.changes
+
+
+def test_toggle_requires_matching_state_and_role(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    path = '/devices/lab/assets/one123/toggle'
+    headers = {'Accept': 'application/json'}
+    response = client.post(path, data={'csrf': token(client), 'enabled': '0', 'expected': '1'}, headers=headers)
+    assert response.status_code == 200
+    assert response.json == {'ok': True, 'enabled': False}
+    assert FakeAnthias.changes == [('patch', ('one123', {'is_enabled': False}), {})]
+    FakeAnthias.changes.clear()
+    mismatch = client.post(path, data={'csrf': token(client), 'enabled': '0', 'expected': '0'}, headers=headers)
+    assert mismatch.status_code == 409
+    assert not FakeAnthias.changes
+    no_token = client.post(path, data={'enabled': '0', 'expected': '1'}, headers=headers)
+    assert no_token.status_code == 400
+    client.post('/logout', data={'csrf': token(client)})
+    login(client, 'viewer')
+    assert client.post(path, data={'csrf': token(client), 'enabled': '0', 'expected': '1'}, headers=headers).status_code == 403
+
+
+def test_quick_edit_json_and_safety_confirmation(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    resp = client.post('/devices/lab/assets/one123/edit',
+                       data={'csrf': token(client), 'name': 'New headline', 'duration': '22', 'enabled': 'on'},
+                       headers={'Accept': 'application/json'})
+    assert resp.status_code == 200
+    assert resp.json == {'ok': True, 'asset': {'name': 'New headline', 'duration': 22, 'is_enabled': True}}
+    no_ack = client.post('/devices/lab/assets/one123/delete',
+                         data={'csrf': token(client), 'confirm': 'one123'})
+    assert no_ack.status_code == 400
+    assert not any(entry[0] == 'remove' for entry in FakeAnthias.changes)
+    page = client.get('/devices/lab').data.decode('utf-8')
+    assert 'data-reorder-url=' in page
+    assert 'class="quick-toggle-form"' in page
+    assert 'name="ack" value="yes" required' in page
+    assert 'playlist.js' in page
+    assert 'playlist.css' in page
+    assert 'onclick=' not in page
