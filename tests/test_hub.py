@@ -75,6 +75,26 @@ def test_frontend_is_independent_from_other_projects(env):
     assert 'rss2slideshow' not in dashboard.lower()
 
 
+def test_appearance_controls_are_local_and_keep_playlist_forms(env):
+    _, client, _ = env
+    login_page = client.get('/login').data.decode('utf-8')
+    assert 'theme-init.js' in login_page and 'themes.js' in login_page
+    assert login_page.count('data-theme-choice=') == 3
+    assert 'icons.svg#mark' in login_page
+    for asset in ('themes.css', 'theme-init.js', 'themes.js', 'icons.svg', 'favicon.svg'):
+        assert client.get('/static/' + asset).status_code == 200
+
+    login(client, 'marketing')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    assert page.count('data-theme-choice=') == 3
+    assert 'data-add-mode="website"' in page and 'data-add-mode="media"' in page
+    assert 'name="url"' in page and 'name="media"' in page
+    assert 'class="asset-edit"' in page and 'class="quick-toggle-form"' in page
+    assert 'name="direction" value="up"' in page
+    assert 'icons.svg#web' in page and 'icons.svg#image' in page
+    assert "'unsafe-inline'" not in client.get('/devices/lab').headers['Content-Security-Policy']
+
+
 def test_requires_auth(env):
     app,client,_=env
     assert client.get('/').status_code==302

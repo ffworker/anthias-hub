@@ -57,6 +57,8 @@ The interactive setup creates a random session secret and prompts for **distinct
 
 **Automatic pull-based CD (test VM only, optional):** After manual migration to `compose.cd.yaml`, the timer in [the test-only CD runbook](docs/auto-deploy.md) follows `:main`, checks `/healthz`, and attempts rollback on failure. That is convenient for a **disposable test VM** but does **not** constitute an approval-gated production release process. It is not installed by cloning the repository. See [controlled releases](docs/reproducible-production.md) for the future VM.
 
+**Appearance:** The header’s Design menu offers Nordlicht (dark teal), Tageslicht (light) and Kupfer (warm dark). The choice is stored only in the current browser (`localStorage`), not in Hub accounts, playlists or on the Pis. Editor controls remain in their original forms/API routes: move controls beside each item, edit in the item’s action bar, add content in the dedicated composer.
+
 **Access from Windows:** Open PowerShell on the client:
 
 ~~~powershell

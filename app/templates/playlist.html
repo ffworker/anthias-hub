@@ -8,7 +8,7 @@
   <header class="playlist-hero">
     <div class="playlist-hero-copy">
       <p class="eyebrow">DEIN BILDSCHIRM · {{ device.location or 'Ohne Standort' }}</p>
-      <h1>{{ device.name }} <span class="hero-sparkle" aria-hidden="true">✳</span></h1>
+      <h1>{{ device.name }} <svg class="icon hero-sparkle" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></h1>
       <p class="muted">Gestalte, was auf diesem Bildschirm zu sehen ist – ganz ohne Technik-Menüs.</p>
       {% if logged_user.role == 'marketing' and not error %}<p class="live-warning"><span aria-hidden="true">●</span> Änderungen werden sofort auf dem Player gespeichert.</p>{% endif %}
     </div>
@@ -33,7 +33,7 @@
             {% else %}Die Inhalte werden in dieser Reihenfolge abgespielt.{% endif %}
           </p>
         </div>
-        {% if logged_user.role == 'marketing' and not error %}<a class="button jump-link" href="#add-content"><span aria-hidden="true">＋</span> Hinzufügen</a>{% endif %}
+        {% if logged_user.role == 'marketing' and not error %}<a class="button jump-link" href="#add-content"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Hinzufügen</a>{% endif %}
       </div>
 
       <div class="playlist-overview"><span class="overview-dot" aria-hidden="true"></span>
@@ -57,7 +57,7 @@
                         aria-label="{{ asset.name or 'Element' }} verschieben">⠿</button>
               {% endif %}
               <div class="asset-index" aria-label="Position {{ loop.index }}">{{ '%02d'|format(loop.index) }}</div>
-              <div class="asset-kind {{ 'kind-video' if is_video else 'kind-image' if is_image else 'kind-web' }}" aria-hidden="true">{{ '▶' if is_video else '▧' if is_image else '↗' }}</div>
+              <div class="asset-kind {{ 'kind-video' if is_video else 'kind-image' if is_image else 'kind-web' }}" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#{{ 'video' if is_video else 'image' if is_image else 'web' }}"></use></svg></div>
               <div class="asset-body">
                 <div class="asset-meta">
                   <span class="type-label">{{ 'VIDEO' if is_video else 'BILD' if is_image else 'WEBSEITE' if is_web else 'MEDIUM' }}</span>
@@ -96,7 +96,7 @@
                   </form>
                 </div>
                 <details class="edit-panel">
-                  <summary><span aria-hidden="true">✎</span> Inhalt bearbeiten</summary>
+                  <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#edit"></use></svg> Inhalt bearbeiten</summary>
                   <form method="post" class="asset-edit" action="{{ url_for('edit_asset', device_id=device.id, asset_id=asset.asset_id) }}">
                     <input type="hidden" name="csrf" value="{{ csrf() }}">
                     <label>Titel<input name="name" required maxlength="100" value="{{ asset.name or '' }}"></label>
@@ -118,7 +118,7 @@
           </article>
         {% else %}
           <div class="card empty-state">
-            <div class="empty-symbol" aria-hidden="true">✳</div>
+            <div class="empty-symbol" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg></div>
             <h3>{{ 'Playlist nicht verfügbar' if error else 'Ein Bildschirm voller Möglichkeiten!' }}</h3>
             <p class="muted">{{ 'Die Verbindung prüfen und neu laden.' if error else 'Füge deine erste Webseite, ein Bild oder ein Video hinzu.' }}</p>
             {% if logged_user.role == 'marketing' and not error %}<a href="#add-content" class="button primary">Ersten Inhalt hinzufügen →</a>{% endif %}
@@ -130,15 +130,15 @@
     {% if logged_user.role == 'marketing' and not error %}
       <aside id="add-content" class="composer" aria-labelledby="add-title">
         <div class="composer-head">
-          <span class="composer-bubble" aria-hidden="true">✦</span>
+          <span class="composer-bubble" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg></span>
           <p class="eyebrow">ETWAS NEUES ZEIGEN</p>
           <h2 id="add-title">Inhalt hinzufügen</h2>
           <p class="muted">In wenigen Sekunden auf deinem Bildschirm.</p>
         </div>
 
         <div class="add-type-switch" aria-label="Inhaltsart wählen">
-          <button type="button" class="add-mode selected" data-add-mode="website" aria-pressed="true"><span aria-hidden="true">↗</span> Webseite</button>
-          <button type="button" class="add-mode" data-add-mode="media" aria-pressed="false"><span aria-hidden="true">▧</span> Bild / Video</button>
+          <button type="button" class="add-mode selected" data-add-mode="website" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#web"></use></svg> Webseite</button>
+          <button type="button" class="add-mode" data-add-mode="media" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#image"></use></svg> Bild / Video</button>
         </div>
 
         <div class="composer-pane" data-add-pane="website">

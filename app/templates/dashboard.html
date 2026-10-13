@@ -6,7 +6,7 @@
   <section class="fleet-hero" aria-labelledby="fleet-title">
     <div class="fleet-hero-copy">
       <p class="eyebrow">DEIN DIGITAL SIGNAGE STUDIO</p>
-      <h1 id="fleet-title">Deine Bildschirme <span class="fleet-sparkle" aria-hidden="true">✳</span></h1>
+      <h1 id="fleet-title">Deine Bildschirme <svg class="icon fleet-sparkle" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></h1>
       <p class="muted">
         {% if logged_user.role == 'marketing' %}Wähle einen Bildschirm, gestalte die Playlist und zeig, was wichtig ist.
         {% elif logged_user.role == 'it' %}Alle Geräte und ihre Verbindungen an einem Ort. Die Inhalte verwaltet Marketing.
@@ -14,7 +14,7 @@
       </p>
     </div>
     {% if logged_user.role == 'it' %}
-      <a class="button primary fleet-add-button" href="#device-setup"><span aria-hidden="true">＋</span> Bildschirm verbinden</a>
+      <a class="button primary fleet-add-button" href="#device-setup"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Bildschirm verbinden</a>
     {% endif %}
   </section>
 
@@ -35,7 +35,7 @@
       {% set online = statuses[device.id].ok %}
       <article class="fleet-device card {{ 'fleet-device-offline' if not online else '' }}">
         <div class="fleet-device-top">
-          <div class="fleet-device-icon" aria-hidden="true">▣</div>
+          <div class="fleet-device-icon" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></div>
           <span class="pill {{ 'ok' if online else 'bad' }}">{{ 'API erreichbar' if online else 'API nicht erreichbar' }}</span>
         </div>
         <p class="eyebrow fleet-location">{{ device.location or 'OHNE STANDORT' }}</p>
