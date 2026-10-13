@@ -20,6 +20,7 @@
     {% if logged_user %}
     <nav class="site-nav" aria-label="Hauptnavigation">
       <a class="site-nav-link" href="{{ url_for('dashboard') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg> Bildschirme</a>
+      <a class="site-nav-link" href="{{ url_for('library_index') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Bibliothek</a>
     </nav>
     <details class="theme-picker">
       <summary title="Farbschema wählen" aria-label="Farbschema wählen"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#palette"></use></svg><span>Design</span></summary>

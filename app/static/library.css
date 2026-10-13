@@ -1,0 +1,15 @@
+/* Library shares the existing Studio palette and interaction language. */
+.library-intro{padding:27px 32px;border:1px solid var(--border);border-radius:20px;background:var(--surface);margin-bottom:27px}
+.library-intro h1{margin:0 0 8px}.library-intro .muted{max-width:650px;margin:0 0 16px}.library-intro .button{margin-top:6px;text-decoration:none}
+.library-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,355px);gap:27px;align-items:start}
+.library-grid h2{margin:0 0 17px}.library-list,.library-items,.library-actions{display:grid;gap:13px;align-content:start}
+.library-items{padding:0;list-style:none}.library-entry,.library-item{display:flex;align-items:center;gap:14px;padding:17px!important;min-width:0;text-decoration:none;color:var(--ink)}
+.library-entry:hover{border-color:var(--blue)}.library-entry>span:nth-child(2),.library-item-copy{display:grid;gap:4px;min-width:0;flex:1}.library-entry strong,.library-item strong{font-size:15px;overflow-wrap:anywhere}
+.library-entry small,.library-item small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}.library-glyph{display:grid;place-items:center;background:var(--raised);border:1px solid var(--border);border-radius:10px;color:var(--blue);height:42px;width:42px;flex:none}
+.library-item form{margin:0}.library-item .danger-btn{min-height:40px}.library-empty{padding:28px!important;color:var(--muted)}
+.library-item-actions{display:flex;align-items:center;gap:8px;flex:none}.library-item-actions>form{display:flex;gap:4px}.library-item-actions>form button{width:39px;min-height:40px;padding:5px}.library-item-actions details{position:relative;border:0;padding:0;margin:0}.library-item-actions summary{cursor:pointer;color:var(--red);font-size:12px;padding:9px 4px}.library-item-actions details form{position:absolute;right:0;top:100%;z-index:3;width:230px;padding:14px;background:var(--raised);border:1px solid var(--border);border-radius:10px;box-shadow:0 15px 30px #0005}.library-item-actions details form button{width:100%;margin-top:9px}
+.library-panel{padding:22px!important}.library-panel h2{font-size:19px;margin:0 0 8px}.library-panel p{font-size:12px;margin:0 0 15px}.library-panel form{display:grid;gap:12px;margin:0}.library-panel label{display:grid;gap:6px;margin:0;color:var(--ink)}
+.library-panel select{width:100%;min-height:44px;background:var(--field);color:var(--ink);border:1px solid var(--border);border-radius:9px;padding:8px;font:inherit}
+.library-panel button{min-height:44px}.library-panel .library-confirm{display:flex;align-items:center;gap:8px;line-height:1.4}.library-confirm input{width:19px;min-height:19px;flex:none;margin:0;accent-color:var(--blue)}
+@media(max-width:900px){.library-grid{grid-template-columns:1fr}.library-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.library-apply{grid-column:1/-1}}
+@media(max-width:600px){.library-actions{grid-template-columns:1fr}.library-apply{grid-column:auto}.library-intro{padding:22px}.library-item{flex-wrap:wrap}.library-item-actions{width:100%;justify-content:space-between}.library-item-actions>form button{width:44px;min-height:44px}}

@@ -1,5 +1,6 @@
 """Anthias Hub: IT owns devices; Marketing owns playlists."""
 import json
+import io
 import os
 import secrets
 import threading
@@ -7,15 +8,17 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from flask import (Flask, abort, flash, g, jsonify, redirect, render_template, request,
-                   session, url_for)
+                   send_file, session, url_for)
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.utils import secure_filename
 
 from .auth import authenticate, current_user, csrf_token, login_required, require_csrf
 from .anthias import Anthias, PlayerError, validate_duration, validate_website_url
 from .devices import load, save, get, validate_device
+from .library import Library, LibraryError
 
 _audit_lock = threading.Lock()
+_apply_lock = threading.Lock()
 MEDIA = {'.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.webp':'image/webp', '.mp4':'video/mp4'}
 
 
@@ -26,6 +29,7 @@ def create_app(config=None):
         USERS_FILE=os.environ.get('USERS_FILE', '/config/users.json'),
         DEVICES_FILE=os.environ.get('DEVICES_FILE', '/data/devices.json'),
         AUDIT_FILE=os.environ.get('AUDIT_FILE', '/data/audit.jsonl'),
+        LIBRARY_DIR=os.environ.get('LIBRARY_DIR', '/data/library'),
         SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax',
         SESSION_COOKIE_SECURE=os.environ.get('COOKIE_SECURE', '1') == '1',
         PERMANENT_SESSION_LIFETIME=60 * 60 * 8,
@@ -66,6 +70,143 @@ def create_app(config=None):
         if device is None:
             abort(404)
         return device, Anthias(device)
+
+    def library():
+        return Library(app.config['LIBRARY_DIR'])
+
+    @app.get('/library')
+    @login_required()
+    def library_index():
+        return render_template('library.html', templates=library().list())
+
+    @app.post('/library')
+    @login_required('marketing')
+    def library_create():
+        try:
+            item = library().create(request.form.get('name', ''))
+            audit('library.create', asset_id=item['id'])
+            return redirect(url_for('library_detail', template_id=item['id']))
+        except LibraryError as exc:
+            flash(str(exc), 'error')
+            return redirect(url_for('library_index'))
+
+    @app.post('/library/import')
+    @login_required('marketing')
+    def library_import():
+        try:
+            file = request.files.get('archive')
+            if not file or not file.filename or not file.filename.lower().endswith('.zip'):
+                raise LibraryError('Bitte ein Playlist-ZIP auswählen')
+            item = library().import_zip(file.stream)
+            audit('library.import', asset_id=item['id'])
+            return redirect(url_for('library_detail', template_id=item['id']))
+        except LibraryError as exc:
+            flash(str(exc), 'error')
+            return redirect(url_for('library_index'))
+
+    @app.get('/library/<template_id>')
+    @login_required()
+    def library_detail(template_id):
+        try:
+            item = library().get(template_id)
+        except LibraryError:
+            abort(404)
+        return render_template('library_detail.html', template=item, devices=load(app.config['DEVICES_FILE']))
+
+    @app.get('/library/<template_id>/export')
+    @login_required()
+    def library_export(template_id):
+        try:
+            archive = library().export(template_id)
+        except LibraryError:
+            abort(404)
+        return send_file(io.BytesIO(archive), mimetype='application/zip', as_attachment=True,
+                         download_name='anthias-playlist-' + template_id + '.zip')
+
+    @app.post('/library/<template_id>/url')
+    @login_required('marketing')
+    def library_add_url(template_id):
+        try:
+            library().add_url(template_id, request.form.get('name'), request.form.get('url'), request.form.get('duration'))
+            audit('library.add-url', asset_id=template_id)
+        except LibraryError as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('library_detail', template_id=template_id))
+
+    @app.post('/library/<template_id>/media')
+    @login_required('marketing')
+    def library_add_media(template_id):
+        try:
+            file = request.files.get('media')
+            if file is None or not file.filename:
+                raise LibraryError('Bitte eine Datei auswählen')
+            library().add_media(template_id, request.form.get('name') or file.filename,
+                                file.stream, file.filename, request.form.get('duration'))
+            audit('library.add-media', asset_id=template_id)
+        except LibraryError as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('library_detail', template_id=template_id))
+
+    @app.post('/library/<template_id>/move/<item_id>')
+    @login_required('marketing')
+    def library_move_item(template_id, item_id):
+        try:
+            library().move(template_id, item_id, request.form.get('direction'))
+            audit('library.move-item', asset_id=template_id)
+        except LibraryError as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('library_detail', template_id=template_id))
+
+    @app.post('/library/<template_id>/remove/<item_id>')
+    @login_required('marketing')
+    def library_remove_item(template_id, item_id):
+        if request.form.get('confirm') != item_id or request.form.get('ack') != 'yes':
+            abort(400)
+        try:
+            library().remove(template_id, item_id)
+            audit('library.remove-item', asset_id=template_id)
+        except LibraryError as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('library_detail', template_id=template_id))
+
+    @app.post('/devices/<device_id>/apply-library')
+    @login_required('marketing')
+    def apply_library(device_id):
+        if request.form.get('confirm') != 'yes':
+            abort(400)
+        device, api = player_or_404(device_id)
+        try:
+            template = library().get(request.form.get('template_id', ''))
+            if not template['items']:
+                raise LibraryError('Leere Vorlage wird nicht übertragen')
+            # Preflight every local file before any player write. Serialize the empty-list
+            # check and transfer against parallel requests in this single-worker process.
+            media_paths = {item['id']: library().verified_media_path(template['id'], item)
+                           for item in template['items'] if item['kind'] == 'media'}
+            with _apply_lock:
+                if api.assets():
+                    raise LibraryError('Player-Playlist ist nicht leer. Nichts übertragen; vorhandene Inhalte bleiben unverändert.')
+                for item in template['items']:
+                    if item['kind'] == 'url':
+                        api.create(item['name'], item['url'], item['duration'])
+                    else:
+                        path = media_paths[item['id']]
+                        ext = path.suffix.lower()
+                        with path.open('rb') as stream:
+                            uploaded = api.upload(stream, path.name, MEDIA[ext])
+                        api.create(item['name'], uploaded['uri'], item['duration'], mimetype=MEDIA[ext], ext=uploaded.get('ext'))
+            audit('library.apply', device_id, template['id'])
+            flash('Vorlage übertragen. Playlist und Ausgabe am TV prüfen.', 'success')
+        except (LibraryError, PlayerError, OSError) as exc:
+            flash(str(exc) + ' Keine automatische Wiederholung: Playlist am Player prüfen (Teilübertragung möglich).', 'error')
+        return redirect(url_for('playlist', device_id=device_id))
+
+    @app.post('/library/<template_id>/apply')
+    @login_required('marketing')
+    def apply_library_from_template(template_id):
+        if request.form.get('template_id') != template_id:
+            abort(400)
+        return apply_library(request.form.get('device', ''))
 
     def chosen_asset(api, asset_id):
         Anthias.valid_id(asset_id)

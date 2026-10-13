@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Playlist-Bibliothek · Anthias Hub{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">{% endblock %}
+{% block content %}
+<section class="library-intro">
+  <p class="eyebrow">DEIN STUDIO · VORLAGEN</p>
+  <h1>Playlist-Bibliothek</h1>
+  <p class="muted">Baue wiederverwendbare Playlists aus Webseiten und Medien. Dateien liegen lokal im Hub, nicht in Git.</p>
+</section>
+<div class="library-grid">
+  <section aria-labelledby="library-list-title">
+    <h2 id="library-list-title">Vorlagen <span class="count">{{ templates|length }}</span></h2>
+    <div class="library-list">
+      {% for template in templates %}
+      <a class="card library-entry" href="{{ url_for('library_detail', template_id=template.id) }}"><span class="library-glyph" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg></span><span><strong>{{ template.name }}</strong><small>{{ template['items']|length }} Inhalte · Lokal gespeichert</small></span><span aria-hidden="true">→</span></a>
+      {% else %}<div class="card library-empty">Noch keine Vorlagen. Erstelle rechts deine erste Playlist.</div>{% endfor %}
+    </div>
+  </section>
+  {% if logged_user.role == 'marketing' %}
+  <aside class="library-actions">
+    <section class="card library-panel"><h2>Neue Vorlage</h2><p class="muted">Startet leer; du fügst anschließend Inhalte hinzu.</p>
+      <form method="post" action="{{ url_for('library_create') }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><label>Name<input name="name" maxlength="100" required placeholder="z. B. Bistro Startpaket"></label><button class="primary">Vorlage erstellen</button></form>
+    </section>
+    <section class="card library-panel"><h2>Paket importieren</h2><p class="muted">ZIP aus dieser Bibliothek, inklusive gespeicherter Medien. Kein direkter Pi-Export.</p>
+      <form method="post" enctype="multipart/form-data" action="{{ url_for('library_import') }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><label>Playlist-ZIP<input type="file" name="archive" accept=".zip" required></label><button>ZIP importieren</button></form>
+    </section>
+  </aside>
+  {% endif %}
+</div>
+{% endblock %}

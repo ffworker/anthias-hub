@@ -95,6 +95,135 @@ def test_appearance_controls_are_local_and_keep_playlist_forms(env):
     assert "'unsafe-inline'" not in client.get('/devices/lab').headers['Content-Security-Policy']
 
 
+def test_marketing_can_build_export_and_import_local_library(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    login(client, 'marketing')
+    t = token(client)
+    assert client.post('/library', data={'csrf': t, 'name': 'Launch'}).status_code == 302
+    from app.library import Library
+    template = Library(app.config['LIBRARY_DIR']).list()[0]
+    ident = template['id']
+    assert client.post(f'/library/{ident}/url', data={'csrf': t, 'name': 'News', 'url': 'https://example.org/news', 'duration': '30'}).status_code == 302
+    png = b'\x89PNG\r\n\x1a\n' + b'image-data'
+    assert client.post(f'/library/{ident}/media', data={'csrf': t, 'name': 'Menu', 'duration': '15', 'media': (io.BytesIO(png), 'menu.png')}, content_type='multipart/form-data').status_code == 302
+    assert len(Library(app.config['LIBRARY_DIR']).get(ident)['items']) == 2
+    archive = client.get(f'/library/{ident}/export')
+    assert archive.status_code == 200 and archive.headers['Content-Type'].startswith('application/zip')
+    assert client.post('/library/import', data={'csrf': t, 'archive': (io.BytesIO(archive.data), 'launch.zip')}, content_type='multipart/form-data').status_code == 302
+    assert len(Library(app.config['LIBRARY_DIR']).list()) == 2
+    assert b'Launch' in client.get('/library').data
+    assert b'News' in client.get(f'/library/{ident}').data
+
+
+def test_library_apply_refuses_existing_playlist_then_adds_to_empty_device(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    login(client, 'marketing')
+    t = token(client)
+    from app.library import Library
+    library = Library(app.config['LIBRARY_DIR'])
+    template = library.create('Launch')
+    library.add_url(template['id'], 'News', 'https://example.org/news', 30)
+    data = {'csrf': t, 'template_id': template['id'], 'confirm': 'yes'}
+    try:
+        response = client.post('/devices/lab/apply-library', data=data)
+        assert response.status_code == 302
+        assert not FakeAnthias.changes
+        FakeAnthias.assets_data = []
+        response = client.post('/devices/lab/apply-library', data=data)
+        assert response.status_code == 302
+        assert [item[0] for item in FakeAnthias.changes] == ['create']
+    finally:
+        FakeAnthias.assets_data = [
+            {'asset_id': 'one123', 'name': 'Welcome', 'mimetype':'text/html', 'uri':'https://example.org', 'play_order': 1, 'duration': 30, 'is_enabled': True},
+            {'asset_id': 'two123', 'name': 'Lunch menu', 'mimetype':'image/png', 'uri':'file:///menu.png', 'play_order': 2, 'duration': 15, 'is_enabled': True},
+        ]
+
+
+def test_library_media_apply_and_role_boundary(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    library = Library(app.config['LIBRARY_DIR'])
+    template = library.create('Visuals')
+    library.add_media(template['id'], 'Photo', io.BytesIO(b'\x89PNG\r\n\x1a\n' + b'pic'), 'photo.png', 15)
+    login(client, 'it')
+    t = token(client)
+    assert client.get('/library').status_code == 200
+    assert client.post(f"/library/{template['id']}/apply", data={'csrf': t, 'template_id': template['id'], 'device': 'lab', 'confirm': 'yes'}).status_code == 403
+    assert client.post('/library', data={'csrf': t, 'name': 'No'}).status_code == 403
+    assert not FakeAnthias.changes
+    login(client, 'marketing')
+    t = token(client)
+    try:
+        FakeAnthias.assets_data = []
+        response = client.post(f"/library/{template['id']}/apply", data={'csrf': t, 'template_id': template['id'], 'device': 'lab', 'confirm': 'yes'})
+        assert response.status_code == 302
+        assert [item[0] for item in FakeAnthias.changes] == ['upload', 'create']
+    finally:
+        FakeAnthias.assets_data = [
+            {'asset_id': 'one123', 'name': 'Welcome', 'mimetype':'text/html', 'uri':'https://example.org', 'play_order': 1, 'duration': 30, 'is_enabled': True},
+            {'asset_id': 'two123', 'name': 'Lunch menu', 'mimetype':'image/png', 'uri':'file:///menu.png', 'play_order': 2, 'duration': 15, 'is_enabled': True},
+        ]
+
+
+def test_library_removal_requires_explicit_ack(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    lib = Library(app.config['LIBRARY_DIR'])
+    template = lib.create('Draft')
+    lib.add_url(template['id'], 'Website', 'https://example.org', 30)
+    entry = lib.get(template['id'])['items'][0]['id']
+    login(client, 'marketing')
+    data = {'csrf': token(client), 'confirm': entry}
+    uri = f"/library/{template['id']}/remove/{entry}"
+    assert client.post(uri, data=data).status_code == 400
+    assert len(lib.get(template['id'])['items']) == 1
+    assert client.post(uri, data={**data, 'ack': 'yes'}).status_code == 302
+    assert not lib.get(template['id'])['items']
+
+
+def test_library_apply_rejects_corrupt_media_before_any_write(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    lib = Library(app.config['LIBRARY_DIR'])
+    template = lib.create('Visuals')
+    lib.add_url(template['id'], 'Website', 'https://example.org', 30)
+    lib.add_media(template['id'], 'Photo', io.BytesIO(b'\x89PNG\r\n\x1a\noriginal'), 'photo.png', 15)
+    media = lib.get(template['id'])['items'][1]
+    lib.media_path(template['id'], media).write_bytes(b'\x89PNG\r\n\x1a\nchanged')
+    login(client, 'marketing')
+    try:
+        FakeAnthias.assets_data = []
+        result = client.post(f"/library/{template['id']}/apply", data={'csrf': token(client), 'template_id': template['id'], 'device': 'lab', 'confirm': 'yes'}, follow_redirects=True)
+        assert b'besch\xc3\xa4digt' in result.data
+        assert not FakeAnthias.changes
+    finally:
+        FakeAnthias.assets_data = [
+            {'asset_id': 'one123', 'name': 'Welcome', 'mimetype':'text/html', 'uri':'https://example.org', 'play_order': 1, 'duration': 30, 'is_enabled': True},
+            {'asset_id': 'two123', 'name': 'Lunch menu', 'mimetype':'image/png', 'uri':'file:///menu.png', 'play_order': 2, 'duration': 15, 'is_enabled': True},
+        ]
+
+
+def test_library_move_updates_order_without_touching_device(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    lib = Library(app.config['LIBRARY_DIR'])
+    template = lib.create('Draft')
+    lib.add_url(template['id'], 'A', 'https://example.org/a', 30)
+    lib.add_url(template['id'], 'B', 'https://example.org/b', 30)
+    second = lib.get(template['id'])['items'][1]['id']
+    login(client, 'marketing')
+    response = client.post(f"/library/{template['id']}/move/{second}", data={'csrf': token(client), 'direction': 'up'})
+    assert response.status_code == 302
+    assert [item['name'] for item in lib.get(template['id'])['items']] == ['B', 'A']
+    assert not FakeAnthias.changes
+
+
 def test_requires_auth(env):
     app,client,_=env
     assert client.get('/').status_code==302

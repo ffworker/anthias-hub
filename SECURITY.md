@@ -9,6 +9,7 @@
 - All POST forms are protected by signed-session CSRF tokens. Use `COOKIE_SECURE=1` when served over HTTPS; set `COOKIE_SECURE=0` **only** for localhost/SSH tunnel testing.
 - Full Anthias device settings are **not** exposed to Marketing through the hub. However, all authorized Marketing users in this version can edit any registered playlist. No per-location role scoping yet.
 - Back up host-owned `./data/` (`devices.json` and `audit.jsonl`), `./config/users.json`, and the Anthias players' own data independently. Use host UID/GID values in `.env` so the container runs without root while retaining access to private `0600` account hashes.
+- Playlist templates and uploaded binaries are stored under `./data/library/` with restrictive file permissions; include them in off-host backups, monitor disk usage and do not treat a downloaded template ZIP as safe to share publicly. ZIP import validates names, media signatures, digests and sizes but is not a malware scanner. A transfer only targets an empty player; it can still partially succeed if a later API call fails, so never retry blindly. Existing Pi media cannot be reconstructed from a Hub template export.
 - The operator confirmed API read access and playlist listing on one real Anthias Pi (13 October 2026). This does NOT validate uploads, updates, deletions or the complete installed Pi API version. Security-test write operations before company-wide use.
 
 Please report potential vulnerabilities privately to the repository owner; avoid posting company addresses or credentials in public issues.

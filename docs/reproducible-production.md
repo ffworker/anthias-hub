@@ -109,7 +109,7 @@ The RSS Compose project uses **host port 8085 on 127.0.0.1 by default**, versus 
 
 ## 3. Backups, promotion and rollback
 
-Hub's confidential persistent state is `.env`, `config/users.json`, `data/devices.json` and `data/audit.jsonl` (some files might not yet exist on an empty installation). Store encrypted/off-host backups with correct UID/GID. **Anthias player playlists, media and schedules live on the Pis and must be backed up separately.** Follow the [IT backup guide](IT_ADMIN_GUIDE.md#5-backup-vor-jedem-upgrade).
+Hub's confidential persistent state is `.env`, `config/users.json`, `data/devices.json`, `data/audit.jsonl` and `data/library/` (template manifests and original Hub uploads; some paths might not yet exist on an empty installation). Store encrypted/off-host backups with correct UID/GID, budget disk space for uploaded videos and verify restore on staging. A template ZIP contains only its own Hub-uploaded media, not media already stored on a Pi. **Anthias player playlists, media and schedules live on the Pis and must be backed up separately.** Follow the [IT backup guide](IT_ADMIN_GUIDE.md#5-backup-vor-jedem-upgrade).
 
 Before every approved image promotion:
 

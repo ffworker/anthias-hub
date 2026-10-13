@@ -28,6 +28,8 @@
 
 The hub connects to **Anthias REST API v2** on each registered player. Media and playlists stay on the player, and edits take effect directly there. Changes are **per device**; group actions may be considered later. A playlist list is *not* a real screenshot or verification of what the TV is displaying.
 
+**Playlist-Bibliothek (new, staging-first):** Marketing can create reusable templates from URLs and locally uploaded PNG/JPG/WebP/MP4 files under `data/library/`, reorder them, export/import portable ZIPs, and transfer a template to a selected **empty** Anthias playlist. The destination is checked immediately before transfer; existing content is never replaced. This is not an atomic multi-file operation: after a partial failure, inspect the Pi before retrying. The archive contains only Hub-library media, not media previously uploaded directly to a Pi. Back up `data/library/` off-host alongside the rest of `data/`; it is not recreated by Git or the Docker image. Test uploads and output on a spare player before using the feature for Marketing production.
+
 **There is no dependency on RSS2Slideshow or any other news-kiosk software.** Any reachable webpage may be used as an ordinary Anthias website asset. This repository does **not** bundle Anthias itself.
 
 ## Deployment modes: test VM versus future production

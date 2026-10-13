@@ -25,7 +25,7 @@ IT/Marketing/Viewer via lokaler SSH-Tunnel (Pilot); später HTTPS/VPN
 
 **IT:** Geräte inventarisieren, URL/IP/Standort pflegen, API-Status und Inhalte lesend prüfen und die native Anthias-Adminseite zur Fehlersuche öffnen. **Marketing:** bestehende Playlists auf ausgewählten Geräten direkt über die Hub-UI bearbeiten. **Viewer:** nur lesen. Alle Marketing-Accounts können derzeit sämtliche registrierten Geräte bearbeiten (keine Standort-spezifischen ACLs).
 
-Der Hub ist **kein eigener Player, kein Medien-Server mit Spiegelkopien, kein Reverse-Proxy zur vollständigen Anthias-Administration und kein Ersatz für Pi-Backups**. Die Original-Playlist und Medien bleiben auf dem jeweiligen Pi. Eine optionale externe News-/Web-Anwendung wird lediglich als Website-Asset in Anthias eingebunden; sie ist weder Bestandteil noch Abhängigkeit des Hubs.
+Der Hub ist **kein eigener Player, kein Reverse-Proxy zur vollständigen Anthias-Administration und kein Ersatz für Pi-Backups**. Die Original-Playlist und Medien bleiben auf dem jeweiligen Pi. Die Hub-Bibliothek speichert nur ihre selbst hochgeladenen Medien als wiederverwendbare Vorlagen unter `data/library/`; sie spiegelt keine bereits auf den Pis vorhandenen Medien. Eine optionale externe News-/Web-Anwendung wird lediglich als Website-Asset in Anthias eingebunden; sie ist weder Bestandteil noch Abhängigkeit des Hubs.
 
 ## 2. Hostinstallation und Dateiablage
 
@@ -38,6 +38,7 @@ Beliebiger separater Checkout, etwa /opt/anthias-hub oder /home/ADMIN/apps/anthi
 | config/users.json | Accounts mit scrypt-Hashes | Nein | Ja, vertraulich |
 | data/devices.json | Geräteinventar (private IPs!) | Nein | Ja |
 | data/audit.jsonl | Audit-Events von Hub-Schreibaktionen | Nein | Ja, Datenschutzfristen |
+| data/library/ | Vorlagen und Originalmedien der Hub-Bibliothek | Nein | **Ja, inklusive Restore-Test und Kapazitätsplanung** |
 | Datenbank/Medien auf jedem Anthias-Pi | Inhalte und Zeitpläne der Displays | Eigenes System | **Separat auf jedem Pi** |
 
 Docker Compose bindet Host **127.0.0.1:8765** an Container-Port 8765; das ist Absicht. Die Daten-Mounts liegen unter ./config (im Container nur lesbar) und ./data (beschreibbar). Ein Worker mit mehreren Threads, read-only Root-Filesystem, keine zusätzlichen Datenbanken. Host-Netzwerk muss die Management-IPs der Pis erreichen.

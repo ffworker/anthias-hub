@@ -3,7 +3,7 @@
 {% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='playlist.css') }}">{% endblock %}
 {% block content %}
 <div class="playlist-workspace" data-can-edit="{{ 'yes' if logged_user.role == 'marketing' and not error else 'no' }}">
-  <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Alle Bildschirme</a><span aria-hidden="true">›</span><span>{{ device.name }}</span></nav>
+  <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Alle Bildschirme</a><span aria-hidden="true">›</span><span>{{ device.name }}</span><span aria-hidden="true">·</span><a href="{{ url_for('library_index') }}">Bibliothek</a></nav>
 
   <header class="playlist-hero">
     <div class="playlist-hero-copy">
