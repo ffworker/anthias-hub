@@ -1,5 +1,14 @@
 # Anthias Hub
 
+[![Tests & Publish](https://github.com/ffworker/anthias-hub/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/ffworker/anthias-hub/actions/workflows/tests.yml)
+[![GHCR Container](https://img.shields.io/badge/container-GHCR-2496ED?logo=docker&logoColor=white)](https://github.com/ffworker/anthias-hub/pkgs/container/anthias-hub)
+[![MIT License](https://img.shields.io/github/license/ffworker/anthias-hub)](LICENSE)
+[![Status: Pilot](https://img.shields.io/badge/status-pilot-e9a23b)](#quick-deployment-linuxdocker-internal-test-only)
+[![Self-hosted](https://img.shields.io/badge/deployment-self--hosted-61cab8)](docs/deploy-docker-host.md)
+[![Branch: main](https://img.shields.io/badge/branch-main-465d76?logo=git)](https://github.com/ffworker/anthias-hub/tree/main)
+
+[**CI / Workflows**](https://github.com/ffworker/anthias-hub/actions) · [**Container images**](https://github.com/ffworker/anthias-hub/pkgs/container/anthias-hub) · [**Branches**](https://github.com/ffworker/anthias-hub/branches) · [**Issues**](https://github.com/ffworker/anthias-hub/issues) · [**Release & VM runbook**](docs/reproducible-production.md)
+
 **Independent self-hosted management interface for multiple Anthias players.**
 
 **IT manages devices. Marketing manages individual playlists.** No central CMS, database, media-server rewrite, or per-screen license. Anthias Hub is a **third-party project** and is **not affiliated with, sponsored by, or officially supported by Screenly, Inc. / Anthias**.
