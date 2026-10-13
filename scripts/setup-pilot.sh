@@ -15,10 +15,9 @@ if [[ -f .env ]]; then
   echo 'Configure accounts and launch manually, or review the existing installation.' >&2
   exit 1
 fi
-if [[ $(id -u) -eq 0 ]]; then
-  echo 'Do not run this pilot setup as root. Use your normal Docker-capable user.' >&2
-  exit 1
-fi
+# Root is permitted for initial Docker-host setup, but the application container
+# must never inherit root's UID. Use a dedicated unprivileged numeric ID instead.
+# Existing installations are protected above by the .env existence check.
 if ss -lnt 2>/dev/null | grep -Eq '(^|[[:space:]])(127\.0\.0\.1:8765|0\.0\.0\.0:8765|\*:8765)[[:space:]]'; then
   echo 'Port 8765 is already in use: choose another bind port before proceeding.' >&2
   exit 1
@@ -31,6 +30,12 @@ umask 077
 mkdir -p config data
 uid=$(id -u)
 gid=$(id -g)
+if [[ "$uid" -eq 0 ]]; then
+  uid=10001
+  gid=10001
+  chown "$uid:$gid" config data
+  echo 'Root setup detected: container and writable directories will use UID/GID 10001:10001 (not root).'
+fi
 key=$(openssl rand -hex 48)
 # Secrets remain in an ignored, owner-only local .env file.
 sed -e "s|^APP_SECRET_KEY=.*|APP_SECRET_KEY=$key|" \
