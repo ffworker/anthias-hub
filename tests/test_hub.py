@@ -123,7 +123,7 @@ def test_it_can_register_private_device_and_not_public(env):
     assert b'Bistro' in client.get('/').data
     client.post('/devices',data={'csrf':t,'name':'Public','id':'public','url':'http://8.8.8.8'})
     assert b'Public' not in client.get('/').data
-    assert client.post('/devices/bistro/remove',data={'csrf':t,'confirm':'bistro'}).status_code==302
+    assert client.post('/devices/bistro/remove',data={'csrf':t,'confirm':'bistro','ack':'yes'}).status_code==302
     assert b'>Bistro<' not in client.get('/').data
 
 
@@ -316,3 +316,65 @@ def test_quick_edit_json_and_safety_confirmation(env):
     assert 'playlist.js' in page
     assert 'playlist.css' in page
     assert 'onclick=' not in page
+
+
+def test_studio_visual_language_on_every_user_facing_page(env):
+    _, client, _ = env
+    login_page = client.get('/login').get_data(as_text=True)
+    assert 'workspace.css' in login_page
+    assert 'class="auth-layout"' in login_page
+    assert 'Deine Ideen.' in login_page
+    assert 'name="username"' in login_page
+    assert 'name="password"' in login_page
+    login(client, 'marketing')
+    page = client.get('/').get_data(as_text=True)
+    assert 'class="fleet-hero"' in page
+    assert 'class="fleet-summary"' in page
+    assert 'class="fleet-device card ' in page
+    assert 'Playlist bearbeiten' in page
+    assert 'API erreichbar' in page
+    assert 'Keine Live-Vorschau' in page
+    assert 'Original Anthias' not in page
+    assert 'id="device-setup"' not in page
+    assert 'name="ack"' not in page
+    playlist = client.get('/devices/lab').get_data(as_text=True)
+    assert 'workspace.css' in playlist
+    assert 'playlist.css' in playlist
+    assert 'Hauptnavigation' in playlist
+    client.post('/logout', data={'csrf': token(client)})
+    login(client, 'viewer')
+    viewer_page = client.get('/').get_data(as_text=True)
+    assert 'Playlist ansehen' in viewer_page
+    assert 'id="device-setup"' not in viewer_page
+
+
+def test_studio_it_device_management_has_explicit_delete_consent(env):
+    _, client, _ = env
+    login(client, 'it')
+    page = client.get('/').get_data(as_text=True)
+    assert 'id="device-setup"' in page
+    assert 'Original Anthias' in page
+    assert 'name="ack" value="yes" required' in page
+    assert 'onclick=' not in page
+    route = '/devices/lab/remove'
+    res = client.post(route, data={'csrf': token(client), 'confirm': 'lab'})
+    assert res.status_code == 400
+    assert 'Lab Screen' in client.get('/').get_data(as_text=True)
+    res = client.post(route, data={'csrf': token(client), 'confirm': 'lab', 'ack': 'yes'})
+    assert res.status_code == 302
+    assert 'Lab Screen' not in client.get('/').get_data(as_text=True)
+
+
+def test_studio_empty_inventory_prompts_it_and_not_marketing(env):
+    _, client, _ = env
+    login(client, 'it')
+    with patch('app.web.load', return_value=[]):
+        it_page = client.get('/').get_data(as_text=True)
+    assert 'Noch keine Bildschirme' in it_page
+    assert 'Ersten Bildschirm verbinden' in it_page
+    client.post('/logout', data={'csrf': token(client)})
+    login(client, 'marketing')
+    with patch('app.web.load', return_value=[]):
+        marketing_page = client.get('/').get_data(as_text=True)
+    assert 'Noch keine Bildschirme' in marketing_page
+    assert 'Ersten Bildschirm verbinden' not in marketing_page

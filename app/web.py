@@ -144,8 +144,8 @@ def create_app(config=None):
     @app.post('/devices/<device_id>/remove')
     @login_required('it')
     def remove_device(device_id):
-        if request.form.get('confirm') != device_id:
-            abort(400, 'Geräte-ID bestätigen')
+        if request.form.get('confirm') != device_id or request.form.get('ack') != 'yes':
+            abort(400, 'Entfernen des Geräts ausdrücklich bestätigen')
         devices = load(app.config['DEVICES_FILE'])
         if not any(d['id'] == device_id for d in devices):
             abort(404)

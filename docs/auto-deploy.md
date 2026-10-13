@@ -1,5 +1,8 @@
 # Automatisches Deployment auf der Hub-VM
 
+> **Nur Test-/Staging-VM!** Dieses Dokument beschreibt den **bestehenden**, absichtlich auf `:main` folgenden Updater. Die aktuelle VM ist ein Wegwerf-Testsystem. Für die später frisch installierte Produktiv-VM den Timer **nicht installieren/aktivieren**. `scripts/auto_deploy.py` erzwingt `:main` unabhängig von `ANTHIAS_HUB_IMAGE` in `.env`; ein bloßer Image-Pin genügt deshalb **nicht**. Produktiv stattdessen die [reproduzierbare Installation mit manuell freigegebenem SHA-Image](reproducible-production.md) verwenden. Automatische freigegebene Releases sind noch nicht implementiert.
+
+
 GitHub Actions testet und veröffentlicht nach erfolgreichem Push auf `main` das öffentliche `ghcr.io/ffworker/anthias-hub:main`. Die VM fragt die Registry alle 15 Minuten **ausgehend** ab. GitHub erhält keinen SSH-Zugang ins Servernetz. Der erste Wechsel vom lokal gebauten `anthias-hub:pilot` auf das veröffentlichte Image erfolgt bewusst manuell.
 
 ## Einmalig auf der VM
@@ -43,5 +46,7 @@ sudo systemctl disable --now anthias-hub-cd.timer  # Auto-Deploy stoppen
 ```
 
 Die Zeit zwischen erfolgreichem GitHub-Build und VM-Update beträgt gewöhnlich bis zu 17 Minuten. Docker-Zugriff, Containerstart und Pi-Zugriff müssen separat überwacht werden; ein grünes `healthz` ist keine Inhaltsfreigabe. Wer Änderungen nur nach Freigabe ausrollen möchte, sollte den Timer deaktivieren und die CD-Compose-Datei manuell starten. Bei Ausfall der Registry bleibt das bereits laufende Image unverändert. Backup und Restore der Hub-/Pi-Daten bleiben unabhängig vom Image-Rollback.
+
+**Produktiv-Migration:** Bei einer bestehenden Installation den Timer zuerst mit `sudo systemctl disable --now anthias-hub-cd.timer` anhalten, dann die Pin-/Backup-Anleitung in [reproducible-production.md](reproducible-production.md) befolgen. Keine automatische `:main`-Aktualisierung mit einem Release-Pin vermischen.
 
 **Wichtig:** Diese Dateien im Git-Repo richten keinen Timer auf deiner VM ein. Ohne VM-Zugang konnten wir die tatsächliche Migration, Rechte, Docker-Compose-Version und Live-Health nicht prüfen.
