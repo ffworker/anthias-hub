@@ -1,0 +1,14 @@
+/* Accessible full-size media preview; respects all three Hub themes. */
+.media-preview-trigger{display:grid;place-items:center;appearance:none;padding:0;cursor:zoom-in;line-height:1;box-shadow:none}
+.media-preview-trigger:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.media-lightbox{border:1px solid var(--border);border-radius:18px;max-width:min(1000px,94vw);max-height:92vh;width:min(900px,94vw);padding:0;color:var(--ink);background:var(--surface);box-shadow:0 20px 75px #0009}
+.media-lightbox::backdrop{background:rgba(3,8,16,.85)}
+.media-lightbox-panel{display:flex;flex-direction:column;max-height:90vh;min-width:0}
+.media-lightbox-head{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 21px;border-bottom:1px solid var(--border)}
+.media-lightbox-head h2{font-size:19px;margin:0;overflow-wrap:anywhere}
+.media-lightbox-close{font-size:18px;min-height:36px;min-width:36px;border:1px solid var(--border);border-radius:9px;background:var(--raised);color:var(--ink);padding:5px;cursor:pointer}
+.media-lightbox-stage{display:grid;place-items:center;min-height:160px;overflow:auto;background:#080d16}
+.media-lightbox-media{display:block;max-width:100%;max-height:min(70vh,700px);width:auto;height:auto;object-fit:contain}
+.media-lightbox-stage video{width:100%;max-height:min(70vh,700px)}
+.media-lightbox-note{font-size:12px;color:var(--muted);padding:11px 21px;margin:0}
+@media(max-width:600px){.media-lightbox-head{padding:12px 14px}.media-lightbox-head h2{font-size:16px}.media-lightbox-note{padding:9px 14px}}
