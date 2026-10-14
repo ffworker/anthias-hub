@@ -36,7 +36,7 @@ def create_app(config=None):
         SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax',
         SESSION_COOKIE_SECURE=os.environ.get('COOKIE_SECURE', '1') == '1',
         PERMANENT_SESSION_LIFETIME=60 * 60 * 8,
-        MAX_CONTENT_LENGTH=50 * 1024 * 1024,
+        MAX_CONTENT_LENGTH=51 * 1024 * 1024,  # 50 MiB file + multipart form overhead
     )
     if config:
         app.config.update(config)
@@ -158,6 +158,7 @@ def create_app(config=None):
     @app.post('/library/<template_id>/media')
     @login_required('marketing')
     def library_add_media(template_id):
+        destination = url_for('library_detail', template_id=template_id)
         try:
             file = request.files.get('media')
             if file is None or not file.filename:
@@ -165,9 +166,14 @@ def create_app(config=None):
             library().add_media(template_id, request.form.get('name') or file.filename,
                                 file.stream, file.filename, request.form.get('duration'))
             audit('library.add-media', asset_id=template_id)
+            if request.accept_mimetypes.best == 'application/json':
+                return jsonify(ok=True, message='Medium in der Bibliothek gespeichert.', redirect=destination)
+            flash('Medium in der Bibliothek gespeichert.', 'success')
         except LibraryError as exc:
+            if request.accept_mimetypes.best == 'application/json':
+                return jsonify(ok=False, error=str(exc)), 422
             flash(str(exc), 'error')
-        return redirect(url_for('library_detail', template_id=template_id))
+        return redirect(destination)
 
     @app.post('/library/<template_id>/move/<item_id>')
     @login_required('marketing')
@@ -461,6 +467,8 @@ def create_app(config=None):
     @login_required('marketing')
     def upload(device_id):
         _, api = player_or_404(device_id)
+        destination = url_for('playlist', device_id=device_id)
+        transferred = False
         try:
             file = request.files.get('media')
             if file is None or not file.filename:
@@ -469,6 +477,11 @@ def create_app(config=None):
             ext = Path(filename).suffix.lower()
             if ext not in MEDIA:
                 raise ValueError('Erlaubt: PNG, JPG, WebP, MP4')
+            file.stream.seek(0, os.SEEK_END)
+            size = file.stream.tell()
+            file.stream.seek(0)
+            if size > 50 * 1024 * 1024:
+                raise ValueError('Datei zu groß (max. 50 MB)')
             head = file.stream.read(16)
             file.stream.seek(0)
             signatures = {
@@ -484,13 +497,23 @@ def create_app(config=None):
             if len(title) > 100:
                 raise ValueError('Titel zu lang')
             length = 0 if ext == '.mp4' else validate_duration(request.form.get('duration', 15))
+            # Once the transfer starts, an error may leave a file on Anthias.
+            # Never promise that retrying is safe without reviewing the playlist.
+            transferred = True
             result = api.upload(file.stream, filename, MEDIA[ext])
             api.create(title, result['uri'], length, mimetype=MEDIA[ext], ext=result.get('ext'))
             audit('asset.upload', device_id)
-            flash('Datei zur Playlist hinzugefügt.', 'success')
+            if request.accept_mimetypes.best == 'application/json':
+                return jsonify(ok=True, message='Medium zur Playlist hinzugefügt.', redirect=destination)
+            flash('Medium zur Playlist hinzugefügt.', 'success')
         except (ValueError, PlayerError) as exc:
-            flash(str(exc), 'error')
-        return redirect(url_for('playlist', device_id=device_id))
+            message = str(exc)
+            if transferred:
+                message += ' Übertragung möglicherweise teilweise erfolgt. Playlist am Player prüfen, nicht blind erneut hochladen.'
+            if request.accept_mimetypes.best == 'application/json':
+                return jsonify(ok=False, error=message), 422
+            flash(message, 'error')
+        return redirect(destination)
 
     @app.post('/devices/<device_id>/assets/<asset_id>/edit')
     @login_required('marketing')
@@ -599,6 +622,8 @@ def create_app(config=None):
 
     @app.errorhandler(RequestEntityTooLarge)
     def too_large(exc):
+        if request.accept_mimetypes.best == 'application/json':
+            return jsonify(ok=False, error='Datei zu groß (max. 50 MB)'), 413
         return ('Datei zu groß (max. 50 MB)', 413)
 
     @app.errorhandler(PlayerError)
