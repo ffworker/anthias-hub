@@ -245,7 +245,8 @@ def test_non_json_fallback_redirects_and_reports_failure(env):
 def test_roles_csrf_and_missing_destination_protect_bulk_routes(env):
     _, client, lib, template = env
     route = f"/library/{template['id']}/bulk-media"
-    assert client.post(route, headers=JSON).status_code == 302
+    # CSRF is enforced before login checks for all POST requests in this app.
+    assert client.post(route, headers=JSON).status_code == 400
     for role in ('viewer', 'it'):
         login(client, role)
         response = submit_zip(client, route, archive([('picture.png', PNG)]))
