@@ -89,7 +89,9 @@ def test_appearance_controls_are_local_and_keep_playlist_forms(env):
     assert page.count('data-theme-choice=') == 3
     assert 'data-add-mode="website"' in page and 'data-add-mode="media"' in page
     assert 'name="url"' in page and 'name="media"' in page
-    assert 'class="asset-edit"' in page and 'class="quick-toggle-form"' in page
+    assert 'asset-inline-edit' in page and 'class="quick-toggle-form"' in page
+    assert 'type="range" name="duration"' in page
+    assert 'Inhalt bearbeiten' not in page
     assert 'name="direction" value="up"' in page
     assert 'icons.svg#web' in page and 'icons.svg#image' in page
     assert "'unsafe-inline'" not in client.get('/devices/lab').headers['Content-Security-Policy']
@@ -678,3 +680,140 @@ def test_single_library_url_refuses_exact_duplicate(env):
     assert result.status_code == 200
     assert b'bereits in der Playlist' in result.data
     assert not FakeAnthias.changes
+
+
+def test_library_landing_clearly_separates_media_zip_from_backup(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    lib = Library(app.config['LIBRARY_DIR'])
+    sample = lib.create('Bistro Medien')
+    login(client, 'marketing')
+    page = client.get('/library').data.decode('utf-8')
+    assert 'Bilder, Videos oder normale ZIP importieren' in page
+    assert 'manifest.json' in page
+    assert 'Anthias-Hub-Vorlagenbackup wiederherstellen' in page
+    assert 'name="template_id"' in page
+    assert 'data-bulk-upload' in page
+    assert '/library/media-import' in page
+    assert '/library/import' in page
+    assert page.index('Bilder, Videos oder normale ZIP importieren') < page.index('Anthias-Hub-Vorlagenbackup wiederherstellen')
+    assert sample['name'] in page
+
+
+def test_plain_zip_sent_to_backup_import_displays_helpful_error(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    lib = Library(app.config['LIBRARY_DIR'])
+    lib.create('Vorhanden')
+    login(client, 'marketing')
+    import zipfile
+    zipbytes = io.BytesIO()
+    with zipfile.ZipFile(zipbytes, 'w') as writer:
+        writer.writestr('medien/bild.png', b'\x89PNG\\r\\n\x1a\\n' + b'sample')
+    result = client.post('/library/import', data={
+        'csrf': token(client), 'archive': (io.BytesIO(zipbytes.getvalue()), 'bilder.zip'),
+    }, content_type='multipart/form-data', follow_redirects=True)
+    assert result.status_code == 200
+    assert b'manifest.json' in result.data
+    assert len(lib.list()) == 1
+
+
+def test_whole_template_can_append_to_nonempty_playlist(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    lib = Library(app.config['LIBRARY_DIR'])
+    template = lib.create('Fruehstueck')
+    lib.add_url(template['id'], 'Welcome', 'https://example.org', 30)  # already exists
+    lib.add_url(template['id'], 'Aktion', 'https://example.org/promo', 30)
+    lib.add_media(template['id'], 'Bild', io.BytesIO(b'\x89PNG\\r\\n\x1a\\n' + b'test'), 'bild.png', 20)
+    login(client, 'marketing')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    assert 'Gesamte Vorlage hinzufügen' in page
+    assert 'Inhalt hinzufügen' in page
+    assert 'Vorlage auswählen' in page or 'Vorlage' in page
+    result = client.post('/devices/lab/append-library', data={
+        'csrf': token(client), 'confirm': 'append', 'ack': 'yes',
+        'template_id': template['id'],
+    }, follow_redirects=True)
+    assert result.status_code == 200
+    assert [event[0] for event in FakeAnthias.changes] == ['create', 'upload', 'create']
+    assert FakeAnthias.changes[0][1] == ('Aktion', 'https://example.org/promo', 30)
+    assert b'2 Inhalte hinzugef' in result.data
+    assert b'1 bereits vorhandene Webseiten' in result.data
+
+
+def test_whole_template_preflights_all_files_and_preserves_player(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    lib = Library(app.config['LIBRARY_DIR'])
+    template = lib.create('Corrupt')
+    lib.add_url(template['id'], 'Aktion', 'https://example.org/promo', 30)
+    lib.add_media(template['id'], 'Bild', io.BytesIO(b'\x89PNG\\r\\n\x1a\\n' + b'test'), 'bild.png', 20)
+    media = lib.get(template['id'])['items'][1]
+    lib.media_path(template['id'], media).write_bytes(b'broken content')
+    login(client, 'marketing')
+    result = client.post('/devices/lab/append-library', data={
+        'csrf': token(client), 'confirm': 'append', 'ack': 'yes',
+        'template_id': template['id'],
+    }, follow_redirects=True)
+    assert result.status_code == 200
+    assert not FakeAnthias.changes
+    assert b'besch\xc3\xa4digt' in result.data
+
+
+def test_whole_template_marketing_only_and_requires_ack(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    template = Library(app.config['LIBRARY_DIR']).create('Bistro')
+    login(client, 'viewer')
+    assert client.post('/devices/lab/append-library', data={
+        'csrf': token(client), 'confirm': 'append', 'ack': 'yes',
+        'template_id': template['id'],
+    }).status_code == 403
+    login(client, 'marketing')
+    assert client.post('/devices/lab/append-library', data={
+        'csrf': token(client), 'confirm': 'append',
+        'template_id': template['id'],
+    }).status_code == 400
+    assert not FakeAnthias.changes
+
+
+def test_whole_template_can_be_sent_from_library_detail(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    lib = Library(app.config['LIBRARY_DIR'])
+    template = lib.create('Bistro')
+    lib.add_url(template['id'], 'Promo', 'https://example.org/promo', 20)
+    login(client, 'marketing')
+    page = client.get('/library/' + template['id']).data.decode('utf-8')
+    assert 'Gesamte Vorlage anhängen' in page
+    assert '/append-to-device' in page
+    assert 'Vorlage als Hub-Backup exportieren' in page
+    result = client.post('/library/' + template['id'] + '/append-to-device', data={
+        'csrf': token(client), 'confirm': 'append', 'ack': 'yes', 'device': 'lab',
+    })
+    assert result.status_code == 302
+    assert [event[0] for event in FakeAnthias.changes] == ['create']
+
+
+def test_inline_playlist_fields_preserve_pause_state_without_js(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    assert 'asset-inline-edit' in page
+    assert 'type="range" name="duration"' in page
+    assert 'value="on"' in page
+    assert 'Inhalt bearbeiten' not in page
+    resp = client.post('/devices/lab/assets/one123/edit', data={
+        'csrf': token(client), 'name': 'Renamed', 'duration': '41', 'enabled': 'on',
+    }, headers={'Accept': 'application/json'})
+    assert resp.status_code == 200
+    assert resp.json['asset']['is_enabled'] is True
+    assert resp.json['asset']['duration'] == 41
+    assert FakeAnthias.changes[-1][1][1]['is_enabled'] is True
