@@ -527,3 +527,154 @@ def test_studio_empty_inventory_prompts_it_and_not_marketing(env):
         marketing_page = client.get('/').get_data(as_text=True)
     assert 'Noch keine Bildschirme' in marketing_page
     assert 'Ersten Bildschirm verbinden' not in marketing_page
+
+
+def test_marketing_upload_json_reports_progress_ready_and_validates(env):
+    app, client, _ = env
+    login(client, 'marketing')
+    headers = {'Accept': 'application/json'}
+    url = '/devices/lab/upload'
+    bad = client.post(url, data={
+        'csrf': token(client), 'media': (io.BytesIO(b'not a PNG'), 'wrong.png'),
+        'duration': '15'}, content_type='multipart/form-data', headers=headers)
+    assert bad.status_code == 422
+    assert bad.json['ok'] is False and 'Dateiformat' in bad.json['error']
+    assert not FakeAnthias.changes
+    good = client.post(url, data={
+        'csrf': token(client),
+        'media': (io.BytesIO(b'\x89PNG\r\n\x1a\n' + b'pixels'), 'correct.png'),
+        'duration': '15'}, content_type='multipart/form-data', headers=headers)
+    assert good.status_code == 200
+    assert good.json['ok'] is True
+    assert good.json['redirect'] == '/devices/lab'
+    assert [event[0] for event in FakeAnthias.changes] == ['upload', 'create']
+    page = client.get('/devices/lab')
+    assert b'data-upload-form="player"' in page.data
+    assert b'upload-feedback.js' in page.data
+    assert b'upload-progress' in page.data
+
+
+def test_library_upload_json_returns_clear_errors_and_success(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    template = Library(app.config['LIBRARY_DIR']).create('Reusable')
+    login(client, 'marketing')
+    endpoint = f"/library/{template['id']}/media"
+    headers = {'Accept': 'application/json'}
+    bad = client.post(endpoint, data={
+        'csrf': token(client), 'media': (io.BytesIO(b'invalid'), 'bad.png'),
+        'duration': '15'}, content_type='multipart/form-data', headers=headers)
+    assert bad.status_code == 422 and bad.json['ok'] is False
+    good = client.post(endpoint, data={
+        'csrf': token(client),
+        'media': (io.BytesIO(b'\x89PNG\r\n\x1a\n' + b'pixels'), 'sample.png'),
+        'duration': '15'}, content_type='multipart/form-data', headers=headers)
+    assert good.status_code == 200 and good.json['ok'] is True
+    assert good.json['redirect'] == f"/library/{template['id']}"
+    assert len(Library(app.config['LIBRARY_DIR']).get(template['id'])['items']) == 1
+    page = client.get(f"/library/{template['id']}")
+    assert b'data-upload-form="library"' in page.data
+
+
+def test_upload_too_large_supports_json_errors(env):
+    app, client, _ = env
+    login(client, 'marketing')
+    app.config['MAX_CONTENT_LENGTH'] = 250
+    result = client.post('/devices/lab/upload', data={
+        'csrf': token(client), 'media': (io.BytesIO(b'x' * 300), 'x.png')},
+        content_type='multipart/form-data', headers={'Accept': 'application/json'})
+    assert result.status_code == 413
+    assert result.json['ok'] is False
+    assert 'zu groß' in result.json['error']
+    assert not FakeAnthias.changes
+
+
+def test_single_library_item_appends_to_existing_player_without_reset(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    lib = Library(app.config['LIBRARY_DIR'])
+    template = lib.create('Office')
+    lib.add_url(template['id'], 'New Promo', 'https://example.org/promo', 25)
+    saved = lib.get(template['id'])['items'][0]
+    login(client, 'marketing')
+    page = client.get('/devices/lab')
+    assert b'data-add-mode="library"' in page.data
+    assert (template['id'] + ':' + saved['id']).encode() in page.data
+    before = list(FakeAnthias.assets_data)
+    result = client.post('/devices/lab/add-library-item', data={
+        'csrf': token(client), 'source': template['id'] + ':' + saved['id'],
+        'confirm': 'add'}, follow_redirects=True)
+    assert result.status_code == 200
+    assert [event[0] for event in FakeAnthias.changes] == ['create']
+    assert FakeAnthias.changes[0][1] == ('New Promo', 'https://example.org/promo', 25)
+    assert FakeAnthias.assets_data == before
+    assert b'Bestehende Playlist bleibt erhalten' in result.data
+
+
+def test_single_library_item_from_detail_uploads_only_selected_media(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    lib = Library(app.config['LIBRARY_DIR'])
+    template = lib.create('Reusable')
+    lib.add_media(template['id'], 'Brand', io.BytesIO(b'\x89PNG\r\n\x1a\n' + b'image'), 'brand.png', 15)
+    lib.add_url(template['id'], 'Website', 'https://example.org', 15)
+    items = lib.get(template['id'])['items']
+    login(client, 'marketing')
+    page = client.get(f"/library/{template['id']}")
+    assert b'Zu Bildschirm' in page.data
+    uri = f"/library/{template['id']}/items/{items[0]['id']}/add-to-device"
+    response = client.post(uri, data={
+        'csrf': token(client), 'device': 'lab', 'confirm': 'add'})
+    assert response.status_code == 302
+    assert [event[0] for event in FakeAnthias.changes] == ['upload', 'create']
+    assert len([event for event in FakeAnthias.changes if event[0] == 'create']) == 1
+
+
+def test_library_item_add_rejects_invalid_confirmation_role_and_corrupt_file(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    lib = Library(app.config['LIBRARY_DIR'])
+    template = lib.create('Photos')
+    lib.add_media(template['id'], 'Photo', io.BytesIO(b'\x89PNG\r\n\x1a\n' + b'pixels'), 'photo.png', 15)
+    item = lib.get(template['id'])['items'][0]
+    source = template['id'] + ':' + item['id']
+    login(client, 'viewer')
+    assert client.post('/devices/lab/add-library-item', data={
+        'csrf': token(client), 'source': source, 'confirm': 'add'}).status_code == 403
+    login(client, 'it')
+    assert client.post('/devices/lab/add-library-item', data={
+        'csrf': token(client), 'source': source, 'confirm': 'add'}).status_code == 403
+    login(client, 'marketing')
+    assert client.post('/devices/lab/add-library-item', data={
+        'csrf': token(client), 'source': source, 'confirm': 'wrong'}).status_code == 400
+    assert client.post('/devices/lab/add-library-item', data={
+        'csrf': token(client), 'source': '../bad', 'confirm': 'add'}).status_code == 400
+    lib.media_path(template['id'], item).write_bytes(b'changed')
+    result = client.post('/devices/lab/add-library-item', data={
+        'csrf': token(client), 'source': source, 'confirm': 'add'},
+        follow_redirects=True)
+    assert result.status_code == 200
+    assert b'besch\xc3\xa4digt' in result.data
+    assert not FakeAnthias.changes
+
+
+def test_single_library_url_refuses_exact_duplicate(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    lib = Library(app.config['LIBRARY_DIR'])
+    template = lib.create('Duplicate')
+    lib.add_url(template['id'], 'Welcome', 'https://example.org', 20)
+    item = lib.get(template['id'])['items'][0]
+    login(client, 'marketing')
+    result = client.post('/devices/lab/add-library-item', data={
+        'csrf': token(client),
+        'source': template['id'] + ':' + item['id'],
+        'confirm': 'add'}, follow_redirects=True)
+    assert result.status_code == 200
+    assert b'bereits in der Playlist' in result.data
+    assert not FakeAnthias.changes
