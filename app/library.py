@@ -4,6 +4,7 @@ import io
 import json
 import os
 import re
+import shutil
 import tempfile
 import uuid
 import zipfile
@@ -157,6 +158,26 @@ class Library:
             if len(collection['items']) == previous:
                 raise LibraryError('Inhalt nicht gefunden')
             self._save(collection)
+        return collection
+
+    def delete_template(self, ident, confirmed_name):
+        """Remove one local template and its local media, never a Pi asset.
+
+        An exact typed name and canonical UUID-only directory guard prevent
+        deleting the wrong collection or an unintended filesystem location.
+        """
+        with _lock:
+            collection = self.get(ident)
+            if confirmed_name != collection['name']:
+                raise LibraryError('Vorlagenname stimmt nicht überein. Nichts gelöscht.')
+            directory = self._directory(ident)
+            if (directory.is_symlink() or not directory.is_dir()
+                    or directory.parent.resolve() != self.root.resolve()):
+                raise LibraryError('Vorlagenverzeichnis ist ungültig. Nichts gelöscht.')
+            try:
+                shutil.rmtree(directory)
+            except OSError as exc:
+                raise LibraryError('Vorlage konnte nicht vollständig gelöscht werden. Bibliothek prüfen.') from exc
         return collection
 
     def export(self, ident):
