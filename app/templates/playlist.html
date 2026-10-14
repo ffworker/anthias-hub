@@ -163,7 +163,7 @@
           <div class="card empty-state">
             <div class="empty-symbol" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg></div>
             <h3>{{ 'Playlist nicht verfügbar' if error else 'Ein Bildschirm voller Möglichkeiten!' }}</h3>
-            <p class="muted">{{ 'Die Verbindung prüfen und neu laden.' if error else 'Füge deine erste Webseite, ein Bild oder ein Video hinzu.' }}</p>
+            <p class="muted">{{ 'Die Verbindung prüfen und neu laden.' if error else 'Füge dein erstes Bild oder Video hinzu – oder wähle etwas aus der Bibliothek.' }}</p>
             {% if logged_user.role == 'marketing' and not error %}<a href="#add-content" class="button primary">Ersten Inhalt hinzufügen →</a>{% endif %}
           </div>
         {% endfor %}
@@ -180,13 +180,13 @@
         </div>
 
         <div class="add-type-switch" aria-label="Inhaltsart wählen">
-          <button type="button" class="add-mode selected" data-add-mode="website" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#web"></use></svg> Webseite</button>
-          <button type="button" class="add-mode" data-add-mode="media" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#image"></use></svg> Bild / Video</button>
+          <button type="button" class="add-mode selected" data-add-mode="media" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#image"></use></svg> Bild / Video</button>
           <button type="button" class="add-mode" data-add-mode="library" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Bibliothek</button>
+          <button type="button" class="add-mode add-mode-secondary" data-add-mode="website" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#web"></use></svg> Optional: Webseite</button>
         </div>
 
         <div class="composer-pane" data-add-pane="website">
-          <p class="composer-explainer">Eine Seite, einen Newsfeed oder ein Dashboard anzeigen.</p>
+          <p class="composer-explainer">Optional: einen Weblink einbinden, etwa deine RSS2Slideshow-Anzeige oder ein Dashboard. Bilder und Videos findest du im ersten Tab.</p>
           <form method="post" action="{{ url_for('add_url', device_id=device.id) }}">
             <input type="hidden" name="csrf" value="{{ csrf() }}">
             <label>Titel<input name="name" required maxlength="100" placeholder="z. B. Bistro News"></label>
