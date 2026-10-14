@@ -28,6 +28,13 @@ jobs:
       - name: Check bootstrap shell syntax
         run: bash -n scripts/bootstrap-test-vm.sh scripts/setup-pilot.sh
 
+      - name: Validate Marketing UI JavaScript syntax
+        run: |
+          node --check app/static/upload-feedback.js
+          node --check app/static/media-lightbox.js
+          node --check app/static/media-preview.js
+          node --check app/static/playlist.js
+
       - name: Run tests
         run: python -m pytest -q
 
