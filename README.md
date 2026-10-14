@@ -41,6 +41,10 @@ The hub connects to **Anthias REST API v2** on each registered player. Media and
 - **Co-located RSS2Slideshow:** on the planned VMware vSphere VM, RSS remains a separate local-build Compose app with CI checks and deliberately **manual** updates after approval; Hub's timer never updates RSS. Debian 13 minimal (amd64), 4 vCPU, 8 GB RAM and 80 GB SSD are initial sizing with headroom, not measured consumption. See [the new-VM runbook](docs/reproducible-production.md) and the [RSS manual-update guide](https://github.com/ffworker/rss2slideshow/blob/main/docs/manual-vm-deploy.md) (private repository).
 - **Image names:** `:main` tracks the integration branch today. Future `:latest` could mean *latest built* (not production-safe), `:stable` *latest approved release* (moving pointer), and `:vX.Y.Z` *named, approved version*. For a truly reproducible VM pin `:sha-<FULL_SHA>` today, ideally an OCI `@sha256:...` digest. `:stable`, `:latest` and `:vX.Y.Z` **are not currently published by CI**; a Git tag alone does not create those image tags. No separate `live` Git branch is needed.
 
+## Shared GH-PiHub test VM (both applications)
+
+Already cloned **Anthias Hub + RSS2Slideshow** into sibling folders? Use the safe [two-app test-VM bootstrap](docs/gh-pihub-test-vm.md): `bash scripts/bootstrap-test-vm.sh doctor` to inspect prerequisites, then `init` only if needed, `deploy` explicitly to build/start both apps, and `status` to check them. Existing credentials, feeds and runtime state are not overwritten. The RSS repo remains private and independently deployed; this is **not** the approved production workflow.
+
 ## Quick deployment (Linux/Docker; internal test only)
 
 Requirements: Docker Engine + Compose plugin, Git, OpenSSL, curl, route from the host to the authorized Pi network.
