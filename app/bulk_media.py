@@ -50,7 +50,7 @@ def _safe_zip_members(archive):
         if (not path or len(path) > 260 or path.startswith('/')
                 or '\\' in path or ':' in path
                 or any(ord(ch) < 32 for ch in path)
-                or any(part in ('', '.', '..') for part in path.split('/') if part)
+                or any(part in ('', '.', '..') for part in path.rstrip('/').split('/'))
                 or not parts or any(p == '..' for p in parts)):
             raise BatchError('ZIP enthält unsichere Pfade. Keine Dateien wurden importiert.')
         folded = path.rstrip('/').casefold()
