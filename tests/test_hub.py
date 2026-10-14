@@ -711,7 +711,7 @@ def test_plain_zip_sent_to_backup_import_displays_helpful_error(env):
     import zipfile
     zipbytes = io.BytesIO()
     with zipfile.ZipFile(zipbytes, 'w') as writer:
-        writer.writestr('medien/bild.png', b'\x89PNG\\r\\n\x1a\\n' + b'sample')
+        writer.writestr('medien/bild.png', b'\x89PNG\r\n\x1a\n' + b'sample')
     result = client.post('/library/import', data={
         'csrf': token(client), 'archive': (io.BytesIO(zipbytes.getvalue()), 'bilder.zip'),
     }, content_type='multipart/form-data', follow_redirects=True)
@@ -728,7 +728,7 @@ def test_whole_template_can_append_to_nonempty_playlist(env):
     template = lib.create('Fruehstueck')
     lib.add_url(template['id'], 'Welcome', 'https://example.org', 30)  # already exists
     lib.add_url(template['id'], 'Aktion', 'https://example.org/promo', 30)
-    lib.add_media(template['id'], 'Bild', io.BytesIO(b'\x89PNG\\r\\n\x1a\\n' + b'test'), 'bild.png', 20)
+    lib.add_media(template['id'], 'Bild', io.BytesIO(b'\x89PNG\r\n\x1a\n' + b'test'), 'bild.png', 20)
     login(client, 'marketing')
     page = client.get('/devices/lab').data.decode('utf-8')
     assert 'Gesamte Vorlage hinzufügen' in page
@@ -752,7 +752,7 @@ def test_whole_template_preflights_all_files_and_preserves_player(env):
     lib = Library(app.config['LIBRARY_DIR'])
     template = lib.create('Corrupt')
     lib.add_url(template['id'], 'Aktion', 'https://example.org/promo', 30)
-    lib.add_media(template['id'], 'Bild', io.BytesIO(b'\x89PNG\\r\\n\x1a\\n' + b'test'), 'bild.png', 20)
+    lib.add_media(template['id'], 'Bild', io.BytesIO(b'\x89PNG\r\n\x1a\n' + b'test'), 'bild.png', 20)
     media = lib.get(template['id'])['items'][1]
     lib.media_path(template['id'], media).write_bytes(b'broken content')
     login(client, 'marketing')
