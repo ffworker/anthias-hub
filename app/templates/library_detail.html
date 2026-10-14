@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}{{ template.name }} · Bibliothek · Anthias Hub{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-lightbox.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}"><script defer src="{{ url_for('static', filename='media-preview.js') }}"></script><script defer src="{{ url_for('static', filename='media-lightbox.js') }}"></script><script defer src="{{ url_for('static', filename='upload-feedback.js') }}"></script>{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-lightbox.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='bulk-upload.css') }}"><script defer src="{{ url_for('static', filename='media-preview.js') }}"></script><script defer src="{{ url_for('static', filename='media-lightbox.js') }}"></script><script defer src="{{ url_for('static', filename='upload-feedback.js') }}"></script><script defer src="{{ url_for('static', filename='bulk-upload.js') }}"></script>{% endblock %}
 {% block content %}
 <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('library_index') }}">Bibliothek</a><span aria-hidden="true">›</span><span>{{ template.name }}</span></nav>
 <section class="library-intro"><p class="eyebrow">LOKAL IM HUB GESPEICHERT</p><h1>{{ template.name }}</h1><p class="muted">{{ template['items']|length }} Inhalte. Auf einem neuen, leeren Player in dieser Reihenfolge verwendbar.</p><a class="button" href="{{ url_for('library_export', template_id=template.id) }}">Paket als ZIP exportieren ↓</a></section>
@@ -44,6 +44,27 @@
 {% if logged_user.role == 'marketing' %}<aside class="library-actions">
 <section class="card library-panel"><h2>Webseite hinzufügen</h2><form method="post" action="{{ url_for('library_add_url', template_id=template.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><label>Titel<input name="name" required maxlength="100"></label><label>Webadresse<input name="url" type="url" required placeholder="https://..."></label><label>Dauer in Sekunden<input name="duration" type="number" min="5" max="3600" value="30" required></label><button class="primary">Webseite speichern</button></form></section>
 <section class="card library-panel"><h2>Bild oder Video hinzufügen</h2><p class="muted">PNG, JPG, WebP oder MP4; höchstens 50 MB je Datei.</p><form method="post" data-upload-form="library" action="{{ url_for('library_add_media', template_id=template.id) }}" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf() }}"><label>Datei<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label><label>Titel (optional)<input name="name" maxlength="100"></label><label>Bilddauer in Sekunden (Video automatisch)<input name="duration" type="number" min="5" max="3600" value="15"></label><p class="upload-selected" role="status" aria-live="polite"></p><button class="primary" type="submit">Medium speichern</button><div class="upload-feedback" hidden role="status" aria-live="polite"><div class="upload-progress" aria-hidden="true"><span data-upload-bar></span></div><small data-upload-text></small></div></form></section>
+<section class="card library-panel">
+<div class="bulk-media-panel">
+  <h2>Medien-Sammelimport</h2>
+  <p class="muted">Normale ZIP mit Bildern und Videos oder mehrere Dateien auswählen. Alle gültigen Medien landen in dieser Bibliotheksvorlage. Die Playlist auf dem Player wird dabei nicht geändert.</p>
+  <form class="bulk-media-form" data-bulk-upload method="post" enctype="multipart/form-data" action="{{ url_for('library_bulk_media', template_id=template.id) }}">
+  <input type="hidden" name="csrf" value="{{ csrf() }}">
+  <label>Dateien oder ZIP auswählen
+    <input type="file" name="media" accept=".zip,.png,.jpg,.jpeg,.webp,.mp4" multiple required>
+  </label>
+  <p class="muted">1 normale ZIP (allein) oder bis zu 20 Medien; maximal 50 MB Upload insgesamt. ZIP: max. 150 MB entpackt, max. 50 MB pro Datei. Unterordner sind erlaubt. Videodauer automatisch.</p>
+  <label>Bilddauer (Sekunden)<input type="number" name="duration" min="5" max="3600" value="15" required></label>
+  <p class="bulk-selected" data-bulk-selected role="status" aria-live="polite"></p>
+  <button type="submit" class="primary">Medien importieren →</button>
+  <div class="bulk-progress" data-bulk-progress hidden role="status" aria-live="polite">
+    <div class="upload-progress" aria-hidden="true"><span data-bulk-progress-bar></span></div>
+    <small data-bulk-progress-text></small>
+  </div>
+  <div class="bulk-report" data-bulk-report hidden role="region" aria-label="Ergebnis des Medienimports" aria-live="polite"></div>
+</form>
+</div>
+</section>
 <section class="card library-panel library-apply"><h2>Auf leeren Player übertragen</h2><p class="muted">Bestehende Playlists bleiben unangetastet. Falls die Übertragung abbricht, Playlist prüfen und nicht blind erneut starten.</p><form method="post" action="{{ url_for('apply_library_from_template', template_id=template.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="template_id" value="{{ template.id }}"><label>Bildschirm<select name="device" required {% if not devices %}disabled{% endif %}>{% for device in devices %}<option value="{{ device.id }}">{{ device.name }} · {{ device.location or 'Ohne Standort' }}</option>{% endfor %}</select></label><label class="library-confirm"><input type="checkbox" name="confirm" value="yes" required> Ich habe geprüft, dass die Ziel-Playlist leer ist.</label><button class="primary" {% if not devices or not template['items'] %}disabled{% endif %}>Vorlage übertragen</button></form></section>
 </aside>{% endif %}
 </div>
