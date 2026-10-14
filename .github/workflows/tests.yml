@@ -39,7 +39,7 @@ jobs:
           node --check app/static/template-delete.js
 
       - name: Simulate playlist mouse, touch, keyboard and Save behavior
-        run: node --test tests/playlist-ui.test.cjs
+        run: node --test tests/playlist-ui.test.cjs tests/playlist-studio-ui.test.cjs
 
       - name: Run tests
         run: python -m pytest -q
