@@ -92,7 +92,7 @@ def test_appearance_controls_are_local_and_keep_playlist_forms(env):
     assert 'asset-inline-edit' in page and 'class="quick-toggle-form"' in page
     assert 'class="duration-range" type="range" min="5" max="120"' in page
     assert 'Inhalt bearbeiten' not in page
-    assert 'name="direction" value="up"' in page
+    assert 'name="direction" value="up"' not in page
     assert 'icons.svg#web' in page and 'icons.svg#image' in page
     assert "'unsafe-inline'" not in client.get('/devices/lab').headers['Content-Security-Policy']
 
@@ -362,8 +362,9 @@ def test_playlist_editor_keeps_actions_in_hub_and_prioritizes_queue(env):
     assert page.index('id="playlist-queue"') < page.index('id="add-content"')
     assert 'id="asset-one123"' in page
     assert 'id="asset-two123"' in page
-    assert 'name="direction" value="up"' in page
-    assert 'name="direction" value="down"' in page
+    assert 'class="drag-handle"' in page
+    assert 'name="direction" value="up"' not in page
+    assert 'name="direction" value="down"' not in page
     assert 'name="enabled"' in page
     assert 'type="file"' in page
     assert 'href="http://127.0.0.1:9999"' not in page
@@ -873,17 +874,17 @@ def test_playlist_edit_toolbar_contains_all_controls_in_one_compact_container(en
     page = client.get('/devices/lab').data.decode('utf-8')
     first = page.split('id="asset-one123"', 1)[1].split('</article>', 1)[0]
     toolbar = first.split('<div class="asset-toolbar">', 1)[1]
-    assert 'Reihenfolge' in toolbar
+    assert 'move-controls' not in toolbar
     assert 'asset-inline-edit' in toolbar
     assert 'name="name"' in toolbar
     assert 'class="duration-range" type="range" min="5" max="120"' in toolbar
     assert 'inline-save' in toolbar
     assert 'delete-panel' in toolbar
-    assert toolbar.index('move-controls') < toolbar.index('asset-inline-edit') < toolbar.index('delete-panel')
+    assert toolbar.index('asset-inline-edit') < toolbar.index('delete-panel')
     assert first.count('asset-inline-edit') == 1
     from pathlib import Path
     sheet = (Path(__file__).resolve().parents[1] / 'app' / 'static' / 'playlist.css').read_text()
-    assert 'grid-template-columns:auto minmax(0,1fr) auto' in sheet
+    assert 'grid-template-columns:minmax(0,1fr) auto' in sheet
     assert 'flex:1 0 100%' not in sheet
 
 
@@ -900,11 +901,12 @@ def test_playlist_save_delete_are_grouped_and_save_button_targets_own_edit_form(
         assert toolbar.count(edit_form) == 1
         assert toolbar.count(button_target) == 1
         assert 'class="asset-toolbar-actions"' in toolbar
-        assert 'class="primary inline-save">Speichern</button>' in toolbar
+        assert 'class="primary inline-save" data-save-ready="false">Speichern</button>' in toolbar
         assert '<summary aria-label=' in toolbar
-        assert '>Löschen …</summary>' in toolbar
+        assert '<svg class="delete-icon"' in toolbar
+        assert 'title="Inhalt löschen"' in toolbar
         assert 'class="delete-confirmation"' in toolbar
-        assert toolbar.index('move-controls') < toolbar.index('asset-inline-edit')
+        assert 'move-controls' not in toolbar
         assert toolbar.index('asset-inline-edit') < toolbar.index('asset-toolbar-actions')
         assert toolbar.index(edit_form) < toolbar.index('class="asset-toolbar-actions"')
         assert toolbar.index('class="asset-toolbar-actions"') < toolbar.index(button_target)
@@ -928,7 +930,7 @@ def test_playlist_action_group_alignment_styles_and_script():
     assert '.playlist-workspace .asset-toolbar-actions .inline-save{' in css
     assert '.playlist-workspace .asset-toolbar-actions .delete-panel>summary{' in css
     assert '.asset:has(.asset-toolbar-actions .delete-panel[open])' in css
-    assert 'grid-column:1;grid-row:3' in css  # mobile: actions after fields
+    assert 'grid-column:1;grid-row:2' in css  # mobile: actions after fields
     assert "card.querySelector('.asset-toolbar-actions .inline-save')" in js
     assert "const result = await postForm(form.action, new FormData(form));" in js
 
@@ -978,3 +980,66 @@ def test_duration_js_sync_preserves_long_manually_entered_values():
     assert "number.value = slider.value" in source
     assert "slider.value = String(Math.max(5, Math.min(120, seconds)))" in source
     assert "number.value = String(Math.max(" not in source
+
+
+def test_marketing_playlist_has_one_accessible_drag_grip_per_asset(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    assert 'Tastatur: Griff fokussieren' in page
+    assert 'id="playlist-sort-status"' in page
+    assert 'role="status" aria-live="polite"' in page
+    assert page.count('class="drag-handle"') == 2
+    assert page.count('aria-describedby="queue-help" aria-pressed="false"') == 2
+    assert 'name="direction"' not in page
+    assert 'class="move-controls"' not in page
+    assert 'move-label' not in page
+    assert 'data-reorder-url=' in page
+    assert 'grid-template-columns' not in page  # styling stays in CSS
+
+
+def test_nonmarketing_does_not_get_drag_or_sort_controls(env):
+    _, client, _ = env
+    login(client, 'viewer')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    assert 'class="drag-handle"' not in page
+    assert 'id="playlist-sort-status"' not in page
+    assert 'data-reorder-url=' not in page
+    assert 'name="direction"' not in page
+    login(client, 'it')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    assert 'class="drag-handle"' not in page
+
+
+def test_drag_reorder_contract_has_rollback_and_touch_keyboard_support():
+    static = Path(__file__).resolve().parents[1] / 'app' / 'static'
+    js = (static / 'playlist.js').read_text(encoding='utf-8')
+    css = (static / 'playlist.css').read_text(encoding='utf-8')
+    for required in ("'baseline'", "'ids'", "restoreOrder(before)",
+                     "pointercancel", "setPointerCapture", "ArrowUp", "ArrowDown",
+                     "Escape", "focusout", "aria-pressed", "announceSort"):
+        assert required in js
+    assert 'touch-action:none' in css
+    assert '.asset.is-keyboard-grabbed' in css
+    assert '.asset.drop-before' in css and '.asset.drop-after' in css
+    assert 'move-controls' not in js
+    assert '.playlist-workspace .asset-toolbar .move-controls' not in css
+
+
+def test_save_is_dirty_only_with_javascript_and_still_works_without_it(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    assert 'data-save-ready="false"' in page
+    js = (Path(__file__).resolve().parents[1] / 'app' / 'static' / 'playlist.js').read_text()
+    assert 'form.dataset.savedValues = editValue(form)' in js
+    assert 'button.disabled = !dirty' in js
+    assert 'form.dataset.savedValues = submitted' in js
+    assert 'refreshSave(card)' in js
+    # Without JS, a normal edit still reaches the same authenticated endpoint.
+    result = client.post('/devices/lab/assets/one123/edit', data={
+        'csrf': token(client), 'name': 'Neue Karte',
+        'duration': '24', 'enabled': 'on',
+    }, headers={'Accept': 'application/json'})
+    assert result.status_code == 200
+    assert result.json['asset']['duration'] == 24
