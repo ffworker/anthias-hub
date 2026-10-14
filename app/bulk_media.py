@@ -12,6 +12,7 @@ from pathlib import Path, PurePosixPath
 
 from werkzeug.utils import secure_filename
 
+from .anthias import PlayerError
 from .library import MAX_MEDIA, _MEDIA, _signature
 
 MAX_FILES = 20
@@ -171,7 +172,7 @@ def execute_batch(uploads, *, duration, destination, on_media):
                             with checked_media(reader, name, info.file_size) as media:
                                 on_media(*media[:3], media[3], 0 if media[2] == '.mp4' else seconds)
                         yield {'name': name, 'status': 'imported', 'message': 'Importiert'}
-                    except (ValueError, OSError, EOFError, RuntimeError, zipfile.BadZipFile) as exc:
+                    except (ValueError, OSError, EOFError, RuntimeError, zipfile.BadZipFile, PlayerError) as exc:
                         yield {'name': name, 'status': 'failed', 'message': str(exc)[:220]}
             entries = list(process())
     else:
@@ -182,7 +183,7 @@ def execute_batch(uploads, *, duration, destination, on_media):
                 with checked_media(item.stream, name) as media:
                     on_media(*media[:3], media[3], 0 if media[2] == '.mp4' else seconds)
                 entries.append({'name': name, 'status': 'imported', 'message': 'Importiert'})
-            except (ValueError, OSError, EOFError, RuntimeError) as exc:
+            except (ValueError, OSError, EOFError, RuntimeError, PlayerError) as exc:
                 entries.append({'name': name, 'status': 'failed', 'message': str(exc)[:220]})
 
     counts = {'imported': 0, 'failed': 0}
