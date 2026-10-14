@@ -5,7 +5,7 @@
 .library-grid h2{margin:0 0 17px}.library-list,.library-items,.library-actions{display:grid;gap:13px;align-content:start}
 .library-items{padding:0;list-style:none}.library-entry,.library-item{display:flex;align-items:center;gap:14px;padding:17px!important;min-width:0;text-decoration:none;color:var(--ink)}
 .library-add-control>summary{color:var(--blue)!important;font-weight:700}.library-add-control form{width:270px!important;display:grid;gap:9px}.library-add-control form label{display:grid;gap:5px;font-size:12px}.library-add-control form select{width:100%;min-height:37px;border:1px solid var(--border);border-radius:8px;background:var(--field);color:var(--ink);padding:7px}.library-add-control form .muted{margin:0;font-size:11px;line-height:1.5}.library-add-control form button{margin:0!important;min-height:38px}.library-add-control form{z-index:4!important}
-.library-entry:hover{border-color:var(--blue)}.library-entry>span:nth-child(2),.library-item-copy{display:grid;gap:4px;min-width:0;flex:1}.library-entry strong,.library-item strong{font-size:15px;overflow-wrap:anywhere}
+.library-entry:hover,.library-entry-shell:hover{border-color:var(--blue)}.library-entry>span:nth-child(2),.library-item-copy{display:grid;gap:4px;min-width:0;flex:1}.library-entry strong,.library-item strong{font-size:15px;overflow-wrap:anywhere}
 .library-entry small,.library-item small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}.library-glyph{display:grid;place-items:center;background:var(--raised);border:1px solid var(--border);border-radius:10px;color:var(--blue);height:42px;width:42px;flex:none}
 .library-item form{margin:0}.library-item .danger-btn{min-height:40px}.library-empty{padding:28px!important;color:var(--muted)}
 .library-item-actions{display:flex;align-items:center;gap:8px;flex:none}.library-item-actions>form{display:flex;gap:4px}.library-item-actions>form button{width:39px;min-height:40px;padding:5px}.library-item-actions details{position:relative;border:0;padding:0;margin:0}.library-item-actions summary{cursor:pointer;color:var(--red);font-size:12px;padding:9px 4px}.library-item-actions details form{position:absolute;right:0;top:100%;z-index:3;width:230px;padding:14px;background:var(--raised);border:1px solid var(--border);border-radius:10px;box-shadow:0 15px 30px #0005}.library-item-actions details form button{width:100%;margin-top:9px}
@@ -194,13 +194,30 @@
 
 
 /* Library template actions: safe, intentional deletion, not player clearing. */
-.library-entry-shell{position:relative;min-width:0}
-.library-entry-shell .library-entry{padding-right:86px}
+/* The whole template row owns the border. Place both actions in the same
+   flex layout, rather than centering an absolutely positioned details menu
+   (which inherited a 16px top margin and a 10px top padding). */
+.library-entry-shell.card{
+  position:relative;display:flex;align-items:center;gap:10px;
+  min-width:0;padding:0 14px 0 0;
+}
+.library-entry-shell .library-entry{
+  flex:1 1 auto;min-width:0;min-height:80px;
+  border:0;background:transparent;box-shadow:none;border-radius:inherit;
+  padding:15px 10px 15px 17px!important;
+}
+.library-entry-shell .library-entry>span:last-child{margin-left:auto;flex:none}
 .library-entry-shell:has(.template-delete-control[open]){z-index:15}
 .library-detail-title-row{display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative}
 .library-detail-title-row h1{margin:0;min-width:0;overflow-wrap:anywhere}
-.template-delete-control{position:relative;flex:none;color:var(--ink)}
-.library-entry-shell .template-delete-list{position:absolute;right:14px;top:50%;transform:translateY(-50%)}
+.template-delete-control{
+  position:relative;flex:none;align-self:center;
+  color:var(--ink);margin:0;padding:0;border:0;
+}
+.library-entry-shell .template-delete-list{
+  position:relative;right:auto;top:auto;transform:none;
+  margin:0;padding:0;border:0;
+}
 .template-delete-control>summary{
   display:inline-flex;align-items:center;justify-content:center;gap:7px;
   padding:8px 11px;min-height:38px;box-sizing:border-box;
@@ -211,6 +228,9 @@
 .template-delete-control>summary::-webkit-details-marker{display:none}
 .template-delete-control>summary .icon{width:15px;height:15px;flex:none}
 .template-delete-list>summary span{display:none}
+.library-entry-shell .template-delete-list>summary{
+  width:40px;min-width:40px;min-height:40px;padding:8px;
+}
 .template-delete-control>summary:hover,.template-delete-control[open]>summary{
   border-color:var(--red);color:var(--red)
 }
@@ -244,7 +264,15 @@
 }
 .template-delete-confirm .danger-btn:disabled{opacity:.45;cursor:not-allowed}
 .template-delete-detail>summary{padding:9px 12px}
+/* Form CTAs line up with their fields in both library columns. */
+.library-actions .library-panel form>button.primary{
+  display:flex;align-items:center;justify-content:center;
+  width:100%;min-height:44px;margin:0;
+}
 @media(max-width:600px){
   .library-detail-title-row{align-items:start}
+  .library-entry-shell.card{gap:5px;padding-right:10px}
+  .library-entry-shell .library-entry{padding:12px 8px 12px 12px!important}
+  .library-entry-shell .template-delete-list>summary{min-height:44px;width:44px}
   .template-delete-confirm{max-width:calc(100vw - 24px)}
 }
