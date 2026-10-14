@@ -111,7 +111,10 @@
       event.preventDefault();
       if (form.dataset.pending === 'yes') return;
       form.dataset.pending = 'yes';
-      const button = form.querySelector('button[type="submit"], button.primary');
+      // The Save button lives beside Delete, but submits this edit form
+      // through its HTML form attribute (including without JavaScript).
+      const button = card.querySelector('.asset-toolbar-actions .inline-save');
+      if (!button) return;
       button.disabled = true;
       try {
         const result = await postForm(form.action, new FormData(form));

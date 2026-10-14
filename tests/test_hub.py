@@ -888,6 +888,51 @@ def test_playlist_edit_toolbar_contains_all_controls_in_one_compact_container(en
 
 
 
+def test_playlist_save_delete_are_grouped_and_save_button_targets_own_edit_form(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    for asset_id in ('one123', 'two123'):
+        card = page.split(f'id="asset-{asset_id}"', 1)[1].split('</article>', 1)[0]
+        toolbar = card.split('<div class="asset-toolbar">', 1)[1]
+        edit_form = f'id="asset-edit-{asset_id}"'
+        button_target = f'form="asset-edit-{asset_id}"'
+        assert toolbar.count(edit_form) == 1
+        assert toolbar.count(button_target) == 1
+        assert 'class="asset-toolbar-actions"' in toolbar
+        assert 'class="primary inline-save">Speichern</button>' in toolbar
+        assert '<summary aria-label=' in toolbar
+        assert '>Löschen …</summary>' in toolbar
+        assert 'class="delete-confirmation"' in toolbar
+        assert toolbar.index('move-controls') < toolbar.index('asset-inline-edit')
+        assert toolbar.index('asset-inline-edit') < toolbar.index('asset-toolbar-actions')
+        assert toolbar.index(edit_form) < toolbar.index('class="asset-toolbar-actions"')
+        assert toolbar.index('class="asset-toolbar-actions"') < toolbar.index(button_target)
+        assert 'name="ack" value="yes" required' in toolbar
+    # Same edit endpoint; HTML's form= association works without JS, too.
+    result = client.post('/devices/lab/assets/one123/edit', data={
+        'csrf': token(client), 'name': 'New compact title',
+        'duration': '45', 'enabled': 'on',
+    }, headers={'Accept': 'application/json'})
+    assert result.status_code == 200
+    assert result.json['asset']['name'] == 'New compact title'
+    assert FakeAnthias.changes[-1][0] == 'patch'
+
+
+def test_playlist_action_group_alignment_styles_and_script():
+    root = Path(__file__).resolve().parents[1] / 'app' / 'static'
+    css = (root / 'playlist.css').read_text(encoding='utf-8')
+    js = (root / 'playlist.js').read_text(encoding='utf-8')
+    assert '.playlist-workspace .asset-toolbar-actions{' in css
+    assert 'justify-content:flex-end;' in css
+    assert '.playlist-workspace .asset-toolbar-actions .inline-save{' in css
+    assert '.playlist-workspace .asset-toolbar-actions .delete-panel>summary{' in css
+    assert '.asset:has(.asset-toolbar-actions .delete-panel[open])' in css
+    assert 'grid-column:1;grid-row:3' in css  # mobile: actions after fields
+    assert "card.querySelector('.asset-toolbar-actions .inline-save')" in js
+    assert "const result = await postForm(form.action, new FormData(form));" in js
+
+
 def test_precise_duration_editor_shows_slider_and_direct_number_input(env):
     _, client, _ = env
     login(client, 'marketing')
