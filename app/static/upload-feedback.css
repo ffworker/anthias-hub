@@ -1,0 +1,11 @@
+/* Shared low-distraction upload feedback for Marketing forms. */
+.upload-selected{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.upload-feedback{display:grid;gap:7px;margin:12px 0 3px}
+.upload-feedback[hidden]{display:none}
+.upload-feedback .upload-progress{height:7px;border-radius:999px;background:var(--raised);border:1px solid var(--border);overflow:hidden}
+.upload-feedback [data-upload-bar]{display:block;height:100%;width:0%;border-radius:999px;background:var(--blue);transition:width .15s}
+.upload-feedback[data-state="error"] [data-upload-bar]{background:var(--red)}
+.upload-feedback small{font-size:12px;line-height:1.55;color:var(--muted);overflow-wrap:anywhere}
+.upload-feedback[data-state="error"] small{color:var(--red)}
+.upload-feedback[data-state="success"] small{color:var(--blue)}
+@media(prefers-reduced-motion:reduce){.upload-feedback [data-upload-bar]{transition:none}}
