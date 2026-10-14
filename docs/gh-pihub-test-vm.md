@@ -17,6 +17,8 @@ bash scripts/bootstrap-test-vm.sh status   # read-only compose/HTTP checks
 
 **If both apps are already running:** run `doctor` and `status` only. `deploy` is not a passive health check and may recreate containers. An existing Hub `.env` is never overwritten or passed through `setup-pilot.sh`. If it exists but `config/users.json` is absent, stop and restore/recreate accounts deliberately, not by regenerating a session secret.
 
+**If RSS startup reports `IsADirectoryError: '/app/config.yaml'`:** Docker encountered a missing host-side `config.yaml` and created a directory at that path. In the RSS checkout, stop only signage with `docker compose -p rss2slideshow stop signage`; run `ls -la config.yaml`. If this is an **empty directory**, run `rmdir config.yaml`, then `cp config.example.yaml config.yaml && chmod 600 config.yaml` and review the sample before restarting. If it is not empty, inspect and preserve its contents; do **not** use `rm -rf`. The bootstrap now rejects directories as config files, and RSS Compose disables auto-creation of that bind source. After repairing, `docker compose -p rss2slideshow up -d --build --force-recreate signage` refreshes the container bind mount.
+
 Before running `deploy`, **edit/review** RSS `.env`, `config.yaml` and `content/feeds.txt`; new samples are *not* the live Bistro settings. No RSS auto-updates are configured. Example feeds are not acceptable as a production acceptance test.
 
 ## Fresh test VM (new clean machine)
