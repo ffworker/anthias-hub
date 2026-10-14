@@ -756,7 +756,9 @@ def create_app(config=None):
             name = request.form.get('name', '').strip()
             if not 1 <= len(name) <= 100:
                 raise ValueError('Ungültiger Titel')
-            changes = {'name': name, 'is_enabled': request.form.get('enabled') == 'on'}
+            # Enabled state is owned by /toggle. An edit form left open before
+            # another user's pause/resume must not silently revert that change.
+            changes = {'name': name}
             if asset.get('mimetype') != 'video' and not str(asset.get('mimetype') or '').startswith('video/'):
                 changes['duration'] = validate_duration(request.form.get('duration'))
             # Keep device-specific date schedules unchanged unless editing is intentionally added later.

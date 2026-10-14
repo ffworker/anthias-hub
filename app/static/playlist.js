@@ -110,8 +110,6 @@
       button.querySelector('[aria-hidden="true"]').textContent = enabled ? 'Ⅱ' : '▶';
       button.querySelector('.quick-label').textContent = enabled ? 'Pausieren' : 'Aktivieren';
     }
-    const editState = card.querySelector('.asset-inline-edit [name="enabled"]');
-    if (editState) editState.value = enabled ? 'on' : 'off';
     if (activeCount) activeCount.textContent = String(cards().filter((item) => item.dataset.enabled === '1').length);
   }
 

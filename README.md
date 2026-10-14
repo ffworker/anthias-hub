@@ -13,7 +13,7 @@
 
 **IT manages devices. Marketing manages individual playlists.** No central CMS, database, media-server rewrite, or per-screen license. Anthias Hub is a **third-party project** and is **not affiliated with, sponsored by, or officially supported by Screenly, Inc. / Anthias**.
 
-> **Pilot status (13 October 2026):** API reachability and reading a real Anthias Pi playlist have been confirmed by the operator. Writing, upload, delete, player compatibility across versions, and company-wide Marketing deployment have **not yet been fully validated**. Do not expose the pilot directly to the internet.
+> **Pilot status (13 October 2026):** API reachability and reading a real Anthias Pi playlist have been confirmed by the operator. Writing, upload, delete, player compatibility across versions, and company-wide Marketing deployment have **not yet been fully validated**. Do not expose the pilot directly to the internet. Use the [real Pi/monitor pilot acceptance gate](docs/pilot-acceptance.md) before internal rollout.
 
 ## Features
 
@@ -110,6 +110,7 @@ The current Marketing role applies to **all** registered screens; no per-locatio
 - **[IT Administrator Guide](docs/IT_ADMIN_GUIDE.md):** architecture, deployment, permission model, account/password maintenance, backups/restores, updates, logs, troubleshooting, operational checks.
 - [First Docker deployment](docs/deploy-docker-host.md): isolated pilot, SSH tunnel and safe access.
 - **[Reproducible fresh VM & controlled releases](docs/reproducible-production.md):** approved SHA-pinned image, backups, manual promotion, verification, rollback and future release-channel design.
+- **[Pilot acceptance and release gate](docs/pilot-acceptance.md):** real Pi/monitor test matrix, client-to-Pi isolation, restore rehearsal, and go/no-go criteria.
 - [Security boundary](SECURITY.md): roles, firewall/HTTPS, session and upload limitations.
 - [License and independence](docs/LICENSING.md): GPLv2 upstream, independent MIT API client, attribution, employer-rights and release checklist.
 - [Official Anthias API](https://anthias.screenly.io/api/)

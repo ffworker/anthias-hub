@@ -329,7 +329,7 @@ def test_schedule_fields_not_overwritten(env):
     login(client,'marketing')
     client.post('/devices/lab/assets/one123/edit',data={'csrf':token(client),'name':'Edited','duration':'40'})
     data=FakeAnthias.changes[0][1][1]
-    assert set(data.keys())=={'name','is_enabled','duration'}
+    assert set(data.keys())=={'name','duration'}
 
 
 def test_asset_client_does_not_follow_redirects():
@@ -407,7 +407,7 @@ def test_upstream_media_types_show_correct_editor_controls(env):
             'csrf': token(client), 'name': 'Updated film', 'enabled': 'on',
         })
     assert result.status_code == 302
-    assert FakeAnthias.changes[-1] == ('patch', ('vid123', {'name': 'Updated film', 'is_enabled': True}), {})
+    assert FakeAnthias.changes[-1] == ('patch', ('vid123', {'name': 'Updated film'}), {})
 
 def test_reorder_is_single_call_and_rejects_stale_or_missing_ids(env):
     _, client, _ = env
@@ -456,7 +456,7 @@ def test_quick_edit_json_and_safety_confirmation(env):
                        data={'csrf': token(client), 'name': 'New headline', 'duration': '22', 'enabled': 'on'},
                        headers={'Accept': 'application/json'})
     assert resp.status_code == 200
-    assert resp.json == {'ok': True, 'asset': {'name': 'New headline', 'duration': 22, 'is_enabled': True}}
+    assert resp.json == {'ok': True, 'asset': {'name': 'New headline', 'duration': 22}}
     no_ack = client.post('/devices/lab/assets/one123/delete',
                          data={'csrf': token(client), 'confirm': 'one123'})
     assert no_ack.status_code == 400
@@ -809,15 +809,15 @@ def test_inline_playlist_fields_preserve_pause_state_without_js(env):
     page = client.get('/devices/lab').data.decode('utf-8')
     assert 'asset-inline-edit' in page
     assert 'class="duration-range" type="range" min="5" max="120"' in page
-    assert 'value="on"' in page
+    assert 'name="enabled" value="on"' not in page
     assert 'Inhalt bearbeiten' not in page
     resp = client.post('/devices/lab/assets/one123/edit', data={
-        'csrf': token(client), 'name': 'Renamed', 'duration': '41', 'enabled': 'on',
+        'csrf': token(client), 'name': 'Renamed', 'duration': '41',
     }, headers={'Accept': 'application/json'})
     assert resp.status_code == 200
-    assert resp.json['asset']['is_enabled'] is True
+    assert 'is_enabled' not in resp.json['asset']
     assert resp.json['asset']['duration'] == 41
-    assert FakeAnthias.changes[-1][1][1]['is_enabled'] is True
+    assert 'is_enabled' not in FakeAnthias.changes[-1][1][1]
 
 
 def test_library_publish_action_is_above_media_list_and_not_hidden_in_sidebar(env):
@@ -1043,3 +1043,19 @@ def test_save_is_dirty_only_with_javascript_and_still_works_without_it(env):
     }, headers={'Accept': 'application/json'})
     assert result.status_code == 200
     assert result.json['asset']['duration'] == 24
+
+
+def test_stale_edit_never_restores_old_enabled_state(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    assert 'class="asset-edit asset-inline-edit"' in page
+    assert '<input type="hidden" name="enabled" value="on">' not in page
+    with patch.object(FakeAnthias, 'assets_data', [dict(FakeAnthias.assets_data[0], is_enabled=False)]):
+        result = client.post('/devices/lab/assets/one123/edit', data={
+            'csrf': token(client), 'name': 'New heading', 'duration': '22',
+            'enabled': 'on',  # An old/stale browser may still send this field.
+        }, headers={'Accept': 'application/json'})
+        assert result.status_code == 200
+        assert result.json['asset'] == {'name': 'New heading', 'duration': 22}
+        assert FakeAnthias.changes[-1] == ('patch', ('one123', {'name': 'New heading', 'duration': 22}), {})
