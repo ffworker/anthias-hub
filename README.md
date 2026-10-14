@@ -13,7 +13,7 @@
 
 **IT manages devices. Marketing manages individual playlists.** No central CMS, database, media-server rewrite, or per-screen license. Anthias Hub is a **third-party project** and is **not affiliated with, sponsored by, or officially supported by Screenly, Inc. / Anthias**.
 
-> **Pilot status (13 October 2026):** API reachability and reading a real Anthias Pi playlist have been confirmed by the operator. Writing, upload, delete, player compatibility across versions, and company-wide Marketing deployment have **not yet been fully validated**. Do not expose the pilot directly to the internet. Use the [real Pi/monitor pilot acceptance gate](docs/pilot-acceptance.md) before internal rollout.
+> **Pilot status (13 October 2026):** API reachability and reading a real Anthias Pi playlist have been confirmed by the operator. Writing, upload, delete, player compatibility across versions, and company-wide Marketing deployment have **not yet been fully validated**. Do not expose the pilot directly to the internet. Use the [real Pi/monitor pilot acceptance gate](docs/pilot-acceptance.md) before internal rollout. Hand a first-time Marketing tester the [**one-page printable practice checklist (PDF)**](docs/marketing-praxistest.pdf) to mark what worked, what was unclear, and what should be improved.
 
 ## Features
 
