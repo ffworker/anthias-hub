@@ -1266,3 +1266,53 @@ def test_library_template_delete_csrf_roles_confirm_and_symlink_protection(env):
     with pytest.raises(LibraryError, match='verzeichnis'):
         lib.delete_template('a' * 32, 'Link target')
     assert (external / 'important.txt').read_text() == 'keep'
+
+
+def test_library_overview_actions_share_aligned_card_without_overlay_offsets(env):
+    app, client, tmp = env
+    from app.library import Library
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    Library(app.config['LIBRARY_DIR']).create('Aktionsvorlage')
+    login(client, 'marketing')
+    page = client.get('/library').get_data(as_text=True)
+    # The clickable template title and separate delete menu are flex siblings
+    # within the SAME card. No nested links/buttons or absolute-centering hacks.
+    assert '<div class="card library-entry-shell">' in page
+    entry = page.split('<div class="card library-entry-shell">', 1)[1]
+    assert '<a class="library-entry" href=' in entry
+    assert 'class="template-delete-control template-delete-list"' in entry
+    assert entry.index('<a class="library-entry"') < entry.index('template-delete-control')
+    sheet = (Path(__file__).resolve().parents[1] / 'app' / 'static' / 'library.css').read_text()
+    assert '.library-entry-shell.card{' in sheet
+    assert 'display:flex;align-items:center;gap:10px' in sheet
+    assert '.template-delete-control{' in sheet
+    assert 'color:var(--ink);margin:0;padding:0;border:0' in sheet
+    assert 'top:50%;transform:translateY(-50%)' not in sheet
+    assert '.library-actions .library-panel form>button.primary' in sheet
+    client.post('/logout', data={'csrf': token(client)})
+    login(client, 'viewer')
+    viewer = client.get('/library').get_data(as_text=True)
+    assert '<div class="card library-entry-shell">' in viewer
+    assert 'template-delete-control' not in viewer
+
+
+def test_screen_card_ctas_have_equal_insets_for_marketing_it_and_viewer(env):
+    _, client, _ = env
+    style = (Path(__file__).resolve().parents[1] / 'app' / 'static' / 'workspace.css').read_text()
+    assert '.fleet-open{' in style
+    assert 'width:100%;align-self:stretch;' in style
+    assert 'margin:auto 0 20px!important' in style
+    assert '.fleet-settings{border:0;border-top:1px solid #2e4453;margin:0 -23px 0' in style
+    assert '.fleet-hero .fleet-add-button{align-self:flex-start}' in style
+    for role, label in [('marketing', 'Playlist bearbeiten'),
+                        ('viewer', 'Playlist ansehen'), ('it', 'Playlist ansehen')]:
+        login(client, role)
+        page = client.get('/').get_data(as_text=True)
+        assert 'class="button primary fleet-open"' in page
+        assert label in page
+        if role == 'it':
+            assert 'fleet-settings' in page
+            assert 'class="button primary fleet-add-button"' in page
+        else:
+            assert 'fleet-settings' not in page
+        client.post('/logout', data={'csrf': token(client)})
