@@ -58,7 +58,7 @@
       const xhr = new XMLHttpRequest();
       xhr.open('POST', form.action);
       xhr.setRequestHeader('Accept', 'application/json');
-      xhr.timeout = 310000;
+      xhr.timeout = 350000;
       xhr.upload.addEventListener('progress', (e) => {
         if (!e.lengthComputable) {
           progressText.textContent = 'Dateien werden hochgeladen …';
