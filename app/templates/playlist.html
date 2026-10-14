@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}{{ device.name }} · Playlist · Anthias Hub{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='playlist.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='playlist.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-lightbox.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}">{% endblock %}
 {% block content %}
 <div class="playlist-workspace" data-can-edit="{{ 'yes' if logged_user.role == 'marketing' and not error else 'no' }}">
   <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Alle Bildschirme</a><span aria-hidden="true">›</span><span>{{ device.name }}</span><span aria-hidden="true">·</span><a href="{{ url_for('library_index') }}">Bibliothek</a></nav>
@@ -57,7 +57,14 @@
                         aria-label="{{ asset.name or 'Element' }} verschieben">⠿</button>
               {% endif %}
               <div class="asset-index" aria-label="Position {{ loop.index }}">{{ '%02d'|format(loop.index) }}</div>
-              <div class="asset-kind {{ 'kind-video' if is_video else 'kind-image' if is_image else 'kind-web' }} {{ 'asset-media-preview' if is_image or is_video else '' }}" aria-hidden="true">
+              {% if is_image or is_video %}
+              <button type="button" class="asset-kind {{ 'kind-video' if is_video else 'kind-image' }} asset-media-preview media-preview-trigger"
+                      data-media-lightbox data-preview-url="{{ url_for('player_asset_preview', device_id=device.id, asset_id=asset.asset_id) }}"
+                      data-preview-type="{{ 'video' if is_video else 'image' }}" data-preview-title="{{ asset.name or 'Ohne Titel' }}"
+                      aria-label="{{ asset.name or 'Medium' }} groß ansehen">
+              {% else %}
+              <div class="asset-kind kind-web" aria-hidden="true">
+              {% endif %}
                 <svg class="icon asset-placeholder"><use href="{{ url_for('static', filename='icons.svg') }}#{{ 'video' if is_video else 'image' if is_image else 'web' }}"></use></svg>
                 {% if is_image %}
                   <img class="asset-preview-content" src="{{ url_for('player_asset_preview', device_id=device.id, asset_id=asset.asset_id) }}" alt="" loading="lazy" decoding="async">
@@ -65,7 +72,7 @@
                   <video class="asset-preview-content asset-preview-video" data-preview-src="{{ url_for('player_asset_preview', device_id=device.id, asset_id=asset.asset_id) }}" preload="none" muted playsinline aria-hidden="true"></video>
                   <span class="asset-preview-play" aria-hidden="true">▶</span>
                 {% endif %}
-              </div>
+              {% if is_image or is_video %}</button>{% else %}</div>{% endif %}
               <div class="asset-body">
                 <div class="asset-meta">
                   <span class="type-label">{{ 'VIDEO' if is_video else 'BILD' if is_image else 'WEBSEITE' if is_web else 'MEDIUM' }}</span>
@@ -179,6 +186,7 @@
   <div id="playlist-feedback" class="playlist-feedback" role="status" aria-live="polite" hidden></div>
 </div>
 <script defer src="{{ url_for('static', filename='media-preview.js') }}"></script>
+<script defer src="{{ url_for('static', filename='media-lightbox.js') }}"></script>
 <script defer src="{{ url_for('static', filename='upload-feedback.js') }}"></script>
 {% if logged_user.role == 'marketing' and not error %}<script defer src="{{ url_for('static', filename='playlist.js') }}"></script>{% endif %}
 {% endblock %}
