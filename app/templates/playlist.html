@@ -154,6 +154,7 @@
         <div class="add-type-switch" aria-label="Inhaltsart wählen">
           <button type="button" class="add-mode selected" data-add-mode="website" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#web"></use></svg> Webseite</button>
           <button type="button" class="add-mode" data-add-mode="media" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#image"></use></svg> Bild / Video</button>
+          <button type="button" class="add-mode" data-add-mode="library" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Bibliothek</button>
         </div>
 
         <div class="composer-pane" data-add-pane="website">
@@ -178,6 +179,34 @@
             <button type="submit" class="primary full-width">Datei hinzufügen <span aria-hidden="true">→</span></button>
             <div class="upload-feedback" hidden role="status" aria-live="polite"><div class="upload-progress" aria-hidden="true"><span data-upload-bar></span></div><small data-upload-text></small></div>
           </form>
+        </div>
+        <div class="composer-pane" data-add-pane="library">
+          <p class="composer-explainer">Einen einzelnen gespeicherten Inhalt zur bestehenden Playlist hinzufügen. Nichts wird ersetzt.</p>
+          {% if library_items_available %}
+          <form method="post" action="{{ url_for('add_library_item_from_player', device_id=device.id) }}">
+            <input type="hidden" name="csrf" value="{{ csrf() }}">
+            <input type="hidden" name="confirm" value="add">
+            <label>Gespeicherter Inhalt
+              <select name="source" required>
+                <option value="">Vorlage und Inhalt auswählen …</option>
+                {% for collection in library_templates %}
+                  {% if collection['items'] %}
+                  <optgroup label="{{ collection.name }}">
+                    {% for item in collection['items'] %}
+                    <option value="{{ collection.id }}:{{ item.id }}">{{ item.name }} · {{ 'Webseite' if item.kind == 'url' else 'Video' if item.file.endswith('.mp4') else 'Bild' }}</option>
+                    {% endfor %}
+                  </optgroup>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </label>
+            <p class="muted">Wird sofort auf diesem Player hinzugefügt. Bestehende Inhalte behalten ihre Reihenfolge.</p>
+            <button type="submit" class="primary full-width">Inhalt hinzufügen →</button>
+          </form>
+          {% else %}
+          <p class="muted">Noch keine gespeicherten Inhalte vorhanden.</p>
+          <a class="button" href="{{ url_for('library_index') }}">Bibliothek öffnen →</a>
+          {% endif %}
         </div>
         <p class="composer-footnote">Aktionen am Player bleiben im Hub. Kein direkter Gerätezugang für Marketing nötig.</p>
       </aside>
