@@ -1,0 +1,27 @@
+{# Shared, JS-optional removal confirmation for a Hub-local library template. #}
+{% macro delete_control(item, detailed=false) %}
+<details class="template-delete-control {{ 'template-delete-detail' if detailed else 'template-delete-list' }}" data-template-delete>
+  <summary aria-label="Vorlage {{ item.name }} löschen" title="Vorlage löschen">
+    <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#trash"></use></svg>
+    <span>{{ 'Vorlage löschen' if detailed else 'Optionen' }}</span>
+  </summary>
+  <div class="template-delete-confirm">
+    <strong>Vorlage endgültig löschen?</strong>
+    <p>„{{ item.name }}“ und {{ item['items']|length }} hier gespeicherte Inhalte werden aus der Hub-Bibliothek entfernt. Bereits auf Bildschirme übertragene Inhalte bleiben erhalten.</p>
+    <form method="post" action="{{ url_for('library_delete_template', template_id=item.id) }}" data-delete-form data-expected-name="{{ item.name }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <input type="hidden" name="confirm" value="{{ item.id }}">
+      <label for="delete-name-{{ item.id }}">Zum Bestätigen den exakten Vorlagennamen eingeben
+        <input id="delete-name-{{ item.id }}" name="name_confirmation" type="text" required
+               maxlength="100" autocomplete="off" spellcheck="false" placeholder="{{ item.name }}"
+               data-delete-name>
+      </label>
+      <label class="library-confirm">
+        <input type="checkbox" name="ack" value="yes" required data-delete-ack>
+        Ich möchte diese Vorlage unwiderruflich löschen.
+      </label>
+      <button type="submit" class="danger-btn" data-delete-submit>Vorlage endgültig löschen</button>
+    </form>
+  </div>
+</details>
+{% endmacro %}
