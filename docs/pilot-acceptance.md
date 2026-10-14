@@ -2,6 +2,8 @@
 
 Use a spare Anthias Pi and a real connected monitor. Do not run destructive tests on a production playlist. CI and `/healthz` are necessary but cannot prove Pi API compatibility, HDMI output, or TV playback. Record the date, Hub commit/image digest, Anthias version, Pi identity, monitor, operator and exact non-secret inputs and observed results. Keep passwords and internal addresses out of public issues.
 
+**First-time Marketing usability test:** Print the [one-page Marketing practice checklist (PDF)](marketing-praxistest.pdf) for a colleague using a separate test Pi. Let the tester tick **Klappt** or **Unklar** for each task and jot down questions or requests without coaching. Collect the sheet alongside the technical acceptance evidence below. Use repeated stumbling points as input for later onboarding/crash courses; the sheet is not a substitute for this IT/production release gate.
+
 ## 1. Prepare and establish the boundary
 
 - [ ] Record a backup of Hub `.env`, `config/`, `data/`, **and separately the Pi playlist/media**. Verify an off-host copy exists and restore each kind of backup to a disposable staging instance; check login, library manifests and media, and Pi content after restoration. Do not replace live state for this exercise.
