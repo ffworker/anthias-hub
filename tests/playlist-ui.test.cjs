@@ -48,6 +48,9 @@ class Input extends Element {
   matches(selector) {
     return this.kind === 'name' && selector === '.asset-inline-edit input[name="name"]';
   }
+  closest(selector) {
+    return selector === '.asset' ? this.card : null;
+  }
 }
 class Form extends Element {
   constructor(card) {
@@ -55,6 +58,9 @@ class Form extends Element {
     this.nameInput = new Input(card.name.textContent,'name');
     this.durationInput = new Input('15','duration');
     this.stateInput = new Input('on','state');
+    this.nameInput.card=card;
+    this.durationInput.card=card;
+    this.stateInput.card=card;
   }
   querySelector(selector) {
     return selector === '[name="name"]' ? this.nameInput :
@@ -87,6 +93,10 @@ class Card extends Element {
     this.preview = null;
   }
   closest(sel) { return sel === '.asset' ? this : null; }
+  get nextSibling() {
+    const index=this.env.stack.children.indexOf(this);
+    return this.env.stack.children[index+1] || null;
+  }
   getBoundingClientRect() {
     const index=this.env.stack.children.indexOf(this);
     return { top:100+index*110, height:95, bottom:195+index*110 };
