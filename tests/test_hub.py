@@ -1156,7 +1156,8 @@ def test_studio_v2_cards_are_editable_on_demand_and_drawer_is_reachable(env):
     assert 'class="drag-handle"' in page
     assert 'class="quick-toggle-form"' in page
     assert 'name="duration" min="5" max="3600"' in page
-    assert 'name="enabled" value="on"' not in page  # no old inline editor state
+    edit_form = page.split('id="asset-edit-one123"', 1)[1].split('</form>', 1)[0]
+    assert 'name="enabled"' not in edit_form  # Pause is owned by its own form
 
 
 def test_studio_v2_keeps_viewers_read_only_and_has_no_drawer(env):
@@ -1257,6 +1258,11 @@ def test_library_template_delete_csrf_roles_confirm_and_symlink_protection(env):
     (external / 'important.txt').write_text('keep')
     link = root / ('a' * 32)
     link.symlink_to(external, target_is_directory=True)
-    with pytest.raises(LibraryError):
-        lib.delete_template('a' * 32, 'anything')
+    # Even a seemingly valid manifest at the linked location must not cause
+    # rmtree() to traverse and remove another directory.
+    (external / 'manifest.json').write_text(json.dumps({
+        'version': 1, 'id': 'a' * 32, 'name': 'Link target', 'items': [],
+    }))
+    with pytest.raises(LibraryError, match='verzeichnis'):
+        lib.delete_template('a' * 32, 'Link target')
     assert (external / 'important.txt').read_text() == 'keep'
