@@ -1,0 +1,50 @@
+/* Compact media thumbnails shared by player playlists and local library. */
+.playlist-workspace .asset-kind.asset-media-preview,
+.library-items .library-glyph.library-media-preview {
+  position:relative;
+  width:84px;
+  height:56px;
+  overflow:hidden;
+  flex:none;
+  border-radius:10px;
+  isolation:isolate;
+}
+.asset-media-preview .asset-preview-content,
+.library-media-preview .asset-preview-content {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  opacity:0;
+  transition:opacity .15s ease-out;
+}
+.asset-media-preview.preview-ready .asset-preview-content,
+.library-media-preview.preview-ready .asset-preview-content {opacity:1}
+.asset-preview-play {
+  position:absolute;
+  right:4px;
+  bottom:4px;
+  display:grid;
+  place-items:center;
+  width:20px;
+  height:20px;
+  border-radius:6px;
+  background:rgba(12,20,30,.83);
+  color:white;
+  font-size:10px;
+  opacity:0;
+  pointer-events:none;
+}
+.asset-media-preview.preview-ready .asset-preview-play,
+.library-media-preview.preview-ready .asset-preview-play {opacity:1}
+.asset-media-preview .asset-placeholder,
+.library-media-preview .asset-placeholder {position:relative;z-index:0}
+@media(max-width:680px) {
+  .playlist-workspace .asset-kind.asset-media-preview {width:60px;height:44px}
+  .library-items .library-glyph.library-media-preview {width:65px;height:46px}
+}
+@media(prefers-reduced-motion:reduce) {
+  .asset-media-preview .asset-preview-content,
+  .library-media-preview .asset-preview-content {transition:none}
+}
