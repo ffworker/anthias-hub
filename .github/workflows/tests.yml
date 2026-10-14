@@ -35,6 +35,8 @@ jobs:
           node --check app/static/media-lightbox.js
           node --check app/static/media-preview.js
           node --check app/static/playlist.js
+          node --check app/static/playlist-studio.js
+          node --check app/static/template-delete.js
 
       - name: Simulate playlist mouse, touch, keyboard and Save behavior
         run: node --test tests/playlist-ui.test.cjs
