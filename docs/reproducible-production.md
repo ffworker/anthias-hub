@@ -66,7 +66,7 @@ docker inspect --format '{{.Config.Image}} {{.Image}}' "$cid"
 git rev-parse HEAD
 ```
 
-The initial `setup-pilot.sh` builds/starts `anthias-hub:pilot` *only for first-time account setup*. The subsequent `compose.cd.yaml` commands replace it with the approved prebuilt image. Never `docker compose pull` the default `compose.yaml`: its `anthias-hub:pilot` tag is local-only. Do not start `scripts/install-auto-deploy.sh` on production.
+The initial `setup-pilot.sh` builds/starts `anthias-hub:pilot` *only for first-time account setup*. The subsequent `compose.cd.yaml` commands replace it with the approved prebuilt image. If setup is interrupted or `users.json` is deleted, rerun `bash scripts/setup-pilot.sh` from this checkout: it keeps `.env` and existing accounts and creates missing roles, using the pinned image when `ANTHIAS_HUB_IMAGE` is set. Use `--reset-users` to choose which existing role passwords to replace. Never `docker compose pull` the default `compose.yaml`: its `anthias-hub:pilot` tag is local-only. Do not start `scripts/install-auto-deploy.sh` on production.
 
 To access the app from Windows:
 

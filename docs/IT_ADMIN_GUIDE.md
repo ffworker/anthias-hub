@@ -54,7 +54,7 @@ docker compose version
 bash scripts/setup-pilot.sh
 ~~~
 
-Das Setup erzeugt einen geheimen Sitzungsschlüssel und zwei getrennte Passwörter für IT und Marketing. Es bricht absichtlich ab, wenn **bereits eine .env existiert**, statt die laufende Installation zu überschreiben.
+Das Setup erzeugt den Sitzungsschlüssel und getrennte IT-/Marketing-Konten. Nach einem abgebrochenen Passwortdialog oder versehentlich gelöschtem `config/users.json` lässt sich `bash scripts/setup-pilot.sh` erneut ausführen: Vorhandene `.env`, `data/` und gültige Konten bleiben erhalten; nur fehlende Rollen werden abgefragt. Zum gezielten Ändern bestehender Konten `bash scripts/setup-pilot.sh --reset-users` ausführen und die jeweilige Rückfrage bestätigen (Standard: Konto behalten). Zum Zurücksetzen der Konten **nicht** `.env` löschen. Eine beschädigte `users.json` wird nicht überschrieben; zuerst aus einem Backup wiederherstellen. Auf einem Host mit `ANTHIAS_HUB_IMAGE` verwendet das Skript `compose.cd.yaml` mit dem gepinnten Image statt eines neuen Pilot-Builds. Den `:main`-Auto-Deploy-Timer nicht auf Produktion aktivieren.
 
 **Root-Betrieb:** Das Skript darf beim ersten Mal als Host-root gestartet werden. Dann besitzt der Host-Account root die .env, während der Container **nicht** als root, sondern unter UID/GID **10001:10001**, läuft; config/ und data/ erhalten passende Eigentümer. Bei anderen Hostbenutzern werden deren UID/GID genutzt. Für die anschließende Wartung eine konsistente administrative Identität verwenden.
 
