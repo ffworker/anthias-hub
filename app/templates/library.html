@@ -1,9 +1,11 @@
 {% extends 'base.html' %}
+{% from '_template_delete.html' import delete_control %}
 {% block title %}Playlist-Bibliothek · Anthias Hub{% endblock %}
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='bulk-upload.css') }}">
 <script defer src="{{ url_for('static', filename='bulk-upload.js') }}"></script>
+<script defer src="{{ url_for('static', filename='template-delete.js') }}"></script>
 {% endblock %}
 {% block content %}
 <section class="library-intro">
@@ -16,11 +18,14 @@
     <h2 id="library-list-title">Deine Vorlagen <span class="count">{{ templates|length }}</span></h2>
     <div class="library-list">
       {% for template in templates %}
-      <a class="card library-entry" href="{{ url_for('library_detail', template_id=template.id) }}">
-        <span class="library-glyph" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg></span>
-        <span><strong>{{ template.name }}</strong><small>{{ template['items']|length }} Inhalte · Öffnen, bearbeiten oder an einen Bildschirm senden</small></span>
-        <span aria-hidden="true">→</span>
-      </a>
+      <div class="library-entry-shell">
+        <a class="card library-entry" href="{{ url_for('library_detail', template_id=template.id) }}">
+          <span class="library-glyph" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg></span>
+          <span><strong>{{ template.name }}</strong><small>{{ template['items']|length }} Inhalte · Öffnen, bearbeiten oder an einen Bildschirm senden</small></span>
+          <span aria-hidden="true">→</span>
+        </a>
+        {% if logged_user.role == 'marketing' %}{{ delete_control(template) }}{% endif %}
+      </div>
       {% else %}<div class="card library-empty">Noch keine Vorlage vorhanden. Erstelle rechts deine erste Sammlung.</div>{% endfor %}
     </div>
   </section>
