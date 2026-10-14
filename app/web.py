@@ -236,6 +236,66 @@ def create_app(config=None):
             abort(400)
         return apply_library(request.form.get('device', ''))
 
+    def append_library_item(device_id, template_id, item_id):
+        """Append exactly one item to a possibly nonempty player playlist.
+
+        Never delete, reorder, overwrite, or transfer a whole template. Verify
+        the library file before touching the player. A partial media transfer
+        cannot be rolled back safely by this endpoint.
+        """
+        _, api = player_or_404(device_id)
+        store = library()
+        collection = store.get(template_id)
+        item = next((entry for entry in collection['items'] if entry.get('id') == item_id), None)
+        if item is None:
+            raise LibraryError('Inhalt nicht in dieser Bibliotheksvorlage gefunden')
+        if item.get('kind') not in ('url', 'media'):
+            raise LibraryError('Unbekannter Inhaltstyp')
+        path = store.verified_media_path(template_id, item) if item['kind'] == 'media' else None
+        with _apply_lock:
+            current = api.assets()  # preflight: confirm target is reachable before any write
+            if item['kind'] == 'url':
+                if any(asset.get('uri') == item['url'] and asset.get('name') == item['name']
+                       for asset in current):
+                    raise LibraryError('Diese Webseite ist bereits in der Playlist vorhanden')
+                api.create(item['name'], item['url'], item['duration'])
+            else:
+                ext = path.suffix.lower()
+                with path.open('rb') as stream:
+                    uploaded = api.upload(stream, path.name, MEDIA[ext])
+                api.create(item['name'], uploaded['uri'], item['duration'],
+                           mimetype=MEDIA[ext], ext=uploaded.get('ext'))
+        audit('library.add-item', device_id, item_id)
+
+    @app.post('/devices/<device_id>/add-library-item')
+    @login_required('marketing')
+    def add_library_item_from_player(device_id):
+        if request.form.get('confirm') != 'add':
+            abort(400)
+        source = request.form.get('source', '')
+        if not re.fullmatch(r'[a-f0-9]{32}:[a-f0-9]{32}', source):
+            abort(400)
+        template_id, item_id = source.split(':', 1)
+        try:
+            append_library_item(device_id, template_id, item_id)
+            flash('Ein Bibliotheksinhalt hinzugefügt. Bestehende Playlist bleibt erhalten; Ausgabe am TV prüfen.', 'success')
+        except (LibraryError, PlayerError, OSError) as exc:
+            flash(str(exc) + ' Keine automatische Wiederholung: Playlist prüfen (Teilübertragung möglich).', 'error')
+        return redirect(url_for('playlist', device_id=device_id))
+
+    @app.post('/library/<template_id>/items/<item_id>/add-to-device')
+    @login_required('marketing')
+    def add_library_item_from_template(template_id, item_id):
+        if request.form.get('confirm') != 'add':
+            abort(400)
+        device_id = request.form.get('device', '')
+        try:
+            append_library_item(device_id, template_id, item_id)
+            flash('Ein Inhalt zur ausgewählten Playlist hinzugefügt; bestehende Inhalte bleiben erhalten.', 'success')
+        except (LibraryError, PlayerError, OSError) as exc:
+            flash(str(exc) + ' Keine automatische Wiederholung: Ziel-Playlist prüfen (Teilübertragung möglich).', 'error')
+        return redirect(url_for('library_detail', template_id=template_id))
+
     def chosen_asset(api, asset_id):
         Anthias.valid_id(asset_id)
         items = api.assets()
@@ -332,7 +392,14 @@ def create_app(config=None):
             assets = api.assets()
         except PlayerError as exc:
             error = str(exc)
-        return render_template('playlist.html', device=device, assets=assets, error=error)
+        templates = []
+        if not error and current_user()['role'] == 'marketing':
+            try:
+                templates = library().list()
+            except LibraryError:
+                flash('Bibliothek konnte nicht geladen werden. Bestehende Playlist bleibt unverändert.', 'error')
+        return render_template('playlist.html', device=device, assets=assets,
+                               library_templates=templates, error=error)
 
     @app.get('/devices/<device_id>/assets/<asset_id>/preview')
     @login_required()
