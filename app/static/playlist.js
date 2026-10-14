@@ -400,7 +400,7 @@
       event.preventDefault();
       if (!keyboardDrag) {
         const source = grip.closest('.asset');
-        keyboardDrag = { handle: grip, source, before: snapshot() };
+        keyboardDrag = { handle: grip, source, before: snapshot(), moving: false };
         source.classList.add('is-keyboard-grabbed');
         grip.setAttribute('aria-pressed', 'true');
         announceSort('Aufgenommen. Pfeiltasten verschieben, Enter legt ab, Esc bricht ab.');
@@ -430,17 +430,20 @@
     const { source } = keyboardDrag;
     const all = cards();
     const index = all.indexOf(source);
+    keyboardDrag.moving = true;
     if (key === 'ArrowUp' && index > 0) {
       stack.insertBefore(source, all[index - 1]);
     } else if (key === 'ArrowDown' && index < all.length - 1) {
       stack.insertBefore(source, all[index + 1].nextSibling);
     }
     updatePositions();
+    grip.focus(); // Moving a focused DOM node can otherwise lose focus.
+    keyboardDrag.moving = false;
     announceSort((source.querySelector('.asset-name')?.textContent || 'Inhalt') +
       ' auf Position ' + (cards().indexOf(source) + 1) + ' von ' + cards().length + '.');
   });
   stack.addEventListener('focusout', (event) => {
-    if (!keyboardDrag || event.target !== keyboardDrag.handle) return;
+    if (!keyboardDrag || keyboardDrag.moving || event.target !== keyboardDrag.handle) return;
     // Don't leave a hidden, unsaved keyboard preview behind when tabbing out.
     const { before, handle } = keyboardDrag;
     keyboardDrag = null;
