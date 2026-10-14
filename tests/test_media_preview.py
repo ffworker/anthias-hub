@@ -102,6 +102,9 @@ def test_player_image_preview_is_same_origin_and_correct_type(env):
     assert b'/devices/lab/assets/img1/preview' in page.data
     assert b'asset-media-preview' in page.data
     assert b'media-preview.js' in page.data
+    assert b'media-lightbox.js' in page.data
+    assert b'data-media-lightbox' in page.data
+    assert b'data-preview-type="image"' in page.data
     response = client.get('/devices/lab/assets/img1/preview')
     assert response.status_code == 200
     assert response.data == PNG
@@ -169,6 +172,9 @@ def test_local_library_images_and_videos_use_authenticated_media_paths(env):
     page = client.get('/library/' + collection['id'])
     assert page.status_code == 200
     assert page.data.count(b'asset-preview-content') == 2
+    assert page.data.count(b'data-media-lightbox') == 2
+    assert b'media-lightbox.js' in page.data
+    assert b'data-preview-type="video"' in page.data
     image_response = client.get(f'/library/{collection["id"]}/items/{items[0]["id"]}/preview')
     assert image_response.status_code == 200 and image_response.data == PNG
     assert image_response.headers['Content-Type'].startswith('image/png')
