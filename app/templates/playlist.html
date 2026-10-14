@@ -101,6 +101,7 @@
             {% if logged_user.role == 'marketing' and not error %}
               <div class="asset-toolbar">
                 <div class="move-controls" aria-label="Reihenfolge für {{ asset.name or 'Element' }}">
+                  <span class="move-label" aria-hidden="true">Reihenfolge</span>
                   <form method="post" action="{{ url_for('move_asset', device_id=device.id, asset_id=asset.asset_id) }}">
                     <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="direction" value="up">
                     <button title="Nach oben" aria-label="{{ asset.name or 'Element' }} nach oben" {% if loop.first %}disabled{% endif %}>↑</button>
@@ -125,7 +126,7 @@
                              value="{{ asset.duration or 15 }}" aria-label="Anzeigedauer für {{ asset.name or 'Medium' }} in Sekunden">
                     </label>
                   {% else %}
-                    <span class="inline-video-duration">Videodauer automatisch</span>
+                    <span class="inline-video-duration" title="Videolänge wird automatisch vom Player bestimmt">Dauer automatisch</span>
                   {% endif %}
                   <button type="submit" class="primary inline-save">Speichern</button>
                 </form>
