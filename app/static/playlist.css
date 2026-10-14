@@ -16,9 +16,11 @@
 .playlist-workspace .asset.is-paused{background:#101a27;border-color:#2b3849}
 .playlist-workspace .asset.is-paused .asset-kind,.playlist-workspace .asset.is-paused .asset-body{opacity:.6}
 .playlist-workspace .asset-main{gap:12px;padding:15px 17px}
-.playlist-workspace .drag-handle{flex:none;width:29px;min-width:29px;min-height:43px;padding:0;cursor:grab;border:0;background:transparent;color:#9bb5c6;font-size:26px;letter-spacing:-8px;box-shadow:none;touch-action:auto}
+.playlist-workspace .drag-handle{flex:none;width:35px;min-width:35px;min-height:44px;padding:0;cursor:grab;border:1px solid transparent;border-radius:9px;background:transparent;color:#a8c5d8;font-size:27px;letter-spacing:-8px;box-shadow:none;touch-action:none;user-select:none;-webkit-user-select:none}
 .playlist-workspace .drag-handle:hover{background:#203547;color:var(--studio-aqua)}
-.playlist-workspace .drag-handle:active{cursor:grabbing}
+.playlist-workspace .drag-handle:active,.playlist-workspace .drag-handle[aria-pressed="true"]{cursor:grabbing;background:#23453f;color:var(--studio-aqua);border-color:#5bb7a8}
+.playlist-workspace .drag-handle:focus-visible{outline:3px solid var(--studio-aqua);outline-offset:2px}
+.playlist-workspace .drag-handle[aria-disabled="true"]{opacity:.45;cursor:wait}
 .playlist-workspace .asset-index{width:26px;height:auto;background:transparent;border:0;color:#8aa2b3;font-size:12px}
 .playlist-workspace .asset-kind{display:grid;place-items:center;flex:none;width:48px;height:48px;border-radius:13px;font-size:22px;font-weight:800;border:1px solid #496374;color:#9ff7e9;background:linear-gradient(135deg,#1b4548,#183443)}
 .playlist-workspace .kind-image{color:#ffe0b4;background:linear-gradient(135deg,#564032,#302c3b);border-color:#6f5642}
@@ -37,9 +39,12 @@
 .playlist-workspace .asset-edit button{align-self:end}
 .playlist-workspace .delete-panel{border-top:1px dashed #3b4658;margin-top:17px}
 .playlist-workspace .delete-ack{display:flex;align-items:center;gap:9px;color:#e8b8bf;font-size:12px;line-height:1.4}.playlist-workspace .delete-ack input{flex:none;width:18px;min-height:18px;margin:0;accent-color:#fcafb9}
-.playlist-workspace .is-dragging{opacity:.45;border-style:dashed}
-.playlist-workspace .asset.drop-before{box-shadow:0 -4px 0 0 var(--studio-aqua)}
-.playlist-workspace .asset.drop-after{box-shadow:0 4px 0 0 var(--studio-aqua)}
+.playlist-workspace .asset.is-dragging{opacity:.58;border-color:var(--studio-aqua);border-style:dashed;background:#1b353d;box-shadow:inset 0 0 0 1px #87f0d950}
+.playlist-workspace .asset.is-keyboard-grabbed{border:2px solid var(--studio-aqua);background:#193b3c;box-shadow:0 0 0 3px #87f0d930}
+.playlist-workspace .asset.drop-before{box-shadow:0 -5px 0 0 var(--studio-aqua),0 -8px 18px #87f0d960}
+.playlist-workspace .asset.drop-after{box-shadow:0 5px 0 0 var(--studio-aqua),0 8px 18px #87f0d960}
+.playlist-workspace .playlist-items.is-reordering{cursor:wait}
+.playlist-workspace .playlist-items.is-reordering .drag-handle{pointer-events:none}
 .playlist-workspace .composer{top:18px;border:1px solid #456a65;border-radius:20px;background:#132335;box-shadow:0 18px 55px #0004}
 .playlist-workspace .composer-head{position:relative;padding:25px 24px 20px;background:linear-gradient(140deg,#215253,#172e3e 65%,#172536)}
 .playlist-workspace .composer-head .eyebrow{font-size:10px}.playlist-workspace .composer-head h2{font-size:23px;margin:0 0 7px}.playlist-workspace .composer-head .muted{color:#c8e1df;font-size:12px}
@@ -71,28 +76,11 @@
  * Only narrow/mobile viewports may wrap controls within the same strip. */
 .playlist-workspace .asset-toolbar{
   display:grid;
-  grid-template-columns:auto minmax(0,1fr) auto;
+  grid-template-columns:minmax(0,1fr) auto;
   gap:12px;
   align-items:end;
   padding:10px 14px;
 }
-.playlist-workspace .asset-toolbar .move-controls{
-  display:flex;
-  align-items:center;
-  gap:5px;
-  min-width:0;
-  margin:0;
-  float:none;
-}
-.playlist-workspace .asset-toolbar .move-label{
-  margin-right:3px;
-  color:#9ab2c3;
-  font-size:9px;
-  letter-spacing:.07em;
-  text-transform:uppercase;
-  white-space:nowrap;
-}
-.playlist-workspace .asset-toolbar .move-controls form{margin:0}
 .playlist-workspace .asset-inline-edit{
   display:grid;
   grid-template-columns:minmax(110px,1.05fr) minmax(150px,.95fr);
@@ -199,7 +187,9 @@
   align-items:center;
   height:34px;
   min-height:34px;
-  padding:6px 10px;
+  width:36px;
+  min-width:36px;
+  padding:6px;
   border:1px solid #654956;
   border-radius:8px;
   color:#f1abb8;
@@ -213,6 +203,21 @@
   user-select:none;
 }
 .playlist-workspace .asset-toolbar-actions .delete-panel>summary::-webkit-details-marker{display:none}
+.playlist-workspace .asset-toolbar-actions .delete-panel>summary .delete-icon{display:block;flex:none}
+.playlist-workspace .asset-toolbar-actions{position:relative}
+.playlist-workspace .asset-toolbar-actions .save-indicator{
+  position:absolute;bottom:calc(100% + 5px);right:52px;
+  display:block;pointer-events:none;white-space:nowrap;
+  color:var(--studio-aqua);font-size:10px;font-weight:700;
+  opacity:0;transition:opacity .15s
+}
+.playlist-workspace .asset-toolbar-actions .save-indicator.is-visible{opacity:1}
+.playlist-workspace .asset-toolbar-actions .inline-save:disabled{
+  background:#28443f;color:#8ea6a1;opacity:.62;cursor:default;box-shadow:none
+}
+.playlist-workspace .asset-toolbar-actions .inline-save[data-save-ready="true"]:not(:disabled){
+  box-shadow:0 0 0 1px #92e9d34d,0 0 16px #87f0d924
+}
 .playlist-workspace .asset-toolbar-actions .delete-panel>summary:hover,
 .playlist-workspace .asset-toolbar-actions .delete-panel[open]>summary{
   color:#ffe3e9;
@@ -273,8 +278,7 @@
 }
 @media(max-width:860px){
   .playlist-workspace .asset-toolbar{gap:8px}
-  .playlist-workspace .asset-toolbar .move-label{display:none}
-  .playlist-workspace .asset-inline-edit{grid-template-columns:minmax(105px,1.05fr) minmax(145px,.95fr);gap:8px}
+   .playlist-workspace .asset-inline-edit{grid-template-columns:minmax(105px,1.05fr) minmax(145px,.95fr);gap:8px}
   .playlist-workspace .asset-toolbar-actions{gap:5px}
   .playlist-workspace .asset-toolbar-actions .inline-save{padding-inline:9px}
   .playlist-workspace .asset-toolbar-actions .delete-panel{padding-left:5px}
@@ -283,14 +287,13 @@
 /* Mobile: actions still stay together at the right, after the form fields. */
 @media(max-width:720px){
   .playlist-workspace .asset-toolbar{grid-template-columns:minmax(0,1fr);gap:9px;padding:10px 12px}
-  .playlist-workspace .asset-toolbar .move-controls{grid-column:1;grid-row:1}
-  .playlist-workspace .asset-inline-edit{
-    grid-column:1;grid-row:2;
+   .playlist-workspace .asset-inline-edit{
+    grid-column:1;grid-row:1;
     grid-template-columns:minmax(120px,1.05fr) minmax(160px,.95fr);
     border-top:1px solid #24394c;
     padding-top:9px;
   }
-  .playlist-workspace .asset-toolbar-actions{grid-column:1;grid-row:3}
+  .playlist-workspace .asset-toolbar-actions{grid-column:1;grid-row:2}
 }
 @media(max-width:470px){
   .playlist-workspace .asset-inline-edit{grid-template-columns:minmax(0,1fr)}
@@ -320,4 +323,15 @@
 .playlist-workspace .inline-edit-duration .duration-number:invalid{border-color:#e8aab6}
 @media(max-width:720px){
   .playlist-workspace .inline-edit-duration .duration-range{min-width:65px}
+}
+
+/* Screen-reader-only sort announcements leave the polished layout untouched. */
+.playlist-workspace .visually-hidden{
+  position:absolute!important;width:1px!important;height:1px!important;
+  padding:0!important;margin:-1px!important;overflow:hidden!important;
+  clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important
+}
+@media(prefers-reduced-motion:reduce){
+  .playlist-workspace .asset{transition:none!important}
+  .playlist-workspace .save-indicator{transition:none!important}
 }
