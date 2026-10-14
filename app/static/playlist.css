@@ -232,3 +232,28 @@
   .playlist-workspace .inline-save{grid-column:2;grid-row:1;align-self:end}
   .playlist-workspace .inline-video-duration{grid-column:1/-1;grid-row:2;justify-self:start}
 }
+
+
+/* Precise playlist durations: slider for common 5–120 s, editable number up to 3600 s. */
+.playlist-workspace .inline-edit-duration{display:grid;gap:3px;min-width:0}
+.playlist-workspace .inline-edit-duration .duration-heading{
+  display:flex;align-items:center;justify-content:space-between;gap:5px;
+  color:#c0d4df;font-size:10px;line-height:1.3;white-space:nowrap
+}
+.playlist-workspace .inline-edit-duration .duration-heading label{display:inline;margin:0;font-size:10px}
+.playlist-workspace .inline-edit-duration .duration-controls{
+  display:flex;align-items:center;gap:8px;min-width:0;min-height:34px
+}
+.playlist-workspace .inline-edit-duration .duration-range{
+  flex:1 1 65px;min-width:40px;width:100%;margin:0;
+}
+.playlist-workspace .inline-edit-duration .duration-number{
+  box-sizing:border-box;flex:0 0 67px;width:67px;min-width:0;
+  height:34px;min-height:34px;margin:0;padding:5px 5px;
+  text-align:center;font-size:12px;font-variant-numeric:tabular-nums;
+  border:1px solid #496071;border-radius:8px;background:#101f30;color:#f1f7f8
+}
+.playlist-workspace .inline-edit-duration .duration-number:invalid{border-color:#e8aab6}
+@media(max-width:720px){
+  .playlist-workspace .inline-edit-duration .duration-range{min-width:65px}
+}

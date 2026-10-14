@@ -120,11 +120,23 @@
                     <input name="name" aria-label="Titel von {{ asset.name or 'Medium' }}" required maxlength="100" value="{{ asset.name or '' }}">
                   </label>
                   {% if not is_video %}
-                    <label class="inline-edit-duration">
-                      <span>Anzeigedauer <output class="duration-value">{{ asset.duration or 15 }} Sek.</output></span>
-                      <input type="range" name="duration" min="5" max="3600" step="1"
-                             value="{{ asset.duration or 15 }}" aria-label="Anzeigedauer für {{ asset.name or 'Medium' }} in Sekunden">
-                    </label>
+                    <div class="inline-edit-duration">
+                      <div class="duration-heading">
+                        <label for="duration-{{ asset.asset_id }}">Dauer (Sek.)</label>
+                        <output class="duration-value" for="duration-{{ asset.asset_id }}">{{ asset.duration or 15 }} Sek.</output>
+                      </div>
+                      <div class="duration-controls">
+                        <input class="duration-range" type="range" min="5" max="120" step="1"
+                               value="{{ [120, [5, asset.duration or 15]|max]|min }}"
+                               aria-label="Dauer mit Schieberegler einstellen (5 bis 120 Sekunden)"
+                               title="Slider: 5 bis 120 Sek. – höhere Dauer direkt als Zahl eingeben">
+                        <input id="duration-{{ asset.asset_id }}" class="duration-number" type="number"
+                               name="duration" min="5" max="3600" step="1" required
+                               value="{{ asset.duration or 15 }}"
+                               aria-label="Anzeigedauer für {{ asset.name or 'Medium' }} in Sekunden"
+                               title="Exakte Dauer eingeben: 5 bis 3600 Sekunden">
+                      </div>
+                    </div>
                   {% else %}
                     <span class="inline-video-duration" title="Videolänge wird automatisch vom Player bestimmt">Dauer automatisch</span>
                   {% endif %}

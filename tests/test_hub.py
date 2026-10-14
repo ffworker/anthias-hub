@@ -90,7 +90,7 @@ def test_appearance_controls_are_local_and_keep_playlist_forms(env):
     assert 'data-add-mode="website"' in page and 'data-add-mode="media"' in page
     assert 'name="url"' in page and 'name="media"' in page
     assert 'asset-inline-edit' in page and 'class="quick-toggle-form"' in page
-    assert 'type="range" name="duration"' in page
+    assert 'class="duration-range" type="range" min="5" max="120"' in page
     assert 'Inhalt bearbeiten' not in page
     assert 'name="direction" value="up"' in page
     assert 'icons.svg#web' in page and 'icons.svg#image' in page
@@ -807,7 +807,7 @@ def test_inline_playlist_fields_preserve_pause_state_without_js(env):
     login(client, 'marketing')
     page = client.get('/devices/lab').data.decode('utf-8')
     assert 'asset-inline-edit' in page
-    assert 'type="range" name="duration"' in page
+    assert 'class="duration-range" type="range" min="5" max="120"' in page
     assert 'value="on"' in page
     assert 'Inhalt bearbeiten' not in page
     resp = client.post('/devices/lab/assets/one123/edit', data={
@@ -876,7 +876,7 @@ def test_playlist_edit_toolbar_contains_all_controls_in_one_compact_container(en
     assert 'Reihenfolge' in toolbar
     assert 'asset-inline-edit' in toolbar
     assert 'name="name"' in toolbar
-    assert 'type="range" name="duration"' in toolbar
+    assert 'class="duration-range" type="range" min="5" max="120"' in toolbar
     assert 'inline-save' in toolbar
     assert 'delete-panel' in toolbar
     assert toolbar.index('move-controls') < toolbar.index('asset-inline-edit') < toolbar.index('delete-panel')
@@ -885,3 +885,51 @@ def test_playlist_edit_toolbar_contains_all_controls_in_one_compact_container(en
     sheet = (Path(__file__).resolve().parents[1] / 'app' / 'static' / 'playlist.css').read_text()
     assert 'grid-template-columns:auto minmax(0,1fr) auto' in sheet
     assert 'flex:1 0 100%' not in sheet
+
+
+
+def test_precise_duration_editor_shows_slider_and_direct_number_input(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    with patch.object(FakeAnthias, 'assets_data', [
+        {'asset_id': 'precise123', 'name': 'Extended menu',
+         'mimetype': 'image/png', 'uri': 'file:///menu.png',
+         'duration': 900, 'is_enabled': True},
+    ]):
+        page = client.get('/devices/lab').data.decode('utf-8')
+        card = page.split('id="asset-precise123"', 1)[1].split('</article>', 1)[0]
+        # The slider is for typical short durations; a longer saved duration
+        # remains exact in the submitted number field, never reduced to 120.
+        assert 'class="duration-range" type="range" min="5" max="120"' in card
+        assert 'value="120"' in card
+        assert 'class="duration-number" type="number"' in card
+        assert 'name="duration" min="5" max="3600" step="1" required' in card
+        assert 'value="900"' in card
+        assert card.count('name="duration"') == 1
+        result = client.post('/devices/lab/assets/precise123/edit', data={
+            'csrf': token(client), 'name': 'Extended menu',
+            'duration': '900', 'enabled': 'on',
+        }, headers={'Accept': 'application/json'})
+    assert result.status_code == 200
+    assert result.json['asset']['duration'] == 900
+    assert FakeAnthias.changes[-1][1][1]['duration'] == 900
+
+
+def test_duration_manual_input_still_validates_server_side(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    for value in ('4', '3601', 'abc'):
+        response = client.post('/devices/lab/assets/one123/edit', data={
+            'csrf': token(client), 'name': 'Welcome',
+            'duration': value, 'enabled': 'on',
+        }, headers={'Accept': 'application/json'})
+        assert response.status_code == 422
+        assert response.json['ok'] is False
+    assert not FakeAnthias.changes
+
+
+def test_duration_js_sync_preserves_long_manually_entered_values():
+    source = (Path(__file__).resolve().parents[1] / 'app' / 'static' / 'playlist.js').read_text(encoding='utf-8')
+    assert "number.value = slider.value" in source
+    assert "slider.value = String(Math.max(5, Math.min(120, seconds)))" in source
+    assert "number.value = String(Math.max(" not in source

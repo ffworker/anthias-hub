@@ -137,14 +137,31 @@
     }
   });
 
-  // Show the selected seconds live while moving a duration slider; only
-  // the explicit Save action changes the player (no accidental patch flood).
+  // The short-range slider is precise for everyday durations (5–120 s).
+  // The number field is the *only* submitted value and supports 5–3600 s.
+  // Changing either control updates the other without clamping manual values.
+  // Both remain local until the user presses Save.
   stack.addEventListener('input', (event) => {
-    const slider = event.target;
-    if (!(slider instanceof HTMLInputElement) ||
-        !slider.matches('.asset-inline-edit input[type="range"][name="duration"]')) return;
-    const value = slider.closest('.inline-edit-duration')?.querySelector('.duration-value');
-    if (value) value.textContent = slider.value + ' Sek.';
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    const container = input.closest('.inline-edit-duration');
+    if (!container) return;
+    const slider = container.querySelector('.duration-range');
+    const number = container.querySelector('.duration-number');
+    const output = container.querySelector('.duration-value');
+    if (!slider || !number || !output) return;
+    if (input === slider) {
+      number.value = slider.value;
+      output.textContent = slider.value + ' Sek.';
+    } else if (input === number) {
+      const seconds = Number(number.value);
+      if (!number.value || !Number.isFinite(seconds)) {
+        output.textContent = '– Sek.';
+        return;
+      }
+      slider.value = String(Math.max(5, Math.min(120, seconds)));
+      output.textContent = number.value + ' Sek.';
+    }
   });
 
   // Make website and upload equally discoverable; no-JS users still see both forms.
