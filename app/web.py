@@ -399,7 +399,9 @@ def create_app(config=None):
             except LibraryError:
                 flash('Bibliothek konnte nicht geladen werden. Bestehende Playlist bleibt unverändert.', 'error')
         return render_template('playlist.html', device=device, assets=assets,
-                               library_templates=templates, error=error)
+                               library_templates=templates,
+                               library_items_available=any(t.get('items') for t in templates),
+                               error=error)
 
     @app.get('/devices/<device_id>/assets/<asset_id>/preview')
     @login_required()
