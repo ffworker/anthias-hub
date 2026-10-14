@@ -14,3 +14,20 @@
 .library-panel button{min-height:44px}.library-panel .library-confirm{display:flex;align-items:center;gap:8px;line-height:1.4}.library-confirm input{width:19px;min-height:19px;flex:none;margin:0;accent-color:var(--blue)}
 @media(max-width:900px){.library-grid{grid-template-columns:1fr}.library-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.library-apply{grid-column:1/-1}}
 @media(max-width:600px){.library-actions{grid-template-columns:1fr}.library-apply{grid-column:auto}.library-intro{padding:22px}.library-item{flex-wrap:wrap}.library-item-actions{width:100%;justify-content:space-between}.library-item-actions>form button{width:44px;min-height:44px}}
+
+
+/* Import choice: regular media ZIP first; Hub backup restore explicitly secondary. */
+.library-step{font-size:10px!important;letter-spacing:.1em;font-weight:750;color:var(--blue)!important;margin:0 0 7px!important}
+.library-media-import-panel{border-color:var(--blue)!important}
+.library-media-import-panel code,.library-backup-panel code{font-size:11px;overflow-wrap:anywhere}
+.library-media-import-panel select,.library-backup-panel select{
+  width:100%;min-height:44px;padding:8px;border:1px solid var(--border);
+  border-radius:9px;background:var(--field);color:var(--ink)
+}
+.library-backup-panel{background:var(--surface)!important}
+.library-backup-details>summary{cursor:pointer;font-size:13px;line-height:1.5;color:var(--ink);font-weight:650}
+.library-backup-details[open] form{margin-top:14px}
+.library-empty-only{padding:13px 15px;border:1px dashed var(--border);border-radius:12px;color:var(--ink)}
+.library-empty-only>summary{cursor:pointer;font-size:12px;color:var(--muted)}
+.library-empty-only>.library-panel{margin-top:12px}
+.library-media-import-panel .bulk-media-panel{margin:0;padding:0;border:0}

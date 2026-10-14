@@ -3,7 +3,7 @@
 {% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-lightbox.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='bulk-upload.css') }}"><script defer src="{{ url_for('static', filename='media-preview.js') }}"></script><script defer src="{{ url_for('static', filename='media-lightbox.js') }}"></script><script defer src="{{ url_for('static', filename='upload-feedback.js') }}"></script><script defer src="{{ url_for('static', filename='bulk-upload.js') }}"></script>{% endblock %}
 {% block content %}
 <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('library_index') }}">Bibliothek</a><span aria-hidden="true">›</span><span>{{ template.name }}</span></nav>
-<section class="library-intro"><p class="eyebrow">LOKAL IM HUB GESPEICHERT</p><h1>{{ template.name }}</h1><p class="muted">{{ template['items']|length }} Inhalte. Auf einem neuen, leeren Player in dieser Reihenfolge verwendbar.</p><a class="button" href="{{ url_for('library_export', template_id=template.id) }}">Paket als ZIP exportieren ↓</a></section>
+<section class="library-intro"><p class="eyebrow">LOKAL IM HUB GESPEICHERT</p><h1>{{ template.name }}</h1><p class="muted">{{ template['items']|length }} Inhalte. Auf einem neuen, leeren Player in dieser Reihenfolge verwendbar.</p><a class="button" href="{{ url_for('library_export', template_id=template.id) }}">Vorlage als Hub-Backup exportieren ↓</a></section>
 <div class="library-grid">
 <section aria-labelledby="items-title"><h2 id="items-title">Inhalte</h2><ol class="library-items">
 {% for item in template['items'] %}
@@ -65,7 +65,23 @@
 </form>
 </div>
 </section>
-<section class="card library-panel library-apply"><h2>Auf leeren Player übertragen</h2><p class="muted">Bestehende Playlists bleiben unangetastet. Falls die Übertragung abbricht, Playlist prüfen und nicht blind erneut starten.</p><form method="post" action="{{ url_for('apply_library_from_template', template_id=template.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="template_id" value="{{ template.id }}"><label>Bildschirm<select name="device" required {% if not devices %}disabled{% endif %}>{% for device in devices %}<option value="{{ device.id }}">{{ device.name }} · {{ device.location or 'Ohne Standort' }}</option>{% endfor %}</select></label><label class="library-confirm"><input type="checkbox" name="confirm" value="yes" required> Ich habe geprüft, dass die Ziel-Playlist leer ist.</label><button class="primary" {% if not devices or not template['items'] %}disabled{% endif %}>Vorlage übertragen</button></form></section>
+<section class="card library-panel library-apply">
+  <p class="library-step">AUF BILDSCHIRM VERÖFFENTLICHEN</p>
+  <h2>Gesamte Vorlage anhängen</h2>
+  <p class="muted">Alle {{ template['items']|length }} Inhalte aus dieser Vorlage in der gespeicherten Reihenfolge zu einer Playlist hinzufügen. Bestehende Inhalte bleiben erhalten; gleiche Webseiten mit identischem Titel und Link werden nicht doppelt hinzugefügt.</p>
+  <form method="post" action="{{ url_for('append_library_from_template', template_id=template.id) }}">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <input type="hidden" name="confirm" value="append">
+    <label>Bildschirm
+      <select name="device" required {% if not devices %}disabled{% endif %}>
+      {% for device in devices %}<option value="{{ device.id }}">{{ device.name }} · {{ device.location or 'Ohne Standort' }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="library-confirm"><input type="checkbox" name="ack" value="yes" required> Ganze Vorlage jetzt anhängen (Änderungen werden sofort sichtbar)</label>
+    <button type="submit" class="primary" {% if not devices or not template['items'] %}disabled{% endif %}>Alle Inhalte hinzufügen →</button>
+  </form>
+</section>
+<details class="library-empty-only"><summary>Erstinstallation: auf eine leere Playlist übertragen</summary><section class="card library-panel library-apply"><h2>Auf leeren Player übertragen</h2><p class="muted">Bestehende Playlists bleiben unangetastet. Falls die Übertragung abbricht, Playlist prüfen und nicht blind erneut starten.</p><form method="post" action="{{ url_for('apply_library_from_template', template_id=template.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="template_id" value="{{ template.id }}"><label>Bildschirm<select name="device" required {% if not devices %}disabled{% endif %}>{% for device in devices %}<option value="{{ device.id }}">{{ device.name }} · {{ device.location or 'Ohne Standort' }}</option>{% endfor %}</select></label><label class="library-confirm"><input type="checkbox" name="confirm" value="yes" required> Ich habe geprüft, dass die Ziel-Playlist leer ist.</label><button class="primary" {% if not devices or not template['items'] %}disabled{% endif %}>Vorlage übertragen</button></form></section></details>
 </aside>{% endif %}
 </div>
 {% endblock %}

@@ -100,7 +100,7 @@ def create_app(config=None):
         try:
             file = request.files.get('archive')
             if not file or not file.filename or not file.filename.lower().endswith('.zip'):
-                raise LibraryError('Bitte ein Playlist-ZIP auswählen')
+                raise LibraryError('Hier nur ein zuvor aus Anthias Hub exportiertes Vorlagen-Backup (.zip) auswählen. Für Bilder/Videos bitte „Medien-ZIP importieren“ nutzen.')
             item = library().import_zip(file.stream)
             audit('library.import', asset_id=item['id'])
             return redirect(url_for('library_detail', template_id=item['id']))
@@ -196,6 +196,21 @@ def create_app(config=None):
             return jsonify(ok=False, error=str(exc), results=[], imported=0, failed=0), 422
         flash(str(exc), 'error')
         return redirect(destination_url)
+
+    @app.post('/library/media-import')
+    @login_required('marketing')
+    def library_media_import_from_index():
+        """Accept a plain media ZIP directly from the library landing page.
+
+        The destination template is explicit; never create a new template
+        implicitly or route uploaded files to the special backup importer.
+        """
+        template_id = request.form.get('template_id', '')
+        try:
+            library().get(template_id)
+        except LibraryError as exc:
+            return reject_bulk(exc, url_for('library_index'))
+        return library_bulk_media(template_id)
 
     @app.post('/library/<template_id>/bulk-media')
     @login_required('marketing')
@@ -297,6 +312,90 @@ def create_app(config=None):
         if request.form.get('template_id') != template_id:
             abort(400)
         return apply_library(request.form.get('device', ''))
+
+    def append_library_template(device_id, template_id):
+        """Append an entire saved template in order, without clearing the player.
+
+        Preflight every stored media item before any player operation. A stopped
+        transfer is not atomic; do not retry automatically after partial writes.
+        """
+        _, api = player_or_404(device_id)
+        store = library()
+        collection = store.get(template_id)
+        items = collection.get('items', [])
+        if not items:
+            raise LibraryError('Die Vorlage ist leer. Bitte zuerst Inhalte hinzufügen.')
+        if len(items) > 100:
+            raise LibraryError('Vorlage enthält mehr als 100 Inhalte.')
+        # Fail on missing/corrupt files before uploading *any* of the template.
+        files = {}
+        for item in items:
+            if item.get('kind') == 'media':
+                files[item['id']] = store.verified_media_path(template_id, item)
+            elif item.get('kind') != 'url':
+                raise LibraryError('Unbekannter Inhaltstyp in Vorlage.')
+
+        added, skipped = 0, 0
+        with _apply_lock:
+            existing = api.assets()  # Preflight target reachability under lock.
+            known_urls = {(asset.get('name'), asset.get('uri'))
+                          for asset in existing}
+            for item in items:
+                try:
+                    if item['kind'] == 'url':
+                        # Do not duplicate identical URLs already on the device
+                        # or repeated in the source template.
+                        identity = item['name'], item['url']
+                        if identity in known_urls:
+                            skipped += 1
+                            continue
+                        api.create(item['name'], item['url'], item['duration'])
+                        known_urls.add(identity)
+                    else:
+                        path = files[item['id']]
+                        ext = path.suffix.lower()
+                        with path.open('rb') as stream:
+                            uploaded = api.upload(stream, path.name, MEDIA[ext])
+                        api.create(item['name'], uploaded['uri'], item['duration'],
+                                   mimetype=MEDIA[ext], ext=uploaded.get('ext'))
+                    added += 1
+                    audit('library.append-item', device_id, item['id'])
+                except (PlayerError, OSError, ValueError) as exc:
+                    # A failed upload/create may already have modified the Pi.
+                    raise LibraryError(
+                        f'Abbruch nach {added} hinzugefügten und {skipped} übersprungenen '
+                        f'Inhalten bei „{item["name"]}“: {exc}. '
+                        'Mögliche Teilübertragung! Playlist prüfen und nicht blind erneut starten.'
+                    ) from exc
+        audit('library.append-template', device_id, template_id)
+        return added, skipped
+
+    @app.post('/devices/<device_id>/append-library')
+    @login_required('marketing')
+    def append_library_from_player(device_id):
+        if request.form.get('confirm') != 'append' or request.form.get('ack') != 'yes':
+            abort(400)
+        try:
+            added, skipped = append_library_template(device_id, request.form.get('template_id', ''))
+            flash(f'{added} Inhalte hinzugefügt, {skipped} bereits vorhandene Webseiten übersprungen. '
+                  'Bestehende Playlist wurde nicht gelöscht. Ausgabe am TV prüfen.', 'success')
+        except (LibraryError, PlayerError, OSError) as exc:
+            flash(str(exc) + ' Keine automatische Wiederholung: Playlist auf dem Player prüfen.', 'error')
+        return redirect(url_for('playlist', device_id=device_id))
+
+    @app.post('/library/<template_id>/append-to-device')
+    @login_required('marketing')
+    def append_library_from_template(template_id):
+        if request.form.get('confirm') != 'append' or request.form.get('ack') != 'yes':
+            abort(400)
+        device_id = request.form.get('device', '')
+        try:
+            added, skipped = append_library_template(device_id, template_id)
+            flash(f'{added} Inhalte aus der Vorlage hinzugefügt, {skipped} vorhandene Webseiten übersprungen. '
+                  'Der Bildschirm wurde nicht geleert.', 'success')
+        except (LibraryError, PlayerError, OSError) as exc:
+            flash(str(exc) + ' Keine automatische Wiederholung: Ziel-Playlist prüfen.', 'error')
+        return redirect(url_for('library_detail', template_id=template_id))
 
     def append_library_item(device_id, template_id, item_id):
         """Append exactly one item to a possibly nonempty player playlist.

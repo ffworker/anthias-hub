@@ -110,23 +110,34 @@
                     <button title="Nach unten" aria-label="{{ asset.name or 'Element' }} nach unten" {% if loop.last %}disabled{% endif %}>↓</button>
                   </form>
                 </div>
-                <details class="edit-panel">
-                  <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#edit"></use></svg> Inhalt bearbeiten</summary>
-                  <form method="post" class="asset-edit" action="{{ url_for('edit_asset', device_id=device.id, asset_id=asset.asset_id) }}">
+                <form method="post" class="asset-edit asset-inline-edit"
+                      action="{{ url_for('edit_asset', device_id=device.id, asset_id=asset.asset_id) }}">
+                  <input type="hidden" name="csrf" value="{{ csrf() }}">
+                  <input type="hidden" name="enabled" value="{{ 'on' if asset.is_enabled else 'off' }}">
+                  <label class="inline-edit-name">
+                    <span>Titel</span>
+                    <input name="name" aria-label="Titel von {{ asset.name or 'Medium' }}" required maxlength="100" value="{{ asset.name or '' }}">
+                  </label>
+                  {% if not is_video %}
+                    <label class="inline-edit-duration">
+                      <span>Anzeigedauer <output class="duration-value">{{ asset.duration or 15 }} Sek.</output></span>
+                      <input type="range" name="duration" min="5" max="3600" step="1"
+                             value="{{ asset.duration or 15 }}" aria-label="Anzeigedauer für {{ asset.name or 'Medium' }} in Sekunden">
+                    </label>
+                  {% else %}
+                    <span class="inline-video-duration">Videodauer automatisch</span>
+                  {% endif %}
+                  <button type="submit" class="primary inline-save">Speichern</button>
+                </form>
+                <details class="delete-panel">
+                  <summary>Inhalt löschen …</summary>
+                  <p class="muted">Entfernt diesen Inhalt vom Player, möglicherweise inklusive hochgeladener Datei.</p>
+                  <form method="post" action="{{ url_for('delete_asset', device_id=device.id, asset_id=asset.asset_id) }}">
                     <input type="hidden" name="csrf" value="{{ csrf() }}">
-                    <label>Titel<input name="name" required maxlength="100" value="{{ asset.name or '' }}"></label>
-                    {% if not is_video %}<label>Dauer <span class="label-note">Sekunden</span><input type="number" name="duration" min="5" max="3600" required value="{{ asset.duration or 15 }}"></label>{% endif %}
-                    <label class="check"><input type="checkbox" name="enabled" {% if asset.is_enabled %}checked{% endif %}> Aktiv</label>
-                    <button class="primary">Änderungen speichern</button>
+                    <input type="hidden" name="confirm" value="{{ asset.asset_id }}">
+                    <label class="delete-ack"><input type="checkbox" name="ack" value="yes" required> Ich möchte diesen Inhalt endgültig löschen.</label>
+                    <button class="danger-btn">Endgültig löschen</button>
                   </form>
-                  <details class="delete-panel"><summary>Inhalt löschen …</summary>
-                    <p class="muted">Entfernt diesen Inhalt vom Player, möglicherweise inklusive hochgeladener Datei.</p>
-                    <form method="post" action="{{ url_for('delete_asset', device_id=device.id, asset_id=asset.asset_id) }}">
-                      <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="confirm" value="{{ asset.asset_id }}">
-                      <label class="delete-ack"><input type="checkbox" name="ack" value="yes" required> Ich möchte diesen Inhalt endgültig löschen.</label>
-                      <button class="danger-btn">Endgültig löschen</button>
-                    </form>
-                  </details>
                 </details>
               </div>
             {% endif %}
@@ -180,8 +191,8 @@
             <div class="upload-feedback" hidden role="status" aria-live="polite"><div class="upload-progress" aria-hidden="true"><span data-upload-bar></span></div><small data-upload-text></small></div>
           </form>
         <div class="bulk-media-panel">
-          <h3>Mehrere Medien auf einmal</h3>
-          <p class="muted">Eine selbst erstellte ZIP oder mehrere Bilder/Videos gleichzeitig zur bestehenden Playlist hinzufügen. Kein Ersetzen oder Löschen.</p>
+          <h3>Mehrere Bilder/Videos oder normale Medien-ZIP</h3>
+          <p class="muted">Hier passen selbst erstellte ZIP-Dateien mit Bildern/Videos hinein – ohne manifest.json. Oder mehrere Mediendateien direkt auswählen. Anhängen statt Ersetzen.</p>
           <form class="bulk-media-form" data-bulk-upload method="post" enctype="multipart/form-data" action="{{ url_for('player_bulk_media', device_id=device.id) }}">
   <input type="hidden" name="csrf" value="{{ csrf() }}">
   <label>Dateien oder ZIP auswählen
@@ -200,7 +211,7 @@
         </div>
         </div>
         <div class="composer-pane" data-add-pane="library">
-          <p class="composer-explainer">Einen einzelnen gespeicherten Inhalt zur bestehenden Playlist hinzufügen. Nichts wird ersetzt.</p>
+          <p class="composer-explainer">Gespeicherte Inhalte wiederverwenden: einzelne Medien oder die komplette Vorlage. Bereits vorhandene Playlist-Einträge bleiben erhalten.</p>
           {% if library_items_available %}
           <form method="post" action="{{ url_for('add_library_item_from_player', device_id=device.id) }}">
             <input type="hidden" name="csrf" value="{{ csrf() }}">
@@ -222,6 +233,28 @@
             <p class="muted">Wird sofort auf diesem Player hinzugefügt. Bestehende Inhalte behalten ihre Reihenfolge.</p>
             <button type="submit" class="primary full-width">Inhalt hinzufügen →</button>
           </form>
+          <div class="library-template-append">
+            <h3>Gesamte Vorlage hinzufügen</h3>
+            <p class="muted">Alle Inhalte der gewählten Vorlage werden in ihrer gespeicherten Reihenfolge angehängt. Bereits vorhandene Webseiten mit identischem Titel und Link werden übersprungen. Medien werden nicht automatisch auf Duplikate geprüft.</p>
+            <form method="post" action="{{ url_for('append_library_from_player', device_id=device.id) }}">
+              <input type="hidden" name="csrf" value="{{ csrf() }}">
+              <input type="hidden" name="confirm" value="append">
+              <label>Bibliotheksvorlage
+                <select name="template_id" required>
+                  <option value="">Komplette Vorlage auswählen …</option>
+                  {% for collection in library_templates %}
+                    {% if collection['items'] %}
+                      <option value="{{ collection.id }}">{{ collection.name }} · {{ collection['items']|length }} Inhalte</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </label>
+              <label class="append-confirm"><input type="checkbox" name="ack" value="yes" required>
+                Alle Inhalte jetzt auf diesem Bildschirm anhängen
+              </label>
+              <button type="submit" class="primary full-width">Gesamte Vorlage hinzufügen →</button>
+            </form>
+          </div>
           {% else %}
           <p class="muted">Noch keine gespeicherten Inhalte vorhanden.</p>
           <a class="button" href="{{ url_for('library_index') }}">Bibliothek öffnen →</a>
