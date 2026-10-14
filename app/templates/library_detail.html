@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}{{ template.name }} · Bibliothek · Anthias Hub{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}"><script defer src="{{ url_for('static', filename='media-preview.js') }}"></script>{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><script defer src="{{ url_for('static', filename='media-preview.js') }}"></script>{% endblock %}
 {% block content %}
 <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('library_index') }}">Bibliothek</a><span aria-hidden="true">›</span><span>{{ template.name }}</span></nav>
 <section class="library-intro"><p class="eyebrow">LOKAL IM HUB GESPEICHERT</p><h1>{{ template.name }}</h1><p class="muted">{{ template['items']|length }} Inhalte. Auf einem neuen, leeren Player in dieser Reihenfolge verwendbar.</p><a class="button" href="{{ url_for('library_export', template_id=template.id) }}">Paket als ZIP exportieren ↓</a></section>
