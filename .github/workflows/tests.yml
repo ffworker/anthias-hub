@@ -30,6 +30,7 @@ jobs:
 
       - name: Validate Marketing UI JavaScript syntax
         run: |
+          node --check app/static/bulk-upload.js
           node --check app/static/upload-feedback.js
           node --check app/static/media-lightbox.js
           node --check app/static/media-preview.js
