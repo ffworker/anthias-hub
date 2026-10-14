@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}{{ device.name }} · Playlist · Anthias Hub{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='playlist.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='playlist.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}">{% endblock %}
 {% block content %}
 <div class="playlist-workspace" data-can-edit="{{ 'yes' if logged_user.role == 'marketing' and not error else 'no' }}">
   <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Alle Bildschirme</a><span aria-hidden="true">›</span><span>{{ device.name }}</span><span aria-hidden="true">·</span><a href="{{ url_for('library_index') }}">Bibliothek</a></nav>
@@ -162,13 +162,14 @@
 
         <div class="composer-pane" data-add-pane="media">
           <p class="composer-explainer">Ein Foto oder einen kurzen Clip hochladen (max. 50 MB).</p>
-          <form method="post" enctype="multipart/form-data" action="{{ url_for('upload', device_id=device.id) }}">
+          <form method="post" enctype="multipart/form-data" data-upload-form="player" action="{{ url_for('upload', device_id=device.id) }}">
             <input type="hidden" name="csrf" value="{{ csrf() }}">
             <label>Datei auswählen<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label>
-            <p class="muted input-support">PNG · JPG · WebP · MP4</p>
+            <p class="muted input-support">PNG · JPG · WebP · MP4</p><p class="upload-selected" role="status" aria-live="polite"></p>
             <label>Titel <span class="label-note">optional</span><input name="name" maxlength="100" placeholder="z. B. Herbstaktion"></label>
             <label>Bilddauer <span class="label-note">Sekunden; Videos automatisch</span><input name="duration" type="number" min="5" max="3600" value="15"></label>
-            <button class="primary full-width">Datei hinzufügen <span aria-hidden="true">→</span></button>
+            <button type="submit" class="primary full-width">Datei hinzufügen <span aria-hidden="true">→</span></button>
+            <div class="upload-feedback" hidden role="status" aria-live="polite"><div class="upload-progress" aria-hidden="true"><span data-upload-bar></span></div><small data-upload-text></small></div>
           </form>
         </div>
         <p class="composer-footnote">Aktionen am Player bleiben im Hub. Kein direkter Gerätezugang für Marketing nötig.</p>
@@ -178,5 +179,6 @@
   <div id="playlist-feedback" class="playlist-feedback" role="status" aria-live="polite" hidden></div>
 </div>
 <script defer src="{{ url_for('static', filename='media-preview.js') }}"></script>
+<script defer src="{{ url_for('static', filename='upload-feedback.js') }}"></script>
 {% if logged_user.role == 'marketing' and not error %}<script defer src="{{ url_for('static', filename='playlist.js') }}"></script>{% endif %}
 {% endblock %}
