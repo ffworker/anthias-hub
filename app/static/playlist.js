@@ -210,7 +210,9 @@
     }
   });
 
-  // Make website and upload equally discoverable; no-JS users still see both forms.
+  // Media and reusable library content are the common path for Marketing.
+  // Website is an available but visually secondary option. With no JS, all
+  // forms remain accessible; this only chooses the initial enhanced view.
   const modeButtons = Array.from(document.querySelectorAll('[data-add-mode]'));
   const panes = Array.from(document.querySelectorAll('[data-add-pane]'));
   function selectMode(mode) {
@@ -222,7 +224,7 @@
     for (const pane of panes) pane.hidden = pane.dataset.addPane !== mode;
   }
   modeButtons.forEach((button) => button.addEventListener('click', () => selectMode(button.dataset.addMode)));
-  if (modeButtons.length) selectMode('website');
+  if (modeButtons.length) selectMode('media');
 
   // All sorting input methods share one server commit: IDs + optimistic
   // baseline. On error, restore the original DOM and visible positions.

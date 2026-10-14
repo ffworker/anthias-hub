@@ -832,7 +832,7 @@ def test_library_publish_action_is_above_media_list_and_not_hidden_in_sidebar(en
     assert 'library-publish-hero' in page
     assert 'id="library-publish-heading"' in page
     assert page.index('id="library-publish-heading"') < page.index('id="items-title"')
-    assert page.index('Gesamte Vorlage übertragen') < page.index('Webseite hinzufügen')
+    assert page.index('Gesamte Vorlage übertragen') < page.index('Bild oder Video hinzufügen')
     assert page.count(f'/library/{template["id"]}/append-to-device') == 1
     assert 'name="device" required' in page
     assert 'name="ack" value="yes" required' in page
@@ -1059,3 +1059,79 @@ def test_stale_edit_never_restores_old_enabled_state(env):
         assert result.status_code == 200
         assert result.json['asset'] == {'name': 'New heading', 'duration': 22}
         assert FakeAnthias.changes[-1] == ('patch', ('one123', {'name': 'New heading', 'duration': 22}), {})
+
+
+
+def test_playlist_media_and_library_are_prominent_before_optional_website(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    assert page.index('data-add-mode="media"') < page.index('data-add-mode="library"')
+    assert page.index('data-add-mode="library"') < page.index('data-add-mode="website"')
+    assert 'class="add-mode selected" data-add-mode="media" aria-pressed="true"' in page
+    assert 'class="add-mode add-mode-secondary" data-add-mode="website" aria-pressed="false"' in page
+    assert 'Optional: Webseite' in page
+    assert page.index('data-add-pane="website"') < page.index('data-add-pane="media"')  # legacy form remains
+    assert 'RSS2Slideshow-Anzeige' in page
+    static = Path(__file__).resolve().parents[1] / 'app' / 'static'
+    javascript = (static / 'playlist.js').read_text(encoding='utf-8')
+    stylesheet = (static / 'playlist.css').read_text(encoding='utf-8')
+    assert "if (modeButtons.length) selectMode('media')" in javascript
+    assert "selectMode('website')" not in javascript
+    assert '.add-mode-secondary.selected' in stylesheet
+    assert 'grid-template-columns:repeat(2,minmax(0,1fr))' in stylesheet
+
+
+def test_library_template_shows_media_first_and_website_only_on_request(env):
+    app, client, tmp = env
+    from app.library import Library
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    library = Library(app.config['LIBRARY_DIR'])
+    collection = library.create('Bistro-Archiv')
+    login(client, 'marketing')
+    page = client.get('/library/' + collection['id']).data.decode('utf-8')
+    assert page.index('Bild oder Video hinzufügen') < page.index('Medien-Sammelimport')
+    assert page.index('Medien-Sammelimport') < page.index('Optional: Webseite verlinken')
+    assert '<details class="library-website-details">' in page
+    assert 'library-website-details" open' not in page
+    assert 'library_add_url' not in page  # internal endpoint name is not exposed
+    assert '/url' in page  # existing URL submission stays available
+    assert 'RSS2Slideshow-Anzeige' in page
+    assert 'data-upload-form="library"' in page
+    assert 'data-bulk-upload' in page
+    assert page.index('Gesamte Vorlage übertragen') < page.index('Bild oder Video hinzufügen')
+
+
+def test_library_optional_website_submission_and_role_guards_are_unchanged(env):
+    app, client, tmp = env
+    from app.library import Library
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    store = Library(app.config['LIBRARY_DIR'])
+    collection = store.create('Bistro-Web')
+    endpoint = '/library/' + collection['id'] + '/url'
+    login(client, 'viewer')
+    assert client.post(endpoint, data={
+        'csrf': token(client), 'name': 'Kiosk', 'url': 'https://example.org',
+        'duration': '20'}).status_code == 403
+    login(client, 'marketing')
+    response = client.post(endpoint, data={
+        'csrf': token(client), 'name': 'Kiosk',
+        'url': 'https://example.org', 'duration': '20'})
+    assert response.status_code == 302
+    assert [item['name'] for item in store.get(collection['id'])['items']] == ['Kiosk']
+
+
+def test_pilot_pause_state_protection_is_still_present_after_ui_reordering(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    edit_form = page.split('id="asset-edit-one123"', 1)[1].split('</form>', 1)[0]
+    assert 'name="enabled"' not in edit_form  # Toggle owns this state, not edit.
+    assert 'class="quick-toggle-form"' in page  # Existing pause form still works.
+    result = client.post('/devices/lab/assets/one123/edit', data={
+        'csrf': token(client), 'name': 'Bistro-News', 'duration': '30',
+        'enabled': 'on',  # stale client must not overwrite pause state
+    }, headers={'Accept': 'application/json'})
+    assert result.status_code == 200
+    assert result.json['asset'] == {'name': 'Bistro-News', 'duration': 30}
+    assert 'is_enabled' not in FakeAnthias.changes[-1][1][1]
