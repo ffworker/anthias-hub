@@ -357,7 +357,7 @@ def create_app(config=None):
             abort(404)
 
         incoming_range = request.headers.get('Range', '')
-        if incoming_range and not re.fullmatch(r'bytes=\\d+-\\d*', incoming_range):
+        if incoming_range and not re.fullmatch(r'bytes=\d+-\d*', incoming_range):
             abort(416)
         upstream_headers = {'Accept': '*/*'}
         if incoming_range:
@@ -366,7 +366,7 @@ def create_app(config=None):
         try:
             upstream = api.http.request(
                 'GET', api.url + '/assets/' + asset_id + '/preview/',
-                headers=upstream_headers, stream=True, timeout=(3, 12),
+                headers={**upstream_headers, 'Accept-Encoding': 'identity'}, stream=True, timeout=(3, 12),
             )
             if upstream.status_code not in (200, 206):
                 upstream.close()
@@ -391,9 +391,9 @@ def create_app(config=None):
                 abort(404)
             # Uploaded images often have .tmp filenames and octet-stream MIME.
             if is_image:
-                if first.startswith(b'\\x89PNG\\r\\n\\x1a\\n'):
+                if first.startswith(b'\x89PNG\r\n\x1a\n'):
                     content_type = 'image/png'
-                elif first.startswith(b'\\xff\\xd8\\xff'):
+                elif first.startswith(b'\xff\xd8\xff'):
                     content_type = 'image/jpeg'
                 elif first.startswith(b'RIFF') and first[8:12] == b'WEBP':
                     content_type = 'image/webp'
@@ -412,9 +412,8 @@ def create_app(config=None):
             def media_stream():
                 size = 0
                 try:
-                    for chunk in (first, *()):
-                        size += len(chunk)
-                        yield chunk
+                    size += len(first)
+                    yield first
                     for chunk in chunks:
                         size += len(chunk)
                         if size > cap:
@@ -431,7 +430,7 @@ def create_app(config=None):
                 response.headers['Content-Length'] = content_length
             if upstream.status_code == 206:
                 range_header = upstream.headers.get('Content-Range', '')
-                if re.fullmatch(r'bytes \\d+-\\d+/\\d+', range_header):
+                if re.fullmatch(r'bytes \d+-\d+/\d+', range_header):
                     response.headers['Content-Range'] = range_header
             if upstream.headers.get('Accept-Ranges') == 'bytes':
                 response.headers['Accept-Ranges'] = 'bytes'
