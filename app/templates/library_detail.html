@@ -25,7 +25,20 @@
           {% endif %}
         {% if item.kind == 'media' %}</button>{% else %}</span>{% endif %}
         <span class="library-item-copy"><strong>{{ item.name }}</strong><small>{{ item.url if item.kind == 'url' else 'Medien im Hub gespeichert' }} · {{ 'Video' if item.kind == 'media' and item.file.endswith('.mp4') else (item.duration|string ~ ' Sek.') }}</small></span>
-{% if logged_user.role == 'marketing' %}<div class="library-item-actions"><form method="post" action="{{ url_for('library_move_item', template_id=template.id, item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button name="direction" value="up" title="Nach oben" aria-label="{{ item.name }} nach oben" {% if loop.first %}disabled{% endif %}>↑</button><button name="direction" value="down" title="Nach unten" aria-label="{{ item.name }} nach unten" {% if loop.last %}disabled{% endif %}>↓</button></form><details><summary>Entfernen</summary><form method="post" action="{{ url_for('library_remove_item', template_id=template.id, item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="confirm" value="{{ item.id }}"><label class="library-confirm"><input type="checkbox" name="ack" value="yes" required> Aus Vorlage entfernen</label><button class="danger-btn" aria-label="{{ item.name }} entfernen">Endgültig entfernen</button></form></details></div>{% endif %}</li>
+{% if logged_user.role == 'marketing' %}<div class="library-item-actions"><form method="post" action="{{ url_for('library_move_item', template_id=template.id, item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button name="direction" value="up" title="Nach oben" aria-label="{{ item.name }} nach oben" {% if loop.first %}disabled{% endif %}>↑</button><button name="direction" value="down" title="Nach unten" aria-label="{{ item.name }} nach unten" {% if loop.last %}disabled{% endif %}>↓</button></form><details class="library-add-control">
+          <summary>Zu Bildschirm →</summary>
+          <form method="post" action="{{ url_for('add_library_item_from_template', template_id=template.id, item_id=item.id) }}">
+            <input type="hidden" name="csrf" value="{{ csrf() }}">
+            <input type="hidden" name="confirm" value="add">
+            <label>Ziel-Playlist
+              <select name="device" required {% if not devices %}disabled{% endif %}>
+                {% for device in devices %}<option value="{{ device.id }}">{{ device.name }} · {{ device.location or 'Ohne Standort' }}</option>{% endfor %}
+              </select>
+            </label>
+            <p class="muted">Nur dieser Inhalt wird hinzugefügt. Vorhandene Inhalte bleiben erhalten.</p>
+            <button type="submit" class="primary" {% if not devices %}disabled{% endif %}>Jetzt hinzufügen</button>
+          </form>
+        </details><details><summary>Entfernen</summary><form method="post" action="{{ url_for('library_remove_item', template_id=template.id, item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="confirm" value="{{ item.id }}"><label class="library-confirm"><input type="checkbox" name="ack" value="yes" required> Aus Vorlage entfernen</label><button class="danger-btn" aria-label="{{ item.name }} entfernen">Endgültig entfernen</button></form></details></div>{% endif %}</li>
 {% else %}<li class="card library-empty">Noch keine Inhalte in dieser Vorlage.</li>{% endfor %}
 </ol></section>
 {% if logged_user.role == 'marketing' %}<aside class="library-actions">
