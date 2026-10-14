@@ -57,7 +57,15 @@
                         aria-label="{{ asset.name or 'Element' }} verschieben">⠿</button>
               {% endif %}
               <div class="asset-index" aria-label="Position {{ loop.index }}">{{ '%02d'|format(loop.index) }}</div>
-              <div class="asset-kind {{ 'kind-video' if is_video else 'kind-image' if is_image else 'kind-web' }}" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#{{ 'video' if is_video else 'image' if is_image else 'web' }}"></use></svg></div>
+              <div class="asset-kind {{ 'kind-video' if is_video else 'kind-image' if is_image else 'kind-web' }} {{ 'asset-media-preview' if is_image or is_video else '' }}" aria-hidden="true">
+                <svg class="icon asset-placeholder"><use href="{{ url_for('static', filename='icons.svg') }}#{{ 'video' if is_video else 'image' if is_image else 'web' }}"></use></svg>
+                {% if is_image %}
+                  <img class="asset-preview-content" src="{{ url_for('player_asset_preview', device_id=device.id, asset_id=asset.asset_id) }}" alt="" loading="lazy" decoding="async">
+                {% elif is_video %}
+                  <video class="asset-preview-content asset-preview-video" data-preview-src="{{ url_for('player_asset_preview', device_id=device.id, asset_id=asset.asset_id) }}" preload="none" muted playsinline aria-hidden="true"></video>
+                  <span class="asset-preview-play" aria-hidden="true">▶</span>
+                {% endif %}
+              </div>
               <div class="asset-body">
                 <div class="asset-meta">
                   <span class="type-label">{{ 'VIDEO' if is_video else 'BILD' if is_image else 'WEBSEITE' if is_web else 'MEDIUM' }}</span>
@@ -169,5 +177,6 @@
   </div>
   <div id="playlist-feedback" class="playlist-feedback" role="status" aria-live="polite" hidden></div>
 </div>
+<script defer src="{{ url_for('static', filename='media-preview.js') }}"></script>
 {% if logged_user.role == 'marketing' and not error %}<script defer src="{{ url_for('static', filename='playlist.js') }}"></script>{% endif %}
 {% endblock %}
