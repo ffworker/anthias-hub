@@ -792,7 +792,7 @@ def test_whole_template_can_be_sent_from_library_detail(env):
     lib.add_url(template['id'], 'Promo', 'https://example.org/promo', 20)
     login(client, 'marketing')
     page = client.get('/library/' + template['id']).data.decode('utf-8')
-    assert 'Gesamte Vorlage anhängen' in page
+    assert 'Gesamte Vorlage übertragen' in page
     assert '/append-to-device' in page
     assert 'Vorlage als Hub-Backup exportieren' in page
     result = client.post('/library/' + template['id'] + '/append-to-device', data={
@@ -817,3 +817,71 @@ def test_inline_playlist_fields_preserve_pause_state_without_js(env):
     assert resp.json['asset']['is_enabled'] is True
     assert resp.json['asset']['duration'] == 41
     assert FakeAnthias.changes[-1][1][1]['is_enabled'] is True
+
+
+def test_library_publish_action_is_above_media_list_and_not_hidden_in_sidebar(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    lib = Library(app.config['LIBRARY_DIR'])
+    template = lib.create('Frühstück im Bistro')
+    lib.add_url(template['id'], 'Werbung', 'https://example.org/promo', 20)
+    login(client, 'marketing')
+    page = client.get(f"/library/{template['id']}").data.decode('utf-8')
+    assert 'library-publish-hero' in page
+    assert 'id="library-publish-heading"' in page
+    assert page.index('id="library-publish-heading"') < page.index('id="items-title"')
+    assert page.index('Gesamte Vorlage übertragen') < page.index('Webseite hinzufügen')
+    assert page.count(f'/library/{template["id"]}/append-to-device') == 1
+    assert 'name="device" required' in page
+    assert 'name="ack" value="yes" required' in page
+    assert 'Bestehende Playlist bleibt erhalten' in page
+    assert 'Vorlage als Hub-Backup exportieren' in page
+
+
+def test_library_publish_action_is_disabled_for_empty_templates_or_no_players(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    template = Library(app.config['LIBRARY_DIR']).create('Empty')
+    login(client, 'marketing')
+    page = client.get(f"/library/{template['id']}").data.decode('utf-8')
+    assert 'Diese Vorlage ist noch leer' in page
+    assert 'library-publish-button" disabled' in page
+    from unittest.mock import patch
+    with patch('app.web.load', return_value=[]):
+        page = client.get(f"/library/{template['id']}").data.decode('utf-8')
+    assert 'Noch kein Bildschirm registriert' not in page  # Empty takes priority.
+    assert 'name="device" required disabled' in page
+
+
+def test_read_only_viewer_does_not_receive_publish_controls(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    template = Library(app.config['LIBRARY_DIR']).create('Viewer')
+    login(client, 'viewer')
+    page = client.get(f"/library/{template['id']}").data.decode('utf-8')
+    assert template['name'] in page
+    assert 'library-publish-hero' not in page
+    assert '/append-to-device' not in page
+
+
+def test_playlist_edit_toolbar_contains_all_controls_in_one_compact_container(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    first = page.split('id="asset-one123"', 1)[1].split('</article>', 1)[0]
+    toolbar = first.split('<div class="asset-toolbar">', 1)[1]
+    assert 'Reihenfolge' in toolbar
+    assert 'asset-inline-edit' in toolbar
+    assert 'name="name"' in toolbar
+    assert 'type="range" name="duration"' in toolbar
+    assert 'inline-save' in toolbar
+    assert 'delete-panel' in toolbar
+    assert toolbar.index('move-controls') < toolbar.index('asset-inline-edit') < toolbar.index('delete-panel')
+    assert first.count('asset-inline-edit') == 1
+    from pathlib import Path
+    sheet = (Path(__file__).resolve().parents[1] / 'app' / 'static' / 'playlist.css').read_text()
+    assert 'grid-template-columns:auto minmax(0,1fr) auto' in sheet
+    assert 'flex:1 0 100%' not in sheet
