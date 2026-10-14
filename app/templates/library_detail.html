@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}{{ template.name }} · Bibliothek · Anthias Hub{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}"><script defer src="{{ url_for('static', filename='media-preview.js') }}"></script><script defer src="{{ url_for('static', filename='upload-feedback.js') }}"></script>{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-lightbox.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}"><script defer src="{{ url_for('static', filename='media-preview.js') }}"></script><script defer src="{{ url_for('static', filename='media-lightbox.js') }}"></script><script defer src="{{ url_for('static', filename='upload-feedback.js') }}"></script>{% endblock %}
 {% block content %}
 <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('library_index') }}">Bibliothek</a><span aria-hidden="true">›</span><span>{{ template.name }}</span></nav>
 <section class="library-intro"><p class="eyebrow">LOKAL IM HUB GESPEICHERT</p><h1>{{ template.name }}</h1><p class="muted">{{ template['items']|length }} Inhalte. Auf einem neuen, leeren Player in dieser Reihenfolge verwendbar.</p><a class="button" href="{{ url_for('library_export', template_id=template.id) }}">Paket als ZIP exportieren ↓</a></section>
@@ -8,7 +8,14 @@
 <section aria-labelledby="items-title"><h2 id="items-title">Inhalte</h2><ol class="library-items">
 {% for item in template['items'] %}
 <li class="card library-item">
-        <span class="library-glyph {{ 'library-media-preview' if item.kind == 'media' else '' }}" aria-hidden="true">
+        {% if item.kind == 'media' %}
+        <button class="library-glyph library-media-preview media-preview-trigger" type="button" data-media-lightbox
+                data-preview-url="{{ url_for('library_item_preview', template_id=template.id, item_id=item.id) }}"
+                data-preview-type="{{ 'video' if item.file.endswith('.mp4') else 'image' }}"
+                data-preview-title="{{ item.name }}" aria-label="{{ item.name }} groß ansehen">
+        {% else %}
+        <span class="library-glyph" aria-hidden="true">
+        {% endif %}
           <svg class="icon asset-placeholder"><use href="{{ url_for('static', filename='icons.svg') }}#{{ 'web' if item.kind == 'url' else 'video' if item.file.endswith('.mp4') else 'image' }}"></use></svg>
           {% if item.kind == 'media' and item.file.endswith('.mp4') %}
             <video class="asset-preview-content asset-preview-video" data-preview-src="{{ url_for('library_item_preview', template_id=template.id, item_id=item.id) }}" preload="none" muted playsinline aria-hidden="true"></video>
@@ -16,7 +23,7 @@
           {% elif item.kind == 'media' %}
             <img class="asset-preview-content" src="{{ url_for('library_item_preview', template_id=template.id, item_id=item.id) }}" alt="" loading="lazy" decoding="async">
           {% endif %}
-        </span>
+        {% if item.kind == 'media' %}</button>{% else %}</span>{% endif %}
         <span class="library-item-copy"><strong>{{ item.name }}</strong><small>{{ item.url if item.kind == 'url' else 'Medien im Hub gespeichert' }} · {{ 'Video' if item.kind == 'media' and item.file.endswith('.mp4') else (item.duration|string ~ ' Sek.') }}</small></span>
 {% if logged_user.role == 'marketing' %}<div class="library-item-actions"><form method="post" action="{{ url_for('library_move_item', template_id=template.id, item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button name="direction" value="up" title="Nach oben" aria-label="{{ item.name }} nach oben" {% if loop.first %}disabled{% endif %}>↑</button><button name="direction" value="down" title="Nach unten" aria-label="{{ item.name }} nach unten" {% if loop.last %}disabled{% endif %}>↓</button></form><details><summary>Entfernen</summary><form method="post" action="{{ url_for('library_remove_item', template_id=template.id, item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="confirm" value="{{ item.id }}"><label class="library-confirm"><input type="checkbox" name="ack" value="yes" required> Aus Vorlage entfernen</label><button class="danger-btn" aria-label="{{ item.name }} entfernen">Endgültig entfernen</button></form></details></div>{% endif %}</li>
 {% else %}<li class="card library-empty">Noch keine Inhalte in dieser Vorlage.</li>{% endfor %}
