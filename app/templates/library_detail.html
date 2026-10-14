@@ -1,11 +1,15 @@
 {% extends 'base.html' %}
+{% from '_template_delete.html' import delete_control with context %}
 {% block title %}{{ template.name }} · Bibliothek · Anthias Hub{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-lightbox.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='bulk-upload.css') }}"><script defer src="{{ url_for('static', filename='media-preview.js') }}"></script><script defer src="{{ url_for('static', filename='media-lightbox.js') }}"></script><script defer src="{{ url_for('static', filename='upload-feedback.js') }}"></script><script defer src="{{ url_for('static', filename='bulk-upload.js') }}"></script>{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-lightbox.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='bulk-upload.css') }}"><script defer src="{{ url_for('static', filename='media-preview.js') }}"></script><script defer src="{{ url_for('static', filename='media-lightbox.js') }}"></script><script defer src="{{ url_for('static', filename='upload-feedback.js') }}"></script><script defer src="{{ url_for('static', filename='bulk-upload.js') }}"></script><script defer src="{{ url_for('static', filename='template-delete.js') }}"></script>{% endblock %}
 {% block content %}
 <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('library_index') }}">Bibliothek</a><span aria-hidden="true">›</span><span>{{ template.name }}</span></nav>
 <section class="library-intro library-template-intro">
   <p class="eyebrow">LOKAL IM HUB GESPEICHERT</p>
-  <h1>{{ template.name }}</h1>
+  <div class="library-detail-title-row">
+    <h1>{{ template.name }}</h1>
+    {% if logged_user.role == 'marketing' %}{{ delete_control(template, true) }}{% endif %}
+  </div>
   <p class="muted">{{ template['items']|length }} Inhalte. Als gesamte Vorlage oder einzeln auf Bildschirme übertragbar.</p>
 
   {% if logged_user.role == 'marketing' %}

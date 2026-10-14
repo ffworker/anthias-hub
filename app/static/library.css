@@ -191,3 +191,60 @@
 .library-website-details>p{line-height:1.55}
 .library-website-details>form{margin-top:12px}
 .library-website-details>form .primary{width:100%}
+
+
+/* Library template actions: safe, intentional deletion, not player clearing. */
+.library-entry-shell{position:relative;min-width:0}
+.library-entry-shell .library-entry{padding-right:86px}
+.library-entry-shell:has(.template-delete-control[open]){z-index:15}
+.library-detail-title-row{display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative}
+.library-detail-title-row h1{margin:0;min-width:0;overflow-wrap:anywhere}
+.template-delete-control{position:relative;flex:none;color:var(--ink)}
+.library-entry-shell .template-delete-list{position:absolute;right:14px;top:50%;transform:translateY(-50%)}
+.template-delete-control>summary{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:8px 11px;min-height:38px;box-sizing:border-box;
+  border:1px solid var(--border);border-radius:9px;
+  background:var(--field);color:var(--muted);list-style:none;
+  font-size:11px;cursor:pointer;white-space:nowrap
+}
+.template-delete-control>summary::-webkit-details-marker{display:none}
+.template-delete-control>summary .icon{width:15px;height:15px;flex:none}
+.template-delete-list>summary span{display:none}
+.template-delete-control>summary:hover,.template-delete-control[open]>summary{
+  border-color:var(--red);color:var(--red)
+}
+.template-delete-control>summary:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.template-delete-control[open]{z-index:30}
+.template-delete-confirm{
+  position:absolute;right:0;top:calc(100% + 9px);
+  z-index:30;box-sizing:border-box;
+  width:min(360px,calc(100vw - 36px));padding:17px;
+  background:var(--raised);border:1px solid var(--border);
+  border-radius:14px;box-shadow:0 18px 48px #0008
+}
+.template-delete-confirm strong{font-size:14px;color:var(--ink)}
+.template-delete-confirm p{
+  font-size:12px;line-height:1.55;color:var(--muted);margin:8px 0 14px
+}
+.template-delete-confirm form{display:grid;gap:12px}
+.template-delete-confirm form label{display:grid;gap:7px;font-size:12px;line-height:1.45}
+.template-delete-confirm form input[type=text]{
+  width:100%;min-width:0;box-sizing:border-box;
+  padding:10px;border:1px solid var(--border);border-radius:9px;
+  background:var(--field);color:var(--ink);font:inherit
+}
+.template-delete-confirm form label.library-confirm{
+  display:flex;align-items:flex-start;gap:9px;line-height:1.5
+}
+.template-delete-confirm .library-confirm input{flex:none;width:19px;min-height:19px;margin:0}
+.template-delete-confirm .danger-btn{
+  min-height:43px;border-radius:9px;padding:9px 12px;
+  color:#fff;background:#8b3044;border:1px solid #ae4f60
+}
+.template-delete-confirm .danger-btn:disabled{opacity:.45;cursor:not-allowed}
+.template-delete-detail>summary{padding:9px 12px}
+@media(max-width:600px){
+  .library-detail-title-row{align-items:start}
+  .template-delete-confirm{max-width:calc(100vw - 24px)}
+}

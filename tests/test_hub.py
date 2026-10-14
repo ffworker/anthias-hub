@@ -873,7 +873,7 @@ def test_playlist_edit_toolbar_contains_all_controls_in_one_compact_container(en
     login(client, 'marketing')
     page = client.get('/devices/lab').data.decode('utf-8')
     first = page.split('id="asset-one123"', 1)[1].split('</article>', 1)[0]
-    toolbar = first.split('<div class="asset-toolbar">', 1)[1]
+    toolbar = first.split('<div class="asset-toolbar"', 1)[1]
     assert 'move-controls' not in toolbar
     assert 'asset-inline-edit' in toolbar
     assert 'name="name"' in toolbar
@@ -895,7 +895,7 @@ def test_playlist_save_delete_are_grouped_and_save_button_targets_own_edit_form(
     page = client.get('/devices/lab').data.decode('utf-8')
     for asset_id in ('one123', 'two123'):
         card = page.split(f'id="asset-{asset_id}"', 1)[1].split('</article>', 1)[0]
-        toolbar = card.split('<div class="asset-toolbar">', 1)[1]
+        toolbar = card.split('<div class="asset-toolbar"', 1)[1]
         edit_form = f'id="asset-edit-{asset_id}"'
         button_target = f'form="asset-edit-{asset_id}"'
         assert toolbar.count(edit_form) == 1
@@ -1135,3 +1135,134 @@ def test_pilot_pause_state_protection_is_still_present_after_ui_reordering(env):
     assert result.status_code == 200
     assert result.json['asset'] == {'name': 'Bistro-News', 'duration': 30}
     assert 'is_enabled' not in FakeAnthias.changes[-1][1][1]
+
+
+def test_studio_v2_cards_are_editable_on_demand_and_drawer_is_reachable(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    assert 'class="playlist-workspace playlist-studio-v2"' in page
+    assert 'class="editor-layout studio-full-layout"' in page
+    assert 'data-open-composer' in page
+    assert 'class="composer-backdrop" data-close-composer hidden' in page
+    assert 'data-composer-drawer' in page
+    assert 'playlist-studio.js' in page
+    assert page.count('class="asset-body asset-open" aria-expanded="false"') == 2
+    assert 'aria-controls="asset-editor-one123"' in page
+    assert 'role="region"' in page
+    assert 'id="asset-editor-one123"' in page
+    # The image preview stays independent from the card editor click target.
+    assert 'data-media-lightbox' in page
+    assert 'class="drag-handle"' in page
+    assert 'class="quick-toggle-form"' in page
+    assert 'name="duration" min="5" max="3600"' in page
+    edit_form = page.split('id="asset-edit-one123"', 1)[1].split('</form>', 1)[0]
+    assert 'name="enabled"' not in edit_form  # Pause is owned by its own form
+
+
+def test_studio_v2_keeps_viewers_read_only_and_has_no_drawer(env):
+    _, client, _ = env
+    login(client, 'viewer')
+    page = client.get('/devices/lab').data.decode('utf-8')
+    assert 'class="playlist-workspace playlist-studio-v2"' in page
+    assert 'class="asset-body asset-open"' not in page
+    assert 'data-composer-drawer' not in page
+    assert 'data-open-composer' not in page
+    assert 'role="region"' not in page
+    assert 'class="drag-handle"' not in page
+
+
+def test_studio_v2_progressive_enhancement_and_unsaved_confirmation():
+    root = Path(__file__).resolve().parents[1] / 'app' / 'static'
+    js = (root / 'playlist-studio.js').read_text(encoding='utf-8')
+    css = (root / 'playlist.css').read_text(encoding='utf-8')
+    assert "studio.classList.add('js-ready')" in js
+    assert "if (isUnsaved(card))" in js
+    assert "Ungespeicherte Änderungen verwerfen?" in js
+    assert "hasUnsubmittedContent()" in js
+    assert "event.key === 'Escape'" in js
+    assert "event.key !== 'Tab'" in js
+    assert "closeCard(expanded)" in js
+    assert "drawer.inert = true" in js
+    assert ".playlist-studio-v2 .asset-toolbar[hidden]{display:none!important}" in css
+    assert "grid-template-columns:minmax(0,1fr)!important" in css
+    assert "width:100vw" in css  # mobile sheet
+    assert "prefers-reduced-motion:reduce" in css
+
+
+def test_library_marketing_can_delete_whole_template_without_touching_pi(env):
+    app, client, tmp = env
+    from app.library import Library, LibraryError
+    root = Path(tmp) / 'library'
+    app.config['LIBRARY_DIR'] = str(root)
+    library = Library(root)
+    collection = library.create('Bistro Herbst')
+    unchanged = library.create('Andere Vorlage')
+    png = b'\x89PNG\r\n\x1a\n' + b'data'
+    library.add_media(collection['id'], 'Aktion', io.BytesIO(png), 'aktion.png', 20)
+    library.add_url(collection['id'], 'Kiosk', 'https://example.org/kiosk', 30)
+    login(client, 'marketing')
+    t = token(client)
+    detail = client.get('/library/' + collection['id']).data.decode('utf-8')
+    overview = client.get('/library').data.decode('utf-8')
+    assert 'template-delete-control template-delete-detail' in detail
+    assert 'template-delete-control template-delete-list' in overview
+    assert 'name="name_confirmation"' in detail
+    assert 'name="ack" value="yes"' in detail
+    assert 'template-delete.js' in overview
+    route = '/library/' + collection['id'] + '/delete'
+    assert client.post(route, data={'csrf': t, 'confirm': collection['id'],
+                                    'ack': 'yes', 'name_confirmation': 'Falsch'}).status_code == 302
+    assert root.joinpath(collection['id']).is_dir()
+    assert not FakeAnthias.changes
+    response = client.post(route, data={
+        'csrf': t, 'confirm': collection['id'],
+        'ack': 'yes', 'name_confirmation': collection['name'],
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'gel\xc3\xb6scht' in response.data
+    assert not (root / collection['id']).exists()
+    assert library.get(unchanged['id'])['name'] == 'Andere Vorlage'
+    with pytest.raises(LibraryError):
+        library.get(collection['id'])
+    assert not FakeAnthias.changes
+    assert b'Andere Vorlage' in response.data
+
+
+def test_library_template_delete_csrf_roles_confirm_and_symlink_protection(env):
+    app, client, tmp = env
+    from app.library import Library, LibraryError
+    root = Path(tmp) / 'library'
+    app.config['LIBRARY_DIR'] = str(root)
+    lib = Library(root)
+    collection = lib.create('Sicher')
+    route = '/library/' + collection['id'] + '/delete'
+    login(client, 'viewer')
+    assert client.post(route, data={'csrf': token(client), 'confirm': collection['id'],
+                                    'ack': 'yes', 'name_confirmation': 'Sicher'}).status_code == 403
+    login(client, 'it')
+    assert client.post(route, data={'csrf': token(client), 'confirm': collection['id'],
+                                    'ack': 'yes', 'name_confirmation': 'Sicher'}).status_code == 403
+    login(client, 'marketing')
+    t = token(client)
+    assert client.post(route, data={'csrf': t, 'confirm': 'wrong',
+                                    'ack': 'yes', 'name_confirmation': 'Sicher'}).status_code == 400
+    assert client.post(route, data={'csrf': t, 'confirm': collection['id'],
+                                    'name_confirmation': 'Sicher'}).status_code == 400
+    assert client.post(route, data={'confirm': collection['id'], 'ack': 'yes',
+                                    'name_confirmation': 'Sicher'}).status_code == 400
+    assert (root / collection['id']).exists()
+    # A compromised directory symlink must not allow deleting external content.
+    external = Path(tmp) / 'external'
+    external.mkdir()
+    (external / 'important.txt').write_text('keep')
+    link = root / ('a' * 32)
+    link.symlink_to(external, target_is_directory=True)
+    # Even a seemingly valid manifest at the linked location must not cause
+    # rmtree() to traverse and remove another directory.
+    (external / 'manifest.json').write_text(json.dumps({
+        'version': 1, 'id': 'a' * 32, 'name': 'Link target', 'items': [],
+    }))
+    with pytest.raises(LibraryError, match='verzeichnis'):
+        lib.delete_template('a' * 32, 'Link target')
+    assert (external / 'important.txt').read_text() == 'keep'

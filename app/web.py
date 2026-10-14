@@ -108,6 +108,21 @@ def create_app(config=None):
             flash(str(exc), 'error')
             return redirect(url_for('library_index'))
 
+    @app.post('/library/<template_id>/delete')
+    @login_required('marketing')
+    def library_delete_template(template_id):
+        """Delete only Hub-local template media, never player playlist assets."""
+        if request.form.get('confirm') != template_id or request.form.get('ack') != 'yes':
+            abort(400, 'Löschung ausdrücklich bestätigen')
+        try:
+            deleted = library().delete_template(template_id, request.form.get('name_confirmation', ''))
+            audit('library.delete-template', asset_id=template_id)
+            flash(f'Vorlage „{deleted["name"]}“ mit {len(deleted["items"])} Inhalten gelöscht. '
+                  'Bereits übertragene Bildschirm-Inhalte bleiben erhalten.', 'success')
+        except LibraryError as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('library_index'))
+
     @app.get('/library/<template_id>')
     @login_required()
     def library_detail(template_id):
