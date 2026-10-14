@@ -2,13 +2,16 @@
 import json
 import io
 import os
+import re
 import secrets
 import threading
+
+import requests
 from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import (Flask, abort, flash, g, jsonify, redirect, render_template, request,
-                   send_file, session, url_for)
+from flask import (Flask, Response, abort, flash, g, jsonify, redirect, render_template, request,
+                   send_file, session, stream_with_context, url_for)
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.utils import secure_filename
 
@@ -112,6 +115,25 @@ def create_app(config=None):
         except LibraryError:
             abort(404)
         return render_template('library_detail.html', template=item, devices=load(app.config['DEVICES_FILE']))
+
+    @app.get('/library/<template_id>/items/<item_id>/preview')
+    @login_required()
+    def library_item_preview(template_id, item_id):
+        """Read-only preview of one allowed local library file; never an arbitrary path."""
+        try:
+            store = library()
+            collection = store.get(template_id)
+            item = next((entry for entry in collection['items']
+                         if entry['id'] == item_id and entry['kind'] == 'media'), None)
+            if item is None:
+                abort(404)
+            media_path = store.verified_media_path(template_id, item)
+            mime = MEDIA.get(media_path.suffix.lower())
+            if not mime:
+                abort(404)
+        except LibraryError:
+            abort(404)
+        return send_file(media_path, mimetype=mime, as_attachment=False, conditional=True)
 
     @app.get('/library/<template_id>/export')
     @login_required()
@@ -305,6 +327,119 @@ def create_app(config=None):
         except PlayerError as exc:
             error = str(exc)
         return render_template('playlist.html', device=device, assets=assets, error=error)
+
+    @app.get('/devices/<device_id>/assets/<asset_id>/preview')
+    @login_required()
+    def player_asset_preview(device_id, asset_id):
+        """Read-only, authenticated, same-player media preview (never URL proxy).
+
+        The native Anthias media-preview URL serves local files directly; remote
+        URL assets redirect elsewhere, which we intentionally do not follow.
+        This endpoint is restricted to registered device + asset IDs and
+        image/video asset types. Range requests keep video previews lightweight.
+        """
+        Anthias.valid_id(asset_id)
+        _, api = player_or_404(device_id)
+        try:
+            asset = api.call('GET', '/api/v2/assets/' + asset_id, timeout=4)
+        except PlayerError:
+            abort(404)
+        if not isinstance(asset, dict) or str(asset.get('asset_id')) != asset_id:
+            abort(404)
+        mime_type = str(asset.get('mimetype') or '')
+        is_image = mime_type == 'image' or mime_type.startswith('image/')
+        is_video = mime_type == 'video' or mime_type.startswith('video/')
+        if not is_image and not is_video:
+            abort(404)
+        uri = str(asset.get('uri') or '')
+        # Never fetch off-player URLs, even when Anthias would redirect there.
+        if not uri or uri.startswith(('http://', 'https://', '//')):
+            abort(404)
+
+        incoming_range = request.headers.get('Range', '')
+        if incoming_range and not re.fullmatch(r'bytes=\\d+-\\d*', incoming_range):
+            abort(416)
+        upstream_headers = {'Accept': '*/*'}
+        if incoming_range:
+            upstream_headers['Range'] = incoming_range
+        upstream = None
+        try:
+            upstream = api.http.request(
+                'GET', api.url + '/assets/' + asset_id + '/preview/',
+                headers=upstream_headers, stream=True, timeout=(3, 12),
+            )
+            if upstream.status_code not in (200, 206):
+                upstream.close()
+                abort(404)
+            claimed_type = upstream.headers.get('Content-Type', '').split(';', 1)[0].strip().lower()
+            # Keep malformed remote replies out of a same-origin media route.
+            if claimed_type and claimed_type not in (
+                'application/octet-stream', 'image/png', 'image/jpeg',
+                'image/webp', 'video/mp4', 'video/quicktime',
+            ):
+                upstream.close()
+                abort(404)
+            cap = 8 * 1024 * 1024 if is_image else 55 * 1024 * 1024
+            content_length = upstream.headers.get('Content-Length')
+            if content_length and (not content_length.isdigit() or int(content_length) > cap):
+                upstream.close()
+                abort(404)
+            chunks = upstream.iter_content(chunk_size=65536)
+            first = next(chunks, b'')
+            if not first:
+                upstream.close()
+                abort(404)
+            # Uploaded images often have .tmp filenames and octet-stream MIME.
+            if is_image:
+                if first.startswith(b'\\x89PNG\\r\\n\\x1a\\n'):
+                    content_type = 'image/png'
+                elif first.startswith(b'\\xff\\xd8\\xff'):
+                    content_type = 'image/jpeg'
+                elif first.startswith(b'RIFF') and first[8:12] == b'WEBP':
+                    content_type = 'image/webp'
+                else:
+                    upstream.close()
+                    abort(404)
+            else:
+                content_type = 'video/mp4'
+                if upstream.status_code == 200 and first[4:8] != b'ftyp':
+                    upstream.close()
+                    abort(404)
+                if claimed_type.startswith('image/'):
+                    upstream.close()
+                    abort(404)
+
+            def media_stream():
+                size = 0
+                try:
+                    for chunk in (first, *()):
+                        size += len(chunk)
+                        yield chunk
+                    for chunk in chunks:
+                        size += len(chunk)
+                        if size > cap:
+                            break
+                        yield chunk
+                finally:
+                    upstream.close()
+
+            response = Response(
+                stream_with_context(media_stream()), status=upstream.status_code,
+                content_type=content_type,
+            )
+            if content_length:
+                response.headers['Content-Length'] = content_length
+            if upstream.status_code == 206:
+                range_header = upstream.headers.get('Content-Range', '')
+                if re.fullmatch(r'bytes \\d+-\\d+/\\d+', range_header):
+                    response.headers['Content-Range'] = range_header
+            if upstream.headers.get('Accept-Ranges') == 'bytes':
+                response.headers['Accept-Ranges'] = 'bytes'
+            return response
+        except requests.RequestException:
+            if upstream is not None:
+                upstream.close()
+            abort(404)
 
     @app.post('/devices/<device_id>/add-url')
     @login_required('marketing')
