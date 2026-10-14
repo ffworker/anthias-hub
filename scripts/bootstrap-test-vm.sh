@@ -16,6 +16,19 @@ say() { printf '%s\n' "$*"; }
 fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 need() { command -v "$1" >/dev/null 2>&1 || fail "Missing $1; install it first (no automatic package changes)."; }
 in_repo() { git -C "$1" rev-parse --is-inside-work-tree >/dev/null 2>&1; }
+# Checking only -s is unsafe: a directory can also have a nonzero size.
+runtime_file() { [[ -f "$1" && -s "$1" ]]; }
+report_runtime_file() {
+  if runtime_file "$1"; then
+    say "OK   $1"
+  elif [[ -d "$1" ]]; then
+    say "BAD  $1 is a DIRECTORY, expected a regular file (Docker may have created it)"
+    return 1
+  else
+    say "MISS $1 (missing, empty or not a regular file)"
+    return 1
+  fi
+}
 docker_ready() {
   need docker
   docker compose version >/dev/null 2>&1 || fail "Docker Compose plugin is missing."
@@ -50,7 +63,7 @@ doctor() {
   if in_repo "$hub_dir"; then say "OK   Anthias Hub checkout"; else say "MISS Hub checkout"; bad=1; fi
   if in_repo "$rss_dir"; then say "OK   RSS checkout"; else say "MISS RSS checkout (see key / clone-rss)"; bad=1; fi
   for path in "$hub_dir/.env" "$hub_dir/config/users.json" "$rss_dir/.env" "$rss_dir/config.yaml" "$rss_dir/content/feeds.txt"; do
-    if [[ -s "$path" ]]; then say "OK   $path"; else say "MISS $path"; bad=1; fi
+    report_runtime_file "$path" || bad=1
   done
   if [[ -f "$key" ]]; then say "OK   RSS SSH private key exists (not displayed)"; else say "MISS RSS SSH key ($key)"; fi
   return "$bad"
@@ -96,7 +109,10 @@ clone_rss() {
 copy_if_missing() {
   local source=$1 target=$2
   [[ -f "$source" ]] || fail "Missing template $source; check repository layout."
-  if [[ -e "$target" ]]; then say "KEEP $target"; return; fi
+  if [[ -d "$target" ]]; then
+    fail "$target is a directory, expected a file. Stop the container; if empty, remove with rmdir and rerun init. No automatic deletion."
+  fi
+  if [[ -e "$target" || -L "$target" ]]; then say "KEEP $target"; return; fi
   cp "$source" "$target"
   chmod 600 "$target"
   say "NEW  $target (review before deployment)"
@@ -113,7 +129,9 @@ init() {
   copy_if_missing "$rss_dir/content/feeds.example.txt" "$rss_dir/content/feeds.txt"
   if [[ -e "$hub_dir/.env" ]]; then
     say "KEEP $hub_dir/.env (never overwrite credentials)"
-    [[ -s "$hub_dir/config/users.json" ]] ||
+    runtime_file "$hub_dir/.env" ||
+      fail "Hub .env is missing, empty or not a regular file; recover it before proceeding."
+    runtime_file "$hub_dir/config/users.json" ||
       fail "Hub .env exists but config/users.json is missing/empty. Restore users from backup or follow Hub account recovery docs."
   else
     [[ ! -e "$hub_dir/config/users.json" ]] ||
@@ -129,7 +147,8 @@ validate() {
   local path
   for path in "$hub_dir/.env" "$hub_dir/config/users.json" \
     "$rss_dir/.env" "$rss_dir/config.yaml" "$rss_dir/content/feeds.txt"; do
-    [[ -s "$path" ]] || fail "Missing/empty $path; run init or restore state."
+    runtime_file "$path" ||
+      fail "$path must be a nonempty regular file (not a directory). Run doctor; for an empty Docker-created directory, stop the container and use rmdir before init."
   done
   if grep -Eq '^ANTHIAS_HUB_IMAGE=' "$hub_dir/.env"; then
     fail "Hub .env has a pinned image reference. Refusing to replace a CD/production deployment with pilot Compose."
