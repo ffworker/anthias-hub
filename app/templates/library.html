@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% from '_template_delete.html' import delete_control %}
+{% from '_template_delete.html' import delete_control with context %}
 {% block title %}Playlist-Bibliothek · Anthias Hub{% endblock %}
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">
