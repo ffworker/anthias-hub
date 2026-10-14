@@ -1,28 +1,79 @@
 {% extends 'base.html' %}
 {% block title %}Playlist-Bibliothek · Anthias Hub{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='bulk-upload.css') }}">
+<script defer src="{{ url_for('static', filename='bulk-upload.js') }}"></script>
+{% endblock %}
 {% block content %}
 <section class="library-intro">
-  <p class="eyebrow">DEIN STUDIO · VORLAGEN</p>
+  <p class="eyebrow">DEIN STUDIO · GESPEICHERTE INHALTE</p>
   <h1>Playlist-Bibliothek</h1>
-  <p class="muted">Baue wiederverwendbare Playlists aus Webseiten und Medien. Dateien liegen lokal im Hub, nicht in Git.</p>
+  <p class="muted">Sammle Bilder, Videos und Webseiten in wiederverwendbaren Vorlagen. Inhalte in der Bibliothek werden nicht automatisch auf Bildschirmen angezeigt.</p>
 </section>
 <div class="library-grid">
   <section aria-labelledby="library-list-title">
-    <h2 id="library-list-title">Vorlagen <span class="count">{{ templates|length }}</span></h2>
+    <h2 id="library-list-title">Deine Vorlagen <span class="count">{{ templates|length }}</span></h2>
     <div class="library-list">
       {% for template in templates %}
-      <a class="card library-entry" href="{{ url_for('library_detail', template_id=template.id) }}"><span class="library-glyph" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg></span><span><strong>{{ template.name }}</strong><small>{{ template['items']|length }} Inhalte · Lokal gespeichert</small></span><span aria-hidden="true">→</span></a>
-      {% else %}<div class="card library-empty">Noch keine Vorlagen. Erstelle rechts deine erste Playlist.</div>{% endfor %}
+      <a class="card library-entry" href="{{ url_for('library_detail', template_id=template.id) }}">
+        <span class="library-glyph" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg></span>
+        <span><strong>{{ template.name }}</strong><small>{{ template['items']|length }} Inhalte · Öffnen, bearbeiten oder an einen Bildschirm senden</small></span>
+        <span aria-hidden="true">→</span>
+      </a>
+      {% else %}<div class="card library-empty">Noch keine Vorlage vorhanden. Erstelle rechts deine erste Sammlung.</div>{% endfor %}
     </div>
   </section>
   {% if logged_user.role == 'marketing' %}
   <aside class="library-actions">
-    <section class="card library-panel"><h2>Neue Vorlage</h2><p class="muted">Startet leer; du fügst anschließend Inhalte hinzu.</p>
-      <form method="post" action="{{ url_for('library_create') }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><label>Name<input name="name" maxlength="100" required placeholder="z. B. Bistro Startpaket"></label><button class="primary">Vorlage erstellen</button></form>
+    <section class="card library-panel">
+      <p class="library-step">01 · SAMMLUNG ANLEGEN</p>
+      <h2>Neue Vorlage erstellen</h2>
+      <p class="muted">Lege eine Sammlung an, in der du anschließend Medien speichern kannst.</p>
+      <form method="post" action="{{ url_for('library_create') }}">
+        <input type="hidden" name="csrf" value="{{ csrf() }}">
+        <label>Vorlagenname<input name="name" maxlength="100" required placeholder="z. B. Bistro Herbstaktion"></label>
+        <button class="primary">Vorlage erstellen →</button>
+      </form>
     </section>
-    <section class="card library-panel"><h2>Paket importieren</h2><p class="muted">ZIP aus dieser Bibliothek, inklusive gespeicherter Medien. Kein direkter Pi-Export.</p>
-      <form method="post" enctype="multipart/form-data" action="{{ url_for('library_import') }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><label>Playlist-ZIP<input type="file" name="archive" accept=".zip" required></label><button>ZIP importieren</button></form>
+    <section class="card library-panel library-media-import-panel">
+      <p class="library-step">02 · EIGENE MEDIEN HOCHLADEN</p>
+      <h2>Bilder, Videos oder normale ZIP importieren</h2>
+      <p class="muted">Mehrere PNG/JPG/WebP/MP4 oder <strong>eine selbst erstellte Medien-ZIP</strong>. Kein spezielles Anthias-Hub-Format und keine <code>manifest.json</code> erforderlich.</p>
+      <form class="bulk-media-form" data-bulk-upload method="post" enctype="multipart/form-data" action="{{ url_for('library_media_import_from_index') }}">
+        <input type="hidden" name="csrf" value="{{ csrf() }}">
+        <label>Zielvorlage
+          <select name="template_id" required {% if not templates %}disabled{% endif %}>
+            <option value="">Vorlage auswählen …</option>
+            {% for template in templates %}<option value="{{ template.id }}">{{ template.name }} ({{ template['items']|length }} Inhalte)</option>{% endfor %}
+          </select>
+        </label>
+        <label>Medien oder ZIP-Datei
+          <input type="file" name="media" accept=".zip,.png,.jpg,.jpeg,.webp,.mp4" multiple required {% if not templates %}disabled{% endif %}>
+        </label>
+        <p class="muted">Eine ZIP allein oder bis zu 20 Einzeldateien, maximal 50 MB Upload; ZIP bis 150 MB entpackt. Kein sofortiger Upload zum TV.</p>
+        <label>Bilddauer in Sekunden<input name="duration" type="number" min="5" max="3600" value="15" required></label>
+        <p class="bulk-selected" data-bulk-selected role="status" aria-live="polite"></p>
+        <button type="submit" class="primary" {% if not templates %}disabled{% endif %}>Medien in Vorlage importieren →</button>
+        <div class="bulk-progress" data-bulk-progress hidden role="status" aria-live="polite">
+          <div class="upload-progress" aria-hidden="true"><span data-bulk-progress-bar></span></div>
+          <small data-bulk-progress-text></small>
+        </div>
+        <div class="bulk-report" data-bulk-report hidden role="region" aria-label="Ergebnis des Medienimports" aria-live="polite"></div>
+      </form>
+      {% if not templates %}<p class="muted">Erstelle zuerst eine Vorlage, um eigene Medien darin zu speichern.</p>{% endif %}
+    </section>
+    <section class="card library-panel library-backup-panel">
+      <p class="library-step">FÜR GESICHERTE VORLAGEN</p>
+      <details class="library-backup-details">
+        <summary>Anthias-Hub-Vorlagenbackup wiederherstellen</summary>
+        <p class="muted">Nur für ZIP-Dateien, die zuvor mit <strong>„Vorlage als Hub-Backup exportieren“</strong> aus Anthias Hub gespeichert wurden. Diese enthalten eine <code>manifest.json</code>. <strong>Keine normale Bilder-/Video-ZIP.</strong></p>
+        <form method="post" enctype="multipart/form-data" action="{{ url_for('library_import') }}">
+          <input type="hidden" name="csrf" value="{{ csrf() }}">
+          <label>Hub-Backup-ZIP auswählen<input type="file" name="archive" accept=".zip" required></label>
+          <button type="submit">Vorlagenbackup wiederherstellen</button>
+        </form>
+      </details>
     </section>
   </aside>
   {% endif %}
