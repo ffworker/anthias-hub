@@ -363,3 +363,146 @@
   .playlist-workspace .asset{transition:none!important}
   .playlist-workspace .save-indicator{transition:none!important}
 }
+
+
+/* ─── Playlist Studio 2.0: media first, editing on demand ─── */
+.playlist-studio-v2 .editor-layout,
+.playlist-studio-v2 .editor-layout.studio-full-layout{
+  display:grid;grid-template-columns:minmax(0,1fr)!important;gap:16px
+}
+.playlist-studio-v2 .queue{min-width:0;width:100%}
+.playlist-studio-v2 .playlist-hero{
+  padding:23px 27px;margin-bottom:23px;
+  box-shadow:0 12px 34px #0002
+}
+.playlist-studio-v2 .section-title{align-items:center;margin-bottom:12px}
+.playlist-studio-v2 .section-title h2{font-size:24px}
+.playlist-studio-v2 .section-title .studio-add-trigger{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:44px;border-radius:10px;background:#85e9d0;
+  color:#0c302f;font-weight:750;padding:10px 17px
+}
+.playlist-studio-v2 .section-title .studio-add-trigger:hover{background:#b6ffed}
+.playlist-studio-v2 .playlist-overview{
+  border-color:#304655;background:#172536;
+  padding:10px 14px;margin-bottom:12px
+}
+.playlist-studio-v2 .queue .stack{gap:8px}
+.playlist-studio-v2 .asset{
+  border-radius:12px;background:#162536;border-color:#344d5e
+}
+.playlist-studio-v2 .asset-main{
+  display:flex;align-items:center;gap:14px;
+  padding:11px 18px;min-height:74px
+}
+.playlist-studio-v2 .asset-index{width:29px;min-width:29px;font-size:12px}
+.playlist-studio-v2 .asset-kind{
+  width:75px;height:62px;min-width:75px;
+  border-radius:11px
+}
+.playlist-studio-v2 .asset-body{
+  display:block;flex:1 1 auto;min-width:0;position:relative
+}
+.playlist-studio-v2 button.asset-open{
+  min-height:63px;padding:7px 12px 7px 3px;margin:0;
+  text-align:left;cursor:pointer;border:1px solid transparent;
+  border-radius:9px;background:transparent;color:inherit;
+  box-shadow:none;font:inherit
+}
+.playlist-studio-v2 button.asset-open:hover{
+  border-color:#385c5b;background:#1a3440
+}
+.playlist-studio-v2 button.asset-open:focus-visible{
+  outline:2px solid var(--studio-aqua);outline-offset:2px
+}
+.playlist-studio-v2 .asset-body .asset-meta{
+  display:flex;align-items:center;gap:7px;
+  margin:0 0 3px;color:#9fb7c5;
+  font-size:10px;line-height:1.3;white-space:nowrap
+}
+.playlist-studio-v2 .asset-body .asset-name{
+  display:block;margin:0;font-size:15px;font-weight:740;line-height:1.4;
+  color:#ecf6f6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.playlist-studio-v2 .asset-body .clip{
+  display:block;max-width:100%;margin-top:2px;
+  font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.playlist-studio-v2 .asset-edit-hint{
+  position:absolute;right:9px;top:50%;transform:translateY(-50%);
+  color:#b0d3cb;font-size:10px;opacity:0;transition:opacity .15s
+}
+.playlist-studio-v2 .asset-open:hover .asset-edit-hint,
+.playlist-studio-v2 .asset-open:focus-visible .asset-edit-hint,
+.playlist-studio-v2 .asset.is-expanded .asset-edit-hint{opacity:1}
+.playlist-studio-v2 .asset.is-expanded{border-color:#5ba995;box-shadow:0 9px 30px #0003}
+.playlist-studio-v2 .asset.is-expanded .asset-chevron{display:inline-block;transform:rotate(180deg)}
+.playlist-studio-v2 .asset-toolbar{
+  padding:16px 18px 18px;background:#122131;gap:15px
+}
+.playlist-studio-v2 .asset-toolbar[hidden]{display:none!important}
+.playlist-studio-v2 .asset-toolbar .quick-toggle-form{margin-right:4px}
+.playlist-studio-v2 .asset-toolbar-actions{gap:9px}
+.playlist-studio-v2 .asset.is-paused .asset-status{opacity:1}
+.playlist-studio-v2 .asset-side{margin-left:0}
+.playlist-studio-v2 .composer-close-row{display:none}
+.playlist-studio-v2 .composer-backdrop[hidden]{display:none!important}
+.playlist-studio-v2.js-ready .composer-backdrop{
+  position:fixed;inset:0;z-index:140;
+  background:#06131dc4;backdrop-filter:blur(3px)
+}
+.playlist-studio-v2.js-ready .composer{
+  position:fixed!important;top:0!important;right:0;bottom:0;left:auto;
+  z-index:150;box-sizing:border-box;
+  width:min(465px,100vw);height:100dvh;max-height:100dvh;
+  margin:0;padding:0;overflow-y:auto;overscroll-behavior:contain;
+  border-radius:17px 0 0 17px;border:1px solid #4f8276;border-right:0;
+  background:#132335;box-shadow:-22px 0 55px #0009;
+  transform:translateX(105%);visibility:hidden;pointer-events:none;
+  transition:transform .23s ease,visibility .23s
+}
+.playlist-studio-v2.js-ready.composer-is-open .composer{
+  transform:translateX(0);visibility:visible;pointer-events:auto
+}
+body.studio-drawer-open{overflow:hidden}
+.playlist-studio-v2.js-ready .composer-close-row{
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:4;
+  padding:11px 18px 10px 22px;background:#102132;
+  border-bottom:1px solid #304957;color:#9fbbb8;
+  font-size:10px;font-weight:800;letter-spacing:.12em
+}
+.playlist-studio-v2 .composer-close{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:39px;height:39px;border:1px solid #456475;border-radius:10px;
+  color:#d4eeee;background:#1c3543;font-size:25px;cursor:pointer;box-shadow:none
+}
+.playlist-studio-v2 .composer-close:hover{background:#2a4b4d}
+.playlist-studio-v2 .composer-head{padding:21px 24px 18px}
+.playlist-studio-v2 .composer-head h2{font-size:23px}
+.playlist-studio-v2 .composer-footnote{margin:0}
+@media(max-width:760px){
+  .playlist-studio-v2 .playlist-hero{padding:18px 19px}
+  .playlist-studio-v2 .asset-main{padding:11px;gap:8px}
+  .playlist-studio-v2 .asset-kind{width:59px;min-width:59px;height:55px}
+  .playlist-studio-v2 .asset-index{display:none}
+  .playlist-studio-v2 .asset-body .clip{display:none}
+  .playlist-studio-v2 .asset-edit-hint{display:none}
+  .playlist-studio-v2 .asset-toolbar{padding:12px}
+  .playlist-studio-v2 .asset-toolbar-actions{justify-content:flex-end}
+  .playlist-studio-v2 .section-title{gap:12px}
+}
+@media(max-width:580px){
+  .playlist-studio-v2.js-ready .composer{
+    width:100vw;max-width:100vw;border:0;border-radius:0
+  }
+  .playlist-studio-v2 .asset-kind{width:51px;min-width:51px;height:51px}
+  .playlist-studio-v2 .asset-main{min-height:70px}
+  .playlist-studio-v2 .asset-open{padding-right:0}
+  .playlist-studio-v2 .section-title .studio-add-trigger{padding:9px 10px;font-size:12px}
+  .playlist-studio-v2 .asset-side .pill{font-size:9px;padding:4px 6px}
+}
+@media(prefers-reduced-motion:reduce){
+  .playlist-studio-v2.js-ready .composer{transition:none!important}
+  .playlist-studio-v2 .asset-edit-hint{transition:none!important}
+}
