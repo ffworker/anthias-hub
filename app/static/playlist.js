@@ -75,8 +75,8 @@
       button.querySelector('[aria-hidden="true"]').textContent = enabled ? 'Ⅱ' : '▶';
       button.querySelector('.quick-label').textContent = enabled ? 'Pausieren' : 'Aktivieren';
     }
-    const checkbox = card.querySelector('.asset-edit [name="enabled"]');
-    if (checkbox) checkbox.checked = enabled;
+    const editState = card.querySelector('.asset-inline-edit [name="enabled"]');
+    if (editState) editState.value = enabled ? 'on' : 'off';
     if (activeCount) activeCount.textContent = String(cards().filter((item) => item.dataset.enabled === '1').length);
   }
 
@@ -122,9 +122,12 @@
           duration.textContent = changes.duration + ' Sek.';
         }
         updateEnabled(card, changes.is_enabled);
-        const panel = form.closest('.edit-panel');
-        if (panel) panel.open = false;
-        notify('Änderungen gespeichert ✓');
+        const preview = card.querySelector('[data-media-lightbox]');
+        if (preview) {
+          preview.dataset.previewTitle = changes.name;
+          preview.setAttribute('aria-label', changes.name + ' groß ansehen');
+        }
+        notify('Titel und Dauer gespeichert ✓');
       } catch (error) {
         notify(error.message || 'Änderung nicht gespeichert.', true);
       } finally {
@@ -132,6 +135,16 @@
         delete form.dataset.pending;
       }
     }
+  });
+
+  // Show the selected seconds live while moving a duration slider; only
+  // the explicit Save action changes the player (no accidental patch flood).
+  stack.addEventListener('input', (event) => {
+    const slider = event.target;
+    if (!(slider instanceof HTMLInputElement) ||
+        !slider.matches('.asset-inline-edit input[type="range"][name="duration"]')) return;
+    const value = slider.closest('.inline-edit-duration')?.querySelector('.duration-value');
+    if (value) value.textContent = slider.value + ' Sek.';
   });
 
   // Make website and upload equally discoverable; no-JS users still see both forms.
