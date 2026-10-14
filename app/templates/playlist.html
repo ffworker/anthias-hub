@@ -2,7 +2,7 @@
 {% block title %}{{ device.name }} · Playlist · Anthias Hub{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='playlist.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-lightbox.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='bulk-upload.css') }}">{% endblock %}
 {% block content %}
-<div class="playlist-workspace" data-can-edit="{{ 'yes' if logged_user.role == 'marketing' and not error else 'no' }}">
+<div class="playlist-workspace playlist-studio-v2" data-can-edit="{{ 'yes' if logged_user.role == 'marketing' and not error else 'no' }}">
   <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Alle Bildschirme</a><span aria-hidden="true">›</span><span>{{ device.name }}</span><span aria-hidden="true">·</span><a href="{{ url_for('library_index') }}">Bibliothek</a></nav>
 
   <header class="playlist-hero">
@@ -20,7 +20,7 @@
 
   {% if error %}<div class="notice error" role="alert">Gerät nicht erreichbar: {{ error }}. Die Playlist kann derzeit nicht bearbeitet werden.</div>{% endif %}
 
-  <div class="editor-layout">
+  <div class="editor-layout studio-full-layout">
     <section id="playlist-queue" class="queue" aria-labelledby="queue-title"
              {% if logged_user.role == 'marketing' and not error %}data-reorder-url="{{ url_for('reorder_assets', device_id=device.id) }}" data-csrf="{{ csrf() }}"{% endif %}>
       <div class="section-title">
@@ -33,7 +33,7 @@
             {% else %}Die Inhalte werden in dieser Reihenfolge abgespielt.{% endif %}
           </p>
         </div>
-        {% if logged_user.role == 'marketing' and not error %}<a class="button jump-link" href="#add-content"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Hinzufügen</a>{% endif %}
+        {% if logged_user.role == 'marketing' and not error %}<a class="button jump-link studio-add-trigger" href="#add-content" data-open-composer aria-haspopup="dialog" aria-controls="add-content"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Inhalt hinzufügen</a>{% endif %}
       </div>
 
       {% if logged_user.role == 'marketing' and not error %}
@@ -77,33 +77,33 @@
                   <span class="asset-preview-play" aria-hidden="true">▶</span>
                 {% endif %}
               {% if is_image or is_video %}</button>{% else %}</div>{% endif %}
-              <div class="asset-body">
-                <div class="asset-meta">
-                  <span class="type-label">{{ 'VIDEO' if is_video else 'BILD' if is_image else 'WEBSEITE' if is_web else 'MEDIUM' }}</span>
-                  <span class="meta-sep">·</span>
-                  <span class="asset-duration">{% if is_video %}Automatische Dauer{% else %}{{ asset.duration or 15 }} Sek.{% endif %}</span>
+              {% if logged_user.role == 'marketing' and not error %}
+                <button type="button" class="asset-body asset-open" aria-expanded="false"
+                        aria-controls="asset-editor-{{ asset.asset_id }}"
+                        aria-label="{{ asset.name or 'Ohne Titel' }} bearbeiten">
+              {% else %}
+                <div class="asset-body">
+              {% endif %}
+                  <span class="asset-meta">
+                    <span class="type-label">{{ 'VIDEO' if is_video else 'BILD' if is_image else 'WEBSEITE' if is_web else 'MEDIUM' }}</span>
+                    <span class="meta-sep">·</span>
+                    <span class="asset-duration">{% if is_video %}Automatische Dauer{% else %}{{ asset.duration or 15 }} Sek.{% endif %}</span>
+                  </span>
+                  <span class="asset-name">{{ asset.name or 'Ohne Titel' }}</span>
+                  <span class="muted clip">{{ asset.uri or 'Lokales Medium' }}</span>
+              {% if logged_user.role == 'marketing' and not error %}
+                  <span class="asset-edit-hint" aria-hidden="true">Bearbeiten <span class="asset-chevron">⌄</span></span>
+                </button>
+              {% else %}
                 </div>
-                <h3 class="asset-name">{{ asset.name or 'Ohne Titel' }}</h3>
-                <p class="muted clip">{{ asset.uri or 'Lokales Medium' }}</p>
-              </div>
+              {% endif %}
               <div class="asset-side">
                 <span class="pill asset-status {{ 'ok' if asset.is_enabled else 'off' }}">{{ 'Aktiv' if asset.is_enabled else 'Pausiert' }}</span>
-                {% if logged_user.role == 'marketing' and not error %}
-                  <form method="post" class="quick-toggle-form" action="{{ url_for('toggle_asset', device_id=device.id, asset_id=asset.asset_id) }}">
-                    <input type="hidden" name="csrf" value="{{ csrf() }}">
-                    <input type="hidden" name="expected" value="{{ '1' if asset.is_enabled else '0' }}">
-                    <input type="hidden" name="enabled" value="{{ '0' if asset.is_enabled else '1' }}">
-                    <button class="quick-toggle" title="{{ 'Inhalt pausieren' if asset.is_enabled else 'Inhalt aktivieren' }}"
-                            aria-label="{{ asset.name or 'Element' }} {{ 'pausieren' if asset.is_enabled else 'aktivieren' }}">
-                      <span aria-hidden="true">{{ 'Ⅱ' if asset.is_enabled else '▶' }}</span>
-                      <span class="quick-label">{{ 'Pausieren' if asset.is_enabled else 'Aktivieren' }}</span>
-                    </button>
-                  </form>
-                {% endif %}
               </div>
             </div>
             {% if logged_user.role == 'marketing' and not error %}
-              <div class="asset-toolbar">
+              <div class="asset-toolbar" id="asset-editor-{{ asset.asset_id }}" role="region"
+                   aria-label="{{ asset.name or 'Element' }} bearbeiten">
                 <form id="asset-edit-{{ asset.asset_id }}" method="post" class="asset-edit asset-inline-edit"
                       action="{{ url_for('edit_asset', device_id=device.id, asset_id=asset.asset_id) }}">
                   <input type="hidden" name="csrf" value="{{ csrf() }}">
@@ -134,6 +134,16 @@
                   {% endif %}
                 </form>
                 <div class="asset-toolbar-actions" aria-label="Aktionen für {{ asset.name or 'Element' }}">
+                  <form method="post" class="quick-toggle-form" action="{{ url_for('toggle_asset', device_id=device.id, asset_id=asset.asset_id) }}">
+                    <input type="hidden" name="csrf" value="{{ csrf() }}">
+                    <input type="hidden" name="expected" value="{{ '1' if asset.is_enabled else '0' }}">
+                    <input type="hidden" name="enabled" value="{{ '0' if asset.is_enabled else '1' }}">
+                    <button class="quick-toggle" title="{{ 'Inhalt pausieren' if asset.is_enabled else 'Inhalt aktivieren' }}"
+                            aria-label="{{ asset.name or 'Element' }} {{ 'pausieren' if asset.is_enabled else 'aktivieren' }}">
+                      <span aria-hidden="true">{{ 'Ⅱ' if asset.is_enabled else '▶' }}</span>
+                      <span class="quick-label">{{ 'Pausieren' if asset.is_enabled else 'Aktivieren' }}</span>
+                    </button>
+                  </form>
                   <button type="submit" form="asset-edit-{{ asset.asset_id }}"
                           class="primary inline-save" data-save-ready="false">Speichern</button>
                   <span class="save-indicator" role="status" aria-live="polite"></span>
@@ -164,14 +174,19 @@
             <div class="empty-symbol" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg></div>
             <h3>{{ 'Playlist nicht verfügbar' if error else 'Ein Bildschirm voller Möglichkeiten!' }}</h3>
             <p class="muted">{{ 'Die Verbindung prüfen und neu laden.' if error else 'Füge dein erstes Bild oder Video hinzu – oder wähle etwas aus der Bibliothek.' }}</p>
-            {% if logged_user.role == 'marketing' and not error %}<a href="#add-content" class="button primary">Ersten Inhalt hinzufügen →</a>{% endif %}
+            {% if logged_user.role == 'marketing' and not error %}<a href="#add-content" class="button primary studio-add-trigger" data-open-composer aria-haspopup="dialog" aria-controls="add-content">Ersten Inhalt hinzufügen →</a>{% endif %}
           </div>
         {% endfor %}
       </div>
     </section>
 
     {% if logged_user.role == 'marketing' and not error %}
-      <aside id="add-content" class="composer" aria-labelledby="add-title">
+      <div class="composer-backdrop" data-close-composer hidden></div>
+      <aside id="add-content" class="composer" aria-labelledby="add-title" data-composer-drawer>
+        <div class="composer-close-row">
+          <span>INHALTE VERWALTEN</span>
+          <button type="button" class="composer-close" data-close-composer aria-label="Hinzufügen schließen" title="Schließen">×</button>
+        </div>
         <div class="composer-head">
           <span class="composer-bubble" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg></span>
           <p class="eyebrow">ETWAS NEUES ZEIGEN</p>
@@ -277,7 +292,7 @@
           <a class="button" href="{{ url_for('library_index') }}">Bibliothek öffnen →</a>
           {% endif %}
         </div>
-        <p class="composer-footnote">Aktionen am Player bleiben im Hub. Kein direkter Gerätezugang für Marketing nötig.</p>
+        <p class="composer-footnote">Änderungen werden direkt auf dem Bildschirm gespeichert. Kein direkter Gerätezugang für Marketing nötig.</p>
       </aside>
     {% endif %}
   </div>
@@ -287,5 +302,6 @@
 <script defer src="{{ url_for('static', filename='media-lightbox.js') }}"></script>
 <script defer src="{{ url_for('static', filename='upload-feedback.js') }}"></script>
 <script defer src="{{ url_for('static', filename='bulk-upload.js') }}"></script>
-{% if logged_user.role == 'marketing' and not error %}<script defer src="{{ url_for('static', filename='playlist.js') }}"></script>{% endif %}
+{% if logged_user.role == 'marketing' and not error %}<script defer src="{{ url_for('static', filename='playlist.js') }}"></script>
+<script defer src="{{ url_for('static', filename='playlist-studio.js') }}"></script>{% endif %}
 {% endblock %}
