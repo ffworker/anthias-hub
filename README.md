@@ -36,6 +36,8 @@ The hub connects to **Anthias REST API v2** on each registered player. Media and
 
 **ZIP & multi-file uploads (Marketing pilot):** Choose one ordinary ZIP archive containing PNG/JPG/WebP/MP4 media or select up to 20 files without zipping. Import into an existing **library template** or directly append to a **screen playlist**. Browser upload percentage, per-file results and partial-failure warnings are shown; existing player entries are never cleared. This is different from **Playlist-ZIP importieren**, which still expects a Hub-exported archive with `manifest.json`. [Step-by-step workflow and security limits](docs/marketing-bulk-import.md).
 
+**Import paths are distinct:** The library overview prominently offers **ordinary image/video ZIP upload**, with a required target library template, while **Restore Anthias-Hub backup** is a secondary, expandable action for Hub-exported `manifest.json` ZIPs only. The playlist editor can now append **an entire saved template** to an existing screen playlist (or one selected item), without clearing existing content. Marketing edits an item's **title inline** and its **display duration with a slider** (videos auto-duration); Save is explicit, and pause/resume remains separate. Details: [media and template import guide](docs/marketing-bulk-import.md).
+
 **There is no dependency on RSS2Slideshow or any other news-kiosk software.** Any reachable webpage may be used as an ordinary Anthias website asset. This repository does **not** bundle Anthias itself.
 
 ## Deployment modes: test VM versus future production
