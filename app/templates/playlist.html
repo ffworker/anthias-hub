@@ -42,7 +42,7 @@
       <div class="playlist-overview"><span class="overview-dot" aria-hidden="true"></span>
         <strong><span id="active-count">{{ assets|selectattr('is_enabled')|list|length }}</span> aktiv</strong>
         <span aria-hidden="true">·</span> <span>{{ assets|length }} Inhalte insgesamt</span>
-        {% if logged_user.role == 'marketing' and not error %}<span class="overview-note">Drag & Drop speichert automatisch</span>{% endif %}
+        {% if logged_user.role == 'marketing' and not error %}<span class="overview-note">Sortierung wird beim Ablegen gespeichert</span>{% endif %}
       </div>
 
       <div class="stack playlist-items" id="playlist-items">
@@ -139,7 +139,13 @@
                           class="primary inline-save" data-save-ready="false">Speichern</button>
                   <span class="save-indicator" role="status" aria-live="polite"></span>
                   <details class="delete-panel">
-                    <summary aria-label="{{ asset.name or 'Element' }} löschen">Löschen …</summary>
+                    <summary aria-label="{{ asset.name or 'Element' }} löschen" title="Inhalt löschen">
+                      <svg class="delete-icon" viewBox="0 0 24 24" width="17" height="17"
+                           fill="none" stroke="currentColor" stroke-width="1.8"
+                           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v7M14 10v7"/>
+                      </svg>
+                    </summary>
                     <div class="delete-confirmation">
                       <p class="muted">Entfernt diesen Inhalt vom Player, möglicherweise inklusive hochgeladener Datei.</p>
                       <form method="post" action="{{ url_for('delete_asset', device_id=device.id, asset_id=asset.asset_id) }}">
