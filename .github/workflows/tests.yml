@@ -25,6 +25,9 @@ jobs:
       - name: Check Python syntax
         run: python -m compileall -q app scripts wsgi.py
 
+      - name: Check test-VM bootstrap shell syntax
+        run: bash -n scripts/bootstrap-test-vm.sh
+
       - name: Run tests
         run: python -m pytest -q
 
