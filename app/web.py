@@ -17,6 +17,7 @@ from werkzeug.utils import secure_filename
 
 from .auth import authenticate, current_user, csrf_token, login_required, require_csrf
 from .anthias import Anthias, PlayerError, validate_duration, validate_website_url
+from .bulk_media import BatchError, execute_batch
 from .devices import load, save, get, validate_device
 from .library import Library, LibraryError
 
@@ -174,6 +175,67 @@ def create_app(config=None):
                 return jsonify(ok=False, error=str(exc)), 422
             flash(str(exc), 'error')
         return redirect(destination)
+
+
+    def finish_bulk(report, destination_url):
+        """JSON result for progress UI; concise server-rendered fallback."""
+        report['redirect'] = destination_url
+        if request.accept_mimetypes.best == 'application/json':
+            return jsonify(report)
+        category = 'success' if report['ok'] else 'error'
+        errors = [f"{row['name']}: {row['message']}"
+                  for row in report['results'] if row['status'] == 'failed']
+        note = (' Bitte Ziel-Playlist prüfen, vor erneutem Hochladen; '
+                'Teilerfolge werden nicht automatisch zurückgerollt.'
+                if not report['ok'] else '')
+        flash(report['message'] + (' ' + '; '.join(errors[:3]) if errors else '') + note, category)
+        return redirect(destination_url)
+
+    def reject_bulk(exc, destination_url):
+        if request.accept_mimetypes.best == 'application/json':
+            return jsonify(ok=False, error=str(exc), results=[], imported=0, failed=0), 422
+        flash(str(exc), 'error')
+        return redirect(destination_url)
+
+    @app.post('/library/<template_id>/bulk-media')
+    @login_required('marketing')
+    def library_bulk_media(template_id):
+        destination_url = url_for('library_detail', template_id=template_id)
+        try:
+            store = library()
+            store.get(template_id)  # Reject unknown target before reading/processing files.
+            def add_one(title, filename, ext, stream, duration):
+                store.add_media(template_id, title, stream, filename, duration)
+                audit('library.bulk-add-media', asset_id=template_id)
+            report = execute_batch(request.files.getlist('media'),
+                                   duration=request.form.get('duration'),
+                                   destination='library', on_media=add_one)
+            return finish_bulk(report, destination_url)
+        except (BatchError, LibraryError) as exc:
+            return reject_bulk(exc, destination_url)
+
+    @app.post('/devices/<device_id>/bulk-media')
+    @login_required('marketing')
+    def player_bulk_media(device_id):
+        destination_url = url_for('playlist', device_id=device_id)
+        _, api = player_or_404(device_id)
+        try:
+            # No automatic overwrite/reorder: every file is appended individually.
+            # One user-visible failure might still have reached the Pi.
+            api.assets()  # Make sure target is reachable before the first transfer.
+            def add_one(title, filename, ext, stream, duration):
+                uploaded = api.upload(stream, filename, MEDIA[ext])
+                api.create(title, uploaded['uri'], duration,
+                           mimetype=MEDIA[ext], ext=uploaded.get('ext'))
+                audit('asset.bulk-upload', device_id)
+            report = execute_batch(request.files.getlist('media'),
+                                   duration=request.form.get('duration'),
+                                   destination='player', on_media=add_one)
+            if report['failed']:
+                report['message'] += ' Player-Playlist prüfen; kein automatischer Rollback oder Retry.'
+            return finish_bulk(report, destination_url)
+        except (BatchError, PlayerError) as exc:
+            return reject_bulk(exc, destination_url)
 
     @app.post('/library/<template_id>/move/<item_id>')
     @login_required('marketing')
