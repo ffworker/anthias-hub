@@ -1125,7 +1125,9 @@ def test_pilot_pause_state_protection_is_still_present_after_ui_reordering(env):
     _, client, _ = env
     login(client, 'marketing')
     page = client.get('/devices/lab').data.decode('utf-8')
-    assert '<input type="hidden" name="enabled" value=' not in page
+    edit_form = page.split('id="asset-edit-one123"', 1)[1].split('</form>', 1)[0]
+    assert 'name="enabled"' not in edit_form  # Toggle owns this state, not edit.
+    assert 'class="quick-toggle-form"' in page  # Existing pause form still works.
     result = client.post('/devices/lab/assets/one123/edit', data={
         'csrf': token(client), 'name': 'Bistro-News', 'duration': '30',
         'enabled': 'on',  # stale client must not overwrite pause state
