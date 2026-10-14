@@ -174,7 +174,9 @@ class Library:
             with zipfile.ZipFile(source) as z:
                 entries = z.infolist()
                 names = [info.filename for info in entries]
-                if (len(entries) > 102 or len(set(names)) != len(names) or 'manifest.json' not in names
+                if 'manifest.json' not in names:
+                    raise LibraryError('Kein Anthias-Hub-Vorlagenbackup: manifest.json fehlt. Für eigene Bilder/Videos bitte „Medien-ZIP importieren“ wählen.')
+                if (len(entries) > 102 or len(set(names)) != len(names)
                         or sum(info.file_size for info in entries) > MAX_ARCHIVE
                         or any(info.is_dir() or info.flag_bits & 0x1 or info.filename.startswith('/')
                                or '..' in PurePosixPath(info.filename).parts for info in entries)):
@@ -212,6 +214,8 @@ class Library:
                 if set(names) != {'manifest.json', *media}:
                     raise LibraryError('Unerwartete Dateien im Archiv')
                 title = _title(manifest['name'])
+        except LibraryError:
+            raise
         except (zipfile.BadZipFile, KeyError, TypeError, ValueError, UnicodeError, RuntimeError) as exc:
             raise LibraryError('Ungültiges Playlist-Archiv') from exc
         with _lock:
