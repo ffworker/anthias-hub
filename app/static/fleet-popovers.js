@@ -18,7 +18,7 @@
   if (!pairs.length) return;
 
   const mobile = window.matchMedia('(max-width: 760px)');
-  const gap = 12;
+  const gap = 22;
   const margin = 12;
   let pending = false;
 
@@ -33,7 +33,7 @@
       panel.style.removeProperty('width');
       return;
     }
-    const width = Math.min(354, Math.max(230, window.innerWidth - margin * 2));
+    const width = Math.min(312, Math.max(240, window.innerWidth - margin * 2));
     const rect = trigger.getBoundingClientRect();
     const rightX = rect.right + gap;
     const leftX = rect.left - gap - width;
