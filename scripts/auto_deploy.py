@@ -5,6 +5,7 @@ No SSH from GitHub into the server is required.
 """
 import fcntl
 import os
+import re
 import subprocess
 import sys
 import time
@@ -12,7 +13,9 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-MAIN_IMAGE = 'ghcr.io/ffworker/anthias-hub:main'
+LATEST_IMAGE = 'ghcr.io/ffworker/anthias-hub:latest'
+LEGACY_MAIN_IMAGE = 'ghcr.io/ffworker/anthias-hub:main'
+GHCR_SHA_PREFIX = 'ghcr.io/ffworker/anthias-hub:sha-'
 ROLLBACK_IMAGE = 'anthias-hub:rollback'
 PROJECT = 'anthias-hub'
 HEALTH = 'http://127.0.0.1:8765/healthz'
@@ -24,7 +27,7 @@ class DeployError(RuntimeError):
 
 def command(args, cwd, *, image=None):
     env = os.environ.copy()
-    env['ANTHIAS_HUB_IMAGE'] = image or MAIN_IMAGE
+    env['ANTHIAS_HUB_IMAGE'] = image or LATEST_IMAGE
     try:
         return subprocess.run(args, cwd=cwd, env=env, check=True, text=True,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -59,6 +62,15 @@ def compose_override(checkout):
     return ['-f', str(target)]
 
 
+def managed_image(image):
+    """Accept existing Hub GHCR images, including pinned SHA installs, for migration.
+
+    Never auto-adopt a local :pilot or another application's container.
+    """
+    return (image in (LATEST_IMAGE, LEGACY_MAIN_IMAGE, ROLLBACK_IMAGE)
+            or bool(re.fullmatch(re.escape(GHCR_SHA_PREFIX) + r'[0-9a-f]{40}', image)))
+
+
 def deploy(checkout):
     checkout = Path(checkout).resolve()
     required = ('compose.cd.yaml', '.env', 'config/users.json', 'data/devices.json')
@@ -70,11 +82,11 @@ def deploy(checkout):
     if not container:
         raise DeployError('No running Hub service; migrate and verify it manually first')
     configured = command(['docker', 'inspect', '--format', '{{.Config.Image}}', container], checkout)
-    if configured not in (MAIN_IMAGE, ROLLBACK_IMAGE):
-        raise DeployError('Hub does not use the CD image yet; migrate and verify it manually first')
+    if not managed_image(configured):
+        raise DeployError('Hub is not running a known GHCR Hub image; migrate from :pilot manually first')
     previous = command(['docker', 'inspect', '--format', '{{.Image}}', container], checkout)
     command(compose + ['pull'], checkout)
-    candidate = command(['docker', 'image', 'inspect', '--format', '{{.Id}}', MAIN_IMAGE], checkout)
+    candidate = command(['docker', 'image', 'inspect', '--format', '{{.Id}}', LATEST_IMAGE], checkout)
     if not candidate or not previous:
         raise DeployError('Could not inspect the deployed or downloaded image')
     if candidate == previous:
