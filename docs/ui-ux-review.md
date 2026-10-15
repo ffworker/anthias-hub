@@ -1,6 +1,6 @@
 # Anthias Hub UI/UX review – approved decisions
 
-**Status:** implementation specification for the approved Nordlicht-only UI refresh.
+**Status:** implemented design baseline, with additional compact device-action refinements; pilot acceptance still pending.
 **Scope:** UI, navigation, text, icons and responsiveness only. Do not change Anthias APIs, persistence, role boundaries, SSH or deployment behavior.
 
 ## Decisions 1–12
@@ -34,8 +34,16 @@
 ## Acceptance checks
 
 - `python -m pytest -q`
-- `node --test tests/playlist-ui.test.cjs tests/playlist-studio-ui.test.cjs tests/playlist-bulk-ui.test.cjs`
+- `node --test tests/*.test.cjs` (playlist, device flyouts and CSS maintenance)
 - Check IT, Marketing and Viewer pages as well as direct unauthorized POSTs.
 - Verify desktop 1440/1024 and mobile 768/390/320 CSS pixels, 200% zoom, touch and keyboard focus; no clipped drawers or menus.
 - Exercise single/bulk uploads, media previews, library transfers, reordering, status/errors, destructive confirmations and logout.
 - Test a real Anthias Pi only in an independently authorized acceptance pass. CI does not use live devices.
+
+## Stylesheet ownership and load order
+
+- `style.css`: legacy generic foundation; `modern.css`: Nordlicht palette and general UI.
+- `workspace.css`: header, sign-in and device dashboard, including responsive IT/Marketing flyouts.
+- Individual page styles (`playlist.css`, `library.css` and media/upload helpers) load via the template's `extra_head`.
+- `ui-refinements.css` loads **last** for shared icons and historically later playlist layout overrides. It replaces `themes.css`; there is no theme switcher. Do not remove or reorder it without checking computed styles and visual screenshots.
+- Avoid new append-only overrides: change the canonical rule and check desktop plus mobile cascade. Node tests guard old theme removal and the current ordering, not pixel-perfect rendering.
