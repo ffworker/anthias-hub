@@ -59,8 +59,8 @@ test('desktop controls open to the right, not as a grid row',()=>{
   const h=harness();
   h.first.menu.open=true;
   h.first.toggle();
-  assert.equal(h.first.panel.style.left,'226px');
-  assert.equal(h.first.panel.style.width,'354px');
+  assert.equal(h.first.panel.style.left,'236px');
+  assert.equal(h.first.panel.style.width,'312px');
   assert.equal(h.first.panel.style.top,'102px');
   assert.ok(css.includes('.fleet-device-actions>details[open]{grid-column:auto}'));
   assert.ok(css.includes('position:fixed;z-index:1000'));
@@ -70,7 +70,7 @@ test('rightmost device flips controls to the left and clamps height',()=>{
   const h=harness();
   h.last.menu.open=true;
   h.last.toggle();
-  assert.equal(h.last.panel.style.left,'639px');
+  assert.equal(h.last.panel.style.left,'671px');
   assert.equal(h.last.panel.style.top,'12px');
 });
 
@@ -114,4 +114,13 @@ test('library popovers anchor to cards and confirmations stay inside menu',()=>{
   const libraryCss=fs.readFileSync(path.join(__dirname,'../app/static/library.css'),'utf8');
   assert.match(libraryCss,/\.library-item-options-menu\{[\s\S]*?right:12px;left:auto/);
   assert.match(libraryCss,/\.template-options-panel \.template-delete-confirm\{[\s\S]*?position:static/);
+});
+
+test('secondary device utilities stay compact and visually subordinate',()=>{
+  assert.match(css,/\.fleet-device:has\(\.fleet-device-actions\) \.fleet-open\{[\s\S]*?margin:auto 0 14px!important/);
+  assert.match(css,/\.fleet-device-actions>details>summary\{[\s\S]*?min-height:39px/);
+  assert.match(css,/\.fleet-device-actions>\.fleet-remote-marketing\{[\s\S]*?width:max-content/);
+  assert.match(css,/\.fleet-device-actions>\.fleet-remote-marketing>summary\{[\s\S]*?min-height:36px/);
+  assert.match(css,/width:312px;max-width:calc\(100vw - 24px\)/);
+  assert.match(source,/const gap = 22;/);
 });
