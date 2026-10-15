@@ -22,4 +22,4 @@
 <symbol id="grip" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="8" cy="5" r="1.7"/><circle cx="16" cy="5" r="1.7"/><circle cx="8" cy="12" r="1.7"/><circle cx="16" cy="12" r="1.7"/><circle cx="8" cy="19" r="1.7"/><circle cx="16" cy="19" r="1.7"/></g></symbol>
 <symbol id="arrow-up" viewBox="0 0 24 24"><path d="m5 11 7-7 7 7M12 4v16" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="arrow-down" viewBox="0 0 24 24"><path d="m5 13 7 7 7-7M12 20V4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-</defs></svg>
+<symbol id="close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol></defs></svg>
