@@ -46,6 +46,11 @@
           <strong>{{ statuses[device.id].count if online else '–' }}</strong>
           <span>Playlist-Inhalte</span>
         </div>
+        <p class="muted fleet-storage">
+          {% set disk = statuses[device.id].storage %}
+          {% if disk %}Speicher: {{ disk.reported }} frei · {{ disk.usable_gib }} GiB für Uploads verfügbar ({{ disk.reserve_gib }} GiB Reserve)
+          {% else %}Speicherplatz derzeit nicht verfügbar · Upload-Schutz aktiv{% endif %}
+        </p>
         <a class="button primary fleet-open" href="{{ url_for('playlist', device_id=device.id) }}">{{ 'Playlist bearbeiten' if logged_user.role in ('owner', 'marketing') else 'Playlist ansehen' }} <span aria-hidden="true">→</span></a>
         {% if logged_user.role in ('owner', 'it', 'marketing') %}
           <div class="fleet-device-actions">

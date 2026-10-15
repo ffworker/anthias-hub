@@ -88,3 +88,26 @@ def test_import_rejects_non_object_manifest_without_crashing(tmp_path):
         archive.writestr('manifest.json', '[]')
     with pytest.raises(LibraryError):
         store.import_zip(io.BytesIO(payload.getvalue()))
+
+
+def test_multi_megabyte_media_is_streamed_and_backup_roundtrips(tmp_path):
+    """Use a few MiB to exercise bounded reads without allocating 600 MiB."""
+    from app.library import Library, COPY_CHUNK
+    class BoundedReader(io.BytesIO):
+        def read(self, size=-1):
+            assert 0 < size <= COPY_CHUNK, 'media reader must not read all bytes'
+            return super().read(size)
+    lib = Library(tmp_path / 'source')
+    item = lib.create('Large-media simulation')
+    data = b'\x00\x00\x00\x18ftyp' + b'A' * (3 * 1024 * 1024)
+    lib.add_media(item['id'], 'Testvideo', BoundedReader(data), 'large.mp4', 0)
+    entry = lib.get(item['id'])['items'][0]
+    assert lib.verified_media_path(item['id'], entry).stat().st_size == len(data)
+    with lib.export_file(item['id']) as zip_stream:
+        assert zip_stream.read(4) == b'PK\x03\x04'
+        zip_stream.seek(0)
+        restored = Library(tmp_path / 'restored')
+        clone = restored.import_zip(zip_stream)
+    media = restored.verified_media_path(clone['id'], clone['items'][0])
+    assert media.stat().st_size == len(data)
+    assert media.read_bytes() == data

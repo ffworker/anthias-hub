@@ -19,6 +19,8 @@ MAX_FILES = 20
 MAX_ZIP_ENTRIES = 60  # directory records count too
 MAX_TOTAL_UNPACKED = 150 * 1024 * 1024
 MAX_ARCHIVE_BYTES = 50 * 1024 * 1024
+MAX_ZIP_MEDIA_BYTES = 50 * 1024 * 1024
+MAX_BATCH_BYTES = MAX_MEDIA
 MAX_RATIO = 150
 CHUNK = 64 * 1024
 
@@ -67,7 +69,7 @@ def _safe_zip_members(archive):
             raise BatchError('ZIP-Komprimierung wird nicht unterstützt.')
         if member.is_dir():
             continue
-        if member.file_size > MAX_MEDIA:
+        if member.file_size > MAX_ZIP_MEDIA_BYTES:
             raise BatchError('ZIP enthält Medien über 50 MB.')
         if member.file_size > MAX_RATIO * max(1, member.compress_size):
             raise BatchError('ZIP wurde wegen ungewöhnlich hoher Komprimierung abgelehnt.')
@@ -96,7 +98,7 @@ def _title_and_filename(raw_name):
     return title, filename, ext
 
 
-def _verified_stream(source, expected_size=None):
+def _verified_stream(source, expected_size=None, max_bytes=MAX_MEDIA):
     """Validate while streaming; small inputs in RAM, larger ones in /tmp."""
     with tempfile.SpooledTemporaryFile(max_size=1024 * 1024, mode='w+b') as output:
         amount = 0
@@ -106,8 +108,8 @@ def _verified_stream(source, expected_size=None):
             if not block:
                 break
             amount += len(block)
-            if amount > MAX_MEDIA:
-                raise ValueError('Datei zu groß (max. 50 MB).')
+            if amount > max_bytes:
+                raise ValueError('Datei zu groß (Einzelvideo max. 1 GiB, ZIP-Eintrag max. 50 MiB).')
             if len(head) < 16:
                 head += block[:16 - len(head)]
             output.write(block)
@@ -120,9 +122,9 @@ def _verified_stream(source, expected_size=None):
 
 
 @contextmanager
-def checked_media(source, name, expected_size=None):
+def checked_media(source, name, expected_size=None, max_bytes=MAX_MEDIA):
     title, filename, ext = _title_and_filename(name)
-    generator = _verified_stream(source, expected_size)
+    generator = _verified_stream(source, expected_size, max_bytes)
     try:
         stream, head = next(generator)
         if not _signature(head, ext):
@@ -131,6 +133,24 @@ def checked_media(source, name, expected_size=None):
         yield title, filename, ext, stream
     finally:
         generator.close()
+
+
+@contextmanager
+def checked_direct_media(source, name):
+    """A Werkzeug upload is already seekable and disk-spooled.
+
+    Reusing it avoids a SECOND 600-MB temporary file for a direct upload.
+    ZIP entries still need bounded decompression to a separate safe stream.
+    """
+    title, filename, ext = _title_and_filename(name)
+    amount = _size(source)
+    if not 0 < amount <= MAX_MEDIA:
+        raise ValueError('Medium ist leer oder größer als 1 GiB')
+    head = source.read(16)
+    source.seek(0)
+    if not _signature(head, ext):
+        raise ValueError('Dateisignatur passt nicht zur Dateiendung.')
+    yield title, filename, ext, source
 
 
 def execute_batch(uploads, *, duration, destination, on_media):
@@ -169,18 +189,20 @@ def execute_batch(uploads, *, duration, destination, on_media):
                     name = info.filename
                     try:
                         with archive.open(info) as reader:
-                            with checked_media(reader, name, info.file_size) as media:
+                            with checked_media(reader, name, info.file_size, MAX_ZIP_MEDIA_BYTES) as media:
                                 on_media(*media[:3], media[3], 0 if media[2] == '.mp4' else seconds)
                         yield {'name': name, 'status': 'imported', 'message': 'Importiert'}
                     except (ValueError, OSError, EOFError, RuntimeError, zipfile.BadZipFile, PlayerError) as exc:
                         yield {'name': name, 'status': 'failed', 'message': str(exc)[:220]}
             entries = list(process())
     else:
+        if sum(_size(item.stream) for item in uploads) > MAX_BATCH_BYTES:
+            raise BatchError('Maximal 1 GiB je Mehrfachupload insgesamt.')
         entries = []
         for item in uploads:
             name = item.filename
             try:
-                with checked_media(item.stream, name) as media:
+                with checked_direct_media(item.stream, name) as media:
                     on_media(*media[:3], media[3], 0 if media[2] == '.mp4' else seconds)
                 entries.append({'name': name, 'status': 'imported', 'message': 'Importiert'})
             except (ValueError, OSError, EOFError, RuntimeError, PlayerError) as exc:
