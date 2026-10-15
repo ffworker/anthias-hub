@@ -494,7 +494,10 @@ def test_studio_visual_language_on_every_user_facing_page(env):
     assert 'Keine Live-Vorschau' in page
     assert 'Original Anthias' not in page
     assert 'id="device-setup"' not in page
-    assert 'name="ack"' not in page
+    # Marketing may acknowledge a support reboot, not IT device removal.
+    assert 'Hilfe bei Anzeigeproblemen' in page
+    assert 'fleet-danger-zone' not in page
+    assert 'name="ack"' in page
     playlist = client.get('/devices/lab').get_data(as_text=True)
     assert 'workspace.css' in playlist
     assert 'playlist.css' in playlist
