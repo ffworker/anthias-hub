@@ -7,8 +7,8 @@
 
 ## Welchen Import soll ich benutzen?
 
-- **Bilder/Videos oder normale Medien-ZIP:** `Bibliothek` → `Bilder, Videos oder normale ZIP importieren` → **Zielvorlage** auswählen. Auf einem Player alternativ `Bildschirm → Inhalt hinzufügen → Bild / Video → Mehrere Bilder/Videos oder normale Medien-ZIP`. Dies ist der normale Weg für selbst gezippte PNG/JPG/WebP/MP4-Dateien; **keine** `manifest.json` erforderlich.
-- **Anthias-Hub-Vorlagenbackup wiederherstellen:** `Bibliothek` → unten `Anthias-Hub-Vorlagenbackup wiederherstellen` aufklappen. Nur zuvor aus dem Hub exportierte vollständige Vorlagenpakete mit `manifest.json`; **nicht** für gewöhnliche Medien-ZIPs.
+- **Bilder/Videos oder normale Medien-ZIP:** `Bibliothek` → **Vorlage öffnen** → `Mehrere Dateien oder ZIP hinzufügen`. Auf einem Player alternativ `Bildschirm → Inhalt hinzufügen → Bild / Video → Mehrere Dateien oder ZIP hinzufügen`. Dies ist der normale Weg für selbst gezippte PNG/JPG/WebP/MP4-Dateien; **keine** `manifest.json` erforderlich.
+- **Anthias-Hub-Vorlagenbackup wiederherstellen:** `Bibliothek` → `Vorlagenbackup wiederherstellen` unter **Erweitert** aufklappen. Nur zuvor aus dem Hub exportierte vollständige Vorlagenpakete mit `manifest.json`; **nicht** für gewöhnliche Medien-ZIPs.
 - **Vorlage auf Player anwenden:** `Bildschirm → Inhalt hinzufügen → Bibliothek` → einen einzelnen Inhalt auswählen **oder** unter `Gesamte Vorlage hinzufügen` alle Inhalte anhängen. Das funktioniert auch bei nicht-leeren Playlists, löscht nichts und überspringt identische Webseiten. Die komplette Vorlage kann ebenso über deren Bibliotheksdetailseite angehängt werden. Vorlagenmedien werden nicht automatisch auf Duplikate geprüft.
 
 Playlist-Einträge haben für Marketing jetzt **Titel direkt im Eintrag** und bei Webseiten/Bildern einen **Dauer-Slider mit Sekundenanzeige**. Die Änderungen werden erst mit `Speichern` an den Player geschickt. Bei Videos ist die Dauer automatisch. Der separate Aktiv/Pausiert-Schalter bleibt bestehen.

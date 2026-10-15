@@ -20,9 +20,9 @@
   </section>
 
   <div class="fleet-summary" aria-label="Geräteübersicht">
-    <div class="fleet-stat"><span class="fleet-stat-icon" aria-hidden="true">▣</span><span class="fleet-stat-value">{{ devices|length }}</span><span class="fleet-stat-label">Bildschirme</span></div>
-    <div class="fleet-stat"><span class="fleet-stat-icon online" aria-hidden="true">●</span><span class="fleet-stat-value">{{ online_count }}</span><span class="fleet-stat-label">API erreichbar</span></div>
-    <div class="fleet-stat"><span class="fleet-stat-icon offline" aria-hidden="true">○</span><span class="fleet-stat-value">{{ (devices|length) - online_count }}</span><span class="fleet-stat-label">Nicht erreichbar</span></div>
+    <div class="fleet-stat"><span class="fleet-stat-icon" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></span><span class="fleet-stat-value">{{ devices|length }}</span><span class="fleet-stat-label">Bildschirme</span></div>
+    <div class="fleet-stat"><span class="fleet-stat-icon online" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#check"></use></svg></span><span class="fleet-stat-value">{{ online_count }}</span><span class="fleet-stat-label">API erreichbar</span></div>
+    <div class="fleet-stat"><span class="fleet-stat-icon offline" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#alert"></use></svg></span><span class="fleet-stat-value">{{ (devices|length) - online_count }}</span><span class="fleet-stat-label">Nicht erreichbar</span></div>
     <p class="fleet-summary-hint">Verbindung ≠ Livebild am TV</p>
   </div>
 
@@ -37,25 +37,25 @@
       <article id="device-{{ device.id }}" class="fleet-device card {{ 'fleet-device-offline' if not online else '' }}">
         <div class="fleet-device-top">
           <div class="fleet-device-icon" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></div>
-          <span class="pill {{ 'ok' if online else 'bad' }}">{{ 'API erreichbar' if online else 'API nicht erreichbar' }}</span>
+          <span class="pill {{ 'ok' if online else 'bad' }}">{{ 'API erreichbar' if online else 'Nicht erreichbar' }}</span>
         </div>
         <p class="eyebrow fleet-location">{{ device.location or 'OHNE STANDORT' }}</p>
         <h3>{{ device.name }}</h3>
-        <div class="fleet-device-line"><span aria-hidden="true">▤</span>
+        <div class="fleet-device-line"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg>
           <strong>{{ statuses[device.id].count if online else '–' }}</strong>
           <span>Playlist-Inhalte</span>
         </div>
-        <p class="fleet-screen-note"><span aria-hidden="true">◌</span> Keine Live-Vorschau verfügbar</p>
-        {% if logged_user.role == 'it' %}<p class="code fleet-device-address">{{ device.url }}</p>{% endif %}
         <a class="button primary fleet-open" href="{{ url_for('playlist', device_id=device.id) }}">{{ 'Playlist bearbeiten' if logged_user.role == 'marketing' else 'Playlist ansehen' }} <span aria-hidden="true">→</span></a>
         {% if logged_user.role in ('it', 'marketing') %}
+          <div class="fleet-device-actions">
           {{ device_control(device, logged_user.role) }}
         {% endif %}
 
         {% if logged_user.role == 'it' %}
           <details class="fleet-settings">
-            <summary><span aria-hidden="true">⚙</span> Gerät verwalten <span aria-hidden="true" class="settings-chevron">⌄</span></summary>
+            <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#settings"></use></svg> Verwalten <svg class="icon settings-chevron" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#chevron-down"></use></svg></summary>
             <div class="fleet-settings-content">
+              <p class="code fleet-device-address">{{ device.url }}</p>
               <a class="fleet-native-link" href="{{ device.url }}" target="_blank" rel="noopener noreferrer">Original Anthias ↗</a>
               <form method="post" action="{{ url_for('edit_device', device_id=device.id) }}">
                 <input type="hidden" name="csrf" value="{{ csrf() }}">
@@ -77,10 +77,11 @@
             </div>
           </details>
         {% endif %}
+        {% if logged_user.role in ('it', 'marketing') %}</div>{% endif %}
       </article>
     {% else %}
       <div class="fleet-empty card">
-        <div class="fleet-empty-icon" aria-hidden="true">✳</div>
+        <div class="fleet-empty-icon" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></div>
         <h3>Noch keine Bildschirme – aber jede Menge Platz für Ideen.</h3>
         <p class="muted">{% if logged_user.role == 'it' %}Verbinde deinen ersten Anthias-Player und starte die Verwaltung direkt hier.{% else %}Sobald IT einen Bildschirm verbunden hat, taucht er hier auf.{% endif %}</p>
         {% if logged_user.role == 'it' %}<a class="button primary" href="#device-setup">Ersten Bildschirm verbinden →</a>{% endif %}
@@ -91,7 +92,7 @@
   {% if logged_user.role == 'it' %}
     <section id="device-setup" class="fleet-setup" aria-labelledby="setup-title">
       <div class="fleet-setup-intro">
-        <span class="fleet-setup-symbol" aria-hidden="true">✦</span>
+        <span class="fleet-setup-symbol" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></span>
         <p class="eyebrow">NUR FÜR IT</p>
         <h2 id="setup-title">Noch einen Bildschirm verbinden?</h2>
         <p class="muted">Registriere einen Anthias-Player mit seiner privaten Management-IP. Die vorhandene Playlist bleibt unverändert.</p>
@@ -102,7 +103,7 @@
         <label>Geräte-ID <span class="field-note">eindeutig</span><input name="id" placeholder="bistro" required pattern="[a-z0-9][a-z0-9-]*" maxlength="40"></label>
         <label>Anthias-Adresse<input name="url" placeholder="http://192.168.1.50" required type="url"></label>
         <label>Standort <span class="field-note">optional</span><input name="location" placeholder="z. B. Bistro" maxlength="80"></label>
-        <button class="primary fleet-submit"><span aria-hidden="true">＋</span> Bildschirm registrieren</button>
+        <button class="primary fleet-submit"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Bildschirm registrieren</button>
       </form>
     </section>
   {% endif %}

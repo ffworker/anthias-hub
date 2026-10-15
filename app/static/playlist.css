@@ -610,3 +610,47 @@ body.studio-drawer-open{overflow:hidden}
     justify-self:stretch;width:100%
   }
 }
+
+/* UI review: three equal media/library/web tabs, accessible progressive forms. */
+.playlist-workspace .add-type-switch{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.playlist-workspace .add-type-switch .add-mode,
+.playlist-workspace .add-type-switch .add-mode-secondary{grid-column:auto;justify-self:stretch;min-width:0;min-height:44px;margin:0;padding:7px 3px;font-size:12px;white-space:normal}
+.playlist-studio-v2 .asset-main{gap:10px;padding:9px 14px;min-height:65px}
+.playlist-studio-v2 .asset-kind{width:60px;min-width:60px;height:52px}
+.playlist-studio-v2 button.asset-open{min-height:50px}
+.playlist-studio-v2 .asset-body .asset-name{font-size:14px}
+.playlist-workspace .asset-inline-edit label,
+.playlist-workspace .inline-edit-duration .duration-heading,
+.playlist-workspace .inline-edit-duration .duration-heading label{font-size:12px}
+.playlist-studio-v2 .section-title .studio-add-trigger{display:inline-flex}
+.playlist-workspace .studio-bulk-details{margin:14px 0 0;padding:0;border:1px solid var(--border);border-radius:12px}
+.playlist-workspace .studio-bulk-details>summary{display:flex;align-items:center;gap:8px;cursor:pointer;min-height:44px;padding:12px 13px;font-size:12px;font-weight:700;color:#c5eee2;list-style:none}
+.playlist-workspace .studio-bulk-details>summary::-webkit-details-marker{display:none}
+.playlist-workspace .studio-bulk-details>summary .icon{width:17px;height:17px}
+.playlist-workspace .studio-bulk-details[open]{padding-bottom:14px}
+.playlist-workspace .studio-bulk-details[open]>summary{border-bottom:1px solid var(--border);margin-bottom:12px}
+.playlist-workspace .studio-bulk-details>h3,
+.playlist-workspace .studio-bulk-details>p,
+.playlist-workspace .studio-bulk-details>form{margin-left:13px;margin-right:13px}
+.playlist-workspace .library-template-append{border:1px solid var(--border);border-radius:10px;margin:17px 0 0;padding:0}
+.playlist-workspace .library-template-append>summary{cursor:pointer;font-size:12px;color:#c7e8df;padding:13px;min-height:44px;font-weight:700}
+.playlist-workspace .library-template-append>p,
+.playlist-workspace .library-template-append>form{margin:10px 13px 14px}
+.playlist-workspace .composer-pane select:disabled{opacity:.6;cursor:not-allowed}
+@media(max-width:580px){
+  .playlist-workspace .add-type-switch{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .playlist-workspace .add-type-switch .add-mode{font-size:11px;gap:4px;flex-direction:column}
+  .playlist-studio-v2 .asset-kind{width:48px;min-width:48px;height:48px}
+}
+
+/* Readable editing metadata across narrow viewports. */
+.playlist-studio-v2 .asset-body .asset-meta{font-size:12px}
+.playlist-studio-v2 .asset-side .pill{font-size:11px}
+.playlist-studio-v2 .asset-edit-hint{font-size:12px}
+.playlist-workspace .playlist-overview,.playlist-workspace .overview-note{font-size:12px}
+.playlist-studio-v2 .composer-explainer,.playlist-workspace .composer-footnote{font-size:12px}
+.playlist-workspace .playlist-bottom-note{font-size:12px}
+@media(max-width:580px){.playlist-studio-v2 .asset-side .pill{font-size:11px;padding:5px 8px}}
+
+.playlist-workspace .drag-handle .icon{width:24px;height:24px;fill:currentColor}
+.playlist-workspace .studio-bottom-add .icon{width:17px;height:17px}

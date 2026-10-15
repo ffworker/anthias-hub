@@ -13,7 +13,7 @@
       {% if logged_user.role == 'marketing' and not error %}<p class="live-warning"><span aria-hidden="true">●</span> Änderungen werden sofort auf dem Player gespeichert.</p>{% endif %}
     </div>
     <div class="hero-status">
-      <span class="pill {{ 'bad' if error else 'ok' }}">{{ 'Nicht erreichbar' if error else 'API verbunden' }}</span>
+      <span class="pill {{ 'bad' if error else 'ok' }}">{{ 'Nicht erreichbar' if error else 'API erreichbar' }}</span>
       <small>Anzeige am TV nicht live geprüft</small>
     </div>
   </header>
@@ -58,7 +58,7 @@
                 <button class="drag-handle" type="button" draggable="true"
                         title="Reihenfolge ändern: ziehen oder Leertaste, Pfeiltasten, Enter"
                         aria-label="{{ asset.name or 'Element' }} verschieben, Position {{ loop.index }} von {{ assets|length }}"
-                        aria-describedby="queue-help" aria-pressed="false">⠿</button>
+                        aria-describedby="queue-help" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#grip"></use></svg></button>
               {% endif %}
               {% if logged_user.role == 'marketing' and not error %}
                 <label class="asset-bulk-choice" title="Zum gemeinsamen Löschen auswählen">
@@ -187,7 +187,7 @@
       {% if logged_user.role == 'marketing' and not error and assets %}
         <div class="playlist-bottom-actions">
           <a href="#add-content" class="button studio-bottom-add studio-add-trigger" data-open-composer
-             aria-haspopup="dialog" aria-controls="add-content"><span aria-hidden="true">＋</span> Weiteren Inhalt hinzufügen</a>
+             aria-haspopup="dialog" aria-controls="add-content"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Weiteren Inhalt hinzufügen</a>
           <span class="playlist-bottom-note">Bild, Video, Webseite oder Bibliotheksvorlage ergänzen</span>
         </div>
         <details class="playlist-bulk-management" data-bulk-management>
@@ -237,17 +237,17 @@
           <span class="composer-bubble" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg></span>
           <p class="eyebrow">ETWAS NEUES ZEIGEN</p>
           <h2 id="add-title">Inhalt hinzufügen</h2>
-          <p class="muted">In wenigen Sekunden auf deinem Bildschirm.</p>
+          <p class="muted">Inhalte werden direkt zur Playlist dieses Bildschirms hinzugefügt.</p>
         </div>
 
         <div class="add-type-switch" aria-label="Inhaltsart wählen">
           <button type="button" class="add-mode selected" data-add-mode="media" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#image"></use></svg> Bild / Video</button>
           <button type="button" class="add-mode" data-add-mode="library" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Bibliothek</button>
-          <button type="button" class="add-mode add-mode-secondary" data-add-mode="website" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#web"></use></svg> Optional: Webseite</button>
+          <button type="button" class="add-mode" data-add-mode="website" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#web"></use></svg> Webseite</button>
         </div>
 
         <div class="composer-pane" data-add-pane="website">
-          <p class="composer-explainer">Optional: einen Weblink einbinden, etwa deine RSS2Slideshow-Anzeige oder ein Dashboard. Bilder und Videos findest du im ersten Tab.</p>
+          <p class="composer-explainer">Einen Weblink zur Playlist hinzufügen, etwa eine RSS2Slideshow-Anzeige oder ein Dashboard.</p>
           <form method="post" action="{{ url_for('add_url', device_id=device.id) }}">
             <input type="hidden" name="csrf" value="{{ csrf() }}">
             <label>Titel<input name="name" required maxlength="100" placeholder="z. B. Bistro News"></label>
@@ -258,19 +258,20 @@
         </div>
 
         <div class="composer-pane" data-add-pane="media">
-          <p class="composer-explainer">Ein Foto oder einen kurzen Clip hochladen (max. 50 MB).</p>
+          <p class="composer-explainer">Ein Bild oder Video zur Playlist hinzufügen.</p>
           <form method="post" enctype="multipart/form-data" data-upload-form="player" action="{{ url_for('upload', device_id=device.id) }}">
             <input type="hidden" name="csrf" value="{{ csrf() }}">
             <label>Datei auswählen<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label>
             <p class="muted input-support">PNG · JPG · WebP · MP4</p><p class="upload-selected" role="status" aria-live="polite"></p>
             <label>Titel <span class="label-note">optional</span><input name="name" maxlength="100" placeholder="z. B. Herbstaktion"></label>
             <label>Bilddauer <span class="label-note">Sekunden; Videos automatisch</span><input name="duration" type="number" min="5" max="3600" value="15"></label>
-            <button type="submit" class="primary full-width">Datei hinzufügen <span aria-hidden="true">→</span></button>
+            <button type="submit" class="primary full-width">Datei zur Playlist hinzufügen <span aria-hidden="true">→</span></button>
             <div class="upload-feedback" hidden role="status" aria-live="polite"><div class="upload-progress" aria-hidden="true"><span data-upload-bar></span></div><small data-upload-text></small></div>
           </form>
-        <div class="bulk-media-panel">
-          <h3>Mehrere Bilder/Videos oder normale Medien-ZIP</h3>
-          <p class="muted">Hier passen selbst erstellte ZIP-Dateien mit Bildern/Videos hinein – ohne manifest.json. Oder mehrere Mediendateien direkt auswählen. Anhängen statt Ersetzen.</p>
+        <details class="bulk-media-panel studio-bulk-details">
+          <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#upload"></use></svg> Mehrere Dateien oder ZIP hinzufügen</summary>
+          <h3>Mehrere Bilder und Videos hinzufügen</h3>
+          <p class="muted">Bis zu 20 Bilder/Videos oder eine normale Medien-ZIP. Vorhandene Playlist bleibt erhalten.</p>
           <form class="bulk-media-form" data-bulk-upload method="post" enctype="multipart/form-data" action="{{ url_for('player_bulk_media', device_id=device.id) }}">
   <input type="hidden" name="csrf" value="{{ csrf() }}">
   <label>Dateien oder ZIP auswählen
@@ -286,33 +287,43 @@
   </div>
   <div class="bulk-report" data-bulk-report hidden role="region" aria-label="Ergebnis des Medienimports" aria-live="polite"></div>
 </form>
-        </div>
+        </details>
         </div>
         <div class="composer-pane" data-add-pane="library">
-          <p class="composer-explainer">Gespeicherte Inhalte wiederverwenden: einzelne Medien oder die komplette Vorlage. Bereits vorhandene Playlist-Einträge bleiben erhalten.</p>
+          <p class="composer-explainer">Gespeicherte Inhalte zur Playlist hinzufügen. Bestehende Playlist-Einträge bleiben erhalten.</p>
           {% if library_items_available %}
           <form method="post" action="{{ url_for('add_library_item_from_player', device_id=device.id) }}">
             <input type="hidden" name="csrf" value="{{ csrf() }}">
             <input type="hidden" name="confirm" value="add">
-            <label>Gespeicherter Inhalt
-              <select name="source" required>
-                <option value="">Vorlage und Inhalt auswählen …</option>
+            <label>Bibliotheksvorlage
+              <select data-library-template required>
+                <option value="">Vorlage auswählen …</option>
                 {% for collection in library_templates %}
                   {% if collection['items'] %}
-                  <optgroup label="{{ collection.name }}">
-                    {% for item in collection['items'] %}
-                    <option value="{{ collection.id }}:{{ item.id }}">{{ item.name }} · {{ 'Webseite' if item.kind == 'url' else 'Video' if item.file.endswith('.mp4') else 'Bild' }}</option>
-                    {% endfor %}
-                  </optgroup>
+                    <option value="{{ collection.id }}">{{ collection.name }} ({{ collection['items']|length }} Inhalte)</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </label>
+            <label>Gespeicherter Inhalt
+              <select name="source" data-library-source required>
+                <option value="">Inhalt auswählen …</option>
+                {% for collection in library_templates %}
+                  {% if collection['items'] %}
+                    <optgroup label="{{ collection.name }}" data-library-group="{{ collection.id }}">
+                      {% for item in collection['items'] %}
+                        <option value="{{ collection.id }}:{{ item.id }}" data-library-source-template="{{ collection.id }}">{{ item.name }} · {{ 'Webseite' if item.kind == 'url' else 'Video' if item.file.endswith('.mp4') else 'Bild' }}</option>
+                      {% endfor %}
+                    </optgroup>
                   {% endif %}
                 {% endfor %}
               </select>
             </label>
             <p class="muted">Wird sofort auf diesem Player hinzugefügt. Bestehende Inhalte behalten ihre Reihenfolge.</p>
-            <button type="submit" class="primary full-width">Inhalt hinzufügen →</button>
+            <button type="submit" class="primary full-width">Inhalt zur Playlist hinzufügen →</button>
           </form>
-          <div class="library-template-append">
-            <h3>Gesamte Vorlage hinzufügen</h3>
+          <details class="library-template-append">
+            <summary>Gesamte Vorlage hinzufügen</summary>
             <p class="muted">Alle Inhalte der gewählten Vorlage werden in ihrer gespeicherten Reihenfolge angehängt. Bereits vorhandene Webseiten mit identischem Titel und Link werden übersprungen. Medien werden nicht automatisch auf Duplikate geprüft.</p>
             <form method="post" action="{{ url_for('append_library_from_player', device_id=device.id) }}">
               <input type="hidden" name="csrf" value="{{ csrf() }}">
@@ -330,9 +341,9 @@
               <label class="append-confirm"><input type="checkbox" name="ack" value="yes" required>
                 Alle Inhalte jetzt auf diesem Bildschirm anhängen
               </label>
-              <button type="submit" class="primary full-width">Gesamte Vorlage hinzufügen →</button>
+              <button type="submit" class="primary full-width">Alle Inhalte zur Playlist hinzufügen →</button>
             </form>
-          </div>
+          </details>
           {% else %}
           <p class="muted">Noch keine gespeicherten Inhalte vorhanden.</p>
           <a class="button" href="{{ url_for('library_index') }}">Bibliothek öffnen →</a>
