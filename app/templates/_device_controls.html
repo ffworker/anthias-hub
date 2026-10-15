@@ -3,7 +3,7 @@
 {% macro device_control(device, role) %}
   {% if role == 'it' %}
     <details class="fleet-remote fleet-remote-it">
-      <summary><span aria-hidden="true">⏻</span> Gerätesteuerung <span class="fleet-remote-arrow" aria-hidden="true">⌄</span></summary>
+      <summary aria-label="Gerätesteuerung öffnen"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#power"></use></svg> Steuern <svg class="icon fleet-remote-arrow" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#chevron-down"></use></svg></summary>
       <div class="fleet-remote-body">
         <p class="fleet-remote-note">HDMI-CEC ist experimentell und funktioniert nur an geeigneten TVs/Ports. Bitte vor Ort prüfen.</p>
         <form method="post" action="{{ url_for('control_device', device_id=device.id) }}" class="fleet-remote-form">
@@ -40,7 +40,7 @@
     </details>
   {% elif role == 'marketing' %}
     <details class="fleet-remote fleet-remote-marketing">
-      <summary>Hilfe bei Anzeigeproblemen <span aria-hidden="true">⌄</span></summary>
+      <summary>Hilfe bei Anzeigeproblemen <svg class="icon fleet-remote-arrow" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#chevron-down"></use></svg></summary>
       <div class="fleet-remote-body">
         <p class="fleet-remote-note">Wenn der Bildschirm hängt: Raspberry Pi neu starten. Die Anzeige ist kurz nicht erreichbar; die Playlist bleibt erhalten.</p>
         <form method="post" action="{{ url_for('control_device', device_id=device.id) }}" class="fleet-remote-form">
