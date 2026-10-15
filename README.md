@@ -49,7 +49,7 @@ The editing inputs remain inline; **Save and Delete now sit together as an align
 
 ## Deployment modes: test VM versus future production
 
-**Our current VM is a disposable test environment, not the long-term production server.** Reinstall the final VM from a documented source commit/image instead of cloning experiments from the test host. On the fresh host, first configure a **non-root SSH admin with an ED25519 key, a client-side SSH alias and verified key-only access**, then disable SSH root/password logins only after a successful second session: [Windows SSH/tunnels & VM hardening](docs/ssh-access.md).
+**Our current VM is a disposable test environment, not the long-term production server.** Reinstall the final VM from a documented source commit/image instead of cloning experiments from the test host. On the fresh host, first configure a **non-root SSH admin with an ED25519 key, a client-side SSH alias and verified key-only access**, then disable SSH root/password logins only after a successful second session: [SSH/tunnels & VM hardening (PowerShell or Linux)](docs/ssh-access.md).
 
 - **Test/staging:** use the existing local `compose.yaml` or the optional `:main`-following automatic updater in [the test-only CD guide](docs/auto-deploy.md). Every green `main` push currently publishes a new image; if the timer is installed, it may then deploy it.
 - **Future production:** use [the reproducible new-VM and release runbook](docs/reproducible-production.md). Pin `ANTHIAS_HUB_IMAGE=ghcr.io/ffworker/anthias-hub:sha-<APPROVED_FULL_SHA>` with `compose.cd.yaml`, deploy only after manual approval and keep a tested rollback image. **Do not enable today's auto-deploy timer on production:** the script currently forces `:main`.
@@ -80,7 +80,7 @@ The interactive setup creates a random session secret and prompts for **distinct
 
 **Appearance:** The header’s Design menu offers Nordlicht (dark teal), Tageslicht (light) and Kupfer (warm dark). The choice is stored only in the current browser (`localStorage`), not in Hub accounts, playlists or on the Pis. Editor controls remain in their original forms/API routes: move controls beside each item, edit in the item’s action bar, add content in the dedicated composer.
 
-**Access from Windows (SSH-key + alias):** Follow the [one-time SSH key and `~/.ssh/config` guide](docs/ssh-access.md). Use `ssh gh-pihub` for a shell or start **both** localhost-only forwards with:
+**Access from PowerShell or Linux/macOS (SSH-key + alias):** Choose your operating system in the [expandable setup guide](docs/ssh-access.md). Use `ssh gh-pihub` for a shell or start **both** localhost-only forwards with:
 
 ~~~powershell
 ssh -N gh-pihub-tunnel
@@ -113,7 +113,7 @@ The current Marketing role applies to **all** registered screens; no per-locatio
 ## Documentation
 
 - **[IT Administrator Guide](docs/IT_ADMIN_GUIDE.md):** architecture, deployment, permission model, account/password maintenance, backups/restores, updates, logs, troubleshooting, operational checks.
-- **[SSH keys, PowerShell host alias & VM hardening](docs/ssh-access.md):** non-root administrative access, SSH config, both application tunnels and lockout-safe hardening.
+- **[SSH keys, selectable PowerShell/Linux steps & VM hardening](docs/ssh-access.md):** non-root administrative access, shared SSH alias, both application tunnels and lockout-safe hardening.
 - [First Docker deployment](docs/deploy-docker-host.md): isolated pilot, SSH tunnel and safe access.
 - **[Reproducible fresh VM & controlled releases](docs/reproducible-production.md):** approved SHA-pinned image, backups, manual promotion, verification, rollback and future release-channel design.
 - **[Pilot acceptance and release gate](docs/pilot-acceptance.md):** real Pi/monitor test matrix, client-to-Pi isolation, restore rehearsal, and go/no-go criteria.
