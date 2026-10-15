@@ -1698,6 +1698,7 @@ def test_floating_device_menus_are_role_scoped_and_safe(env):
 
 def test_owner_has_both_roles_without_expanding_existing_role_grants(env):
     app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
     login(client, 'owner')
     assert b'OWNER' in client.get('/').data
     assert b'Ger\xc3\xa4testeuerung' in client.get('/').data
