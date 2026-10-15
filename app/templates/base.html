@@ -36,7 +36,7 @@
 <main class="wrap site-main">
   {% with notices=get_flashed_messages(with_categories=true) %}
     {% for category, message in notices %}
-      <div class="notice site-notice {{ category }}" role="{{ 'alert' if category == 'error' else 'status' }}"><span class="notice-symbol" aria-hidden="true">{{ '!' if category == 'error' else '✓' }}</span>{{ message }}</div>
+      <div class="notice site-notice {{ category }}" role="{{ 'alert' if category == 'error' else 'status' }}"><span class="notice-symbol" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#{{ 'alert' if category == 'error' else 'check' }}"></use></svg></span>{{ message }}</div>
     {% endfor %}
   {% endwith %}
   {% block content %}{% endblock %}
