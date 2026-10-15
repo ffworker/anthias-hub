@@ -259,7 +259,7 @@
 
         <div class="composer-pane" data-add-pane="media">
           <p class="composer-explainer">Ein Bild oder Video zur Playlist hinzufügen.</p>
-          <div class="upload-storage-strip" data-storage-status data-storage-url="{{ url_for('device_storage', device_id=device.id) }}">
+          <div class="upload-storage-strip" data-storage-status data-storage-known="{{ '1' if storage else '0' }}" data-storage-url="{{ url_for('device_storage', device_id=device.id) }}">
             <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#storage"></use></svg>
             <span data-storage-label role="status" aria-live="polite">
               {% if storage %}{{ storage.usable_gib }} GiB für Uploads verfügbar{% else %}Speicherprüfung fehlgeschlagen{% if storage_reason %} · {{ storage_reason }}{% endif %}{% endif %}

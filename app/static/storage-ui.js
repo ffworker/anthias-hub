@@ -46,6 +46,7 @@
     strip.dataset.state = 'unknown';
     label.textContent = 'Speicherprüfung fehlgeschlagen · ' + message;
     setOverrideVisible(true);
+    if (window.AnthiasStorage) window.AnthiasStorage.lastUnknown = true;
   };
   const markKnown = (data) => {
     if (playerForm) playerForm.dataset.playerAvailable = String(data.usable_bytes);
@@ -54,6 +55,7 @@
       ? data.usable_gib + ' GiB für Uploads verfügbar'
       : 'Sicherheitsreserve erreicht – Pi-Speicher prüfen';
     setOverrideVisible(false);
+    if (window.AnthiasStorage) window.AnthiasStorage.lastUnknown = false;
   };
   setOverrideVisible(!Number(strip.dataset.storageKnown));
 
@@ -82,5 +84,5 @@
     }
   }
   button?.addEventListener('click', refresh);
-  window.AnthiasStorage = {refresh};
+  window.AnthiasStorage = {refresh, lastUnknown: !Number(strip.dataset.storageKnown)};
 })();

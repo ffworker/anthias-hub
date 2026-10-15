@@ -53,10 +53,10 @@
           }
         }
         const usable = Number(form.dataset.playerAvailable || 0);
-        const overrideUnknown = !Number.isSafeInteger(usable) || usable === 0;
         const confirmed = form.querySelector('[name="ignore_storage_check"]')?.checked;
-        if (file.size > usable && !(overrideUnknown && confirmed &&
-            window.AnthiasStorage?.lastUnknown === true)) {
+        if (!Number.isSafeInteger(usable) ||
+            (file.size > usable && !(confirmed &&
+                window.AnthiasStorage?.lastUnknown === true))) {
           setMessage(usable > 0
             ? 'Sicherheitsreserve erreicht. Pi-Speicher prüfen und Anzeige aktualisieren.'
             : 'Speicherplatz nicht lesbar. Bitte am Pi prüfen und Anzeige aktualisieren.', 'error');
