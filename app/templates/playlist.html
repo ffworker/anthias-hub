@@ -262,16 +262,20 @@
           <div class="upload-storage-strip" data-storage-status data-storage-url="{{ url_for('device_storage', device_id=device.id) }}">
             <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#storage"></use></svg>
             <span data-storage-label role="status" aria-live="polite">
-              {% if storage %}{{ storage.usable_gib }} GiB für Uploads verfügbar{% else %}Speicher nicht verfügbar · Upload geschützt{% endif %}
+              {% if storage %}{{ storage.usable_gib }} GiB für Uploads verfügbar{% else %}Speicherprüfung fehlgeschlagen{% if storage_reason %} · {{ storage_reason }}{% endif %}{% endif %}
             </span>
             <button type="button" class="storage-refresh" data-storage-refresh aria-label="Speicherplatz aktualisieren" title="Speicherplatz erneut prüfen">↻</button>
             <details class="upload-storage-more">
               <summary aria-label="Details zu Upload-Grenzen">i</summary>
-              <p>Max. 1 GiB je Video. {{ storage.reserve_gib ~ ' GiB' if storage else 'Mindestens 2 GiB' }} Sicherheitsreserve bleiben frei. Wird der Speicher nicht erkannt oder ist zu knapp, keine Uploads – Pi-Speicher und bereits übertragene Dateien prüfen.</p>
+              <p>Max. 1 GiB je Video. {{ storage.reserve_gib ~ ' GiB' if storage else 'Mindestens 2 GiB' }} Sicherheitsreserve bleiben frei. Bei unbekanntem Speicher kann die Prüfung nach eigener Kontrolle ausdrücklich ignoriert werden. Bei nachgewiesenem Platzmangel bleibt der Upload gesperrt.</p>
             </details>
           </div>
           <form method="post" enctype="multipart/form-data" data-upload-form="player" data-player-available="{{ storage.usable_bytes if storage else 0 }}" action="{{ url_for('upload', device_id=device.id) }}">
             <input type="hidden" name="csrf" value="{{ csrf() }}">
+            <label class="storage-override" data-storage-override {% if storage %}hidden{% endif %}>
+              <input type="checkbox" name="ignore_storage_check" value="manual-confirmed" {% if storage %}disabled{% endif %}>
+              <span>Speicherprüfung ignorieren <small>Nur wenn du den freien Platz am Pi selbst geprüft hast. Bei vollem Speicher kann der Upload fehlschlagen.</small></span>
+            </label>
             <label>Datei auswählen<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label>
             <p class="muted input-support">PNG · JPG · WebP · MP4 · max. 1 GiB je Video</p><p class="upload-selected" role="status" aria-live="polite"></p>
             <label>Titel <span class="label-note">optional</span><input name="name" maxlength="100" placeholder="z. B. Herbstaktion"></label>
@@ -285,6 +289,10 @@
           <p class="muted">Bis zu 20 Bilder/Videos oder eine normale Medien-ZIP. Vorhandene Playlist bleibt erhalten.</p>
           <form class="bulk-media-form" data-bulk-upload method="post" enctype="multipart/form-data" action="{{ url_for('player_bulk_media', device_id=device.id) }}">
   <input type="hidden" name="csrf" value="{{ csrf() }}">
+  <label class="storage-override" data-storage-override {% if storage %}hidden{% endif %}>
+    <input type="checkbox" name="ignore_storage_check" value="manual-confirmed" {% if storage %}disabled{% endif %}>
+    <span>Speicherprüfung ignorieren <small>Nur nach eigener Prüfung des Pi-Speichers. Nicht bei bekanntem Speichermangel.</small></span>
+  </label>
   <label>Dateien oder ZIP auswählen
     <input type="file" name="media" accept=".zip,.png,.jpg,.jpeg,.webp,.mp4" multiple required>
   </label>

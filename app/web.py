@@ -87,6 +87,32 @@ def create_app(config=None):
     def library():
         return Library(app.config['LIBRARY_DIR'])
 
+    def read_player_storage(api):
+        """Return (capacity, failure reason). Missing data != verified low space.
+
+        Do not leak the upstream device URL or response body to the UI.
+        """
+        try:
+            info = api.info()
+        except PlayerError as exc:
+            reason = str(exc)
+            if 'HTTP ' in reason:
+                reason = 'Anthias-Info-API: ' + reason
+            else:
+                reason = 'Info-API nicht erreichbar oder Zeitüberschreitung'
+            app.logger.warning('Anthias storage lookup failed: %s', reason)
+            return None, reason
+        disk = capacity(info)
+        if disk is None:
+            app.logger.warning('Anthias storage field missing or unsupported')
+            return None, 'Anthias liefert keinen auswertbaren free_space-Wert'
+        return disk, None
+
+    def requested_storage_override():
+        """A conscious per-request acknowledgement, never a persistent bypass."""
+        return request.form.get('ignore_storage_check') == 'manual-confirmed'
+
+
     @app.get('/library')
     @login_required()
     def library_index():
@@ -263,10 +289,13 @@ def create_app(config=None):
             # One user-visible failure might still have reached the Pi.
             api.assets()  # Make sure target is reachable before the first transfer.
             def add_one(title, filename, ext, stream, duration):
-                uploaded = api.upload(stream, filename, MEDIA[ext])
+                uploaded = api.upload(stream, filename, MEDIA[ext],
+                                      allow_unknown_space=requested_storage_override())
                 api.create(title, uploaded['uri'], duration,
                            mimetype=MEDIA[ext], ext=uploaded.get('ext'))
                 audit('asset.bulk-upload', device_id)
+            if requested_storage_override():
+                audit('storage.override-request', device_id)
             report = execute_batch(request.files.getlist('media'),
                                    duration=request.form.get('duration'),
                                    destination='player', on_media=add_one)
@@ -519,10 +548,7 @@ def create_app(config=None):
             try:
                 api = Anthias(device)
                 items = api.assets()
-                try:
-                    storage = capacity(api.info())
-                except (PlayerError, AttributeError, TypeError, ValueError):
-                    storage = None
+                storage, _ = read_player_storage(api)
                 statuses[device['id']] = {'ok': True, 'count': len(items), 'storage': storage}
             except PlayerError:
                 statuses[device['id']] = {'ok': False, 'count': None, 'storage': None}
@@ -632,12 +658,9 @@ def create_app(config=None):
             assets = api.assets()
         except PlayerError as exc:
             error = str(exc)
-        storage = None
+        storage, storage_reason = (None, None)
         if not error:
-            try:
-                storage = capacity(api.info())
-            except (PlayerError, AttributeError, TypeError, ValueError):
-                pass
+            storage, storage_reason = read_player_storage(api)
         templates = []
         if not error and current_user()['role'] in ('marketing', 'owner'):
             try:
@@ -647,23 +670,19 @@ def create_app(config=None):
         return render_template('playlist.html', device=device, assets=assets,
                                library_templates=templates,
                                library_items_available=any(t.get('items') for t in templates),
-                               error=error, storage=storage)
+                               error=error, storage=storage, storage_reason=storage_reason)
 
     @app.get('/devices/<device_id>/storage')
     @login_required()
     def device_storage(device_id):
-        """Fresh read-only capacity report for uploader recovery; no cache or writes."""
+        """Fresh, read-only status with explicit unknown/full/ready distinction."""
         _, api = player_or_404(device_id)
-        try:
-            disk = capacity(api.info())
-        except (PlayerError, TypeError, ValueError):
-            disk = None
+        disk, reason = read_player_storage(api)
         if disk is None:
-            return jsonify(ok=False, usable_bytes=0, message=(
-                'Anthias meldet keinen verlässlichen freien Speicher. '
-                'Bitte Geräteverbindung und Speicherplatz am Pi prüfen; '
-                'Medienuploads bleiben zum Schutz gesperrt.'))
-        return jsonify(ok=True, **disk)
+            return jsonify(ok=False, status='unknown', usable_bytes=0,
+                           message=reason or 'Speicherprüfung fehlgeschlagen')
+        return jsonify(ok=True, status='ready' if disk['usable_bytes'] else 'full',
+                       **disk)
 
 
     @app.get('/devices/<device_id>/assets/<asset_id>/preview')
@@ -832,7 +851,10 @@ def create_app(config=None):
             # Once the transfer starts, an error may leave a file on Anthias.
             # Never promise that retrying is safe without reviewing the playlist.
             transferred = True
-            result = api.upload(file.stream, filename, MEDIA[ext])
+            if requested_storage_override():
+                audit('storage.override-request', device_id)
+            result = api.upload(file.stream, filename, MEDIA[ext],
+                                allow_unknown_space=requested_storage_override())
             api.create(title, result['uri'], length, mimetype=MEDIA[ext], ext=result.get('ext'))
             audit('asset.upload', device_id)
             if request.accept_mimetypes.best == 'application/json':
