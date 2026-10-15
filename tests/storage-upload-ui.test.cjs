@@ -8,7 +8,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const script = fs.readFileSync(path.join(__dirname,'../app/static/bulk-upload.js'),'utf8');
 
-function harness(failAt=0) {
+function harness(failAt=0, opts={}) {
   const sent=[];
   const createElement=()=>({
     textContent:'',className:'',hidden:false,dataset:{},
@@ -26,8 +26,9 @@ function harness(failAt=0) {
   parts.input.files=Array.from({length:5},(_,i)=>({name:'movie-'+i+'.mp4',size:500*1024*1024}));
   parts.submit.textContent='Import starten';
   const listeners={};
+  const ack={checked:!!opts.confirmUnknown};
   const form={action:'http://hub.local/devices/lab/bulk-media',reportValidity:()=>true,
-    querySelector(selector){return parts[map[selector]]||null},
+    querySelector(selector){return selector==='[name="ignore_storage_check"]' ? ack : (parts[map[selector]]||null)},
     addEventListener(name,callback){listeners[name]=callback}};
   class FakeFormData{
     constructor(){this.entries=[]}
@@ -51,7 +52,7 @@ function harness(failAt=0) {
     }
     abort(){this.onabort?.()}
   }
-  const context={window:{XMLHttpRequest:FakeXHR,AnthiasStorage:{refresh:async()=>({usable_bytes:5*1024**3})}},
+  const context={window:{XMLHttpRequest:FakeXHR,AnthiasStorage:{refresh:async()=>opts.unknown ? null : {usable_bytes:opts.low ? 0 : 5*1024**3}}},
     XMLHttpRequest:FakeXHR,FormData:FakeFormData,
     document:{querySelectorAll:()=>[form],createElement,createTextNode:text=>({textContent:text})}};
   vm.runInNewContext(script,context);
@@ -77,4 +78,20 @@ test('failed second video stops queue and frees UI without resending',async()=>{
   assert.equal(h.parts.cancel.hidden,true);
   assert.equal(h.parts.report.dataset.state,'partial');
   assert.match(h.parts.report.children[0].textContent,/3 nicht versucht/);
+});
+
+test('unavailable player capacity only proceeds after manual acknowledgement',async()=>{
+  const no=harness(0,{unknown:true});
+  await no.listeners.submit({preventDefault(){}});
+  assert.equal(no.sent.length,0);
+  assert.equal(no.parts.submit.disabled,false);
+  const yes=harness(0,{unknown:true,confirmUnknown:true});
+  await yes.listeners.submit({preventDefault(){}});
+  assert.equal(yes.sent.length,5);
+  assert.equal(yes.parts.submit.disabled,false);
+});
+test('known full Pi remains blocked even with manual acknowledgement',async()=>{
+  const full=harness(0,{low:true,confirmUnknown:true});
+  await full.listeners.submit({preventDefault(){}});
+  assert.equal(full.sent.length,0);
 });

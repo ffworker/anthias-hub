@@ -66,3 +66,12 @@ Bei großen Uploads wird der Multipart-Body zum Pi **gestreamt**, nicht komplett
 Die bisherige JS-Sammelgrenze von 1 GiB bezog sich auf **alle ausgewählten Dateien zusammen**. Das neue UI sendet große Dateien einzeln und gibt die Schaltfläche auch nach Abbruch oder Fehler wieder frei. Ein laufender Upload ist explizit abbrechbar, **ein Abbruch kann bereits am Pi angekommene Dateien nicht zurücknehmen**.
 
 Ist die verbleibende Pi-Kapazität zu klein oder meldet Anthias keine zuverlässige `free_space`-Angabe, bleibt die Sicherheitsprüfung erhalten: Pi-Playlist, Pi-Dateisystem und gegebenenfalls unvollständige Medien/SD-Karte prüfen, dann im Upload-Bereich per **↻** neu messen. Fehlende oder zu knappe Kapazität kann **nicht** durch UI-Reset freigeschaltet werden. Bitte keine unsichere Umgehung der 2-GiB-/20-%-Reserve oder blindes erneutes Hochladen. Bibliotheksimporte verwenden hingegen Hub-Speicher, nicht den des Pis.
+
+
+### Speicherprüfung fehlgeschlagen: bewusster manueller Upload
+
+Vor jedem Pi-Medienupload wird die Anthias-Info-API auf freie Kapazität geprüft. Der Timeout ist jetzt länger, weil dieser API-Endpunkt auf einigen Geräten blockierend Systeminformationen sammelt. Auch lokalisierte/ältere Speicherangaben werden unterstützt. Im Upload-Bereich und im authentifizierten Speicher-Status-Endpunkt werden Ursachen wie HTTP 404, Zeitüberschreitung oder ein fehlender free_space-Wert angezeigt.
+
+Nur wenn die **Speichermessung nicht verfügbar ist**, erscheint die Checkbox **„Speicherprüfung ignorieren“**. Sie setzt voraus, dass Marketing zuvor die Pi-Playlist und die tatsächliche freie Kapazität geprüft hat. Der Override gilt nur für den jeweiligen Upload, wird in der Audit-Datei als angeforderte Ausnahme vermerkt und nicht gespeichert. **Bei gemessenem Platzmangel wird weiterhin blockiert**, auch mit manuell gesetztem Formularparameter. Die 1-GiB-Einzelgrenze, Rechte, CSRF, Media-Signaturchecks und die übrigen Player-Sicherheitsmaßnahmen bleiben bestehen.
+
+Die exakte Ursache am betroffenen Pi muss anhand seiner tatsächlichen Info-API-Antwort bestätigt werden. Bereits übertragene Dateien können auch ohne Playlist-Eintrag Speicher belegen. Kein blindes Retry.
