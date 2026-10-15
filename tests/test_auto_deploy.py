@@ -15,7 +15,7 @@ def setup_checkout(tmp_path):
     return tmp_path
 
 
-def mock_docker(current_image, new_image):
+def mock_docker(current_image, new_image, *, configured_image=None):
     calls = []
     state = {'running': current_image, 'tag': new_image}
 
@@ -24,7 +24,7 @@ def mock_docker(current_image, new_image):
         if args[-3:] == ['ps', '-q', 'anthias-hub']:
             return 'container-id'
         if args[:2] == ['docker', 'inspect']:
-            return auto_deploy.MAIN_IMAGE if '.Config.Image' in args[3] else state['running']
+            return (configured_image or auto_deploy.LATEST_IMAGE) if '.Config.Image' in args[3] else state['running']
         if args[:3] == ['docker', 'image', 'inspect']:
             return state['tag']
         if args[-1] == 'pull':
@@ -113,3 +113,48 @@ def test_missing_compose_override_fails_closed(tmp_path):
     (checkout / '.env').write_text('HUB_COMPOSE_OVERRIDE=/nonexistent/compose.yaml\n')
     with pytest.raises(auto_deploy.DeployError, match='HUB_COMPOSE_OVERRIDE'):
         auto_deploy.deploy(checkout)
+
+
+def test_existing_sha_pinned_vm_migrates_to_latest_without_pilot_reset(tmp_path):
+    checkout = setup_checkout(tmp_path)
+    old_sha_tag = 'ghcr.io/ffworker/anthias-hub:sha-' + 'a' * 40
+    (checkout / '.env').write_text('ANTHIAS_HUB_IMAGE=' + old_sha_tag + '\n')
+    cmd, calls, state = mock_docker('sha-previous', 'sha-latest', configured_image=old_sha_tag)
+    with patch.object(auto_deploy, 'command', cmd), patch.object(auto_deploy, 'healthy', return_value=True):
+        assert auto_deploy.deploy(checkout) == 'updated'
+    assert state['running'] == 'sha-latest'
+    assert any('pull' in args for args, _ in calls)
+
+
+def test_legacy_main_image_can_be_updated_to_latest(tmp_path):
+    checkout = setup_checkout(tmp_path)
+    cmd, calls, state = mock_docker('sha-old', 'sha-new', configured_image=auto_deploy.LEGACY_MAIN_IMAGE)
+    with patch.object(auto_deploy, 'command', cmd), patch.object(auto_deploy, 'healthy', return_value=True):
+        assert auto_deploy.deploy(checkout) == 'updated'
+    assert state['running'] == 'sha-new'
+
+
+@pytest.mark.parametrize('image', [
+    'anthias-hub:pilot',
+    'ghcr.io/ffworker/anthias-hub:sha-abc',
+    'ghcr.io/another-owner/anthias-hub:latest',
+    'ghcr.io/ffworker/anthias-hub:dev',
+])
+def test_rejects_unknown_running_images(tmp_path, image):
+    checkout = setup_checkout(tmp_path)
+    cmd, calls, _ = mock_docker('sha-old', 'sha-new', configured_image=image)
+    with patch.object(auto_deploy, 'command', cmd):
+        with pytest.raises(auto_deploy.DeployError, match='migrate'):
+            auto_deploy.deploy(checkout)
+    assert not any('pull' in args or 'up' in args for args, _ in calls)
+
+
+def test_compose_command_forces_latest_even_with_env_pin(tmp_path):
+    from subprocess import CompletedProcess
+    captured = {}
+    def subprocess_stub(args, **kwargs):
+        captured.update(kwargs)
+        return CompletedProcess(args, 0, stdout='ok\n', stderr='')
+    with patch.object(auto_deploy.subprocess, 'run', side_effect=subprocess_stub):
+        assert auto_deploy.command(['docker', 'compose', 'ps'], tmp_path) == 'ok'
+    assert captured['env']['ANTHIAS_HUB_IMAGE'] == auto_deploy.LATEST_IMAGE

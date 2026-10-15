@@ -2,7 +2,7 @@
 # Keep .env, config/ and data/ from the existing installation unchanged.
 services:
   anthias-hub:
-    image: ${ANTHIAS_HUB_IMAGE:-ghcr.io/ffworker/anthias-hub:main}
+    image: ${ANTHIAS_HUB_IMAGE:-ghcr.io/ffworker/anthias-hub:latest}
     env_file: .env
     ports:
       - "127.0.0.1:8765:8765"

@@ -61,11 +61,11 @@ Every Marketing user currently has access to **all** registered screens. Player 
 - [Security model](SECURITY.md) – boundaries, secrets, authentication, backups and reporting.
 - [IT administration guide](docs/IT_ADMIN_GUIDE.md) – maintenance, roles and recovery.
 - [Controlled releases / new host](docs/reproducible-production.md) – image pins, rollout and rollback.
-- [Test-only auto-deploy](docs/auto-deploy.md) – follows `:main`, **not** intended for production.
+- [Test-only auto-deploy](docs/auto-deploy.md) – follows `:latest`, with health check and automatic rollback.
 - [Marketing bulk import](docs/marketing-bulk-import.md) · [UI behavior](docs/ui-ux-review.md)
 - [Pilot acceptance checklist](docs/pilot-acceptance.md) · [Changelog](CHANGELOG.md)
 
-`main` publishes CI images with `:main` and `:sha-<FULL_COMMIT_SHA>`; **no stable / semver release channel is published yet**. Public release and compatibility claims will follow real-device verification and feedback.
+Successful `main` CI runs publish `ghcr.io/ffworker/anthias-hub:latest` for the test VM, plus a per-commit `:sha-<FULL_COMMIT_SHA>` image for traceability and recovery. **No alpha, beta or stable release channels are configured.** Real-device verification is still required before any production promises.
 
 ## License & upstream
 

@@ -74,8 +74,9 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
+          # One moving tag for testing; per-commit SHA tag for reproducible rollback.
           tags: |
-            ghcr.io/ffworker/anthias-hub:main
+            ghcr.io/ffworker/anthias-hub:latest
             ghcr.io/ffworker/anthias-hub:sha-${{ github.sha }}
           labels: |
             org.opencontainers.image.source=https://github.com/ffworker/anthias-hub
