@@ -546,6 +546,54 @@ def create_app(config=None):
             flash(str(exc), 'error')
         return redirect(url_for('dashboard'))
 
+    @app.post('/devices/<device_id>/control')
+    @login_required('it', 'marketing')
+    def control_device(device_id):
+        """Explicitly confirmed operations on a registered Anthias Pi only.
+
+        Marketing may request a reboot for recovery, never shutdown or HDMI.
+        Only fixed API v2 endpoints are used; no arbitrary command or proxy.
+        """
+        device, api = player_or_404(device_id)
+        action = request.form.get('action')
+        role = current_user()['role']
+        permitted = {'it': {'hdmi-on', 'hdmi-off', 'reboot', 'shutdown'},
+                     'marketing': {'reboot'}}
+        if action not in permitted[role]:
+            abort(403)
+        if request.form.get('confirm') != device_id or request.form.get('ack') != 'yes':
+            abort(400, 'Geräteaktion ausdrücklich bestätigen')
+        if action == 'shutdown' and request.form.get('name_confirmation') != device['name']:
+            abort(400, 'Bildschirmname muss für das Herunterfahren exakt übereinstimmen')
+
+        try:
+            if action.startswith('hdmi-'):
+                result = api.display_power(action.removeprefix('hdmi-'))
+                # Anthias returns a message on CEC success, but not a
+                # verifiable report that the physical TV switched state.
+                if isinstance(result, dict) and 'message' in result:
+                    message = str(result['message'])[:220]
+                else:
+                    message = 'HDMI-CEC-Befehl gesendet.'
+                audit('device.' + action, device_id)
+                flash(message + ' Anzeige am TV prüfen (HDMI-CEC experimentell).', 'success')
+            else:
+                # Reboot/shutdown may drop the network connection immediately
+                # after accepting the request: no automatic retry.
+                api.system_power(action)
+                audit('device.' + action, device_id)
+                if action == 'reboot':
+                    flash('Neustart angefordert. Der Pi kann für einige Minuten nicht erreichbar sein. '
+                          'Bitte warten und Status prüfen.', 'success')
+                else:
+                    flash('Herunterfahren angefordert. Der Pi kann anschließend ausgeschaltet bleiben '
+                          'und muss ggf. vor Ort wieder gestartet werden.', 'success')
+        except PlayerError as exc:
+            flash('Gerätebefehl nicht bestätigt: ' + str(exc) +
+                  '. Bei Neustart/Shutdown kann der Pi bereits reagieren. '
+                  'Bitte Gerätestatus prüfen, nicht blind erneut senden.', 'error')
+        return redirect(url_for('dashboard', _anchor='device-' + device_id))
+
     @app.post('/devices/<device_id>/remove')
     @login_required('it')
     def remove_device(device_id):
