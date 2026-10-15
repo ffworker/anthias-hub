@@ -16,7 +16,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.utils import secure_filename
 
 from .auth import authenticate, current_user, csrf_token, login_required, require_csrf
-from .anthias import Anthias, PlayerError, validate_duration, validate_website_url
+from .anthias import ASSET_ID, Anthias, PlayerError, validate_duration, validate_website_url
 from .bulk_media import BatchError, execute_batch
 from .devices import load, save, get, validate_device
 from .library import Library, LibraryError
@@ -867,11 +867,10 @@ def create_app(config=None):
             abort(400, 'Löschung ausdrücklich bestätigen')
         baseline = request.form.getlist('baseline')
         selected = request.form.getlist('selected')
-        if not baseline or len(baseline) > 500 or len(set(baseline)) != len(baseline):
+        if (not baseline or len(baseline) > 500 or len(set(baseline)) != len(baseline)
+                or any(not ASSET_ID.fullmatch(item_id) for item_id in baseline)):
             abort(400, 'Ungültige Playlist-Auswahl')
         try:
-            for item_id in baseline:
-                api.valid_id(item_id)
             if len(selected) != len(set(selected)) or any(item_id not in baseline for item_id in selected):
                 abort(400, 'Ungültige Playlist-Auswahl')
             if mode == 'selected' and not selected:
@@ -890,7 +889,7 @@ def create_app(config=None):
                         api.remove(item_id)
                         removed += 1
                         audit('asset.bulk-delete' if mode == 'selected' else 'asset.clear', device_id, item_id)
-                except PlayerError as exc:
+                except (PlayerError, OSError) as exc:
                     flash(f'{removed} von {len(targets)} Löschungen bestätigt. '
                           'Beim nächsten Inhalt trat ein Fehler auf: ' + str(exc) +
                           '. Player-Playlist jetzt prüfen, nicht blind erneut löschen.', 'error')
