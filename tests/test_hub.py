@@ -105,7 +105,7 @@ def test_nordlicht_navigation_and_playlist_forms(env):
     assert 'icons.svg#web' in page and 'icons.svg#image' in page
     assert 'studio-bulk-details' in page
     assert 'add-mode-secondary' not in page
-    assert 'Weiteren Inhalt hinzufügen' not in page  # empty playlist has separate CTA
+    assert 'Weiteren Inhalt hinzufügen' in page  # populated playlist keeps bottom CTA
     assert "'unsafe-inline'" not in client.get('/devices/lab').headers['Content-Security-Policy']
 
 
