@@ -225,10 +225,14 @@ class Library:
         collection = self.get(ident)
         manifest = json.dumps({k: collection[k] for k in ('version', 'name', 'items')},
                               ensure_ascii=False)
+        manifest_bytes = len(manifest.encode('utf-8'))
+        if manifest_bytes > 100_000:
+            raise LibraryError('Vorlagenmanifest überschreitet die Backup-Grenze von 100000 Bytes. '
+                               'Vorlage vor Export aufteilen; dieses Backup wäre nicht importierbar.')
         paths = {filename: self.verified_media_path(ident, {'file': filename})
                  for filename in {item['file'] for item in collection['items']
                                   if item['kind'] == 'media'}}
-        if len(manifest.encode('utf-8')) + sum(path.stat().st_size for path in paths.values()) > MAX_ARCHIVE:
+        if manifest_bytes + sum(path.stat().st_size for path in paths.values()) > MAX_ARCHIVE:
             raise LibraryError('Vorlage überschreitet die Backup-Grenze von 2 GiB. '
                                'Vorlage vor Export aufteilen; dieses Backup wäre nicht importierbar.')
         output = GuardedTemporaryFile()

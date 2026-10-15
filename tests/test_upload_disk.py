@@ -128,3 +128,13 @@ def test_full_disk_while_opening_spool_is_controlled():
     with patch('app.upload_disk.tempfile.TemporaryFile', side_effect=OSError(errno.ENOSPC, 'full')):
         with pytest.raises(HubStorageFull):
             GuardedTemporaryFile()
+
+
+def test_export_manifest_respects_restore_limit(tmp_path):
+    from app.library import LibraryError
+    library = Library(tmp_path)
+    item = library.create('Long URLs')
+    for index in range(50):
+        library.add_url(item['id'], f'URL {index}', 'https://example.org/' + 'a' * 2000, 10)
+    with pytest.raises(LibraryError, match='100000 Bytes'):
+        library.export_file(item['id'])

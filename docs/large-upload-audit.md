@@ -26,7 +26,7 @@ Ordinary media ZIP bomb limits must remain independent.
 | Browser | 1 GiB/file; at most 20 selected files, submitted sequentially. 40-minute XHR deadline includes both hops. 100% only means received by Hub. Browser error/cancel cannot reliably cancel a transfer already running on the Hub. |
 | Flask / Werkzeug | Request cap 2 GiB + 2 MiB. Each multipart file now goes directly to a guarded disk temporary file, including while CSRF form parsing runs. Parsing errors close all opened streams even before `request.files` exists. |
 | Hub storage | Docker already sets `TMPDIR=/data`; `/tmp` remains tmpfs. An explicitly invalid/unwritable TMPDIR now prevents startup instead of silently falling back. Do not set TMPDIR to tmpfs for large uploads. Each media write checks the actual file descriptor's filesystem and retains 1 GiB. |
-| Library / ZIP | Media persists in bounded chunks; incoming spool and saved copy can coexist. Backup export and restore use disk and ZIP64. Exports whose uncompressed contents exceed the 2 GiB restore limit are rejected before archive creation. Ordinary ZIPs remain 50 MiB compressed, 50 MiB/entry, 150 MiB expanded. |
+| Library / ZIP | Media persists in bounded chunks; incoming spool and saved copy can coexist. Backup export and restore use disk and ZIP64. Exports whose uncompressed contents exceed the 2 GiB restore limit or 100,000-byte manifest limit are rejected before archive creation. Ordinary ZIPs remain 50 MiB compressed, 50 MiB/entry, 150 MiB expanded. |
 | Gunicorn | Default one worker / four threads, timeout 2400 seconds. `gthread` worker timeout is a worker-liveness mechanism, not a guaranteed per-request deadline. Keep one worker: upload serialization and write checks are process-local. |
 | Reverse proxy | Existing example needed body/time limits. Buffering may add a full extra temporary request copy on the proxy host. Effective limit is the smallest across every proxy and server. Actual deployment has not been inspected. |
 | Hub → Pi | requests-toolbelt streams multipart `file_upload`; no automatic retry. Connect/read timeout `(8, 900)` is not a total transfer deadline. Upload and asset-create/enable are separate operations with ambiguous outcomes after disconnect. |
@@ -147,7 +147,7 @@ for rollback; do not silently discard the new storage protections to clear an er
 
 ## Validation evidence
 
-Fast suite: 189 Python tests and 30 Node UI tests passed locally. Regression cases
+Fast suite: 190 Python tests and 30 Node UI tests passed locally. Regression cases
 cover unknown/unverified topology, exact URL attestation, known shortage even
 with override, two-copy budgeting, decimal-comma rounding, quota/ENOSPC,
 unknown Hub disk measurement, multipart cleanup, HTTP 507, failed library staging,
