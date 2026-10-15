@@ -81,18 +81,21 @@ def test_frontend_is_independent_from_other_projects(env):
     assert 'rss2slideshow' not in dashboard.lower()
 
 
-def test_appearance_controls_are_local_and_keep_playlist_forms(env):
+def test_nordlicht_navigation_and_playlist_forms(env):
     _, client, _ = env
     login_page = client.get('/login').data.decode('utf-8')
-    assert 'theme-init.js' in login_page and 'themes.js' in login_page
-    assert login_page.count('data-theme-choice=') == 3
+    assert 'theme-init.js' not in login_page and 'themes.js' not in login_page
+    assert login_page.count('data-theme-choice=') == 0
     assert 'icons.svg#mark' in login_page
-    for asset in ('themes.css', 'theme-init.js', 'themes.js', 'icons.svg', 'favicon.svg'):
+    for asset in ('themes.css', 'icons.svg', 'favicon.svg'):
         assert client.get('/static/' + asset).status_code == 200
 
     login(client, 'marketing')
     page = client.get('/devices/lab').data.decode('utf-8')
-    assert page.count('data-theme-choice=') == 3
+    assert page.count('data-theme-choice=') == 0
+    assert 'class="site-nav-link is-active"' in page
+    assert 'aria-current="page"' in page
+    assert 'data-library-template' not in page
     assert 'data-add-mode="website"' in page and 'data-add-mode="media"' in page
     assert 'name="url"' in page and 'name="media"' in page
     assert 'asset-inline-edit' in page and 'class="quick-toggle-form"' in page
@@ -100,7 +103,39 @@ def test_appearance_controls_are_local_and_keep_playlist_forms(env):
     assert 'Inhalt bearbeiten' not in page
     assert 'name="direction" value="up"' not in page
     assert 'icons.svg#web' in page and 'icons.svg#image' in page
+    assert 'studio-bulk-details' in page
+    assert 'add-mode-secondary' not in page
+    assert 'Weiteren Inhalt hinzufügen' not in page  # empty playlist has separate CTA
     assert "'unsafe-inline'" not in client.get('/devices/lab').headers['Content-Security-Policy']
+
+
+def test_ui_refresh_library_and_dashboard_role_safety(env):
+    app, client, tmp = env
+    from app.library import Library
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    lib = Library(app.config['LIBRARY_DIR'])
+    t = lib.create('Bistro Herbst')
+    lib.add_url(t['id'], 'Menue', 'https://example.org/menu', 30)
+    login(client, 'marketing')
+    library = client.get('/library').data.decode('utf-8')
+    assert 'data-bulk-upload' not in library  # imports happen inside templates
+    assert 'Vorlage erstellen' in library and 'Vorlagenbackup wiederherstellen' in library
+    assert 'aria-current="page"' in library
+    detail = client.get(f"/library/{t['id']}").data.decode('utf-8')
+    assert 'library-item-options' in detail
+    assert 'template-options' in detail
+    assert 'library-bulk-compact' in detail
+    assert 'name="direction" value="up"' in detail
+    playlist = client.get('/devices/lab').data.decode('utf-8')
+    assert 'data-library-template' in playlist and 'data-library-source' in playlist
+    assert 'data-library-source-template' in playlist
+    assert 'data-add-mode="website"' in playlist
+    assert playlist.count('data-add-mode=') == 3
+    dashboard = client.get('/').data.decode('utf-8')
+    assert 'Hilfe bei Anzeigeproblemen' in dashboard
+    assert 'Gerät verwalten' not in dashboard
+    assert 'fleet-device-actions' in dashboard
+    assert 'Keine Live-Vorschau verfügbar' not in dashboard
 
 
 def test_marketing_can_build_export_and_import_local_library(env):
