@@ -13,6 +13,7 @@ function harness(failAt=0) {
   const createElement=()=>({
     textContent:'',className:'',hidden:false,dataset:{},
     children:[],append(...nodes){this.children.push(...nodes)},
+    appendChild(node){this.children.push(node);return node},
     replaceChildren(){this.children=[]},addEventListener(){},
     style:{width:'0%'}
   });
