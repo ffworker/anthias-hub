@@ -1407,6 +1407,7 @@ def test_player_bulk_rejects_bad_selection_stale_snapshot_and_csrf(env):
     assert client.post(url, data={**base, 'selected': ['one123', 'one123']}).status_code == 400
     assert client.post(url, data={**base, 'selected': ['unknown']}).status_code == 400
     assert client.post(url, data={**base, 'selected': []}).status_code == 400
+    assert client.post(url, data={**base, 'selected': ['one123', 'two123']}).status_code == 400
     assert client.post(url, data={**base, 'baseline': ['one123', '../../bad']}).status_code == 400
     assert client.post(url, data={**base, 'baseline': ['two123', 'one123']}).status_code == 409
     assert client.post(url, data={**base, 'baseline': ['one123']}).status_code == 409
