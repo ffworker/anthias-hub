@@ -349,5 +349,6 @@
 <script defer src="{{ url_for('static', filename='upload-feedback.js') }}"></script>
 <script defer src="{{ url_for('static', filename='bulk-upload.js') }}"></script>
 {% if logged_user.role == 'marketing' and not error %}<script defer src="{{ url_for('static', filename='playlist.js') }}"></script>
-<script defer src="{{ url_for('static', filename='playlist-studio.js') }}"></script>{% endif %}
+<script defer src="{{ url_for('static', filename='playlist-studio.js') }}"></script>
+<script defer src="{{ url_for('static', filename='playlist-bulk.js') }}"></script>{% endif %}
 {% endblock %}
