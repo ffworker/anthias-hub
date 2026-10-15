@@ -94,8 +94,10 @@ def create_app(config=None):
         """
         try:
             info = api.info()
-        except PlayerError as exc:
+        except (PlayerError, AttributeError) as exc:
             reason = str(exc)
+            if isinstance(exc, AttributeError):
+                reason = 'Anthias-Version meldet keine Info-API'
             if 'HTTP ' in reason:
                 reason = 'Anthias-Info-API: ' + reason
             else:
@@ -289,8 +291,11 @@ def create_app(config=None):
             # One user-visible failure might still have reached the Pi.
             api.assets()  # Make sure target is reachable before the first transfer.
             def add_one(title, filename, ext, stream, duration):
-                uploaded = api.upload(stream, filename, MEDIA[ext],
-                                      allow_unknown_space=requested_storage_override())
+                if requested_storage_override():
+                    uploaded = api.upload(stream, filename, MEDIA[ext],
+                                          allow_unknown_space=True)
+                else:
+                    uploaded = api.upload(stream, filename, MEDIA[ext])
                 api.create(title, uploaded['uri'], duration,
                            mimetype=MEDIA[ext], ext=uploaded.get('ext'))
                 audit('asset.bulk-upload', device_id)
@@ -853,8 +858,10 @@ def create_app(config=None):
             transferred = True
             if requested_storage_override():
                 audit('storage.override-request', device_id)
-            result = api.upload(file.stream, filename, MEDIA[ext],
-                                allow_unknown_space=requested_storage_override())
+            if requested_storage_override():
+                result = api.upload(file.stream, filename, MEDIA[ext], allow_unknown_space=True)
+            else:
+                result = api.upload(file.stream, filename, MEDIA[ext])
             api.create(title, result['uri'], length, mimetype=MEDIA[ext], ext=result.get('ext'))
             audit('asset.upload', device_id)
             if request.accept_mimetypes.best == 'application/json':

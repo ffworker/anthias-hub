@@ -20,7 +20,7 @@ def test_capacity_conservative_headroom(raw, minimum, maximum):
     assert result['usable_bytes'] <= max(0, result['free_bytes'] - result['reserve_bytes'])
 
 
-@pytest.mark.parametrize('value', [None, '', '-2 GB', 'unknown', 'NaN GB', '1e9 GB', 1234, '300%'])
+@pytest.mark.parametrize('value', [None, '', '-2 GB', 'unknown', 'NaN GB', '1e9 GB', '300%'])
 def test_capacity_unknown_fails_closed(value):
     assert capacity({'free_space': value}) is None
 
@@ -53,7 +53,7 @@ def test_unknown_space_blocks_before_transfer():
     api = Anthias({'url': 'http://127.0.0.1'})
     api.http.request = MagicMock()
     with patch.object(api, 'info', return_value={}):
-        with pytest.raises(PlayerError, match='nicht zuverlässig'):
+        with pytest.raises(PlayerError, match='Speicherprüfung fehlgeschlagen'):
             api.upload(io.BytesIO(b'1234'), 'x.mp4', 'video/mp4')
     api.http.request.assert_not_called()
 

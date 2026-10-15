@@ -1827,4 +1827,4 @@ def test_single_upload_forwards_manual_acknowledgement(env):
             'duration':'15','ignore_storage_check':'manual-confirmed'},
             content_type='multipart/form-data')
     assert no_ack.status_code == 302 and ack.status_code == 302
-    assert calls == [False, True]
+    assert calls == [None, True]
