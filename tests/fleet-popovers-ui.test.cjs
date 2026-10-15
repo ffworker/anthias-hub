@@ -20,8 +20,11 @@ function harness({width = 1200, height = 800, mobile = false} = {}) {
       addEventListener(name, fn){triggerEvents[name]=fn;}
     };
     const classList = {contains(c){return c === 'fleet-remote-body';}};
+    const closeEvents = {};
+    const closeButton = {addEventListener(name,fn){closeEvents[name]=fn;}};
     const panel = {
       classList, scrollHeight:panelHeight,
+      querySelector(selector){return selector==='[data-close-fleet-menu]' ? closeButton : null;},
       style:{
         removeProperty(name){delete this[name];}
       }
@@ -33,7 +36,7 @@ function harness({width = 1200, height = 800, mobile = false} = {}) {
       addEventListener(name,fn){toggles[name]=fn;},
       contains(t){return t===trigger || t===panel;}
     };
-    return {menu, trigger, panel, toggle(){toggles.toggle();}};
+    return {menu, trigger, panel, toggle(){toggles.toggle();}, close(){closeEvents.click();}};
   }
   const first=entry(90);
   const last=entry(width-195,900);
@@ -89,6 +92,14 @@ test('Escape closes the menu and restores focus to its trigger',()=>{
   assert.equal(h.first.menu.open,false);
   assert.equal(h.first.trigger.focused,true);
   assert.equal(prevented,true);
+});
+
+test('visible close button closes the flyout and restores focus',()=>{
+  const h=harness();
+  h.first.menu.open=true;h.first.toggle();
+  h.first.close();
+  assert.equal(h.first.menu.open,false);
+  assert.equal(h.first.trigger.focused,true);
 });
 
 test('mobile leaves position to the bottom-sheet CSS',()=>{
