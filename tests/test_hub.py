@@ -87,7 +87,7 @@ def test_nordlicht_navigation_and_playlist_forms(env):
     assert 'theme-init.js' not in login_page and 'themes.js' not in login_page
     assert login_page.count('data-theme-choice=') == 0
     assert 'icons.svg#mark' in login_page
-    for asset in ('themes.css', 'icons.svg', 'favicon.svg'):
+    for asset in ('ui-refinements.css', 'icons.svg', 'favicon.svg'):
         assert client.get('/static/' + asset).status_code == 200
 
     login(client, 'marketing')
