@@ -330,3 +330,84 @@
 }
 
 .library-item-actions>form button .icon{width:16px;height:16px}
+
+
+/* UI fit-and-finish: all media controls remain within their card. The
+   options popover is aligned with the card's inner edge, not the icon edge. */
+.library-items{min-width:0}
+.library-item{
+  position:relative;display:grid!important;
+  grid-template-columns:24px 44px minmax(0,1fr) auto;
+  gap:10px;align-items:center;min-width:0;
+  padding:12px 14px!important;overflow:visible
+}
+.library-item .library-glyph{width:44px;height:44px;min-width:44px}
+.library-item-copy{min-width:0;overflow-wrap:anywhere;flex:none}
+.library-item-copy strong,.library-item-copy small{max-width:100%}
+.library-item-actions{
+  display:flex;align-items:center;justify-content:flex-end;
+  flex:none;min-width:0;width:auto;max-width:100%;gap:5px;
+  margin:0
+}
+.library-item-actions>form{display:flex;align-items:center;gap:4px;flex:none}
+.library-item-actions>form button{
+  box-sizing:border-box;display:inline-grid;place-items:center;
+  width:40px;min-width:40px;min-height:44px;padding:9px
+}
+.library-item-actions>.library-item-options{position:static;min-width:0}
+.library-item-options>summary{
+  box-sizing:border-box;width:44px;min-height:44px;padding:10px
+}
+.library-item-options-menu{
+  box-sizing:border-box;position:absolute;top:calc(100% + 7px);
+  right:12px;left:auto;width:min(292px,calc(100% - 24px));max-width:none;
+  max-height:min(68dvh,460px);overflow-y:auto;overscroll-behavior:contain;
+  padding:12px 14px;z-index:40;border-color:#537574
+}
+.library-item:has(>.library-item-actions>.library-item-options[open]){
+  z-index:35;border-color:#6ba895
+}
+.library-item-options-menu details form{box-sizing:border-box;min-width:0}
+.library-item-options-menu details form select{box-sizing:border-box;width:100%}
+.library-item-options-menu details form button{white-space:normal}
+.library-detail-title-row{min-width:0;flex-wrap:wrap;align-items:center}
+.library-detail-title-row h1{flex:1 1 200px;min-width:0}
+.library-detail-title-row>.template-options{
+  margin:0 0 0 auto;max-width:100%;flex:none
+}
+.template-options>summary{
+  box-sizing:border-box;max-width:100%;white-space:normal;
+  min-height:44px;padding:9px 11px
+}
+.template-options-panel{
+  box-sizing:border-box;right:0;left:auto;
+  width:min(310px,calc(100vw - 36px));max-width:calc(100vw - 36px);
+  padding:14px;gap:12px
+}
+.template-options-panel .template-delete-control{
+  position:static;justify-self:stretch;max-width:100%
+}
+.template-options-panel .template-delete-control>summary{width:100%;justify-content:flex-start}
+.template-options-panel .template-delete-confirm{
+  position:static;box-sizing:border-box;max-width:100%;width:100%;
+  margin:10px 0 0;padding:12px;box-shadow:none;border-radius:10px
+}
+.library-entry-shell.card{min-width:0;gap:8px}
+.library-entry-shell .library-entry{min-width:0;padding-right:4px!important}
+.library-entry-shell .template-delete-list>summary{
+  box-sizing:border-box;margin:0;min-width:44px;width:44px;min-height:44px
+}
+@media(max-width:740px){
+  .library-item{grid-template-columns:24px 44px minmax(0,1fr);gap:10px}
+  .library-item-actions{
+    grid-column:1/-1;justify-content:flex-end;
+    width:100%;margin:0;padding-top:8px;
+    border-top:1px solid var(--border)
+  }
+}
+@media(max-width:380px){
+  .library-item{padding:11px!important;column-gap:7px}
+  .library-detail-title-row>.template-options{width:100%}
+  .template-options>summary{width:100%;justify-content:center}
+  .template-options-panel{width:100%}
+}
