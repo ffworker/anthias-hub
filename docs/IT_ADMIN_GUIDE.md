@@ -45,7 +45,7 @@ Docker Compose bindet Host **127.0.0.1:8765** an Container-Port 8765; das ist Ab
 
 ### Ersteinrichtung
 
-Voraussetzungen: Docker Engine mit Compose-Plugin, Git, OpenSSL, curl, ss und Netzwerkroute zum Anthias-Pi.
+Voraussetzungen: Docker Engine mit Compose-Plugin, Git, OpenSSL, curl, ss und Netzwerkroute zum Anthias-Pi. **Auf einer neuen VM zuerst einen normalen Admin-User, Windows-SSH-Key und `~/.ssh/config`-Alias einrichten; Root-SSH und Passwort-Login erst nach geprüftem Key-only-Login deaktivieren**. Das komplette Vorgehen mit Hardening, Firewall und dem bestehenden `/root/apps`-Migrationshinweis steht unter [SSH-Zugriff und VM-Hardening](ssh-access.md). Für Deployments `~/apps/` des passenden Admins verwenden.
 
 ~~~bash
 git clone https://github.com/ffworker/anthias-hub.git
@@ -56,7 +56,7 @@ bash scripts/setup-pilot.sh
 
 Das Setup erzeugt den Sitzungsschlüssel und getrennte IT-/Marketing-Konten. Nach einem abgebrochenen Passwortdialog oder versehentlich gelöschtem `config/users.json` lässt sich `bash scripts/setup-pilot.sh` erneut ausführen: Vorhandene `.env`, `data/` und gültige Konten bleiben erhalten; nur fehlende Rollen werden abgefragt. Zum gezielten Ändern bestehender Konten `bash scripts/setup-pilot.sh --reset-users` ausführen und die jeweilige Rückfrage bestätigen (Standard: Konto behalten). Zum Zurücksetzen der Konten **nicht** `.env` löschen. Eine beschädigte `users.json` wird nicht überschrieben; zuerst aus einem Backup wiederherstellen. Auf einem Host mit `ANTHIAS_HUB_IMAGE` verwendet das Skript `compose.cd.yaml` mit dem gepinnten Image statt eines neuen Pilot-Builds. Den `:main`-Auto-Deploy-Timer nicht auf Produktion aktivieren.
 
-**Root-Betrieb:** Das Skript darf beim ersten Mal als Host-root gestartet werden. Dann besitzt der Host-Account root die .env, während der Container **nicht** als root, sondern unter UID/GID **10001:10001**, läuft; config/ und data/ erhalten passende Eigentümer. Bei anderen Hostbenutzern werden deren UID/GID genutzt. Für die anschließende Wartung eine konsistente administrative Identität verwenden.
+**Root-Betrieb:** Das Skript darf beim ersten Mal mit lokalen Root-Rechten (Konsole/`sudo`) gestartet werden – **das erfordert keine SSH-Root-Anmeldung**. Dann besitzt Host-root die `.env`, während der Container **nicht** als root, sondern unter UID/GID **10001:10001** läuft; `config/` und `data/` erhalten passende Eigentümer. Bei anderen Hostbenutzern werden deren UID/GID genutzt. Für die anschließende Wartung eine konsistente administrative Identität verwenden. Docker-Berechtigungen sind Root-äquivalent und dürfen nur vertrauenswürdigen Administratoren gegeben werden.
 
 ~~~bash
 docker compose -p anthias-hub ps
@@ -68,13 +68,14 @@ Antwort 'ok' auf /healthz prüft **nur den Webprozess**, nicht Anthias, Medienwi
 
 ### Zugriff von Windows
 
-In PowerShell auf dem Admin-PC:
+Einmalig am Admin-PC einen eigenen Ed25519-Key und die beiden SSH-Aliase aus [SSH-Zugriff und VM-Hardening](ssh-access.md) einrichten. Danach in PowerShell:
 
 ~~~powershell
-ssh -N -L 8765:127.0.0.1:8765 ADMIN@DOCKER-HOST
+ssh gh-pihub           # normale Shell ohne root@ oder User/IP eintippen
+ssh -N gh-pihub-tunnel # separates Fenster für beide lokalen Web-Tunnel
 ~~~
 
-Danach http://localhost:8765 öffnen. Bei belegtem Windows-Port stattdessen '-L 18765:127.0.0.1:8765' und http://localhost:18765 verwenden. Direkter Zugriff über http://DOCKER-HOST:8765 **funktioniert absichtlich nicht**. Keine Firewall-Freigabe für 8765 erforderlich.
+Dann **http://127.0.0.1:8765** (Hub) und, falls auf derselben VM installiert, **http://127.0.0.1:8085** (RSS2Slideshow) öffnen. Bei belegten Windows-Ports alternative lokale `-L`-Ports verwenden, siehe Anleitung. Direkter Zugriff über `http://DOCKER-HOST:8765` funktioniert **absichtlich nicht**. Keine Firewall-Freigabe für 8765/8085 erforderlich; der Pi braucht für die RSS-Webseite einen **separat freigegebenen internen** Endpunkt.
 
 **COOKIE_SECURE=0** gilt nur für den lokalen HTTP-Test über SSH. Für Marketing-Arbeitsplätze: internes HTTPS mit Reverse-Proxy oder VPN, COOKIE_SECURE=1, Zugriffsbeschränkung auf berechtigte Clients, Admin-Zugriff begrenzen. Keine öffentliche Freigabe dieses Piloten.
 
