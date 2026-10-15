@@ -301,3 +301,15 @@ body{background:radial-gradient(ellipse 65% 420px at 74% -165px,#224551,transpar
 .fleet-device-actions:has(>.fleet-remote-marketing){grid-template-columns:1fr}
 .fleet-device-actions>.fleet-remote-marketing>summary{justify-content:flex-start;font-size:12px}
 @media(max-width:470px){.fleet-device{padding:15px}.fleet-device-actions{gap:7px}.fleet-device-actions>details>summary{min-height:44px}}
+
+/* Nordlicht typography and accessible feedback used across IT/Marketing/Viewer. */
+.site-notice{font-size:13px;line-height:1.55}
+.site-notice .notice-symbol{width:25px;height:25px}
+.site-notice .notice-symbol .icon{width:15px;height:15px}
+.site-notice.error{border-color:#98616b}
+.fleet-stat-label,.fleet-summary-hint,.fleet-location,.fleet-device-line,.fleet-device .pill{font-size:12px}
+.fleet-remote-note,.fleet-remote-ack,.fleet-remote-buttons button,
+.fleet-remote-shutdown form p,.fleet-remote-shutdown form label:not(.fleet-remote-ack){font-size:12px}
+.fleet-device-actions>.fleet-remote-it+.fleet-settings{margin:0}
+:where(button,a,input,select,summary):focus-visible{outline:2px solid var(--studio-aqua);outline-offset:2px}
+@media(max-width:470px){.site-nav-link{font-size:13px!important;gap:8px!important}}
