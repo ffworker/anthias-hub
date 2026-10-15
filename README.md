@@ -9,7 +9,7 @@
 [![Self-hosted](https://img.shields.io/badge/deployment-self--hosted-61cab8)](docs/deploy-docker-host.md)
 [![Branch: main](https://img.shields.io/badge/branch-main-465d76?logo=git)](https://github.com/ffworker/anthias-hub/tree/main)
 
-[**CI / Workflows**](https://github.com/ffworker/anthias-hub/actions) · [**Container images**](https://github.com/ffworker/anthias-hub/pkgs/container/anthias-hub) · [**Branches**](https://github.com/ffworker/anthias-hub/branches) · [**Issues**](https://github.com/ffworker/anthias-hub/issues) · [**Release & VM runbook**](docs/reproducible-production.md)
+[**CI / Workflows**](https://github.com/ffworker/anthias-hub/actions) · [**Container images**](https://github.com/ffworker/anthias-hub/pkgs/container/anthias-hub) · [**Branches**](https://github.com/ffworker/anthias-hub/branches) · [**Issues**](https://github.com/ffworker/anthias-hub/issues) · [**Pilot changelog**](CHANGELOG.md) · [**Release & VM runbook**](docs/reproducible-production.md)
 
 **Independent self-hosted management interface for multiple Anthias players.**
 
@@ -137,7 +137,7 @@ python3 -m venv .venv
 .venv/bin/python -m compileall -q app scripts wsgi.py
 ~~~
 
-CI uses Python 3.12 and runs offline tests; **green unit tests are not proof of compatibility with any particular installed Pi**. Pilot write operations should be tested on a spare player and backed up independently.
+CI uses Python 3.12 and runs offline Python and Node UI/CSS regression tests; **green unit tests are not proof of compatibility with any particular installed Pi**. Pilot write operations should be tested on a spare player and backed up independently.
 
 ## License and upstream credit
 

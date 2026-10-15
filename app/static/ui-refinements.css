@@ -1,4 +1,6 @@
-/* Nordlicht-only shared layout/icon refinements; appearance picker removed. */
+/* Shared UI refinements, loaded last after page CSS to preserve existing cascade.
+ * Nordlicht is the only supported appearance; no theme switcher is used.
+ * Keep the playlist and global icon rules together when making future CSS changes. */
 .icon{display:inline-block;width:19px;height:19px;flex:none;vertical-align:middle;fill:none;color:inherit}
 .brand-symbol .icon{width:25px;height:25px}
 .site-nav-link .icon{width:17px;height:17px}
@@ -29,5 +31,5 @@
 .site-foot,.site-foot a{color:var(--muted)}
 .playlist-workspace .asset:has(.edit-panel[open]){overflow:visible}
 
-@media(max-width:680px){.playlist-workspace .asset-toolbar{display:grid;grid-template-columns:1fr;gap:7px}.playlist-workspace .edit-panel{justify-self:stretch;width:100%}.playlist-workspace .edit-panel[open]{grid-column:1;grid-row:auto}.playlist-workspace .edit-panel>summary{width:100%;justify-content:center}.playlist-workspace .asset-edit{grid-template-columns:1fr}.playlist-workspace .asset-edit .check,.playlist-workspace .asset-edit button{grid-column:auto;grid-row:auto}.playlist-workspace .move-controls::before{margin-right:auto}.playlist-workspace .asset-side{margin-top:7px}.theme-options{right:-8px}}
+@media(max-width:680px){.playlist-workspace .asset-toolbar{display:grid;grid-template-columns:1fr;gap:7px}.playlist-workspace .edit-panel{justify-self:stretch;width:100%}.playlist-workspace .edit-panel[open]{grid-column:1;grid-row:auto}.playlist-workspace .edit-panel>summary{width:100%;justify-content:center}.playlist-workspace .asset-edit{grid-template-columns:1fr}.playlist-workspace .asset-edit .check,.playlist-workspace .asset-edit button{grid-column:auto;grid-row:auto}.playlist-workspace .move-controls::before{margin-right:auto}.playlist-workspace .asset-side{margin-top:7px}}
 

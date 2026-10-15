@@ -48,39 +48,10 @@
 .playlist-workspace .composer-head{position:relative;padding:25px 24px 20px;background:linear-gradient(140deg,#215253,#172e3e 65%,#172536)}
 .playlist-workspace .composer-head .eyebrow{font-size:10px}.playlist-workspace .composer-head h2{font-size:23px;margin:0 0 7px}.playlist-workspace .composer-head .muted{color:#c8e1df;font-size:12px}
 .composer-bubble{position:absolute;right:21px;top:17px;display:grid;place-items:center;background:#89f0d42a;color:#a6f8e5;width:39px;height:39px;border-radius:50%;font-size:20px}
-.add-type-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:18px 22px 8px;background:#0b1926;border:1px solid #2b4454;border-radius:12px;padding:5px}
+.add-type-switch{display:grid;gap:6px;margin:18px 22px 8px;background:#0b1926;border:1px solid #2b4454;border-radius:12px;padding:5px}
 .playlist-workspace .add-mode{min-width:0;min-height:42px;border:0;border-radius:9px;background:transparent;color:#acc0cf;font-size:12px;padding:8px 5px;box-shadow:none}
 .playlist-workspace .add-mode.selected{background:#31584f;color:#ddfff7;box-shadow:inset 0 1px #b6f1df2c}
 .playlist-workspace .add-mode:hover{color:#f1fff9}
-.playlist-workspace .add-type-switch .add-mode-secondary{
-  grid-column:1/-1;
-  justify-self:end;
-  display:inline-flex;
-  align-items:center;
-  justify-content:flex-end;
-  width:auto;
-  min-height:29px;
-  margin-top:1px;
-  padding:5px 9px;
-  border:1px solid transparent;
-  border-radius:7px;
-  background:transparent;
-  box-shadow:none;
-  color:#a1b1bd;
-  font-size:11px;
-  font-weight:500;
-}
-.playlist-workspace .add-type-switch .add-mode-secondary:hover,
-.playlist-workspace .add-type-switch .add-mode-secondary:focus-visible{
-  color:#e0f8f2;
-  border-color:#405b64;
-}
-.playlist-workspace .add-type-switch .add-mode-secondary.selected{
-  background:#24413e;
-  border-color:#426960;
-  box-shadow:none;
-  color:#ddfff7;
-}
 .playlist-workspace .composer-pane{padding:14px 23px 18px}.playlist-workspace .composer-pane[hidden]{display:none!important}
 .playlist-workspace .composer-explainer{font-size:12px;color:#b8cbda;margin:2px 0 18px;line-height:1.5}
 .playlist-workspace .composer-pane label{margin-bottom:16px;color:#d9e5f0}
@@ -613,8 +584,7 @@ body.studio-drawer-open{overflow:hidden}
 
 /* UI review: three equal media/library/web tabs, accessible progressive forms. */
 .playlist-workspace .add-type-switch{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
-.playlist-workspace .add-type-switch .add-mode,
-.playlist-workspace .add-type-switch .add-mode-secondary{grid-column:auto;justify-self:stretch;min-width:0;min-height:44px;margin:0;padding:7px 3px;font-size:12px;white-space:normal}
+.playlist-workspace .add-type-switch .add-mode{grid-column:auto;justify-self:stretch;min-width:0;min-height:44px;margin:0;padding:7px 3px;font-size:12px;white-space:normal}
 .playlist-studio-v2 .asset-main{gap:10px;padding:9px 14px;min-height:65px}
 .playlist-studio-v2 .asset-kind{width:60px;min-width:60px;height:52px}
 .playlist-studio-v2 button.asset-open{min-height:50px}
