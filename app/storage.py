@@ -13,7 +13,7 @@ MAX_MEDIA_BYTES = GIB                 # per media file
 MAX_REQUEST_BYTES = 2 * GIB + 2 * MIB # up to 2 GiB template ZIP + form
 MIN_PI_RESERVE = 2 * GIB              # absolute free-space floor
 PI_RESERVE_FRACTION = Decimal('0.20') # keep a further 20% of reported free
-_SPACE = re.compile(r'^\s*(\d+(?:[.,]\d+)?)\s*(BYTE[S]?|B|[KMGTPE]I?B|[KMGTPE])\s*
+_SPACE = re.compile(r'^\s*(\d+(?:[.,]\d+)?)\s*(BYTE[S]?|B|[KMGTPE]I?B|[KMGTPE])\s*$', re.I)
 _POWERS = {'B': 0, 'BYTE': 0, 'BYTES': 0, 'K': 1, 'M': 2,
            'G': 3, 'T': 4, 'P': 5, 'E': 6}
 
