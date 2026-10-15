@@ -1,0 +1,59 @@
+{# Device controls intentionally POST only via authenticated Hub routes.
+   Anthias management API must never be linked as a destructive GET URL. #}
+{% macro device_control(device, role) %}
+  {% if role == 'it' %}
+    <details class="fleet-remote fleet-remote-it">
+      <summary><span aria-hidden="true">⏻</span> Gerätesteuerung <span class="fleet-remote-arrow" aria-hidden="true">⌄</span></summary>
+      <div class="fleet-remote-body">
+        <p class="fleet-remote-note">HDMI-CEC ist experimentell und funktioniert nur an geeigneten TVs/Ports. Bitte vor Ort prüfen.</p>
+        <form method="post" action="{{ url_for('control_device', device_id=device.id) }}" class="fleet-remote-form">
+          <input type="hidden" name="csrf" value="{{ csrf() }}">
+          <input type="hidden" name="confirm" value="{{ device.id }}">
+          <label class="fleet-remote-ack">
+            <input type="checkbox" name="ack" value="yes" required>
+            Steuerbefehl an <strong>{{ device.name }}</strong> senden
+          </label>
+          <div class="fleet-remote-buttons">
+            <button type="submit" name="action" value="hdmi-on">Bildschirm an</button>
+            <button type="submit" name="action" value="hdmi-off">Bildschirm aus</button>
+            <button type="submit" name="action" value="reboot">Pi neu starten</button>
+          </div>
+        </form>
+        <details class="fleet-remote-shutdown">
+          <summary>Pi vollständig herunterfahren …</summary>
+          <form method="post" action="{{ url_for('control_device', device_id=device.id) }}">
+            <input type="hidden" name="csrf" value="{{ csrf() }}">
+            <input type="hidden" name="confirm" value="{{ device.id }}">
+            <input type="hidden" name="action" value="shutdown">
+            <p>Der Pi bleibt danach möglicherweise ausgeschaltet. Um ihn neu zu starten, ist ggf. jemand vor Ort erforderlich.</p>
+            <label>Zur Bestätigung Bildschirmnamen eingeben:
+              <input type="text" name="name_confirmation" required maxlength="80"
+                     placeholder="{{ device.name }}" autocomplete="off">
+            </label>
+            <label class="fleet-remote-ack">
+              <input type="checkbox" name="ack" value="yes" required> Pi jetzt herunterfahren
+            </label>
+            <button type="submit" class="danger-btn">Herunterfahren bestätigen</button>
+          </form>
+        </details>
+      </div>
+    </details>
+  {% elif role == 'marketing' %}
+    <details class="fleet-remote fleet-remote-marketing">
+      <summary>Hilfe bei Anzeigeproblemen <span aria-hidden="true">⌄</span></summary>
+      <div class="fleet-remote-body">
+        <p class="fleet-remote-note">Wenn der Bildschirm hängt: Raspberry Pi neu starten. Die Anzeige ist kurz nicht erreichbar; die Playlist bleibt erhalten.</p>
+        <form method="post" action="{{ url_for('control_device', device_id=device.id) }}" class="fleet-remote-form">
+          <input type="hidden" name="csrf" value="{{ csrf() }}">
+          <input type="hidden" name="confirm" value="{{ device.id }}">
+          <input type="hidden" name="action" value="reboot">
+          <label class="fleet-remote-ack">
+            <input type="checkbox" name="ack" value="yes" required>
+            <strong>{{ device.name }}</strong> wirklich neu starten
+          </label>
+          <button class="fleet-remote-reboot" type="submit">Pi neu starten</button>
+        </form>
+      </div>
+    </details>
+  {% endif %}
+{% endmacro %}

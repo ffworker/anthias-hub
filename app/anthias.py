@@ -43,6 +43,18 @@ class Anthias:
     def info(self):
         return self.call('GET', '/api/v2/info', timeout=3)
 
+    def display_power(self, state):
+        """Experimental HDMI-CEC control on newer Anthias versions only."""
+        if state not in ('on', 'off'):
+            raise PlayerError('Ungültiger HDMI-Befehl')
+        return self.call('POST', '/api/v2/display/' + state, timeout=8)
+
+    def system_power(self, action):
+        """Trigger system action on a registered Pi; never use arbitrary paths."""
+        if action not in ('reboot', 'shutdown'):
+            raise PlayerError('Ungültiger Gerätebefehl')
+        return self.call('POST', '/api/v2/' + action, timeout=8)
+
     def create(self, name, uri, duration, mimetype='webpage', ext=None):
         body = {
             'name': name, 'uri': uri, 'duration': duration,

@@ -33,6 +33,12 @@ class FakeAnthias:
         return {}
     def remove(self, *args, **kwargs):
         self.changes.append(('remove', args, kwargs))
+    def display_power(self, state):
+        self.changes.append(('display_power', (state,), {}))
+        return {'message': 'CEC command accepted'}
+    def system_power(self, action):
+        self.changes.append(('system_power', (action,), {}))
+        return None
     def order(self, *args, **kwargs):
         self.changes.append(('order', args, kwargs))
     @staticmethod
@@ -488,7 +494,10 @@ def test_studio_visual_language_on_every_user_facing_page(env):
     assert 'Keine Live-Vorschau' in page
     assert 'Original Anthias' not in page
     assert 'id="device-setup"' not in page
-    assert 'name="ack"' not in page
+    # Marketing may acknowledge a support reboot, not IT device removal.
+    assert 'Hilfe bei Anzeigeproblemen' in page
+    assert 'fleet-danger-zone' not in page
+    assert 'name="ack"' in page
     playlist = client.get('/devices/lab').get_data(as_text=True)
     assert 'workspace.css' in playlist
     assert 'playlist.css' in playlist
@@ -1437,3 +1446,144 @@ def test_player_bulk_partial_failure_stops_and_explains_uncertainty(env):
         assert FakeAnthias.changes == [('remove', ('one123',), {})]
     finally:
         FakeAnthias.remove = original
+
+
+def test_device_remote_control_renders_only_allowed_roles(env):
+    _, client, _ = env
+    login(client, 'it')
+    it = client.get('/').get_data(as_text=True)
+    assert 'Gerätesteuerung' in it
+    assert 'Original Anthias' in it
+    assert 'value="hdmi-on"' in it and 'value="hdmi-off"' in it
+    assert 'value="reboot"' in it and 'value="shutdown"' in it
+    assert 'name="name_confirmation"' in it
+    assert 'id="device-lab"' in it
+    client.post('/logout', data={'csrf': token(client)})
+    login(client, 'marketing')
+    marketing = client.get('/').get_data(as_text=True)
+    assert 'Hilfe bei Anzeigeproblemen' in marketing
+    assert 'Pi neu starten' in marketing
+    assert 'value="reboot"' in marketing
+    assert 'value="hdmi-off"' not in marketing
+    assert 'value="hdmi-on"' not in marketing
+    assert 'value="shutdown"' not in marketing
+    assert 'Original Anthias' not in marketing
+    client.post('/logout', data={'csrf': token(client)})
+    login(client, 'viewer')
+    viewer = client.get('/').get_data(as_text=True)
+    assert 'Gerätesteuerung' not in viewer
+    assert 'Hilfe bei Anzeigeproblemen' not in viewer
+    assert '/devices/lab/control' not in viewer
+
+
+def test_it_can_send_explicit_hdmi_reboot_and_shutdown_commands(env):
+    _, client, _ = env
+    login(client, 'it')
+    uri = '/devices/lab/control'
+    base = {'csrf': token(client), 'confirm': 'lab', 'ack': 'yes'}
+    for action in ('hdmi-on', 'hdmi-off', 'reboot', 'shutdown'):
+        data = {**base, 'action': action}
+        if action == 'shutdown':
+            data['name_confirmation'] = 'Lab Screen'
+        response = client.post(uri, data=data, follow_redirects=True)
+        assert response.status_code == 200
+        assert response.request.path == '/'
+    assert FakeAnthias.changes == [
+        ('display_power', ('on',), {}),
+        ('display_power', ('off',), {}),
+        ('system_power', ('reboot',), {}),
+        ('system_power', ('shutdown',), {}),
+    ]
+
+
+def test_marketing_only_reboot_with_ack_and_csrf(env):
+    _, client, _ = env
+    uri = '/devices/lab/control'
+    login(client, 'marketing')
+    base = {'csrf': token(client), 'confirm': 'lab', 'ack': 'yes'}
+    for action in ('hdmi-on', 'hdmi-off', 'shutdown', 'unknown', ''):
+        assert client.post(uri, data={**base, 'action': action,
+                                     'name_confirmation': 'Lab Screen'}).status_code == 403
+    assert not FakeAnthias.changes
+    assert client.post(uri, data={**base, 'action': 'reboot',
+                                  'csrf': 'bad'}).status_code == 400
+    assert client.post(uri, data={**base, 'action': 'reboot',
+                                  'ack': 'no'}).status_code == 400
+    assert client.post(uri, data={**base, 'action': 'reboot',
+                                  'confirm': 'other'}).status_code == 400
+    assert not FakeAnthias.changes
+    result = client.post(uri, data={**base, 'action': 'reboot'}, follow_redirects=True)
+    assert result.status_code == 200
+    assert b'Neustart angefordert' in result.data
+    assert FakeAnthias.changes == [('system_power', ('reboot',), {})]
+
+
+def test_viewer_cannot_post_any_remote_control(env):
+    _, client, _ = env
+    login(client, 'viewer')
+    for action in ('hdmi-on', 'hdmi-off', 'reboot', 'shutdown'):
+        r = client.post('/devices/lab/control', data={
+            'csrf': token(client), 'confirm': 'lab', 'ack': 'yes',
+            'action': action, 'name_confirmation': 'Lab Screen'})
+        assert r.status_code == 403
+    assert not FakeAnthias.changes
+
+
+def test_shutdown_requires_exact_screen_name_and_registered_device(env):
+    _, client, _ = env
+    login(client, 'it')
+    base = {'csrf': token(client), 'confirm': 'lab', 'ack': 'yes', 'action': 'shutdown'}
+    for name in ('', 'lab', 'Lab Screen ', 'another'):
+        assert client.post('/devices/lab/control', data={
+            **base, 'name_confirmation': name}).status_code == 400
+    assert client.post('/devices/missing/control', data=base).status_code == 404
+    assert not FakeAnthias.changes
+
+
+def test_device_control_errors_do_not_retry_or_claim_reboot_succeeded(env):
+    _, client, _ = env
+    login(client, 'it')
+    original = FakeAnthias.system_power
+    calls = []
+    def disconnected(self, action):
+        calls.append(action)
+        raise anthias.PlayerError('Anthias nicht erreichbar')
+    FakeAnthias.system_power = disconnected
+    try:
+        response = client.post('/devices/lab/control', data={
+            'csrf': token(client), 'confirm': 'lab',
+            'ack': 'yes', 'action': 'reboot'}, follow_redirects=True)
+        assert response.status_code == 200
+        assert 'Gerätebefehl nicht bestätigt'.encode() in response.data
+        assert b'nicht blind erneut senden' in response.data
+        assert calls == ['reboot']
+        assert not FakeAnthias.changes
+    finally:
+        FakeAnthias.system_power = original
+
+
+def test_anthias_remote_wrappers_use_only_static_v2_api_paths():
+    p = anthias.Anthias({'url': 'http://192.168.1.25'})
+    calls = []
+    def fake_call(method, path, **kwargs):
+        calls.append((method, path, kwargs))
+        return None
+    p.call = fake_call
+    p.display_power('on')
+    p.display_power('off')
+    p.system_power('reboot')
+    p.system_power('shutdown')
+    assert [(method, path) for method, path, _ in calls] == [
+        ('POST', '/api/v2/display/on'),
+        ('POST', '/api/v2/display/off'),
+        ('POST', '/api/v2/reboot'),
+        ('POST', '/api/v2/shutdown'),
+    ]
+    for cmd in ('../backup', 'reboot?redirect=bad', 'status'):
+        with pytest.raises(anthias.PlayerError):
+            p.system_power(cmd)
+            # No arbitrary proxy path accepted.
+    for state in ('../', 'toggle', 'off/../../shutdown'):
+        with pytest.raises(anthias.PlayerError):
+            p.display_power(state)
+    assert len(calls) == 4

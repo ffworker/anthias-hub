@@ -22,10 +22,13 @@
 | Sign in with a static account | ✓ | ✓ | ✓ |
 | Device list, API status and playlist preview/list | ✓ | ✓ | ✓ |
 | Register, edit and remove device connections | ✓ | — | — |
+| HDMI-CEC display on/off and Pi reboot/shutdown | ✓ | Reboot only | — |
 | Link to the native Anthias administration | ✓ | — | — |
 | Add websites / upload PNG, JPEG, WebP, MP4 (max 50 MB) | — | ✓ | — |
 | Rename, activate/deactivate, reorder, delete playlist items | — | ✓ | — |
 | Delete entire local library templates (typed-name confirmation) | — | ✓ | — |
+
+**IT device remote controls (pilot):** Each screen card now includes an expandable **Gerätesteuerung** panel for IT: **HDMI display on/off (experimental CEC only)**, **Pi reboot**, and **Pi shutdown** (typed screen-name confirmation). Marketing gets only a small, collapsed **Hilfe bei Anzeigeproblemen** section for an explicitly acknowledged **reboot**; Viewer gets no controls. All actions are same-origin CSRF-protected Hub POSTs to fixed official Anthias API v2 endpoints on the registered Pi; they are audited and do not affect saved playlists/templates or unregister the device. IT retains the existing **Original Anthias** management link. Reboot/shutdown can disconnect the Pi before Hub receives confirmation: **check the player before retrying**. HDMI-CEC requires hardware and recent Anthias support; errors such as no adapter are not treated as success. Test exclusively on a spare Pi and real TV before operational use. [IT guide](docs/IT_ADMIN_GUIDE.md) · [Anthias API reference](https://anthias.screenly.io/api/).
 
 **Media thumbnails:** The player playlist and local playlist-library detail views now show small image previews and lazy, muted video stills in place of generic icons. These are **media-file previews, not a live capture of the television**. The Hub serves previews only to logged-in users from a registered Anthias device's fixed asset-preview path (or an existing, verified library file); it does not follow redirects to arbitrary external media. Older Anthias versions, remote URL assets, missing files, oversized images, or blocked media requests fall back to the original icon. Video metadata loading may download part of a clip; it never autoplays. The full Pi/display still requires on-site verification.
 
