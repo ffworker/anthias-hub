@@ -1,4 +1,6 @@
 # Anthias Hub
+> **UI/UX design baseline:** [Approved UI review and acceptance criteria](docs/ui-ux-review.md) (Nordlicht-only, compact devices, playlist and library workflows).
+
 
 [![Tests & Publish](https://github.com/ffworker/anthias-hub/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/ffworker/anthias-hub/actions/workflows/tests.yml)
 [![GHCR Container](https://img.shields.io/badge/container-GHCR-2496ED?logo=docker&logoColor=white)](https://github.com/ffworker/anthias-hub/pkgs/container/anthias-hub)
