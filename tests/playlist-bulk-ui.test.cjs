@@ -70,7 +70,9 @@ test('only explicitly selected items are counted and can be submitted',()=>{
 
 test('select all / clear selection and closing select mode',()=>{
   const s=start();s.toggle.fire('click');s.all.fire('click');
-  assert.equal(s.count.textContent,'2 ausgewählt');
+  assert.equal(s.count.textContent,'2 ausgewählt – für alle bitte „Ganze Playlist leeren“ verwenden');
+  s.ack.checked=true;s.ack.fire('change');
+  assert.equal(s.selected.disabled,true); // full clear always requires typed device name
   s.all.fire('click');assert.equal(s.count.textContent,'0 ausgewählt');
   s.toggle.fire('click');
   assert.equal(s.studio.classList.contains('bulk-select-mode'),false);
