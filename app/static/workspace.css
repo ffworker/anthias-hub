@@ -270,3 +270,34 @@ body{background:radial-gradient(ellipse 65% 420px at 74% -165px,#224551,transpar
 }
 /* All controls retain visible focus and comfortable touch targets. */
 .site-nav-link:focus-visible{outline:2px solid var(--studio-aqua);outline-offset:2px}
+
+/* UI review: compact device identity, full-width main action and two IT controls. */
+.fleet-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:14px}
+.fleet-device{padding:17px 17px 15px}
+.fleet-device-top{margin-bottom:11px;align-items:center}
+.fleet-device-icon{width:41px;height:41px;border-radius:12px}
+.fleet-device-icon .icon{width:22px;height:22px}
+.fleet-device .pill{font-size:11px;padding:5px 8px}
+.fleet-location{margin-bottom:4px}
+.fleet-device h3{font-size:18px;margin-bottom:10px}
+.fleet-device-line{padding:0;margin-bottom:13px;border:0;font-size:12px}
+.fleet-device-line strong{font-size:15px}
+.fleet-device-line>span:first-child{font-size:15px}
+.fleet-device .fleet-open{min-height:44px;margin:auto 0 10px!important}
+.fleet-device-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.fleet-device-actions>.fleet-remote,.fleet-device-actions>.fleet-settings,
+.fleet-device-actions>.fleet-remote-it+.fleet-settings{min-width:0;margin:0;padding:0;border:0}
+.fleet-device-actions>details>summary{display:flex;gap:6px;align-items:center;justify-content:center;min-height:43px;padding:9px 7px;font-size:12px;border-radius:9px;background:#1b3240;border:1px solid #456373;white-space:nowrap;color:#d7eee7}
+.fleet-device-actions>details>summary:hover{background:#23453f;color:#fff}
+.fleet-device-actions>details>summary .icon{width:16px;height:16px;flex:none}
+.fleet-device-actions>details>summary .fleet-remote-arrow,
+.fleet-device-actions>details>summary .settings-chevron{width:13px;height:13px;margin-left:auto}
+.fleet-device-actions>details[open]{grid-column:1/-1}
+.fleet-device-actions>details[open]>summary{border-bottom-left-radius:0;border-bottom-right-radius:0}
+.fleet-device-actions>details[open] .fleet-remote-arrow,
+.fleet-device-actions>details[open] .settings-chevron{transform:rotate(180deg)}
+.fleet-device-actions .fleet-remote-body,.fleet-device-actions .fleet-settings-content{padding:13px;background:#0e1f2c;border:1px solid #456373;border-radius:0 0 9px 9px}
+.fleet-device-actions .fleet-device-address{margin:0 0 10px}
+.fleet-device-actions:has(>.fleet-remote-marketing){grid-template-columns:1fr}
+.fleet-device-actions>.fleet-remote-marketing>summary{justify-content:flex-start;font-size:12px}
+@media(max-width:470px){.fleet-device{padding:15px}.fleet-device-actions{gap:7px}.fleet-device-actions>details>summary{min-height:44px}}
