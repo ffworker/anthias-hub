@@ -651,3 +651,6 @@ body.studio-drawer-open{overflow:hidden}
 .playlist-studio-v2 .composer-explainer,.playlist-workspace .composer-footnote{font-size:12px}
 .playlist-workspace .playlist-bottom-note{font-size:12px}
 @media(max-width:580px){.playlist-studio-v2 .asset-side .pill{font-size:11px;padding:5px 8px}}
+
+.playlist-workspace .drag-handle .icon{width:24px;height:24px;fill:currentColor}
+.playlist-workspace .studio-bottom-add .icon{width:17px;height:17px}
