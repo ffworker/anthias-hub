@@ -135,6 +135,24 @@ def checked_media(source, name, expected_size=None, max_bytes=MAX_MEDIA):
         generator.close()
 
 
+@contextmanager
+def checked_direct_media(source, name):
+    """A Werkzeug upload is already seekable and disk-spooled.
+
+    Reusing it avoids a SECOND 600-MB temporary file for a direct upload.
+    ZIP entries still need bounded decompression to a separate safe stream.
+    """
+    title, filename, ext = _title_and_filename(name)
+    amount = _size(source)
+    if not 0 < amount <= MAX_MEDIA:
+        raise ValueError('Medium ist leer oder größer als 1 GiB')
+    head = source.read(16)
+    source.seek(0)
+    if not _signature(head, ext):
+        raise ValueError('Dateisignatur passt nicht zur Dateiendung.')
+    yield title, filename, ext, source
+
+
 def execute_batch(uploads, *, duration, destination, on_media):
     """Return a per-file report, not an all-or-nothing success claim.
 
@@ -184,7 +202,7 @@ def execute_batch(uploads, *, duration, destination, on_media):
         for item in uploads:
             name = item.filename
             try:
-                with checked_media(item.stream, name) as media:
+                with checked_direct_media(item.stream, name) as media:
                     on_media(*media[:3], media[3], 0 if media[2] == '.mp4' else seconds)
                 entries.append({'name': name, 'status': 'imported', 'message': 'Importiert'})
             except (ValueError, OSError, EOFError, RuntimeError, PlayerError) as exc:
