@@ -96,3 +96,19 @@
   .fleet-device-actions>.fleet-storage-menu{width:34px;min-width:34px}
   .fleet-device-actions>.fleet-storage-menu>summary{width:34px;min-height:36px}
 }
+
+/* Manual override is available ONLY for unknown capacity, not verified shortage. */
+.upload-storage-strip[data-state="unknown"]{border-color:#876f59}
+.storage-override[hidden]{display:none!important}
+.storage-override{
+  display:flex;align-items:flex-start;gap:9px;
+  margin:9px 0 14px;padding:11px 12px;
+  border:1px solid #8d6b58;border-radius:10px;
+  background:#2a2830;color:#f2d6c5;font-size:12px;line-height:1.5;
+}
+.storage-override input[type="checkbox"]{
+  flex:none;width:16px;height:16px;margin:3px 0 0;accent-color:#9ecfbf;
+}
+.storage-override span{min-width:0;font-weight:650}
+.storage-override small{display:block;margin-top:3px;font-size:11px;
+  font-weight:400;line-height:1.5;color:#d2b6a8}
