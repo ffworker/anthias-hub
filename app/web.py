@@ -875,6 +875,8 @@ def create_app(config=None):
                 abort(400, 'Ungültige Playlist-Auswahl')
             if mode == 'selected' and not selected:
                 abort(400, 'Bitte mindestens einen Inhalt auswählen')
+            if mode == 'selected' and len(selected) == len(baseline):
+                abort(400, 'Für das vollständige Leeren bitte die gesonderte Bestätigung mit Bildschirmnamen verwenden')
             if mode == 'all' and request.form.get('name_confirmation') != device['name']:
                 abort(400, 'Bildschirmname stimmt nicht überein')
             with _apply_lock:
