@@ -94,3 +94,22 @@ def test_refuses_to_replace_pilot_without_manual_migration(tmp_path):
         with pytest.raises(auto_deploy.DeployError, match='migrate'):
             auto_deploy.deploy(checkout)
     assert not any('pull' in args or 'up' in args for args, _ in calls)
+
+def test_optional_compose_file_used_for_update_and_rollback(tmp_path):
+    checkout = setup_checkout(tmp_path)
+    external = tmp_path / 'private-compose.yaml'
+    external.write_text('services: {}\n')
+    (checkout / '.env').write_text(f'HUB_COMPOSE_OVERRIDE={external}\n')
+    cmd, calls, _ = mock_docker('sha-old', 'sha-bad')
+    with patch.object(auto_deploy, 'command', cmd), patch.object(auto_deploy, 'healthy', side_effect=[False, True]):
+        with pytest.raises(auto_deploy.DeployError, match='rollback'):
+            auto_deploy.deploy(checkout)
+    compose_calls = [args for args, _ in calls if args[:2] == ('docker', 'compose')]
+    assert compose_calls and all(('-f', str(external)) == args[4:6] for args in compose_calls)
+
+
+def test_missing_compose_override_fails_closed(tmp_path):
+    checkout = setup_checkout(tmp_path)
+    (checkout / '.env').write_text('HUB_COMPOSE_OVERRIDE=/nonexistent/compose.yaml\n')
+    with pytest.raises(auto_deploy.DeployError, match='HUB_COMPOSE_OVERRIDE'):
+        auto_deploy.deploy(checkout)

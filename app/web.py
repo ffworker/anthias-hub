@@ -7,6 +7,7 @@ import secrets
 import threading
 
 import requests
+from werkzeug.middleware.proxy_fix import ProxyFix
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -41,6 +42,13 @@ def create_app(config=None):
     )
     if config:
         app.config.update(config)
+    # Trust forwarded scheme/client IP only when a single trusted proxy is the sole entry point.
+    proxy_count = os.environ.get('TRUSTED_PROXY_COUNT', '0')
+    if proxy_count not in ('0', '1'):
+        raise RuntimeError('TRUSTED_PROXY_COUNT must be 0 or 1')
+    if proxy_count == '1':
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1,
+                                x_host=0, x_port=0, x_prefix=0)
     if len(app.config['SECRET_KEY']) < 32 or 'REPLACE' in app.config['SECRET_KEY'].upper() or 'CHANGE_ME' in app.config['SECRET_KEY'].upper():
         raise RuntimeError('APP_SECRET_KEY must contain at least 32 random characters')
 
@@ -558,6 +566,7 @@ def create_app(config=None):
         action = request.form.get('action')
         role = current_user()['role']
         permitted = {'it': {'hdmi-on', 'hdmi-off', 'reboot', 'shutdown'},
+                     'owner': {'hdmi-on', 'hdmi-off', 'reboot', 'shutdown'},
                      'marketing': {'reboot'}}
         if action not in permitted[role]:
             abort(403)
@@ -617,7 +626,7 @@ def create_app(config=None):
         except PlayerError as exc:
             error = str(exc)
         templates = []
-        if not error and current_user()['role'] == 'marketing':
+        if not error and current_user()['role'] in ('marketing', 'owner'):
             try:
                 templates = library().list()
             except LibraryError:

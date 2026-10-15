@@ -9,7 +9,7 @@
 ## 1. Systemübersicht und Verantwortlichkeit
 
 ~~~text
-IT/Marketing/Viewer via lokaler SSH-Tunnel (Pilot); später HTTPS/VPN
+Owner/IT/Marketing/Viewer via lokaler SSH-Tunnel (Pilot); später HTTPS/VPN
                             |
                         Anthias Hub
                     Docker host :8765 (localhost)
@@ -23,7 +23,9 @@ IT/Marketing/Viewer via lokaler SSH-Tunnel (Pilot); später HTTPS/VPN
                  TV A    TV B     TV C
 ~~~
 
-**IT:** Geräte inventarisieren, URL/IP/Standort pflegen, API-Status und Inhalte lesend prüfen, **HDMI-CEC an/aus**, **Pi-Neustart/Shutdown** nach Bestätigung auslösen und die native Anthias-Adminseite zur Fehlersuche öffnen. **Marketing:** bestehende Playlists auf ausgewählten Geräten über die Hub-UI bearbeiten und bei Anzeigeproblemen nach Bestätigung **nur den Pi neu starten** (in der Bildschirmkachel unter „Hilfe bei Anzeigeproblemen“). **Viewer:** nur lesen. Alle Marketing-Accounts können derzeit sämtliche registrierten Geräte bearbeiten (keine Standort-spezifischen ACLs).
+**Owner:** kombiniert IT-Geräteverwaltung und Marketing-Playlistrechte. **IT:** Geräte inventarisieren, URL/IP/Standort pflegen, API-Status und Inhalte lesend prüfen, **HDMI-CEC an/aus**, **Pi-Neustart/Shutdown** nach Bestätigung auslösen und die native Anthias-Adminseite zur Fehlersuche öffnen. **Marketing:** bestehende Playlists auf ausgewählten Geräten über die Hub-UI bearbeiten und bei Anzeigeproblemen nach Bestätigung **nur den Pi neu starten** (in der Bildschirmkachel unter „Hilfe bei Anzeigeproblemen“). **Viewer:** nur lesen. Alle Marketing-Accounts können derzeit sämtliche registrierten Geräte bearbeiten (keine Standort-spezifischen ACLs).
+
+Einzelanwender können `bash scripts/setup-pilot.sh --solo` für ein Owner-Konto verwenden; bestehende IT-/Marketing-Installationen bleiben unverändert. Weitere Zugriffsmöglichkeiten: [network-access.md](network-access.md).
 
 Der Hub ist **kein eigener Player, kein Reverse-Proxy zur vollständigen Anthias-Administration und kein Ersatz für Pi-Backups**. Die Original-Playlist und Medien bleiben auf dem jeweiligen Pi. Die Hub-Bibliothek speichert nur ihre selbst hochgeladenen Medien als wiederverwendbare Vorlagen unter `data/library/`; sie spiegelt keine bereits auf den Pis vorhandenen Medien. Eine optionale externe News-/Web-Anwendung wird lediglich als Website-Asset in Anthias eingebunden; sie ist weder Bestandteil noch Abhängigkeit des Hubs.
 
@@ -71,8 +73,8 @@ Antwort 'ok' auf /healthz prüft **nur den Webprozess**, nicht Anthias, Medienwi
 Einmalig am Admin-PC einen eigenen Ed25519-Key und die beiden SSH-Aliase aus den **ausklappbaren** [PowerShell-/Linux-Anleitungen zur SSH-Konfiguration](ssh-access.md) einrichten. Danach im Terminal:
 
 ~~~bash
-ssh gh-pihub           # normale Shell ohne root@ oder User/IP eintippen
-ssh -N gh-pihub-tunnel # separates Fenster für beide lokalen Web-Tunnel
+ssh signage-host           # normale Shell ohne root@ oder User/IP eintippen
+ssh -N signage-host-tunnel # separates Fenster für beide lokalen Web-Tunnel
 ~~~
 
 Dann **http://127.0.0.1:8765** (Hub) und, falls auf derselben VM installiert, **http://127.0.0.1:8085** (RSS2Slideshow) öffnen. Bei belegten Windows-Ports alternative lokale `-L`-Ports verwenden, siehe Anleitung. Direkter Zugriff über `http://DOCKER-HOST:8765` funktioniert **absichtlich nicht**. Keine Firewall-Freigabe für 8765/8085 erforderlich; der Pi braucht für die RSS-Webseite einen **separat freigegebenen internen** Endpunkt.

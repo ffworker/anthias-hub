@@ -44,14 +44,14 @@ Auf **deinem Windows-PC** in PowerShell:
 ~~~powershell
 # Eigenen Admin-Key anlegen; eine Passphrase setzen.
 New-Item -ItemType Directory -Force "$HOME\.ssh" | Out-Null
-ssh-keygen -t ed25519 -a 100 -f "$HOME\.ssh\id_ed25519_gh_pihub" -C "gh-pihub-admin"
+ssh-keygen -t ed25519 -a 100 -f "$HOME\.ssh\id_ed25519_signage_host" -C "signage-host-admin"
 
 # Nur den PUBLIC Key übertragen (VM_IP ersetzen).
-Get-Content "$HOME\.ssh\id_ed25519_gh_pihub.pub" |
+Get-Content "$HOME\.ssh\id_ed25519_signage_host.pub" |
   ssh hubadmin@VM_IP "umask 077; mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys; chmod 700 ~/.ssh; chmod 600 ~/.ssh/authorized_keys"
 
 # In einem NEUEN PowerShell-Fenster Key-only-Anmeldung prüfen.
-ssh -i "$HOME\.ssh\id_ed25519_gh_pihub" -o IdentitiesOnly=yes -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no hubadmin@VM_IP
+ssh -i "$HOME\.ssh\id_ed25519_signage_host" -o IdentitiesOnly=yes -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no hubadmin@VM_IP
 ~~~
 
 Auf der VM **`whoami`** (muss `hubadmin` ergeben) und **`sudo -v`** prüfen; diese Sitzung geöffnet lassen.
@@ -68,14 +68,14 @@ Auf **deinem Linux-/Mac-Admin-Rechner** im Terminal:
 ~~~bash
 # Eigenen Admin-Key anlegen; eine Passphrase setzen.
 install -d -m 700 "$HOME/.ssh"
-ssh-keygen -t ed25519 -a 100 -f "$HOME/.ssh/id_ed25519_gh_pihub" -C "gh-pihub-admin"
+ssh-keygen -t ed25519 -a 100 -f "$HOME/.ssh/id_ed25519_signage_host" -C "signage-host-admin"
 
 # Nur den PUBLIC Key übertragen (VM_IP ersetzen).
-cat "$HOME/.ssh/id_ed25519_gh_pihub.pub" |
+cat "$HOME/.ssh/id_ed25519_signage_host.pub" |
   ssh hubadmin@VM_IP "umask 077; mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys; chmod 700 ~/.ssh; chmod 600 ~/.ssh/authorized_keys"
 
 # In einem NEUEN Terminal Key-only-Anmeldung prüfen.
-ssh -i "$HOME/.ssh/id_ed25519_gh_pihub" -o IdentitiesOnly=yes -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no hubadmin@VM_IP
+ssh -i "$HOME/.ssh/id_ed25519_signage_host" -o IdentitiesOnly=yes -o PasswordAuthentication=no -o KbdInteractiveAuthentication=no hubadmin@VM_IP
 ~~~
 
 Auf der VM **`whoami`** (muss `hubadmin` ergeben) und **`sudo -v`** prüfen; diese Sitzung geöffnet lassen.
@@ -91,15 +91,15 @@ Auf der VM **`whoami`** (muss `hubadmin` ergeben) und **`sudo -v`** prüfen; die
 Die Datei **`~/.ssh/config` auf deinem Client** (Windows: `$HOME\.ssh\config`) anlegen oder ergänzen – andere Host-Blöcke erhalten:
 
 ~~~sshconfig
-Host gh-pihub gh-pihub-tunnel
+Host signage-host signage-host-tunnel
     HostName VM_IP
     User hubadmin
-    IdentityFile ~/.ssh/id_ed25519_gh_pihub
+    IdentityFile ~/.ssh/id_ed25519_signage_host
     IdentitiesOnly yes
     ServerAliveInterval 30
     ExitOnForwardFailure yes
 
-Host gh-pihub-tunnel
+Host signage-host-tunnel
     LocalForward 127.0.0.1:8765 127.0.0.1:8765
     LocalForward 127.0.0.1:8085 127.0.0.1:8085
 ~~~
@@ -107,8 +107,8 @@ Host gh-pihub-tunnel
 `VM_IP` ersetzen. Unter Linux/macOS `chmod 600 ~/.ssh/config` sicherstellen. Danach sind **auf beiden Client-Systemen** dieselben Befehle gültig:
 
 ~~~bash
-ssh gh-pihub             # Shell: Key wird automatisch ausgewählt
-ssh -N gh-pihub-tunnel   # Separates Terminal: beide Web-Tunnel öffnen
+ssh signage-host             # Shell: Key wird automatisch ausgewählt
+ssh -N signage-host-tunnel   # Separates Terminal: beide Web-Tunnel öffnen
 ~~~
 
 Im **eigenen Browser**: **http://127.0.0.1:8765** (Hub) und **http://127.0.0.1:8085** (RSS). Tunnel mit **Strg+C** beenden.
@@ -116,10 +116,10 @@ Im **eigenen Browser**: **http://127.0.0.1:8765** (Hub) und **http://127.0.0.1:8
 <details>
 <summary><strong>Optional: Tunnel ohne Alias / lokale Ports bereits belegt</strong></summary>
 
-Mit vorhandenem `gh-pihub`-Alias beide Dienste direkt weiterleiten:
+Mit vorhandenem `signage-host`-Alias beide Dienste direkt weiterleiten:
 
 ~~~bash
-ssh -N -L 127.0.0.1:8765:127.0.0.1:8765 -L 127.0.0.1:8085:127.0.0.1:8085 gh-pihub
+ssh -N -L 127.0.0.1:8765:127.0.0.1:8765 -L 127.0.0.1:8085:127.0.0.1:8085 signage-host
 ~~~
 
 Bei einem belegten lokalen Port **nur links** umstellen, z. B. `-L 127.0.0.1:18765:127.0.0.1:8765` und `-L 127.0.0.1:18085:127.0.0.1:8085` (Browser: `127.0.0.1:18765` / `127.0.0.1:18085`). `ExitOnForwardFailure yes` meldet fehlgeschlagene Tunnel bereits beim Verbindungsaufbau.
@@ -162,8 +162,8 @@ sudo systemctl reload ssh
 **Nochmals von einem neuen Client-Terminal testen:**
 
 ~~~bash
-ssh gh-pihub
-ssh -N gh-pihub-tunnel  # in einem separaten Terminal; mit Strg+C schließen
+ssh signage-host
+ssh -N signage-host-tunnel  # in einem separaten Terminal; mit Strg+C schließen
 ~~~
 
 Erneut `sudo -v` und die beiden Browserseiten prüfen. Erst wenn alles funktioniert, die alten SSH-Sitzungen schließen. Bei Fehlern über die offene VM-Konsole reparieren.
@@ -176,4 +176,4 @@ Für einen echten Produktionshost zusätzlich: Sicherheitsupdates, Firewall/ACL 
 
 Der Wegwerf-Host nutzt möglicherweise `/root/apps/anthias-hub` und `/root/apps/rss2slideshow`. Ein neues `hubadmin`-Konto darf standardmäßig nicht auf `/root/apps/` zugreifen; Checkouts, Docker- und Dateiberechtigungen sowie der **separate RSS-GitHub-Deploy-Key** müssen zuerst bewusst migriert werden. **Nicht** einfach `PermitRootLogin no` setzen, solange das der einzige funktionsfähige Verwaltungsweg ist. Für die spätere VM ist ein sauberer Neuaufbau mit `hubadmin` und `~/apps/` vorzuziehen.
 
-Mehr dazu: [gemeinsame Test-VM](gh-pihub-test-vm.md) · [Produktionsinstallation](reproducible-production.md) · [Docker-Deployment](deploy-docker-host.md) · [IT-Admin-Guide](IT_ADMIN_GUIDE.md).
+Mehr dazu: [gemeinsame Test-VM](cohosted-staging.md) · [Produktionsinstallation](reproducible-production.md) · [Docker-Deployment](deploy-docker-host.md) · [IT-Admin-Guide](IT_ADMIN_GUIDE.md).

@@ -27,7 +27,7 @@ Ensure the VM can reach the designated Anthias management VLAN. Scope `ANTHIAS_A
 
 Both Compose variants bind **`127.0.0.1:8765` on the host**, deliberately. Start with an SSH tunnel. For real internal Marketing use, configure an **internal HTTPS reverse proxy or VPN** and `COOKIE_SECURE=1`; do not expose the pilot directly to the Internet.
 
-**Keep RSS2Slideshow independent.** Co-location on the same VMware vSphere VM is planned, with separate checkouts, Compose project names and backup policies. Recommended starting guest: Debian 13 minimal (amd64), 4 vCPU, 8 GB RAM, 80 GB SSD; these are planning values with headroom, not measured usage. The Hub is not the Pi's content or media backup. RSS2Slideshow keeps its existing CI checks but is deliberately updated **manually** after green CI; do not install an RSS CD timer or invent a GHCR RSS image. See its [new-VM/manual-update runbook](https://github.com/ffworker/rss2slideshow/blob/main/docs/manual-vm-deploy.md) (private repo; authorized access required).
+**Keep RSS2Slideshow independent.** Co-location on the same VMware vSphere VM is possible, with separate checkouts, Compose project names and backup policies. Recommended starting guest: Debian 13 minimal (amd64), 4 vCPU, 8 GB RAM, 80 GB SSD; these are planning values with headroom, not measured usage. The Hub is not the Pi's content or media backup. RSS2Slideshow keeps its existing CI checks but is deliberately updated **manually** after green CI; do not install an RSS CD timer or invent a GHCR RSS image. See its [new-VM/manual-update runbook](https://github.com/OWNER/PRIVATE_REPO/blob/main/docs/manual-vm-deploy.md) (private repo; authorized access required).
 
 ## 2. Fresh bootstrap on a new, empty host
 
@@ -68,7 +68,7 @@ git rev-parse HEAD
 
 The initial `setup-pilot.sh` builds/starts `anthias-hub:pilot` *only for first-time account setup*. The subsequent `compose.cd.yaml` commands replace it with the approved prebuilt image. If setup is interrupted or `users.json` is deleted, rerun `bash scripts/setup-pilot.sh` from this checkout: it keeps `.env` and existing accounts and creates missing roles, using the pinned image when `ANTHIAS_HUB_IMAGE` is set. Use `--reset-users` to choose which existing role passwords to replace. Never `docker compose pull` the default `compose.yaml`: its `anthias-hub:pilot` tag is local-only. Do not start `scripts/install-auto-deploy.sh` on production.
 
-To access from Windows PowerShell or Linux/macOS, choose the expandable client instructions and configure an **independent production key and alias** as in [SSH access & VM hardening](ssh-access.md). For a production VM rename the example `gh-pihub` / `gh-pihub-tunnel` aliases to `hub-prod` / `hub-prod-tunnel` and replace `VM_IP` with its own address. Then:
+To access from Windows PowerShell or Linux/macOS, choose the expandable client instructions and configure an **independent production key and alias** as in [SSH access & VM hardening](ssh-access.md). For a production VM rename the example `signage-host` / `signage-host-tunnel` aliases to `hub-prod` / `hub-prod-tunnel` and replace `VM_IP` with its own address. Then:
 
 ```bash
 ssh hub-prod           # authenticated admin shell
@@ -79,7 +79,9 @@ Open `http://127.0.0.1:8765` (and `http://127.0.0.1:8085` if RSS is installed on
 
 Do not clone the throwaway VM or carry over its test users/devices by default. If you intentionally migrate state, first review it and move it through a secure backup.
 
-### Optional: RSS2Slideshow on the same new VM
+### Optional: another separately maintained content application
+
+The following is an **illustrative co-hosted RSS2Slideshow example**; `OWNER/PRIVATE_REPO` is a placeholder, not an actual repository URL.
 
 The two applications are **separate**, even on one VM. Their hostnames, proxy routes, source revisions, local state and backups must be recorded independently. **RSS2Slideshow is a private repository**, requiring an explicitly authorized GitHub credential or read-only deploy key on the new VM. Never commit that key or the runtime configuration.
 
@@ -87,8 +89,8 @@ After the Hub has been deployed, use a **different directory** for the RSS appli
 
 ~~~bash
 cd ~/apps
-# Requires prior access to the private ffworker/rss2slideshow repository:
-git clone git@github.com:ffworker/rss2slideshow.git
+# Requires prior access to the private OWNER/PRIVATE_REPO repository:
+git clone git@github.com:OWNER/PRIVATE_REPO.git
 cd rss2slideshow
 # Choose/document an explicitly approved RSS2Slideshow commit before starting:
 git rev-parse HEAD
@@ -104,7 +106,7 @@ docker compose -p rss2slideshow ps
 curl -fsS --max-time 10 http://127.0.0.1:8085/healthz
 ~~~
 
-The example RSS feeds, configuration and branding are **not** a restore of the existing Bistro installation; check source rights and the [RSS configuration guide](https://github.com/ffworker/rss2slideshow/blob/main/docs/configuration.md) before real use. For an actual migration, securely restore the separately backed-up runtime `.env`, `config.yaml`, `content/`, optional local assets and branding overrides with proper ownership; do **not** overwrite runtime data with examples. The RSS repo's older `docs/deployment.md` contains a **specific historical gh-bistro update** and is **not** a generic installer for a fresh VM.
+The example RSS feeds, configuration and branding are **not** a restore of the existing example site installation; check source rights and the [RSS configuration guide](https://github.com/OWNER/PRIVATE_REPO/blob/main/docs/configuration.md) before real use. For an actual migration, securely restore the separately backed-up runtime `.env`, `config.yaml`, `content/`, optional local assets and branding overrides with proper ownership; do **not** overwrite runtime data with examples. The RSS repo's older `docs/deployment.md` contains a **specific historical example-site update** and is **not** a generic installer for a fresh VM.
 
 The RSS Compose project uses **host port 8085 on 127.0.0.1 by default**, versus **8765 for the Hub**, avoiding port conflicts. For actual Anthias players to display the RSS site, publish only the approved internal URL via a tightly scoped reverse proxy/internal routing and verify that the Pis can reach it. The Hub's localhost-only admin access must stay restricted. Do not expose RSS `/admin` to untrusted clients. RSS has its own CI checks; after an approved fix, manually fast-forward its private checkout and rebuild the local Compose image, then check fresh articles and the Pi screen. Hub's GHCR release and test-VM auto-updater do **not** update RSS.
 
@@ -172,3 +174,7 @@ A Git release named `v0.3.0 — Playlist Studio` may have a friendly title in re
 - Introduce real staging checks and documented Pi API write tests before exposing Marketing to production playlists.
 
 The [test-VM automatic deployment guide](auto-deploy.md) documents the existing, intentionally **`:main`-following** timer. It is not the future production release process.
+
+## Optional network exposure and proxy trust
+
+Use [network-access.md](network-access.md) for generic, placeholder-only LAN and HTTPS configurations. Keep an external Compose override outside the checkout and set `HUB_COMPOSE_OVERRIDE` in the private `.env` if using the test-only updater. The updater includes that override for both deployment and rollback. **Every manual `docker compose -f compose.cd.yaml ...` command above must also include `-f /ABSOLUTE/PATH/TO/override.yaml` if an override is used**; otherwise recreation may silently remove the published endpoint. Check merged configuration before pulling/updating. For regular logins use TLS termination, `COOKIE_SECURE=1`, and only explicitly configured trusted reverse-proxy forwarding.

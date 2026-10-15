@@ -8,7 +8,7 @@
   <p class="eyebrow">LOKAL IM HUB GESPEICHERT</p>
   <div class="library-detail-title-row">
     <h1>{{ template.name }}</h1>
-    {% if logged_user.role == 'marketing' %}
+    {% if logged_user.role in ('marketing', 'owner') %}
       <details class="template-options">
         <summary aria-label="Vorlagenoptionen"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#ellipsis"></use></svg> Vorlagenoptionen</summary>
         <div class="template-options-panel">
@@ -22,7 +22,7 @@
   </div>
   <p class="muted">{{ template['items']|length }} Inhalte. Als gesamte Vorlage oder einzeln auf Bildschirme übertragbar.</p>
 
-  {% if logged_user.role == 'marketing' %}
+  {% if logged_user.role in ('marketing', 'owner') %}
   <section class="library-publish-hero" aria-labelledby="library-publish-heading">
     <div class="library-publish-copy">
       <span class="library-publish-symbol" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></span>
@@ -80,7 +80,7 @@
           {% endif %}
         {% if item.kind == 'media' %}</button>{% else %}</span>{% endif %}
         <span class="library-item-copy"><strong>{{ item.name }}</strong><small>{{ item.url if item.kind == 'url' else 'In der Bibliothek gespeichert' }} · {{ 'Video' if item.kind == 'media' and item.file.endswith('.mp4') else (item.duration|string ~ ' Sek.') }}</small></span>
-{% if logged_user.role == 'marketing' %}<div class="library-item-actions"><form method="post" action="{{ url_for('library_move_item', template_id=template.id, item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button name="direction" value="up" title="Nach oben" aria-label="{{ item.name }} nach oben" {% if loop.first %}disabled{% endif %}><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#arrow-up"></use></svg></button><button name="direction" value="down" title="Nach unten" aria-label="{{ item.name }} nach unten" {% if loop.last %}disabled{% endif %}><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#arrow-down"></use></svg></button></form><details class="library-item-options">
+{% if logged_user.role in ('marketing', 'owner') %}<div class="library-item-actions"><form method="post" action="{{ url_for('library_move_item', template_id=template.id, item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button name="direction" value="up" title="Nach oben" aria-label="{{ item.name }} nach oben" {% if loop.first %}disabled{% endif %}><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#arrow-up"></use></svg></button><button name="direction" value="down" title="Nach unten" aria-label="{{ item.name }} nach unten" {% if loop.last %}disabled{% endif %}><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#arrow-down"></use></svg></button></form><details class="library-item-options">
           <summary aria-label="Optionen für {{ item.name }}" title="Inhaltsoptionen"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#ellipsis"></use></svg></summary>
           <div class="library-item-options-menu">
           <details class="library-add-control">
@@ -99,7 +99,7 @@
         </details><details><summary>Aus Vorlage entfernen</summary><form method="post" action="{{ url_for('library_remove_item', template_id=template.id, item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="confirm" value="{{ item.id }}"><label class="library-confirm"><input type="checkbox" name="ack" value="yes" required> Aus Vorlage entfernen</label><button class="danger-btn" aria-label="{{ item.name }} entfernen">Endgültig entfernen</button></form></details></div></details></div>{% endif %}</li>
 {% else %}<li class="card library-empty">Noch keine Inhalte in dieser Vorlage.</li>{% endfor %}
 </ol></section>
-{% if logged_user.role == 'marketing' %}<aside class="library-actions">
+{% if logged_user.role in ('marketing', 'owner') %}<aside class="library-actions">
 <section class="card library-panel"><h2>Bild oder Video speichern</h2><p class="muted">PNG, JPG, WebP oder MP4; höchstens 50 MB je Datei.</p><form method="post" data-upload-form="library" action="{{ url_for('library_add_media', template_id=template.id) }}" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf() }}"><label>Datei<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label><label>Titel (optional)<input name="name" maxlength="100"></label><label>Bilddauer in Sekunden (Video automatisch)<input name="duration" type="number" min="5" max="3600" value="15"></label><p class="upload-selected" role="status" aria-live="polite"></p><button class="primary" type="submit">In Vorlage speichern</button><div class="upload-feedback" hidden role="status" aria-live="polite"><div class="upload-progress" aria-hidden="true"><span data-upload-bar></span></div><small data-upload-text></small></div></form></section>
 <details class="card library-panel library-bulk-compact">
   <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#upload"></use></svg> Mehrere Dateien oder ZIP hinzufügen</summary>

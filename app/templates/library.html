@@ -24,12 +24,12 @@
           <span><strong>{{ template.name }}</strong><small>{{ template['items']|length }} Inhalte · Öffnen und bearbeiten</small></span>
           <span aria-hidden="true">→</span>
         </a>
-        {% if logged_user.role == 'marketing' %}{{ delete_control(template) }}{% endif %}
+        {% if logged_user.role in ('marketing', 'owner') %}{{ delete_control(template) }}{% endif %}
       </div>
       {% else %}<div class="card library-empty">Noch keine Vorlage vorhanden. Erstelle rechts deine erste Sammlung.</div>{% endfor %}
     </div>
   </section>
-  {% if logged_user.role == 'marketing' %}
+  {% if logged_user.role in ('marketing', 'owner') %}
   <aside class="library-actions">
     <section class="card library-panel">
       <p class="library-step">01 · SAMMLUNG ANLEGEN</p>

@@ -2,7 +2,7 @@
 {% block title %}{{ device.name }} · Playlist · Anthias Hub{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='playlist.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-lightbox.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='bulk-upload.css') }}">{% endblock %}
 {% block content %}
-<div class="playlist-workspace playlist-studio-v2" data-can-edit="{{ 'yes' if logged_user.role == 'marketing' and not error else 'no' }}">
+<div class="playlist-workspace playlist-studio-v2" data-can-edit="{{ 'yes' if logged_user.role in ('marketing', 'owner') and not error else 'no' }}">
   <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Alle Bildschirme</a><span aria-hidden="true">›</span><span>{{ device.name }}</span><span aria-hidden="true">·</span><a href="{{ url_for('library_index') }}">Bibliothek</a></nav>
 
   <header class="playlist-hero">
@@ -10,7 +10,7 @@
       <p class="eyebrow">DEIN BILDSCHIRM · {{ device.location or 'Ohne Standort' }}</p>
       <h1>{{ device.name }} <svg class="icon hero-sparkle" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></h1>
       <p class="muted">Gestalte, was auf diesem Bildschirm zu sehen ist – ganz ohne Technik-Menüs.</p>
-      {% if logged_user.role == 'marketing' and not error %}<p class="live-warning"><span aria-hidden="true">●</span> Änderungen werden sofort auf dem Player gespeichert.</p>{% endif %}
+      {% if logged_user.role in ('marketing', 'owner') and not error %}<p class="live-warning"><span aria-hidden="true">●</span> Änderungen werden sofort auf dem Player gespeichert.</p>{% endif %}
     </div>
     <div class="hero-status">
       <span class="pill {{ 'bad' if error else 'ok' }}">{{ 'Nicht erreichbar' if error else 'API erreichbar' }}</span>
@@ -22,27 +22,27 @@
 
   <div class="editor-layout studio-full-layout">
     <section id="playlist-queue" class="queue" aria-labelledby="queue-title"
-             {% if logged_user.role == 'marketing' and not error %}data-reorder-url="{{ url_for('reorder_assets', device_id=device.id) }}" data-csrf="{{ csrf() }}"{% endif %}>
+             {% if logged_user.role in ('marketing', 'owner') and not error %}data-reorder-url="{{ url_for('reorder_assets', device_id=device.id) }}" data-csrf="{{ csrf() }}"{% endif %}>
       <div class="section-title">
         <div>
           <p class="eyebrow">DEINE WIEDERGABE</p>
           <h2 id="queue-title">Playlist <span class="count">{{ assets|length }}</span></h2>
           <p class="section-hint" id="queue-help">
-            {% if logged_user.role == 'marketing' and not error %}
+            {% if logged_user.role in ('marketing', 'owner') and not error %}
               Am Griff ziehen (Maus oder Touch). Tastatur: Griff fokussieren, Leertaste aufnehmen, ↑/↓ verschieben, Enter ablegen oder Esc abbrechen.
             {% else %}Die Inhalte werden in dieser Reihenfolge abgespielt.{% endif %}
           </p>
         </div>
-        {% if logged_user.role == 'marketing' and not error %}<a class="button jump-link studio-add-trigger" href="#add-content" data-open-composer aria-haspopup="dialog" aria-controls="add-content"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Inhalt hinzufügen</a>{% endif %}
+        {% if logged_user.role in ('marketing', 'owner') and not error %}<a class="button jump-link studio-add-trigger" href="#add-content" data-open-composer aria-haspopup="dialog" aria-controls="add-content"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Inhalt hinzufügen</a>{% endif %}
       </div>
 
-      {% if logged_user.role == 'marketing' and not error %}
+      {% if logged_user.role in ('marketing', 'owner') and not error %}
         <p id="playlist-sort-status" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></p>
       {% endif %}
       <div class="playlist-overview"><span class="overview-dot" aria-hidden="true"></span>
         <strong><span id="active-count">{{ assets|selectattr('is_enabled')|list|length }}</span> aktiv</strong>
         <span aria-hidden="true">·</span> <span>{{ assets|length }} Inhalte insgesamt</span>
-        {% if logged_user.role == 'marketing' and not error %}<span class="overview-note">Sortierung wird beim Ablegen gespeichert</span>{% endif %}
+        {% if logged_user.role in ('marketing', 'owner') and not error %}<span class="overview-note">Sortierung wird beim Ablegen gespeichert</span>{% endif %}
       </div>
 
       <div class="stack playlist-items" id="playlist-items">
@@ -54,13 +54,13 @@
           <article class="card asset {{ 'is-paused' if not asset.is_enabled else '' }}" id="asset-{{ asset.asset_id }}"
                    data-asset-id="{{ asset.asset_id }}" data-enabled="{{ '1' if asset.is_enabled else '0' }}">
             <div class="asset-main">
-              {% if logged_user.role == 'marketing' and not error %}
+              {% if logged_user.role in ('marketing', 'owner') and not error %}
                 <button class="drag-handle" type="button" draggable="true"
                         title="Reihenfolge ändern: ziehen oder Leertaste, Pfeiltasten, Enter"
                         aria-label="{{ asset.name or 'Element' }} verschieben, Position {{ loop.index }} von {{ assets|length }}"
                         aria-describedby="queue-help" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#grip"></use></svg></button>
               {% endif %}
-              {% if logged_user.role == 'marketing' and not error %}
+              {% if logged_user.role in ('marketing', 'owner') and not error %}
                 <label class="asset-bulk-choice" title="Zum gemeinsamen Löschen auswählen">
                   <input type="checkbox" name="selected" value="{{ asset.asset_id }}" form="playlist-bulk-form"
                          aria-label="{{ asset.name or 'Element' }} zum Löschen auswählen" data-bulk-check>
@@ -83,7 +83,7 @@
                   <span class="asset-preview-play" aria-hidden="true">▶</span>
                 {% endif %}
               {% if is_image or is_video %}</button>{% else %}</div>{% endif %}
-              {% if logged_user.role == 'marketing' and not error %}
+              {% if logged_user.role in ('marketing', 'owner') and not error %}
                 <button type="button" class="asset-body asset-open" aria-expanded="false"
                         aria-controls="asset-editor-{{ asset.asset_id }}"
                         aria-label="{{ asset.name or 'Ohne Titel' }} bearbeiten">
@@ -97,7 +97,7 @@
                   </span>
                   <span class="asset-name">{{ asset.name or 'Ohne Titel' }}</span>
                   <span class="muted clip">{{ asset.uri or 'Lokales Medium' }}</span>
-              {% if logged_user.role == 'marketing' and not error %}
+              {% if logged_user.role in ('marketing', 'owner') and not error %}
                   <span class="asset-edit-hint" aria-hidden="true">Bearbeiten <span class="asset-chevron">⌄</span></span>
                 </button>
               {% else %}
@@ -107,7 +107,7 @@
                 <span class="pill asset-status {{ 'ok' if asset.is_enabled else 'off' }}">{{ 'Aktiv' if asset.is_enabled else 'Pausiert' }}</span>
               </div>
             </div>
-            {% if logged_user.role == 'marketing' and not error %}
+            {% if logged_user.role in ('marketing', 'owner') and not error %}
               <div class="asset-toolbar" id="asset-editor-{{ asset.asset_id }}" role="region"
                    aria-label="{{ asset.name or 'Element' }} bearbeiten">
                 <form id="asset-edit-{{ asset.asset_id }}" method="post" class="asset-edit asset-inline-edit"
@@ -180,11 +180,11 @@
             <div class="empty-symbol" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg></div>
             <h3>{{ 'Playlist nicht verfügbar' if error else 'Ein Bildschirm voller Möglichkeiten!' }}</h3>
             <p class="muted">{{ 'Die Verbindung prüfen und neu laden.' if error else 'Füge dein erstes Bild oder Video hinzu – oder wähle etwas aus der Bibliothek.' }}</p>
-            {% if logged_user.role == 'marketing' and not error %}<a href="#add-content" class="button primary studio-add-trigger" data-open-composer aria-haspopup="dialog" aria-controls="add-content">Ersten Inhalt hinzufügen →</a>{% endif %}
+            {% if logged_user.role in ('marketing', 'owner') and not error %}<a href="#add-content" class="button primary studio-add-trigger" data-open-composer aria-haspopup="dialog" aria-controls="add-content">Ersten Inhalt hinzufügen →</a>{% endif %}
           </div>
         {% endfor %}
       </div>
-      {% if logged_user.role == 'marketing' and not error and assets %}
+      {% if logged_user.role in ('marketing', 'owner') and not error and assets %}
         <div class="playlist-bottom-actions">
           <a href="#add-content" class="button studio-bottom-add studio-add-trigger" data-open-composer
              aria-haspopup="dialog" aria-controls="add-content"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Weiteren Inhalt hinzufügen</a>
@@ -226,7 +226,7 @@
       {% endif %}
     </section>
 
-    {% if logged_user.role == 'marketing' and not error %}
+    {% if logged_user.role in ('marketing', 'owner') and not error %}
       <div class="composer-backdrop" data-close-composer hidden></div>
       <aside id="add-content" class="composer" aria-labelledby="add-title" data-composer-drawer>
         <div class="composer-close-row">
@@ -359,7 +359,7 @@
 <script defer src="{{ url_for('static', filename='media-lightbox.js') }}"></script>
 <script defer src="{{ url_for('static', filename='upload-feedback.js') }}"></script>
 <script defer src="{{ url_for('static', filename='bulk-upload.js') }}"></script>
-{% if logged_user.role == 'marketing' and not error %}<script defer src="{{ url_for('static', filename='playlist.js') }}"></script>
+{% if logged_user.role in ('marketing', 'owner') and not error %}<script defer src="{{ url_for('static', filename='playlist.js') }}"></script>
 <script defer src="{{ url_for('static', filename='playlist-studio.js') }}"></script>
 <script defer src="{{ url_for('static', filename='playlist-bulk.js') }}"></script>{% endif %}
 {% endblock %}

@@ -19,7 +19,7 @@ def accounts():
     users = data.get('users', [])
     if not isinstance(users, list):
         raise ValueError('Invalid users file')
-    return {u['username']: u for u in users if u.get('role') in ('it', 'marketing', 'viewer') and u.get('password_hash')}
+    return {u['username']: u for u in users if u.get('role') in ('owner', 'it', 'marketing', 'viewer') and u.get('password_hash')}
 
 
 def authenticate(username, password):
@@ -54,7 +54,7 @@ def login_required(*roles):
             u = current_user()
             if not u:
                 return redirect(url_for('login'))
-            if roles and u['role'] not in roles:
+            if roles and u['role'] not in roles and not (u['role'] == 'owner' and any(role in ('it', 'marketing') for role in roles)):
                 abort(403)
             g.user = u
             return fn(*args, **kwargs)

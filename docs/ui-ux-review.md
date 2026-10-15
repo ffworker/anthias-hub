@@ -47,3 +47,7 @@
 - Individual page styles (`playlist.css`, `library.css` and media/upload helpers) load via the template's `extra_head`.
 - `ui-refinements.css` loads **last** for shared icons and historically later playlist layout overrides. It replaces `themes.css`; there is no theme switcher. Do not remove or reorder it without checking computed styles and visual screenshots.
 - Avoid new append-only overrides: change the canonical rule and check desktop plus mobile cascade. Node tests guard old theme removal and the current ordering, not pixel-perfect rendering.
+
+## Owner role
+
+The combined Owner role renders device-management controls and playlist editing in the same session for solo use. Team installations retain IT, Marketing and Viewer behavior. Owner is not a new unrestricted system-admin API; existing CSRF and confirmation requirements apply.

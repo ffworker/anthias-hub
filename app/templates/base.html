@@ -22,7 +22,7 @@
     </nav>
     <div class="user site-user">
       <span class="user-avatar" aria-hidden="true">{{ logged_user.username[0]|upper }}</span>
-      <span class="user-details"><span class="user-name">{{ logged_user.username }}</span><span class="role">{{ 'IT' if logged_user.role == 'it' else 'MARKETING' if logged_user.role == 'marketing' else 'VIEWER' }}</span></span>
+      <span class="user-details"><span class="user-name">{{ logged_user.username }}</span><span class="role">{{ 'OWNER' if logged_user.role == 'owner' else 'IT' if logged_user.role == 'it' else 'MARKETING' if logged_user.role == 'marketing' else 'VIEWER' }}</span></span>
       <form action="{{ url_for('logout') }}" method="post">
         <input type="hidden" name="csrf" value="{{ csrf() }}">
         <button class="link-btn site-logout" title="Sicher abmelden">Abmelden <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#logout"></use></svg></button>

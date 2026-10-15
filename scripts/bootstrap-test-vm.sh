@@ -7,6 +7,11 @@ umask 077
 hub_dir=$(cd "$(dirname "$0")/.." && pwd -P)
 apps_dir=$(dirname "$hub_dir")
 rss_dir=$apps_dir/rss2slideshow
+# The secondary project's private Git remote is supplied ONLY on the VM.
+# No real private remote belongs in the public repository.
+rss_repo_ssh=${RSS_REPO_SSH_URL:-}
+rss_repo_https=${RSS_REPO_HTTPS_URL:-}
+rss_repo_keys_page=${RSS_REPO_KEYS_PAGE:-https://github.com/OWNER/PRIVATE_REPO/settings/keys}
 key=$HOME/.ssh/rss2slideshow_deploy_ed25519
 if [[ -n $(printenv RSS_DEPLOY_KEY 2>/dev/null || true) ]]; then
   key=$RSS_DEPLOY_KEY
@@ -43,7 +48,7 @@ usage() {
 Usage: bash scripts/bootstrap-test-vm.sh COMMAND
   doctor     Inspect prerequisites and local runtime state (read-only)
   key        Create/show THIS VM's read-only RSS GitHub deploy public key
-  clone-rss  Clone/configure private RSS repo with the registered SSH key
+  clone-rss  Clone/configure private RSS repo (requires VM-local RSS_REPO_SSH_URL)
   init       Create only missing sample RSS files; initialize fresh Hub accounts
   deploy     Explicitly build/start BOTH independent pilot Compose projects
   status     Show service status and localhost HTTP checks (read-only)
@@ -73,36 +78,35 @@ prepare_key() {
   install -d -m 700 "$(dirname "$key")"
   if [[ ! -e "$key" ]]; then
     [[ ! -e "$key.pub" ]] || fail "Public key exists but private key missing; investigate, do not overwrite."
-    ssh-keygen -q -t ed25519 -f "$key" -C 'rss2slideshow-test-vm' -N ''
+    ssh-keygen -q -t ed25519 -f "$key" -C 'secondary-test-vm' -N ''
   fi
   chmod 600 "$key"
   say "Register this PUBLIC key as a READ-ONLY deploy key at:"
-  say "https://github.com/ffworker/rss2slideshow/settings/keys"
+  say "$rss_repo_keys_page"
   ssh-keygen -y -f "$key"
   say "Verify GitHub's SSH host fingerprint on first connection; never disable host-key checking."
 }
 clone_rss() {
   need git; need ssh
+  [[ -n "$rss_repo_ssh" ]] || fail "Set RSS_REPO_SSH_URL to an authorized private Git SSH remote on this VM."
   [[ -f "$key" ]] || fail "Missing $key; run key first."
   local quoted ssh_cmd origin
   printf -v quoted '%q' "$key"
   ssh_cmd="ssh -i $quoted -o IdentitiesOnly=yes -o BatchMode=yes"
   say "Checking read-only SSH access to private RSS repository..."
-  GIT_SSH_COMMAND="$ssh_cmd" git ls-remote git@github.com:ffworker/rss2slideshow.git HEAD >/dev/null ||
+  GIT_SSH_COMMAND="$ssh_cmd" git ls-remote "$rss_repo_ssh" HEAD >/dev/null ||
     fail "Access denied or GitHub host not trusted. Register the public deploy key and verify GitHub host fingerprint."
   if [[ -e "$rss_dir" ]]; then
     rss_ready
     origin=$(git -C "$rss_dir" remote get-url origin)
-    case "$origin" in
-      git@github.com:ffworker/rss2slideshow.git|https://github.com/ffworker/rss2slideshow.git)
-        ;;
-      *) fail "Unexpected RSS origin: $origin. Refusing to modify."; ;;
-    esac
+    if [[ "$origin" != "$rss_repo_ssh" && ( -z "$rss_repo_https" || "$origin" != "$rss_repo_https" ) ]]; then
+      fail "Unexpected secondary repository origin; refusing to change it."
+    fi
     say "Existing RSS checkout preserved."
   else
-    GIT_SSH_COMMAND="$ssh_cmd" git clone git@github.com:ffworker/rss2slideshow.git "$rss_dir"
+    GIT_SSH_COMMAND="$ssh_cmd" git clone "$rss_repo_ssh" "$rss_dir"
   fi
-  git -C "$rss_dir" remote set-url origin git@github.com:ffworker/rss2slideshow.git
+  git -C "$rss_dir" remote set-url origin "$rss_repo_ssh"
   git -C "$rss_dir" config --local core.sshCommand "$ssh_cmd"
   say "RSS clone configured to use the VM-specific key; no pull/reset performed."
 }
