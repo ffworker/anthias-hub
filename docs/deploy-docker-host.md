@@ -13,10 +13,9 @@ Public source: https://github.com/ffworker/anthias-hub . Never publish `.env`, `
 
 ## 1. Check host and Pi route (read-only)
 
-Log in over SSH as the normal Docker-capable user on your Docker host.
+First configure a **non-root SSH administrator, verified ED25519 key and a host alias** (see [SSH & VM hardening](ssh-access.md)); on the Windows admin PC use `ssh gh-pihub` instead of SSH root/password authentication. On the Linux VM, run:
 
 ```bash
-ssh YOUR_USER@YOUR_DOCKER_HOST
 hostname
 docker compose version
 ss -lnt | grep ':8765 ' || echo 'Port 8765 currently unused'
@@ -46,22 +45,20 @@ running the service itself as root. It creates a strong random session key,
 sets `COOKIE_SECURE=0` **only for localhost HTTP over SSH tunneling**, builds
 the image, and prompts for separate IT and Marketing passwords.
 
-If your normal account can run `docker ps`, no `sudo` permissions are
-required: use that account. If it cannot, log into root separately and run the
-script there. You can `git pull --ff-only` as the repo-owning user **before**
-switching to root to avoid Git's dubious ownership protection. Do not give a
-normal account sudo solely to launch the Hub.
+If the normal account can run `docker ps` **and is an explicitly trusted Docker operator**, use that account consistently. If not, arrange and document privileged Docker operations **before** setup (or use a properly configured rootless Docker instance). Docker group membership and `sudo docker` grant root-level host capabilities; do not grant them lightly. The script accepts a local root-driven bootstrap via console/sudo, but that is **not** an excuse to enable root SSH. Keep checkout ownership, `.env` and `data/` permissions coherent and do not switch users casually.
 
 Do not run this in the existing another application's directory. The Compose project is
 explicitly named `anthias-hub`. Other Compose projects and their services are untouched.
 
 ## 3. Open from Windows PowerShell
 
+After the [SSH key + `~/.ssh/config` setup](ssh-access.md), launch **both** local forwards if Anthias Hub and RSS2Slideshow share a VM:
+
 ```powershell
-ssh -N -L 8765:127.0.0.1:8765 YOUR_USER@YOUR_DOCKER_HOST
+ssh -N gh-pihub-tunnel
 ```
 
-In your Windows browser open http://localhost:8765 and sign in as `it`.
+In your browser open http://127.0.0.1:8765 for Hub (and http://127.0.0.1:8085 for RSS, if installed). Sign in to Hub as `it`. Use `ssh gh-pihub` for an ordinary administrative shell. The tunnel is **client-local only** and does not provide an RSS URL reachable by the Pis.
 Use the IT dashboard to register the Pi by its private IP.
 
 The `marketing` account manages playlists **inside the hub UI**; IT sees a
