@@ -2,7 +2,7 @@
 
 This is a **disposable test/staging VM** procedure for Debian 13 with Docker Engine + Compose plugin, Git, curl, OpenSSL and OpenSSH. It is **not** the approved production release workflow. The apps remain entirely independent: separate Git repos, Compose projects, credentials, data and backups. This script does **not** install system packages, adjust SSH/network settings, fetch new code into existing checkouts, auto-approve releases, delete anything, or install systemd CD timers.
 
-**SSH access:** New installations should use a non-root administrator with a Windows ED25519 key and a short `ssh gh-pihub` alias. Set this up, and harden SSH only **after verifying key login**, using [SSH access & VM hardening](ssh-access.md). The existing root-owned throwaway VM needs deliberate migration; do not disable its only working SSH/admin path blindly.
+**SSH access:** New installations should use a non-root administrator with an admin-workstation ED25519 key (PowerShell or Linux/macOS) and a short `ssh gh-pihub` alias. Set this up, and harden SSH only **after verifying key login**, using [SSH access & VM hardening](ssh-access.md). The existing root-owned throwaway VM needs deliberate migration; do not disable its only working SSH/admin path blindly.
 
 ## Existing VM (both repositories already cloned)
 
@@ -26,7 +26,7 @@ Before running `deploy`, **edit/review** RSS `.env`, `config.yaml` and `content/
 ## Fresh test VM (new clean machine)
 
 1. Configure a **unique, stable IP / DHCP reservation**, verify no duplicate address, working DNS, NTP and VM console. The SSH host fingerprint changing after a disconnection may be a network/IP issue; never bypass SSH host-key validation.
-2. **Before cloning apps**, provision a non-root administrative account (e.g. `hubadmin`) with sudo, install its authorized Windows-PC ED25519 key, verify a key-only second login, then disable SSH root/password auth and restrict the SSH firewall: [copy-paste Windows + VM guide](ssh-access.md). Keep console access throughout. Use `~/apps/` owned by that account, **not** `/root/apps/`.
+2. **Before cloning apps**, provision a non-root administrative account (e.g. `hubadmin`) with sudo, install its authorized Windows-PC ED25519 key, verify a key-only second login, then disable SSH root/password auth and restrict the SSH firewall: [selectable PowerShell/Linux client guide + VM hardening](ssh-access.md). Keep console access throughout. Use `~/apps/` owned by that account, **not** `/root/apps/`.
 3. Install Docker Engine + Compose plugin from Docker's official Debian instructions. Check `docker version`, `docker compose version`, `docker info`. Avoid duplicate Docker APT repository entries with conflicting `Signed-By` keys. Ensure `git curl openssl openssh-client` are installed.
 4. Use one operator account consistently for Git and the **separate VM-to-GitHub RSS deploy key**. Docker daemon access (including the Docker group) is effectively root-level; do not grant it broadly.
 
@@ -58,7 +58,7 @@ bash scripts/bootstrap-test-vm.sh status
 | Anthias Hub | `127.0.0.1:8765` | `anthias-hub` | `curl -fsS http://127.0.0.1:8765/healthz` |
 | RSS2Slideshow | `127.0.0.1:8085` by default (configurable) | `rss2slideshow` | `curl -fsS http://127.0.0.1:8085/healthz` and `/api/articles` |
 
-From the Windows admin workstation, after configuring [SSH key + aliases](ssh-access.md):
+From the Windows PowerShell or Linux/macOS admin workstation, choose the relevant expandable [SSH key + alias instructions](ssh-access.md):
 
 ```powershell
 ssh gh-pihub            # normal administrative shell, key authentication
