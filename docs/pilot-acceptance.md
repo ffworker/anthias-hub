@@ -4,6 +4,12 @@ Use a spare Anthias Pi and a real connected monitor. Do not run destructive test
 
 **First-time Marketing usability test:** Print the [one-page Marketing practice checklist (PDF)](marketing-praxistest.pdf) for a colleague using a separate test Pi. Let the tester tick **Klappt** or **Unklar** for each task and jot down questions or requests without coaching. Collect the sheet alongside the technical acceptance evidence below. Use repeated stumbling points as input for later onboarding/crash courses; the sheet is not a substitute for this IT/production release gate.
 
+## Colleague pilot handoff (not production approval)
+
+Keep this step outside the repository deployment: verify the colleague's **client → Hub** route and the **Hub/container → Anthias Pi API** route. Normally the browser should **not** need direct access to the Pi API/management UI; block that client-to-Pi path unless there is a separately authorized reason. The basic Compose pilot publishes Hub only on `127.0.0.1:8765`, so remote colleagues need an explicitly approved VPN/HTTPS reverse proxy or authorized tunnel rather than assuming a firewall rule alone makes it reachable. No firewall, SSH tunnel or reverse proxy is configured by this repo change.
+
+For a **spare test Pi**, give the colleague a Marketing login and the [practice sheet](marketing-praxistest.pdf), keep IT controls separate, verify simple read-only navigation first, and supervise the first write/upload. Do not call the pilot production-ready until the acceptance checklist below is met.
+
 ## 1. Prepare and establish the boundary
 
 - [ ] Record a backup of Hub `.env`, `config/`, `data/`, **and separately the Pi playlist/media**. Verify an off-host copy exists and restore each kind of backup to a disposable staging instance; check login, library manifests and media, and Pi content after restoration. Do not replace live state for this exercise.
