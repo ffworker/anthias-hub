@@ -53,7 +53,7 @@ bash scripts/bootstrap-test-vm.sh deploy
 bash scripts/bootstrap-test-vm.sh status
 ```
 
-`clone-rss` explicitly uses `~/.ssh/rss2slideshow_deploy_ed25519` (or `RSS_DEPLOY_KEY` when intentionally set), validates read access via `git ls-remote`, and configures the private repository's *local* Git SSH command. If the repo already exists, it checks its remote and preserves its revision and working tree. It never invokes `git pull`, `git reset --hard`, or `git checkout`. Key troubleshooting: [RSS read-only deploy key runbook](https://github.com/ffworker/rss2slideshow/blob/main/docs/github-deploy-key.md) (private).
+`clone-rss` explicitly uses `~/.ssh/rss2slideshow_deploy_ed25519` (or `RSS_DEPLOY_KEY` when intentionally set), validates read access via `git ls-remote`, and configures the private repository's *local* Git SSH command. If the repo already exists, it checks its remote and preserves its revision and working tree. It never invokes `git pull`, `git reset --hard`, or `git checkout`. Key troubleshooting: [RSS read-only deploy key runbook](https://github.com/OWNER/PRIVATE_REPO/blob/main/docs/github-deploy-key.md) (private).
 
 ## URLs, access and verification
 
