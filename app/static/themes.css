@@ -1,4 +1,4 @@
-/* Three original Studio palettes. Loaded last so existing routes/forms keep their behavior. */
+/* Nordlicht-only shared layout/icon refinements; appearance picker removed. */
 .icon{display:inline-block;width:19px;height:19px;flex:none;vertical-align:middle;fill:none;color:inherit}
 .brand-symbol .icon{width:25px;height:25px}
 .site-nav-link .icon{width:17px;height:17px}
@@ -20,7 +20,7 @@
 .site-header:has(.theme-picker-guest) .header-greeting{margin-left:0}
 
 /* Action hierarchy: move next to the item, edit below, create in the composer. */
-.playlist-workspace .section-title .jump-link{display:none}
+.playlist-workspace .section-title .jump-link{display:inline-flex}
 .playlist-workspace .asset-toolbar{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 14px;align-items:center;padding:10px 15px}
 .playlist-workspace .move-controls{display:flex;align-items:center;gap:5px;float:none;margin:0}
 .playlist-workspace .move-controls::before{content:'REIHENFOLGE';font:700 9px/1.2 ui-monospace,monospace;letter-spacing:.08em;color:var(--subtle);margin-right:5px}
@@ -43,58 +43,6 @@
 .auth-star .icon,.auth-card-icon .icon{width:26px;height:26px}
 .site-foot,.site-foot a{color:var(--muted)}
 .playlist-workspace .asset:has(.edit-panel[open]){overflow:visible}
-@media(max-width:1080px){.playlist-workspace .section-title .jump-link{display:inline-flex}}
-@media(max-width:680px){.playlist-workspace .asset-toolbar{display:grid;grid-template-columns:1fr;gap:7px}.playlist-workspace .edit-panel{justify-self:stretch;width:100%}.playlist-workspace .edit-panel[open]{grid-column:1;grid-row:auto}.playlist-workspace .edit-panel>summary{width:100%;justify-content:center}.playlist-workspace .asset-edit{grid-template-columns:1fr}.playlist-workspace .asset-edit .check,.playlist-workspace .asset-edit button{grid-column:auto;grid-row:auto}.playlist-workspace .move-controls::before{margin-right:auto}.playlist-workspace .asset-side{margin-top:7px}.theme-picker>summary span{display:none}.theme-options{right:-8px}}
 
-/* Palette tokens override literal first-generation Studio backgrounds below. */
-:root[data-theme="tageslicht"]{color-scheme:light;--bg:#f6f2e9;--surface:#fffdf8;--raised:#f0ebdf;--field:#fff;--ink:#1d343c;--muted:#3f5b62;--subtle:#526b71;--border:#c9d5d0;--blue:#086769;--blue-dark:#06575a;--green:#18684a;--red:#a02b41;--studio-aqua:#086769;--studio-peach:#aa5732;--studio-line:#c9d5d0;--studio-muted:#405a61;--theme-top:#f0eee4;--theme-hero:linear-gradient(120deg,#e2f0e9,#faf5e8 73%);--theme-composer:#fffdf8;--theme-composer-head:linear-gradient(135deg,#d9ebe5,#f5f1e6);--theme-card:#fffdf8;--theme-toolbar:#f0f3ec;--theme-status:#ebf2ec;--theme-icon:#ddede7;--theme-icon-border:#b9d3c9;--theme-text:#1d343c;--theme-hint:#3f5b62;--theme-glow:#08676918}
-:root[data-theme="kupfer"]{color-scheme:dark;--bg:#17141d;--surface:#261f2b;--raised:#352835;--field:#1b1821;--ink:#fff3e8;--muted:#d9c4ba;--subtle:#bda99f;--border:#68505a;--blue:#f3b57d;--blue-dark:#ffd3a7;--green:#a9ddb4;--red:#ffacb3;--studio-aqua:#f3b57d;--studio-peach:#f0a3b2;--studio-line:#68505a;--studio-muted:#ddc8bf;--theme-top:#201a24;--theme-hero:linear-gradient(120deg,#473041,#2b2335 65%,#553a32);--theme-composer:#2d2531;--theme-composer-head:linear-gradient(140deg,#694637,#382937 75%);--theme-card:#29212e;--theme-toolbar:#221c29;--theme-status:#352c37;--theme-icon:#553640;--theme-icon-border:#966879;--theme-text:#fff3e8;--theme-hint:#d9c4ba;--theme-glow:#f3b57d29}
-:root[data-theme="tageslicht"] body,:root[data-theme="kupfer"] body{background:var(--bg);color:var(--ink)}
-:root[data-theme="tageslicht"] .site-top,:root[data-theme="kupfer"] .site-top{background:var(--theme-top);border-color:var(--border)}
-:root[data-theme="tageslicht"] .site-brand>span:last-child,:root[data-theme="kupfer"] .site-brand>span:last-child{color:var(--ink)}
-:root[data-theme="tageslicht"] .site-nav-link,:root[data-theme="kupfer"] .site-nav-link{background:var(--raised);border-color:var(--border);color:var(--ink)}
-:root[data-theme="tageslicht"] .site-nav-link:hover,:root[data-theme="kupfer"] .site-nav-link:hover{background:var(--theme-icon);color:var(--ink)}
-:root[data-theme="tageslicht"] .site-user,:root[data-theme="kupfer"] .site-user,:root[data-theme="tageslicht"] .user-name,:root[data-theme="kupfer"] .user-name{color:var(--ink)}
-:root[data-theme="tageslicht"] .user-avatar,:root[data-theme="kupfer"] .user-avatar,:root[data-theme="tageslicht"] .brand-symbol,:root[data-theme="kupfer"] .brand-symbol{background:var(--theme-icon);border-color:var(--theme-icon-border);color:var(--blue)!important}
-:root[data-theme="tageslicht"] .fleet-hero,:root[data-theme="kupfer"] .fleet-hero,:root[data-theme="tageslicht"] .playlist-hero,:root[data-theme="kupfer"] .playlist-hero,:root[data-theme="tageslicht"] .auth-story,:root[data-theme="kupfer"] .auth-story{background:var(--theme-hero);border-color:var(--border)}
-:root[data-theme="tageslicht"] .fleet-hero .muted,:root[data-theme="kupfer"] .fleet-hero .muted,:root[data-theme="tageslicht"] .playlist-hero .muted,:root[data-theme="kupfer"] .playlist-hero .muted,:root[data-theme="tageslicht"] .auth-story h1,:root[data-theme="kupfer"] .auth-story h1,:root[data-theme="tageslicht"] .auth-story>p:not(.eyebrow),:root[data-theme="kupfer"] .auth-story>p:not(.eyebrow),:root[data-theme="tageslicht"] .auth-story-bottom,:root[data-theme="kupfer"] .auth-story-bottom{color:var(--ink)}
-:root[data-theme="tageslicht"] .fleet-summary,:root[data-theme="kupfer"] .fleet-summary,:root[data-theme="tageslicht"] .playlist-overview,:root[data-theme="kupfer"] .playlist-overview{background:var(--theme-status);border-color:var(--border);color:var(--ink)}
-:root[data-theme="tageslicht"] .fleet-stat,:root[data-theme="kupfer"] .fleet-stat,:root[data-theme="tageslicht"] .fleet-device-line,:root[data-theme="kupfer"] .fleet-device-line{border-color:var(--border);color:var(--ink)}
-:root[data-theme="tageslicht"] .fleet-stat-value,:root[data-theme="kupfer"] .fleet-stat-value,:root[data-theme="tageslicht"] .fleet-device-line strong,:root[data-theme="kupfer"] .fleet-device-line strong,:root[data-theme="tageslicht"] .playlist-overview strong,:root[data-theme="kupfer"] .playlist-overview strong{color:var(--ink)}
-:root[data-theme="tageslicht"] .fleet-stat-label,:root[data-theme="kupfer"] .fleet-stat-label,:root[data-theme="tageslicht"] .fleet-summary-hint,:root[data-theme="kupfer"] .fleet-summary-hint,:root[data-theme="tageslicht"] .fleet-screen-note,:root[data-theme="kupfer"] .fleet-screen-note,:root[data-theme="tageslicht"] .hero-status small,:root[data-theme="kupfer"] .hero-status small,:root[data-theme="tageslicht"] .overview-note,:root[data-theme="kupfer"] .overview-note{color:var(--muted)}
-:root[data-theme="tageslicht"] .fleet-device,:root[data-theme="kupfer"] .fleet-device,:root[data-theme="tageslicht"] .fleet-empty,:root[data-theme="kupfer"] .fleet-empty,:root[data-theme="tageslicht"] .playlist-workspace .asset,:root[data-theme="kupfer"] .playlist-workspace .asset,:root[data-theme="tageslicht"] .auth-card,:root[data-theme="kupfer"] .auth-card,:root[data-theme="tageslicht"] .studio-error,:root[data-theme="kupfer"] .studio-error{background:var(--theme-card);border-color:var(--border);color:var(--ink)}
-:root[data-theme="tageslicht"] .playlist-workspace .asset.is-paused,:root[data-theme="kupfer"] .playlist-workspace .asset.is-paused{background:var(--theme-toolbar)}
-:root[data-theme="tageslicht"] .playlist-workspace .asset-toolbar,:root[data-theme="kupfer"] .playlist-workspace .asset-toolbar,:root[data-theme="tageslicht"] .fleet-settings-content,:root[data-theme="kupfer"] .fleet-settings-content{background:var(--theme-toolbar);border-color:var(--border)}
-:root[data-theme="tageslicht"] .playlist-workspace .composer,:root[data-theme="kupfer"] .playlist-workspace .composer{background:var(--theme-composer);border-color:var(--theme-icon-border);box-shadow:0 18px 55px #0002,0 0 25px var(--theme-glow)}
-:root[data-theme="tageslicht"] .playlist-workspace .composer-head,:root[data-theme="kupfer"] .playlist-workspace .composer-head{background:var(--theme-composer-head);border-color:var(--border)}
-:root[data-theme="tageslicht"] .composer-head .muted,:root[data-theme="kupfer"] .composer-head .muted,:root[data-theme="tageslicht"] .composer-explainer,:root[data-theme="kupfer"] .composer-explainer,:root[data-theme="tageslicht"] .composer-footnote,:root[data-theme="kupfer"] .composer-footnote,:root[data-theme="tageslicht"] .asset-body .clip,:root[data-theme="kupfer"] .asset-body .clip{color:var(--muted)}
-:root[data-theme="tageslicht"] .playlist-workspace .asset-kind,:root[data-theme="kupfer"] .playlist-workspace .asset-kind,:root[data-theme="tageslicht"] .fleet-device-icon,:root[data-theme="kupfer"] .fleet-device-icon,:root[data-theme="tageslicht"] .composer-bubble,:root[data-theme="kupfer"] .composer-bubble{background:var(--theme-icon);border-color:var(--theme-icon-border);color:var(--blue)}
-:root[data-theme="tageslicht"] .playlist-workspace .kind-image,:root[data-theme="kupfer"] .playlist-workspace .kind-image{color:var(--studio-peach)}
-:root[data-theme="tageslicht"] .playlist-workspace .add-type-switch,:root[data-theme="kupfer"] .playlist-workspace .add-type-switch{background:var(--theme-toolbar);border-color:var(--border)}
-:root[data-theme="tageslicht"] .playlist-workspace .add-mode,:root[data-theme="kupfer"] .playlist-workspace .add-mode,:root[data-theme="tageslicht"] .playlist-workspace .quick-toggle,:root[data-theme="kupfer"] .playlist-workspace .quick-toggle,:root[data-theme="tageslicht"] .playlist-workspace .move-controls button,:root[data-theme="kupfer"] .playlist-workspace .move-controls button{background:var(--raised);border-color:var(--border);color:var(--ink)}
-:root[data-theme="tageslicht"] .playlist-workspace .add-mode.selected,:root[data-theme="kupfer"] .playlist-workspace .add-mode.selected{background:var(--theme-icon);color:var(--ink)}
-:root[data-theme="tageslicht"] .playlist-workspace .add-mode:hover,:root[data-theme="kupfer"] .playlist-workspace .add-mode:hover,:root[data-theme="tageslicht"] .playlist-workspace .edit-panel>summary,:root[data-theme="kupfer"] .playlist-workspace .edit-panel>summary{color:var(--blue)}
-:root[data-theme="tageslicht"] .playlist-workspace .composer-pane input,:root[data-theme="kupfer"] .playlist-workspace .composer-pane input,:root[data-theme="tageslicht"] .fleet-device-address,:root[data-theme="kupfer"] .fleet-device-address{background:var(--field);border-color:var(--border);color:var(--ink)}
-:root[data-theme="tageslicht"] .playlist-workspace .composer-pane label,:root[data-theme="kupfer"] .playlist-workspace .composer-pane label{color:var(--ink)}
-:root[data-theme="tageslicht"] .pill.ok,:root[data-theme="kupfer"] .pill.ok{background:var(--theme-icon);color:var(--green)}
-:root[data-theme="tageslicht"] .pill.bad,:root[data-theme="kupfer"] .pill.bad{background:var(--raised);color:var(--red)}
-:root[data-theme="tageslicht"] .pill.off,:root[data-theme="kupfer"] .pill.off{background:var(--raised);color:var(--muted)}
-:root[data-theme="tageslicht"] .button:not(.primary),:root[data-theme="kupfer"] .button:not(.primary),:root[data-theme="tageslicht"] button:not(.primary):not(.danger-btn),:root[data-theme="kupfer"] button:not(.primary):not(.danger-btn){color:var(--ink);background:var(--raised);border-color:var(--border)}
-:root[data-theme="tageslicht"] .button.primary,:root[data-theme="tageslicht"] button.primary{color:#fff;background:var(--blue);border-color:var(--blue)}
-:root[data-theme="kupfer"] .button.primary,:root[data-theme="kupfer"] button.primary{color:#251921;background:var(--blue);border-color:var(--blue)}
-:root[data-theme="tageslicht"] .site-logout,:root[data-theme="kupfer"] .site-logout{background:transparent!important;border:0!important;color:var(--muted)!important}
-:root[data-theme="tageslicht"] .theme-picker button[aria-pressed="true"],:root[data-theme="kupfer"] .theme-picker button[aria-pressed="true"]{color:var(--blue);background:var(--surface)}
-:root[data-theme="tageslicht"] .live-warning{color:#774524}
-:root[data-theme="kupfer"] .live-warning{color:#ffceab}
-:root[data-theme="tageslicht"] .site-notice,:root[data-theme="kupfer"] .site-notice{color:var(--ink);background:var(--theme-icon);border-color:var(--border)}
-:root[data-theme="tageslicht"] .site-notice.error,:root[data-theme="kupfer"] .site-notice.error{color:var(--red);background:var(--surface)}
-:root[data-theme="tageslicht"] .fleet-setup,:root[data-theme="kupfer"] .fleet-setup{background:var(--theme-hero);border-color:var(--border)}
-:root[data-theme="tageslicht"] .auth-layout,:root[data-theme="kupfer"] .auth-layout{background:var(--surface);border-color:var(--border)}
-:root[data-theme="tageslicht"] .auth-card label,:root[data-theme="kupfer"] .auth-card label,:root[data-theme="tageslicht"] .fleet-settings-content label,:root[data-theme="kupfer"] .fleet-settings-content label{color:var(--ink)}
-:root[data-theme="tageslicht"] input,:root[data-theme="kupfer"] input{color:var(--ink);background:var(--field);border-color:var(--border)}
-:root[data-theme="tageslicht"] input::placeholder,:root[data-theme="kupfer"] input::placeholder{color:var(--subtle)}
-:root[data-theme="tageslicht"] .playlist-workspace .asset-status.off,:root[data-theme="kupfer"] .playlist-workspace .asset-status.off{color:var(--ink)}
-:root[data-theme="tageslicht"] .playlist-workspace .is-paused .asset-body,:root[data-theme="kupfer"] .playlist-workspace .is-paused .asset-body{opacity:.83}
-:root[data-theme="tageslicht"] .fleet-device-address,:root[data-theme="kupfer"] .fleet-device-address{color:var(--muted)}
-:root[data-theme="tageslicht"] .auth-help,:root[data-theme="kupfer"] .auth-help,:root[data-theme="tageslicht"] .header-greeting,:root[data-theme="kupfer"] .header-greeting{color:var(--muted)}
-@media(prefers-reduced-motion:reduce){.theme-picker *{scroll-behavior:auto}}
+@media(max-width:680px){.playlist-workspace .asset-toolbar{display:grid;grid-template-columns:1fr;gap:7px}.playlist-workspace .edit-panel{justify-self:stretch;width:100%}.playlist-workspace .edit-panel[open]{grid-column:1;grid-row:auto}.playlist-workspace .edit-panel>summary{width:100%;justify-content:center}.playlist-workspace .asset-edit{grid-template-columns:1fr}.playlist-workspace .asset-edit .check,.playlist-workspace .asset-edit button{grid-column:auto;grid-row:auto}.playlist-workspace .move-controls::before{margin-right:auto}.playlist-workspace .asset-side{margin-top:7px}.theme-options{right:-8px}}
+
