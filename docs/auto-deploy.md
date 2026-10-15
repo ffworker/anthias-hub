@@ -27,7 +27,7 @@ Danach im Browser Login, Geräteliste und Playlist **lesend** prüfen. `healthz`
 docker compose -p anthias-hub up -d --no-build
 ```
 
-Erst wenn der manuelle Wechsel funktioniert, Timer installieren. Der ausführende Account muss schon Docker-Zugriff und Schreibrecht auf Checkout und `data/` besitzen; Docker-Zugriff ist praktisch Root-Zugriff. Keine neuen Gruppenmitgliedschaften nur für diesen Zweck vergeben. Bei Root-Installation `root` verwenden, der Container läuft trotzdem mit `HUB_UID/HUB_GID` unprivilegiert.
+Erst wenn der manuelle Wechsel funktioniert, Timer installieren. Der ausführende Account muss schon Docker-Zugriff und Schreibrecht auf Checkout und `data/` besitzen; Docker-Zugriff ist praktisch Root-Zugriff. Keine neuen Gruppenmitgliedschaften nur für diesen Zweck vergeben. Falls die Wegwerf-VM noch root-betrieben ist, den tatsächlichen lokalen Ausführungs-Account `root` angeben; das erfordert **keinen SSH-Root-Login** und ist keine Empfehlung für einen neuen Host. Für Neuinstallationen gilt [non-root SSH-Key/Admin-Setup und VM-Hardening](ssh-access.md). Der Container läuft weiterhin mit `HUB_UID/HUB_GID` unprivilegiert.
 
 ```bash
 sudo bash scripts/install-auto-deploy.sh "$(id -un)"

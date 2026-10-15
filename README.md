@@ -49,7 +49,7 @@ The editing inputs remain inline; **Save and Delete now sit together as an align
 
 ## Deployment modes: test VM versus future production
 
-**Our current VM is a disposable test environment, not the long-term production server.** Reinstall the final VM from a documented source commit/image instead of cloning experiments from the test host.
+**Our current VM is a disposable test environment, not the long-term production server.** Reinstall the final VM from a documented source commit/image instead of cloning experiments from the test host. On the fresh host, first configure a **non-root SSH admin with an ED25519 key, a client-side SSH alias and verified key-only access**, then disable SSH root/password logins only after a successful second session: [Windows SSH/tunnels & VM hardening](docs/ssh-access.md).
 
 - **Test/staging:** use the existing local `compose.yaml` or the optional `:main`-following automatic updater in [the test-only CD guide](docs/auto-deploy.md). Every green `main` push currently publishes a new image; if the timer is installed, it may then deploy it.
 - **Future production:** use [the reproducible new-VM and release runbook](docs/reproducible-production.md). Pin `ANTHIAS_HUB_IMAGE=ghcr.io/ffworker/anthias-hub:sha-<APPROVED_FULL_SHA>` with `compose.cd.yaml`, deploy only after manual approval and keep a tested rollback image. **Do not enable today's auto-deploy timer on production:** the script currently forces `:main`.
@@ -80,13 +80,13 @@ The interactive setup creates a random session secret and prompts for **distinct
 
 **Appearance:** The header’s Design menu offers Nordlicht (dark teal), Tageslicht (light) and Kupfer (warm dark). The choice is stored only in the current browser (`localStorage`), not in Hub accounts, playlists or on the Pis. Editor controls remain in their original forms/API routes: move controls beside each item, edit in the item’s action bar, add content in the dedicated composer.
 
-**Access from Windows:** Open PowerShell on the client:
+**Access from Windows (SSH-key + alias):** Follow the [one-time SSH key and `~/.ssh/config` guide](docs/ssh-access.md). Use `ssh gh-pihub` for a shell or start **both** localhost-only forwards with:
 
 ~~~powershell
-ssh -N -L 8765:127.0.0.1:8765 ADMIN@YOUR-DOCKER-HOST
+ssh -N gh-pihub-tunnel
 ~~~
 
-Then open http://localhost:8765 in the browser. The Compose port intentionally binds to **127.0.0.1** on the server. Connecting directly to the host's LAN IP on port 8765 will not work and must not be "fixed" with a broad firewall rule.
+Then open **http://127.0.0.1:8765** (Hub) and, if RSS2Slideshow is installed on that same host, **http://127.0.0.1:8085** (RSS). Both forwards bind to your own PC's loopback address. The VM Compose ports intentionally bind to **127.0.0.1** on the server; don't expose them broadly to 'fix' direct LAN access. If you only need one forward, the [guide](docs/ssh-access.md) also shows `ssh -N -L ... gh-pihub`.
 
 For ordinary company-user access, first set up a restricted internal **HTTPS reverse proxy / VPN**, set COOKIE_SECURE=1, and isolate Anthias player-management ports. Direct access to the Pi can otherwise bypass the hub's role checks.
 
@@ -113,6 +113,7 @@ The current Marketing role applies to **all** registered screens; no per-locatio
 ## Documentation
 
 - **[IT Administrator Guide](docs/IT_ADMIN_GUIDE.md):** architecture, deployment, permission model, account/password maintenance, backups/restores, updates, logs, troubleshooting, operational checks.
+- **[SSH keys, PowerShell host alias & VM hardening](docs/ssh-access.md):** non-root administrative access, SSH config, both application tunnels and lockout-safe hardening.
 - [First Docker deployment](docs/deploy-docker-host.md): isolated pilot, SSH tunnel and safe access.
 - **[Reproducible fresh VM & controlled releases](docs/reproducible-production.md):** approved SHA-pinned image, backups, manual promotion, verification, rollback and future release-channel design.
 - **[Pilot acceptance and release gate](docs/pilot-acceptance.md):** real Pi/monitor test matrix, client-to-Pi isolation, restore rehearsal, and go/no-go criteria.
