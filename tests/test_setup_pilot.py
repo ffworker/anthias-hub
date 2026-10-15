@@ -102,3 +102,40 @@ sys.exit(0)
     assert bad.returncode != 0
     assert users_path.read_text() == "{broken"
     assert "-m scripts.create_user" not in (tmp_path / "calls.log").read_text()[len(before_bad_run):]
+
+
+def test_solo_setup_resumes_as_owner_without_creating_team_accounts(tmp_path):
+    for name in ('compose.yaml', 'compose.cd.yaml', '.env.example'):
+        shutil.copy2(ROOT / name, tmp_path / name)
+    (tmp_path / 'scripts').mkdir()
+    shutil.copy2(ROOT / 'scripts/setup-pilot.sh', tmp_path / 'scripts/setup-pilot.sh')
+    (tmp_path / 'bin').mkdir()
+    docker = tmp_path / 'bin/docker'
+    docker.write_text('''#!/usr/bin/env python3
+import json, sys
+from pathlib import Path
+root = Path.cwd()
+args = sys.argv[1:]
+if args[:2] == ['compose', 'version']: sys.exit(0)
+if args[0] == 'compose' and 'config' in args: print('test-image'); sys.exit(0)
+if args[0] == 'run':
+    role = args[-1]
+    p = root / 'config/users.json'
+    users = json.loads(p.read_text())['users'] if p.exists() else []
+    if '-c' in args: sys.exit(0 if any(u['username'] == role for u in users) else 1)
+    users.append({'username': role, 'role': role, 'password_hash': 'test-hash'})
+    p.write_text(json.dumps({'users': users})); sys.exit(0)
+sys.exit(0)
+''')
+    docker.chmod(0o755)
+    (tmp_path / 'bin/ss').write_text('#!/bin/sh\\nexit 0\\n')
+    (tmp_path / 'bin/ss').chmod(0o755)
+    (tmp_path / 'bin/curl').write_text('#!/bin/sh\\nprintf ok\\n')
+    (tmp_path / 'bin/curl').chmod(0o755)
+    env = dict(os.environ, PATH=str(tmp_path / 'bin') + os.pathsep + os.environ['PATH'])
+    first = subprocess.run(['bash', 'scripts/setup-pilot.sh', '--solo'], cwd=tmp_path, env=env, text=True, capture_output=True)
+    assert first.returncode == 0, first.stderr
+    assert [u['role'] for u in json.loads((tmp_path / 'config/users.json').read_text())['users']] == ['owner']
+    second = subprocess.run(['bash', 'scripts/setup-pilot.sh'], cwd=tmp_path, env=env, text=True, capture_output=True)
+    assert second.returncode == 0, second.stderr
+    assert [u['role'] for u in json.loads((tmp_path / 'config/users.json').read_text())['users']] == ['owner']

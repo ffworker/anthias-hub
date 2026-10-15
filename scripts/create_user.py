@@ -10,9 +10,9 @@ from werkzeug.security import generate_password_hash
 
 def main():
     if len(sys.argv) != 4:
-        raise SystemExit('Usage: python -m scripts.create_user PATH USERNAME ROLE(it|marketing|viewer)')
+        raise SystemExit('Usage: python -m scripts.create_user PATH USERNAME ROLE(owner|it|marketing|viewer)')
     filename, username, role = sys.argv[1:]
-    if role not in ('it', 'marketing', 'viewer') or not re.fullmatch(r'[a-zA-Z][a-zA-Z0-9_-]{1,31}', username):
+    if role not in ('owner', 'it', 'marketing', 'viewer') or not re.fullmatch(r'[a-zA-Z][a-zA-Z0-9_-]{1,31}', username):
         raise SystemExit('Invalid username/role')
     password = getpass.getpass('New password (12+ characters): ')
     again = getpass.getpass('Repeat password: ')

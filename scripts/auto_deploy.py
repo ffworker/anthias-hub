@@ -47,13 +47,25 @@ def healthy():
     return False
 
 
+def compose_override(checkout):
+    """Read one explicit host-local Compose file without evaluating .env as shell."""
+    values = [line.partition('=')[2].strip() for line in (checkout / '.env').read_text().splitlines()
+              if line.startswith('HUB_COMPOSE_OVERRIDE=')]
+    if not values or not values[-1]:
+        return []
+    target = Path(values[-1])
+    if not target.is_absolute() or not target.is_file():
+        raise DeployError('HUB_COMPOSE_OVERRIDE must point to an existing absolute file')
+    return ['-f', str(target)]
+
+
 def deploy(checkout):
     checkout = Path(checkout).resolve()
     required = ('compose.cd.yaml', '.env', 'config/users.json', 'data/devices.json')
     if any(not (checkout / name).is_file() for name in required):
         raise DeployError('Existing Hub configuration and data are required; never use CD for initial setup')
 
-    compose = ['docker', 'compose', '-f', 'compose.cd.yaml', '-p', PROJECT]
+    compose = ['docker', 'compose', '-f', 'compose.cd.yaml'] + compose_override(checkout) + ['-p', PROJECT]
     container = command(compose + ['ps', '-q', PROJECT], checkout)
     if not container:
         raise DeployError('No running Hub service; migrate and verify it manually first')

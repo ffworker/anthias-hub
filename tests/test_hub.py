@@ -51,7 +51,7 @@ def env():
     FakeAnthias.changes=[]
     with tempfile.TemporaryDirectory() as tmp:
         users = Path(tmp) / 'users.json'
-        users.write_text(json.dumps({'users':[{'username':x,'role':x,'password_hash':generate_password_hash('safe-password-123',method='scrypt')} for x in ('it','marketing','viewer')]}))
+        users.write_text(json.dumps({'users':[{'username':x,'role':x,'password_hash':generate_password_hash('safe-password-123',method='scrypt')} for x in ('owner','it','marketing','viewer')]}))
         devices = Path(tmp) / 'devices.json'
         devices.write_text(json.dumps({'devices':[{'id':'lab','name':'Lab Screen','url':'http://127.0.0.1:9999','location':'Lab'}]}))
         app=create_app({'TESTING':True,'SECRET_KEY':'s'*48,'SESSION_COOKIE_SECURE':False,'USERS_FILE':str(users),'DEVICES_FILE':str(devices),'AUDIT_FILE':str(Path(tmp)/'audit.jsonl')})
@@ -1694,3 +1694,31 @@ def test_floating_device_menus_are_role_scoped_and_safe(env):
     dashboard = client.get('/').get_data(as_text=True)
     assert 'fleet-popovers.js' not in dashboard
     assert 'data-close-fleet-menu' not in dashboard
+
+
+def test_owner_has_both_roles_without_expanding_existing_role_grants(env):
+    app, client, tmp = env
+    login(client, 'owner')
+    assert b'OWNER' in client.get('/').data
+    assert b'Ger\xc3\xa4testeuerung' in client.get('/').data
+    assert b'data-can-edit="yes"' in client.get('/devices/lab').data
+    assert client.post('/library', data={'csrf': token(client), 'name': 'Owner content'}).status_code == 302
+    assert client.post('/devices/lab/control', data={
+        'csrf': token(client), 'action': 'hdmi-on', 'confirm': 'lab', 'ack': 'yes'
+    }).status_code == 302
+    assert any(change[0] == 'display_power' for change in FakeAnthias.changes)
+    assert client.post('/devices/lab/edit', data={
+        'csrf': token(client), 'name': 'Lab Screen', 'url': 'http://192.168.1.55', 'location': 'Lab'
+    }).status_code == 302
+
+    login(client, 'marketing')
+    assert client.post('/devices/lab/edit', data={'csrf': token(client)}).status_code == 403
+    assert client.post('/devices/lab/control', data={
+        'csrf': token(client), 'action': 'shutdown', 'confirm': 'lab', 'ack': 'yes'
+    }).status_code == 403
+    login(client, 'it')
+    assert client.post('/library', data={'csrf': token(client), 'name': 'Denied'}).status_code == 403
+    login(client, 'viewer')
+    assert client.post('/devices/lab/control', data={
+        'csrf': token(client), 'action': 'reboot', 'confirm': 'lab', 'ack': 'yes'
+    }).status_code == 403

@@ -2,7 +2,7 @@
 {% from '_device_controls.html' import device_control with context %}
 {% block title %}Bildschirme · Anthias Hub{% endblock %}
 {% block content %}
-{% if logged_user.role in ('it', 'marketing') %}<script defer src="{{ url_for('static', filename='fleet-popovers.js') }}"></script>{% endif %}
+{% if logged_user.role in ('owner', 'it', 'marketing') %}<script defer src="{{ url_for('static', filename='fleet-popovers.js') }}"></script>{% endif %}
 {% set online_count = statuses.values()|selectattr('ok')|list|length %}
 <div class="fleet-workspace">
   <section class="fleet-hero" aria-labelledby="fleet-title">
@@ -10,12 +10,12 @@
       <p class="eyebrow">DEIN DIGITAL SIGNAGE STUDIO</p>
       <h1 id="fleet-title">Deine Bildschirme <svg class="icon fleet-sparkle" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></h1>
       <p class="muted">
-        {% if logged_user.role == 'marketing' %}Wähle einen Bildschirm, gestalte die Playlist und zeig, was wichtig ist.
-        {% elif logged_user.role == 'it' %}Alle Geräte und ihre Verbindungen an einem Ort. Die Inhalte verwaltet Marketing.
+        {% if logged_user.role in ('owner', 'marketing') %}Wähle einen Bildschirm, gestalte die Playlist und zeig, was wichtig ist.
+        {% elif logged_user.role in ('owner', 'it') %}Alle Geräte und ihre Verbindungen an einem Ort. Playlists bearbeitet das Content-Team.
         {% else %}Ein Überblick über deine Bildschirme und ihre Inhalte.{% endif %}
       </p>
     </div>
-    {% if logged_user.role == 'it' %}
+    {% if logged_user.role in ('owner', 'it') %}
       <a class="button primary fleet-add-button" href="#device-setup"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Bildschirm verbinden</a>
     {% endif %}
   </section>
@@ -46,13 +46,13 @@
           <strong>{{ statuses[device.id].count if online else '–' }}</strong>
           <span>Playlist-Inhalte</span>
         </div>
-        <a class="button primary fleet-open" href="{{ url_for('playlist', device_id=device.id) }}">{{ 'Playlist bearbeiten' if logged_user.role == 'marketing' else 'Playlist ansehen' }} <span aria-hidden="true">→</span></a>
-        {% if logged_user.role in ('it', 'marketing') %}
+        <a class="button primary fleet-open" href="{{ url_for('playlist', device_id=device.id) }}">{{ 'Playlist bearbeiten' if logged_user.role in ('owner', 'marketing') else 'Playlist ansehen' }} <span aria-hidden="true">→</span></a>
+        {% if logged_user.role in ('owner', 'it', 'marketing') %}
           <div class="fleet-device-actions">
           {{ device_control(device, logged_user.role) }}
         {% endif %}
 
-        {% if logged_user.role == 'it' %}
+        {% if logged_user.role in ('owner', 'it') %}
           <details class="fleet-settings">
             <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#settings"></use></svg> Verwalten <svg class="icon settings-chevron" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#chevron-down"></use></svg></summary>
             <div class="fleet-settings-content">
@@ -79,19 +79,19 @@
             </div>
           </details>
         {% endif %}
-        {% if logged_user.role in ('it', 'marketing') %}</div>{% endif %}
+        {% if logged_user.role in ('owner', 'it', 'marketing') %}</div>{% endif %}
       </article>
     {% else %}
       <div class="fleet-empty card">
         <div class="fleet-empty-icon" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></div>
         <h3>Noch keine Bildschirme – aber jede Menge Platz für Ideen.</h3>
-        <p class="muted">{% if logged_user.role == 'it' %}Verbinde deinen ersten Anthias-Player und starte die Verwaltung direkt hier.{% else %}Sobald IT einen Bildschirm verbunden hat, taucht er hier auf.{% endif %}</p>
-        {% if logged_user.role == 'it' %}<a class="button primary" href="#device-setup">Ersten Bildschirm verbinden →</a>{% endif %}
+        <p class="muted">{% if logged_user.role in ('owner', 'it') %}Verbinde deinen ersten Anthias-Player und starte die Verwaltung direkt hier.{% else %}Sobald IT einen Bildschirm verbunden hat, taucht er hier auf.{% endif %}</p>
+        {% if logged_user.role in ('owner', 'it') %}<a class="button primary" href="#device-setup">Ersten Bildschirm verbinden →</a>{% endif %}
       </div>
     {% endfor %}
   </div>
 
-  {% if logged_user.role == 'it' %}
+  {% if logged_user.role in ('owner', 'it') %}
     <section id="device-setup" class="fleet-setup" aria-labelledby="setup-title">
       <div class="fleet-setup-intro">
         <span class="fleet-setup-symbol" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></span>

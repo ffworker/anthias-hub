@@ -10,8 +10,8 @@ if ! command -v docker >/dev/null || ! docker compose version >/dev/null 2>&1; t
   echo 'Docker Compose is required and must be accessible to this user.' >&2
   exit 1
 fi
-if [[ "${1:-}" != '' && "${1:-}" != '--reset-users' ]]; then
-  echo 'Usage: bash scripts/setup-pilot.sh [--reset-users]' >&2
+if [[ "${1:-}" != '' && "${1:-}" != '--reset-users' && "${1:-}" != '--solo' ]]; then
+  echo 'Usage: bash scripts/setup-pilot.sh [--solo|--reset-users]' >&2
   exit 2
 fi
 reset_users=${1:-}
@@ -48,6 +48,12 @@ if [[ ! -f .env ]]; then
 else
   echo 'Resuming existing installation; preserving .env, config and data.'
 fi
+# Optional VM-local override (must be an existing absolute path; never eval .env).
+override=$(sed -n 's/^HUB_COMPOSE_OVERRIDE=//p' .env | tail -n 1)
+if [[ -n "$override" && ( "$override" != /* || ! -f "$override" ) ]]; then
+  echo 'HUB_COMPOSE_OVERRIDE must point to an existing absolute file' >&2
+  exit 1
+fi
 # Compose reads the existing UID/GID and image pin from .env.
 uid=$(sed -n 's/^HUB_UID=//p' .env)
 gid=$(sed -n 's/^HUB_GID=//p' .env)
@@ -57,6 +63,7 @@ if [[ ! "$uid" =~ ^[0-9]+$ || ! "$gid" =~ ^[0-9]+$ ]]; then
 fi
 if grep -q '^ANTHIAS_HUB_IMAGE=' .env; then
   compose=(docker compose -f compose.cd.yaml -p anthias-hub)
+  [[ -z "$override" ]] || compose+=(-f "$override")
   image=$("${compose[@]}" config --images)
   [[ -n "$image" ]] || { echo 'No pinned image resolved by Compose.' >&2; exit 1; }
   if ! docker image inspect "$image" >/dev/null 2>&1; then
@@ -64,6 +71,7 @@ if grep -q '^ANTHIAS_HUB_IMAGE=' .env; then
   fi
 else
   compose=(docker compose -p anthias-hub)
+  [[ -z "$override" ]] || compose+=(-f "$override")
   image=anthias-hub:pilot
   if ! docker image inspect "$image" >/dev/null 2>&1; then
     printf '\nBuilding isolated anthias-hub pilot image ...\n'
@@ -71,7 +79,15 @@ else
   fi
 fi
 # Detect missing roles using the image's Python; malformed files fail closed.
-for role in it marketing; do
+# Existing team installations remain the default. --solo installs one combined owner
+# account; a restarted owner-only setup resumes without creating team accounts.
+roles=(it marketing)
+if [[ "$reset_users" == '--solo' ]] || { [[ -z "$reset_users" && -f config/users.json ]] &&
+     grep -Eq '"role"[[:space:]]*:[[:space:]]*"owner"' config/users.json &&
+     ! grep -Eq '"role"[[:space:]]*:[[:space:]]*"(it|marketing)"' config/users.json; }; then
+  roles=(owner)
+fi
+for role in "${roles[@]}"; do
   status=0
   docker run --rm --user "$uid:$gid" \
     --mount "type=bind,source=$(pwd)/config,target=/config,readonly" \
