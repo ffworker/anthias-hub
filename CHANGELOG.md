@@ -1,5 +1,10 @@
 # Changelog
 
+## Pilot validation notes — 2026-10-15
+
+- **User-reported practical confirmation:** Anthias Hub library import/export and the template-backup function are working in the current pilot installation.
+- This updates documentation/test status **only**. Full VM/Hub state backup plus separate Pi backup, clean restore drills and comprehensive player-write compatibility remain unverified. See [pilot acceptance](docs/pilot-acceptance.md).
+
 ## Public-ready candidate (unreleased)
 
 - Combined Owner account for solo self-hosters; existing IT/Marketing roles remain separate.

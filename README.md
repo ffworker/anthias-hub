@@ -9,7 +9,7 @@
 
 Anthias Hub gives solo Raspberry Pi enthusiasts and small teams one interface to view connected screens, edit their individual playlists, upload media, and reuse content. The **Anthias player still runs on every Pi**; Hub talks to the player over its REST API. No cloud service, database, subscription, or separate central CMS required.
 
-> **Pilot software, not production-certified.** API connectivity and read-only playlist display have been observed, but write/upload/delete compatibility across real player versions, power controls and recovery still require on-device acceptance. Do not put the current application directly on the public internet. See [pilot acceptance](docs/pilot-acceptance.md) and [security boundaries](SECURITY.md).
+> **Pilot software, not production-certified.** API connectivity and read-only playlist display have been observed. On **15 October 2026**, the operator also reported successful use of the library's **import/export and template-backup functions**. This is field feedback, **not** proof of a complete Hub-host or Pi backup/restore. Player write/upload/delete compatibility across real player versions, power controls and recovery still require on-device acceptance. Do not put the current application directly on the public internet. See [pilot acceptance](docs/pilot-acceptance.md) and [security boundaries](SECURITY.md).
 
 ## Features
 

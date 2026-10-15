@@ -1,6 +1,6 @@
 # Marketing: Medien als ZIP oder Mehrfachauswahl hochladen
 
-**Gilt für Anthias Hub (Test/Pilot)**. Es gibt **zwei verschiedene ZIP-Funktionen**:
+**Gilt für Anthias Hub (Test/Pilot)**. **Praxisrückmeldung vom 15.10.2026:** Der Betreiber bestätigt die Nutzung der Import-/Export- und Vorlagenbackup-Funktionen. Ein dokumentierter vollständiger Restore auf einer frischen Instanz, ein Prüfsummenvergleich und ein Backup der Raspberry-Pi-Daten sind damit **nicht** bestätigt (siehe [Pilot-Abnahme](pilot-acceptance.md)). Es gibt **zwei verschiedene ZIP-Funktionen**:
 
 - **Medien-Sammelimport** (neu): eine normale ZIP mit Bildern/Videos oder bis zu 20 einzeln ausgewählte Dateien. Eine `manifest.json` ist **nicht nötig**. Als Importziel kannst du die **Bibliotheksvorlage** oder die **Playlist eines ausgewählten Bildschirms** nutzen.
 - **Playlist-ZIP importieren** (bereits vorhanden): erwartet ein mit Anthias Hub exportiertes Archiv **mit `manifest.json`**, um eine komplette Bibliotheksvorlage wiederherzustellen. Ein gewöhnliches Medien-ZIP ist hier weiterhin absichtlich ungültig.
