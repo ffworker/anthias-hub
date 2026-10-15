@@ -13,7 +13,7 @@ Public source: https://github.com/ffworker/anthias-hub . Never publish `.env`, `
 
 ## 1. Check host and Pi route (read-only)
 
-First configure a **non-root SSH administrator, verified ED25519 key and a host alias** (see [SSH & VM hardening](ssh-access.md)); on the Windows admin PC use `ssh gh-pihub` instead of SSH root/password authentication. On the Linux VM, run:
+First configure a **non-root SSH administrator, verified ED25519 key and a host alias** (see [SSH & VM hardening](ssh-access.md)); on a PowerShell or Linux/macOS admin client use `ssh gh-pihub` instead of SSH root/password authentication. On the Linux VM, run:
 
 ```bash
 hostname
@@ -50,11 +50,11 @@ If the normal account can run `docker ps` **and is an explicitly trusted Docker 
 Do not run this in the existing another application's directory. The Compose project is
 explicitly named `anthias-hub`. Other Compose projects and their services are untouched.
 
-## 3. Open from Windows PowerShell
+## 3. Open from PowerShell or Linux/macOS terminal
 
-After the [SSH key + `~/.ssh/config` setup](ssh-access.md), launch **both** local forwards if Anthias Hub and RSS2Slideshow share a VM:
+Choose your system in the expandable [SSH key + `~/.ssh/config` guide](ssh-access.md); launch **both** local forwards if Anthias Hub and RSS2Slideshow share a VM:
 
-```powershell
+```bash
 ssh -N gh-pihub-tunnel
 ```
 
