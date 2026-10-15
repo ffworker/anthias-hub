@@ -60,6 +60,12 @@
                         aria-label="{{ asset.name or 'Element' }} verschieben, Position {{ loop.index }} von {{ assets|length }}"
                         aria-describedby="queue-help" aria-pressed="false">⠿</button>
               {% endif %}
+              {% if logged_user.role == 'marketing' and not error %}
+                <label class="asset-bulk-choice" title="Zum gemeinsamen Löschen auswählen">
+                  <input type="checkbox" name="selected" value="{{ asset.asset_id }}" form="playlist-bulk-form"
+                         aria-label="{{ asset.name or 'Element' }} zum Löschen auswählen" data-bulk-check>
+                </label>
+              {% endif %}
               <div class="asset-index" aria-label="Position {{ loop.index }}">{{ '%02d'|format(loop.index) }}</div>
               {% if is_image or is_video %}
               <button type="button" class="asset-kind {{ 'kind-video' if is_video else 'kind-image' }} asset-media-preview media-preview-trigger"
@@ -178,6 +184,46 @@
           </div>
         {% endfor %}
       </div>
+      {% if logged_user.role == 'marketing' and not error and assets %}
+        <div class="playlist-bottom-actions">
+          <a href="#add-content" class="button studio-bottom-add studio-add-trigger" data-open-composer
+             aria-haspopup="dialog" aria-controls="add-content"><span aria-hidden="true">＋</span> Weiteren Inhalt hinzufügen</a>
+          <span class="playlist-bottom-note">Bild, Video, Webseite oder Bibliotheksvorlage ergänzen</span>
+        </div>
+        <details class="playlist-bulk-management" data-bulk-management>
+          <summary>Mehrere Inhalte löschen oder Playlist leeren</summary>
+          <div class="playlist-bulk-content">
+            <p class="muted">Entfernt Inhalte direkt vom Anthias-Player, möglicherweise inklusive hochgeladener Dateien. Bibliotheksvorlagen und Geräte-Registrierung bleiben bestehen.</p>
+            <form id="playlist-bulk-form" method="post" action="{{ url_for('bulk_delete_assets', device_id=device.id) }}">
+              <input type="hidden" name="csrf" value="{{ csrf() }}">
+              {% for asset in assets %}
+                <input type="hidden" name="baseline" value="{{ asset.asset_id }}">
+              {% endfor %}
+              <div class="bulk-selection-tools">
+                <button type="button" class="button bulk-selection-toggle" data-bulk-toggle aria-pressed="false">Auswahl starten</button>
+                <button type="button" class="button bulk-select-all" data-bulk-all hidden>Alle auswählen</button>
+                <span class="bulk-selection-count" data-bulk-count role="status" aria-live="polite">0 ausgewählt</span>
+              </div>
+              <label class="bulk-delete-ack">
+                <input type="checkbox" name="ack" value="yes" required data-bulk-ack>
+                Ich bestätige, dass ausgewählte Inhalte vom Player gelöscht werden dürfen.
+              </label>
+              <button class="danger-btn bulk-delete-selected" type="submit" name="mode" value="selected"
+                      data-bulk-delete-selected>Ausgewählte löschen</button>
+              <details class="playlist-clear-confirm">
+                <summary>Ganze Playlist leeren ({{ assets|length }} Inhalte)</summary>
+                <p class="muted">Achtung: Alle aktuell angezeigten Inhalte auf <strong>{{ device.name }}</strong> entfernen. Das kann die Anzeige am TV sofort leeren.</p>
+                <label>Zur Sicherheit den exakten Bildschirmnamen eingeben:
+                  <input name="name_confirmation" type="text" placeholder="{{ device.name }}" maxlength="120"
+                         autocomplete="off" data-bulk-device-name>
+                </label>
+                <button class="danger-btn bulk-clear-all" type="submit" name="mode" value="all"
+                        data-bulk-clear-all>Playlist endgültig leeren</button>
+              </details>
+            </form>
+          </div>
+        </details>
+      {% endif %}
     </section>
 
     {% if logged_user.role == 'marketing' and not error %}
@@ -303,5 +349,6 @@
 <script defer src="{{ url_for('static', filename='upload-feedback.js') }}"></script>
 <script defer src="{{ url_for('static', filename='bulk-upload.js') }}"></script>
 {% if logged_user.role == 'marketing' and not error %}<script defer src="{{ url_for('static', filename='playlist.js') }}"></script>
-<script defer src="{{ url_for('static', filename='playlist-studio.js') }}"></script>{% endif %}
+<script defer src="{{ url_for('static', filename='playlist-studio.js') }}"></script>
+<script defer src="{{ url_for('static', filename='playlist-bulk.js') }}"></script>{% endif %}
 {% endblock %}

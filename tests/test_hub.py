@@ -1316,3 +1316,124 @@ def test_screen_card_ctas_have_equal_insets_for_marketing_it_and_viewer(env):
         else:
             assert 'fleet-settings' not in page
         client.post('/logout', data={'csrf': token(client)})
+
+
+def test_playlist_bottom_add_and_bulk_controls_are_marketing_only(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    page = client.get('/devices/lab').get_data(as_text=True)
+    assert 'Weiteren Inhalt hinzufügen' in page
+    assert 'playlist-bottom-actions' in page
+    assert page.index('id="playlist-items"') < page.index('playlist-bottom-actions')
+    assert 'data-open-composer' in page.split('playlist-bottom-actions', 1)[1]
+    assert 'data-bulk-management' in page
+    assert 'name="selected" value="one123" form="playlist-bulk-form"' in page
+    assert 'name="baseline" value="one123"' in page
+    assert 'name="mode" value="selected"' in page
+    assert 'name="mode" value="all"' in page
+    assert 'name="name_confirmation"' in page
+    assert 'playlist-bulk.js' in page
+    for role in ('it', 'viewer'):
+        client.post('/logout', data={'csrf': token(client)})
+        login(client, role)
+        read_only = client.get('/devices/lab').get_data(as_text=True)
+        assert 'Weiteren Inhalt hinzufügen' not in read_only
+        assert 'playlist-bottom-actions' not in read_only
+        assert 'playlist-bulk-form' not in read_only
+
+
+def test_playlist_empty_has_first_add_but_no_bulk_or_bottom_add(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    original = FakeAnthias.assets_data
+    try:
+        FakeAnthias.assets_data = []
+        page = client.get('/devices/lab').get_data(as_text=True)
+        assert 'Ersten Inhalt hinzufügen' in page
+        assert 'Weiteren Inhalt hinzufügen' not in page
+        assert 'playlist-bulk-form' not in page
+    finally:
+        FakeAnthias.assets_data = original
+
+
+def test_player_bulk_delete_selected_only_and_audits_actual_writes(env):
+    app, client, tmp = env
+    login(client, 'marketing')
+    snapshot = ['one123', 'two123']
+    result = client.post('/devices/lab/bulk-delete', data={
+        'csrf': token(client), 'mode': 'selected', 'baseline': snapshot,
+        'selected': ['two123'], 'ack': 'yes',
+    }, follow_redirects=True)
+    assert result.status_code == 200
+    assert b'1 ausgew' in result.data
+    assert FakeAnthias.changes == [('remove', ('two123',), {})]
+    entries = [json.loads(line) for line in (Path(tmp) / 'audit.jsonl').read_text().splitlines()]
+    assert [(e['action'], e['asset']) for e in entries if e['action'] == 'asset.bulk-delete'] == [
+        ('asset.bulk-delete', 'two123')]
+    # No device unregister, library mutation or unselected player asset deletion.
+    assert client.get('/devices/lab').status_code == 200
+
+
+def test_player_clear_entire_playlist_requires_exact_name_and_ack(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    snapshot = ['one123', 'two123']
+    url = '/devices/lab/bulk-delete'
+    base = {'csrf': token(client), 'mode': 'all', 'baseline': snapshot, 'ack': 'yes'}
+    assert client.post(url, data={**base, 'name_confirmation': 'Other Screen'}).status_code == 400
+    assert not FakeAnthias.changes
+    assert client.post(url, data={**base, 'ack': 'no', 'name_confirmation': 'Lab Screen'}).status_code == 400
+    assert not FakeAnthias.changes
+    done = client.post(url, data={**base, 'name_confirmation': 'Lab Screen'}, follow_redirects=True)
+    assert done.status_code == 200
+    assert [e[1][0] for e in FakeAnthias.changes] == ['one123', 'two123']
+    assert b'2 Inhalte vom Player entfernt' in done.data
+    assert b'Bibliotheksvorlagen bleiben erhalten' in done.data
+
+
+def test_player_bulk_rejects_bad_selection_stale_snapshot_and_csrf(env):
+    _, client, _ = env
+    url = '/devices/lab/bulk-delete'
+    for role in ('it', 'viewer'):
+        login(client, role)
+        assert client.post(url, data={
+            'csrf': token(client), 'baseline': ['one123', 'two123'],
+            'selected': ['one123'], 'ack': 'yes', 'mode': 'selected'}).status_code == 403
+    login(client, 'marketing')
+    base = {'csrf': token(client), 'baseline': ['one123', 'two123'],
+            'selected': ['one123'], 'ack': 'yes', 'mode': 'selected'}
+    assert client.post(url, data={**base, 'csrf': 'invalid'}).status_code == 400
+    assert client.post(url, data={**base, 'ack': ''}).status_code == 400
+    assert client.post(url, data={**base, 'selected': ['one123', 'one123']}).status_code == 400
+    assert client.post(url, data={**base, 'selected': ['unknown']}).status_code == 400
+    assert client.post(url, data={**base, 'selected': []}).status_code == 400
+    assert client.post(url, data={**base, 'selected': ['one123', 'two123']}).status_code == 400
+    assert client.post(url, data={**base, 'baseline': ['one123', '../../bad']}).status_code == 400
+    assert client.post(url, data={**base, 'baseline': ['two123', 'one123']}).status_code == 409
+    assert client.post(url, data={**base, 'baseline': ['one123', 'two123', 'extra123']}).status_code == 409
+    assert client.post(url, data={
+        **base, 'mode': 'all', 'baseline': ['one123'], 'name_confirmation': 'Lab Screen'
+    }).status_code == 409
+    assert not FakeAnthias.changes
+
+
+def test_player_bulk_partial_failure_stops_and_explains_uncertainty(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    original = FakeAnthias.remove
+    def fail_second(self, asset_id):
+        if asset_id == 'two123':
+            raise anthias.PlayerError('simulierte Pi-Störung')
+        self.changes.append(('remove', (asset_id,), {}))
+    FakeAnthias.remove = fail_second
+    try:
+        response = client.post('/devices/lab/bulk-delete', data={
+            'csrf': token(client), 'mode': 'all', 'baseline': ['one123', 'two123'],
+            'name_confirmation': 'Lab Screen', 'ack': 'yes',
+        }, follow_redirects=True)
+        assert response.status_code == 200
+        assert b'1 von 2' in response.data
+        assert b'nicht blind erneut l' in response.data
+        assert FakeAnthias.changes == [('remove', ('one123',), {})]
+    finally:
+        FakeAnthias.remove = original
