@@ -13,7 +13,7 @@
       {% if logged_user.role == 'marketing' and not error %}<p class="live-warning"><span aria-hidden="true">●</span> Änderungen werden sofort auf dem Player gespeichert.</p>{% endif %}
     </div>
     <div class="hero-status">
-      <span class="pill {{ 'bad' if error else 'ok' }}">{{ 'Nicht erreichbar' if error else 'API verbunden' }}</span>
+      <span class="pill {{ 'bad' if error else 'ok' }}">{{ 'Nicht erreichbar' if error else 'API erreichbar' }}</span>
       <small>Anzeige am TV nicht live geprüft</small>
     </div>
   </header>
