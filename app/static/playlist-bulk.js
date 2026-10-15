@@ -18,8 +18,10 @@
   function selected() { return choices.filter(choice => choice.checked); }
   function refresh() {
     const total = selected().length;
-    count.textContent = total + ' ausgewählt';
-    selectedButton.disabled = total === 0 || !ack.checked;
+    count.textContent = total === choices.length
+      ? total + ' ausgewählt – für alle bitte „Ganze Playlist leeren“ verwenden'
+      : total + ' ausgewählt';
+    selectedButton.disabled = total === 0 || total === choices.length || !ack.checked;
     clearButton.disabled = !ack.checked || nameInput.value !== exactName;
     selectAll.textContent = total === choices.length ? 'Auswahl aufheben' : 'Alle auswählen';
   }
