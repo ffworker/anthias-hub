@@ -3,13 +3,12 @@ import io
 from unittest.mock import MagicMock, patch
 
 import pytest
-from requests.models import Response
 from app.anthias import Anthias, PlayerError
 from app.storage import GIB, MAX_MEDIA_BYTES, capacity
 
 
 @pytest.mark.parametrize(('raw', 'minimum', 'maximum'), [
-    ('15.0\u00a0GB', 12 * GIB, 13 * GIB),
+    ('15.0\u00a0GB', 11 * GIB, 12 * GIB),
     ('3.5 GB', 1 * GIB, 2 * GIB),
     ('600 MB', 0, 0),
     ('12G', 9 * GIB, 10 * GIB),
@@ -55,4 +54,25 @@ def test_unknown_space_blocks_before_transfer():
     with patch.object(api, 'info', return_value={}):
         with pytest.raises(PlayerError, match='nicht zuverlässig'):
             api.upload(io.BytesIO(b'1234'), 'x.mp4', 'video/mp4')
+    api.http.request.assert_not_called()
+
+
+def test_storage_report_has_zero_usable_below_reserve():
+    cap = capacity({'free_space': '1.9 GB'})
+    assert cap['usable_bytes'] == 0
+    assert cap['reserve_bytes'] >= 2 * GIB
+
+
+def test_upload_rejects_more_than_gib_before_contacting_player():
+    class VirtualFile:
+        def __init__(self):
+            self.position = 0
+        def tell(self):
+            return self.position
+        def seek(self, position, mode=0):
+            self.position = MAX_MEDIA_BYTES + 1 if mode == 2 else position
+    api = Anthias({'url': 'http://127.0.0.1'})
+    api.http.request = MagicMock()
+    with pytest.raises(PlayerError, match='größer als 1 GiB'):
+        api.upload(VirtualFile(), 'oversized.mp4', 'video/mp4')
     api.http.request.assert_not_called()
