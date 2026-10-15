@@ -21,7 +21,7 @@ Release gate: PR reviewed -> CI green on `main` -> image published -> same image
 
 ## 1. Prepare a fresh VM
 
-Choose a maintained Linux VM, provision SSH, stable network identity, DNS/NTP, and outbound access to GitHub and GHCR. Install Docker Engine, Compose plugin, Git, OpenSSL, curl and iproute2 (for `ss`) using the current instructions for your distro. CI currently publishes the image for **linux/amd64**; verify VM architecture. Docker daemon access is effectively root: restrict to trusted administrators.
+Choose a maintained Linux VM, stable network identity, DNS/NTP, and outbound access to GitHub and GHCR. **Before deploying applications**, create a named non-root admin account, install a workstation-specific ED25519 SSH key and `~/.ssh/config` alias, verify a new key-only login and sudo, then block SSH root/password logins and restrict the SSH ingress firewall. Use the [complete SSH + host-hardening runbook](ssh-access.md) (including console access to prevent lockout). Clone under the admin user's `~/apps`, not `/root/apps`. Install Docker Engine, Compose plugin, Git, OpenSSL, curl and iproute2 (for `ss`) using the current instructions for your distro. CI currently publishes the image for **linux/amd64**; verify VM architecture. Docker daemon access and `docker` group membership are effectively root: restrict to trusted administrators.
 
 Ensure the VM can reach the designated Anthias management VLAN. Scope `ANTHIAS_ALLOWED_CIDRS` in `.env` to the actual subnet. Network ACLs must block Marketing clients from reaching the Pis' management APIs directly, which would bypass Hub role restrictions.
 
@@ -68,13 +68,14 @@ git rev-parse HEAD
 
 The initial `setup-pilot.sh` builds/starts `anthias-hub:pilot` *only for first-time account setup*. The subsequent `compose.cd.yaml` commands replace it with the approved prebuilt image. If setup is interrupted or `users.json` is deleted, rerun `bash scripts/setup-pilot.sh` from this checkout: it keeps `.env` and existing accounts and creates missing roles, using the pinned image when `ANTHIAS_HUB_IMAGE` is set. Use `--reset-users` to choose which existing role passwords to replace. Never `docker compose pull` the default `compose.yaml`: its `anthias-hub:pilot` tag is local-only. Do not start `scripts/install-auto-deploy.sh` on production.
 
-To access the app from Windows:
+To access from Windows, configure an **independent production key and alias** as in [SSH access & VM hardening](ssh-access.md). For a production VM rename the example `gh-pihub` / `gh-pihub-tunnel` aliases to `hub-prod` / `hub-prod-tunnel` and replace `VM_IP` with its own address. Then:
 
 ```powershell
-ssh -N -L 8765:127.0.0.1:8765 ADMIN@NEW_VM
+ssh hub-prod           # authenticated admin shell
+ssh -N hub-prod-tunnel # separate PowerShell window: Hub 8765 + optional RSS 8085
 ```
 
-Open `http://localhost:8765`. Verify login, IT/Marketing roles, devices, and a **read-only** Anthias playlist before any writes. `/healthz` checks the web process only; it cannot confirm player/HDMI/TV output. Bootstrap sets `COOKIE_SECURE=0` **for SSH-tunneled HTTP testing**; switch it to `1` and recreate the container before normal internal HTTPS access.
+Open `http://127.0.0.1:8765` (and `http://127.0.0.1:8085` if RSS is installed on this host). These are localhost-only SSH test tunnels, **not** a way to publish RSS signage to Pis. Verify login, IT/Marketing roles, devices, and a **read-only** Anthias playlist before any writes. `/healthz` checks the web process only; it cannot confirm player/HDMI/TV output. Bootstrap sets `COOKIE_SECURE=0` **for SSH-tunneled HTTP testing**; switch it to `1` and recreate the container before normal internal HTTPS access.
 
 Do not clone the throwaway VM or carry over its test users/devices by default. If you intentionally migrate state, first review it and move it through a secure backup.
 
