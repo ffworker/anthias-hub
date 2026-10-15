@@ -21,6 +21,7 @@ from .anthias import ASSET_ID, Anthias, PlayerError, validate_duration, validate
 from .bulk_media import BatchError, execute_batch
 from .devices import load, save, get, validate_device
 from .library import Library, LibraryError
+from .storage import MAX_MEDIA_BYTES, MAX_REQUEST_BYTES, capacity
 
 _audit_lock = threading.Lock()
 _apply_lock = threading.Lock()
@@ -38,7 +39,7 @@ def create_app(config=None):
         SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax',
         SESSION_COOKIE_SECURE=os.environ.get('COOKIE_SECURE', '1') == '1',
         PERMANENT_SESSION_LIFETIME=60 * 60 * 8,
-        MAX_CONTENT_LENGTH=51 * 1024 * 1024,  # 50 MiB file + multipart form overhead
+        MAX_CONTENT_LENGTH=MAX_REQUEST_BYTES,  # template backups can contain large media
     )
     if config:
         app.config.update(config)
@@ -782,8 +783,8 @@ def create_app(config=None):
             file.stream.seek(0, os.SEEK_END)
             size = file.stream.tell()
             file.stream.seek(0)
-            if size > 50 * 1024 * 1024:
-                raise ValueError('Datei zu groß (max. 50 MB)')
+            if size > MAX_MEDIA_BYTES:
+                raise ValueError('Datei zu groß (max. 1 GiB)')
             head = file.stream.read(16)
             file.stream.seek(0)
             signatures = {
@@ -980,8 +981,8 @@ def create_app(config=None):
     @app.errorhandler(RequestEntityTooLarge)
     def too_large(exc):
         if request.accept_mimetypes.best == 'application/json':
-            return jsonify(ok=False, error='Datei zu groß (max. 50 MB)'), 413
-        return ('Datei zu groß (max. 50 MB)', 413)
+            return jsonify(ok=False, error='Datei zu groß (max. 2 GiB pro Anfrage; 1 GiB pro Medium)'), 413
+        return ('Datei zu groß (max. 2 GiB pro Anfrage; 1 GiB pro Medium)', 413)
 
     @app.errorhandler(PlayerError)
     def api_error(exc):

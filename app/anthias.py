@@ -1,9 +1,13 @@
 """Restricted integration: only asset endpoints; never proxy arbitrary device paths."""
 import re
+import threading
 from urllib.parse import urlsplit
 import requests
+from requests_toolbelt.multipart.encoder import MultipartEncoder
+from .storage import MAX_MEDIA_BYTES, capacity
 
 ASSET_ID = re.compile(r'^[a-zA-Z0-9_-]{1,128}$')
+_upload_lock = threading.Lock()  # one upload at a time in the single-worker Hub
 DEFAULT_FROM = '2020-01-01T00:00:00Z'
 DEFAULT_TO = '2099-12-31T23:59:59Z'
 
@@ -86,10 +90,46 @@ class Anthias:
         return mimetype
 
     def upload(self, storage, filename, mimetype):
-        result = self.call('POST', '/api/v2/file_asset', files={'file_upload': (filename, storage, mimetype)}, timeout=120)
-        if not isinstance(result, dict) or not result.get('uri'):
-            raise PlayerError('Upload-Antwort enthält keine Medienadresse')
-        return result
+        """Preflight actual Pi capacity and stream multipart without copying into RAM.
+
+        The storage estimate is refreshed for EACH upload under a lock to prevent
+        races between Hub uploads in the default single-worker deployment.
+        Other external uploaders on the Pi remain outside our control.
+        """
+        try:
+            initial = storage.tell()
+            storage.seek(0, 2)
+            length = storage.tell() - initial
+            storage.seek(initial)
+        except (OSError, ValueError, AttributeError) as exc:
+            raise PlayerError('Upload-Datei ist nicht lesbar') from exc
+        if not 0 < length <= MAX_MEDIA_BYTES:
+            raise PlayerError('Medium ist leer oder größer als 1 GiB')
+        with _upload_lock:
+            status = capacity(self.info())
+            if status is None:
+                raise PlayerError('Freier Speicherplatz auf Anthias nicht zuverlässig lesbar; Upload zum Schutz des Players verweigert')
+            if length > status['usable_bytes']:
+                raise PlayerError(
+                    f'Zu wenig freier Speicher auf Anthias ({status["reported"]} gemeldet, '
+                    f'{status["reserve_gib"]} GiB Sicherheitsreserve). Upload abgebrochen')
+            encoder = MultipartEncoder(
+                fields={'file_upload': (filename, storage, mimetype)})
+            try:
+                response = self.http.request(
+                    'POST', self.url + '/api/v2/file_asset',
+                    data=encoder, headers={'Content-Type': encoder.content_type},
+                    timeout=(8, 900))
+                if not 200 <= response.status_code < 300:
+                    raise PlayerError('Anthias antwortete mit HTTP ' + str(response.status_code))
+                if len(response.content) > 2_000_000:
+                    raise PlayerError('Anthias-Antwort zu groß')
+                result = response.json() if response.content else None
+            except (requests.RequestException, ValueError) as exc:
+                raise PlayerError('Anthias-Upload unterbrochen oder ungültige Antwort; Playlist vor erneutem Versuch prüfen') from exc
+            if not isinstance(result, dict) or not result.get('uri'):
+                raise PlayerError('Upload-Antwort enthält keine Medienadresse')
+            return result
 
     def patch(self, asset_id, changes):
         self.valid_id(asset_id)
