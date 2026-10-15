@@ -526,7 +526,7 @@ def test_studio_visual_language_on_every_user_facing_page(env):
     assert 'class="fleet-device card ' in page
     assert 'Playlist bearbeiten' in page
     assert 'API erreichbar' in page
-    assert 'Keine Live-Vorschau' in page
+    assert 'Keine Live-Vorschau' not in page
     assert 'Original Anthias' not in page
     assert 'id="device-setup"' not in page
     # Marketing may acknowledge a support reboot, not IT device removal.
@@ -671,7 +671,7 @@ def test_single_library_item_from_detail_uploads_only_selected_media(env):
     items = lib.get(template['id'])['items']
     login(client, 'marketing')
     page = client.get(f"/library/{template['id']}")
-    assert b'Zu Bildschirm' in page.data
+    assert b'Zur Playlist hinzuf' in page.data
     uri = f"/library/{template['id']}/items/{items[0]['id']}/add-to-device"
     response = client.post(uri, data={
         'csrf': token(client), 'device': 'lab', 'confirm': 'add'})
@@ -727,7 +727,7 @@ def test_single_library_url_refuses_exact_duplicate(env):
     assert not FakeAnthias.changes
 
 
-def test_library_landing_clearly_separates_media_zip_from_backup(env):
+def test_library_landing_keeps_backup_separate_and_uploads_inside_templates(env):
     app, client, tmp = env
     app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
     from app.library import Library
@@ -735,15 +735,17 @@ def test_library_landing_clearly_separates_media_zip_from_backup(env):
     sample = lib.create('Bistro Medien')
     login(client, 'marketing')
     page = client.get('/library').data.decode('utf-8')
-    assert 'Bilder, Videos oder normale ZIP importieren' in page
+    assert 'Neue Vorlage erstellen' in page
     assert 'manifest.json' in page
-    assert 'Anthias-Hub-Vorlagenbackup wiederherstellen' in page
-    assert 'name="template_id"' in page
-    assert 'data-bulk-upload' in page
-    assert '/library/media-import' in page
+    assert 'Vorlagenbackup wiederherstellen' in page
+    assert 'data-bulk-upload' not in page
+    assert '/library/media-import' not in page
     assert '/library/import' in page
-    assert page.index('Bilder, Videos oder normale ZIP importieren') < page.index('Anthias-Hub-Vorlagenbackup wiederherstellen')
     assert sample['name'] in page
+    detail = client.get('/library/' + sample['id']).data.decode('utf-8')
+    assert 'data-bulk-upload' in detail
+    assert 'library-bulk-compact' in detail
+
 
 
 def test_plain_zip_sent_to_backup_import_displays_helpful_error(env):
@@ -837,9 +839,9 @@ def test_whole_template_can_be_sent_from_library_detail(env):
     lib.add_url(template['id'], 'Promo', 'https://example.org/promo', 20)
     login(client, 'marketing')
     page = client.get('/library/' + template['id']).data.decode('utf-8')
-    assert 'Gesamte Vorlage übertragen' in page
+    assert 'Vorlage zur Playlist hinzufügen' in page
     assert '/append-to-device' in page
-    assert 'Vorlage als Hub-Backup exportieren' in page
+    assert 'Backup exportieren' in page
     result = client.post('/library/' + template['id'] + '/append-to-device', data={
         'csrf': token(client), 'confirm': 'append', 'ack': 'yes', 'device': 'lab',
     })
@@ -876,12 +878,12 @@ def test_library_publish_action_is_above_media_list_and_not_hidden_in_sidebar(en
     assert 'library-publish-hero' in page
     assert 'id="library-publish-heading"' in page
     assert page.index('id="library-publish-heading"') < page.index('id="items-title"')
-    assert page.index('Gesamte Vorlage übertragen') < page.index('Bild oder Video hinzufügen')
+    assert page.index('Vorlage zur Playlist hinzufügen') < page.index('Bild oder Video speichern')
     assert page.count(f'/library/{template["id"]}/append-to-device') == 1
     assert 'name="device" required' in page
     assert 'name="ack" value="yes" required' in page
-    assert 'Bestehende Playlist bleibt erhalten' in page
-    assert 'Vorlage als Hub-Backup exportieren' in page
+    assert 'bestehende Inhalte bleiben erhalten' in page
+    assert 'Backup exportieren' in page
 
 
 def test_library_publish_action_is_disabled_for_empty_templates_or_no_players(env):
@@ -1113,8 +1115,8 @@ def test_playlist_media_and_library_are_prominent_before_optional_website(env):
     assert page.index('data-add-mode="media"') < page.index('data-add-mode="library"')
     assert page.index('data-add-mode="library"') < page.index('data-add-mode="website"')
     assert 'class="add-mode selected" data-add-mode="media" aria-pressed="true"' in page
-    assert 'class="add-mode add-mode-secondary" data-add-mode="website" aria-pressed="false"' in page
-    assert 'Optional: Webseite' in page
+    assert 'class="add-mode" data-add-mode="website" aria-pressed="false"' in page
+    assert '> Webseite</button>' in page
     assert page.index('data-add-pane="website"') < page.index('data-add-pane="media"')  # legacy form remains
     assert 'RSS2Slideshow-Anzeige' in page
     static = Path(__file__).resolve().parents[1] / 'app' / 'static'
@@ -1122,8 +1124,8 @@ def test_playlist_media_and_library_are_prominent_before_optional_website(env):
     stylesheet = (static / 'playlist.css').read_text(encoding='utf-8')
     assert "if (modeButtons.length) selectMode('media')" in javascript
     assert "selectMode('website')" not in javascript
-    assert '.add-mode-secondary.selected' in stylesheet
-    assert 'grid-template-columns:repeat(2,minmax(0,1fr))' in stylesheet
+    assert '.add-type-switch .add-mode' in stylesheet
+    assert 'grid-template-columns:repeat(3,minmax(0,1fr))' in stylesheet
 
 
 def test_library_template_shows_media_first_and_website_only_on_request(env):
@@ -1134,7 +1136,7 @@ def test_library_template_shows_media_first_and_website_only_on_request(env):
     collection = library.create('Bistro-Archiv')
     login(client, 'marketing')
     page = client.get('/library/' + collection['id']).data.decode('utf-8')
-    assert page.index('Bild oder Video hinzufügen') < page.index('Medien-Sammelimport')
+    assert page.index('Bild oder Video speichern') < page.index('Medien-Sammelimport')
     assert page.index('Medien-Sammelimport') < page.index('Optional: Webseite verlinken')
     assert '<details class="library-website-details">' in page
     assert 'library-website-details" open' not in page
@@ -1143,7 +1145,7 @@ def test_library_template_shows_media_first_and_website_only_on_request(env):
     assert 'RSS2Slideshow-Anzeige' in page
     assert 'data-upload-form="library"' in page
     assert 'data-bulk-upload' in page
-    assert page.index('Gesamte Vorlage übertragen') < page.index('Bild oder Video hinzufügen')
+    assert page.index('Vorlage zur Playlist hinzufügen') < page.index('Bild oder Video speichern')
 
 
 def test_library_optional_website_submission_and_role_guards_are_unchanged(env):
