@@ -28,6 +28,37 @@
   const button = strip.querySelector('[data-storage-refresh]');
   const playerForm = document.querySelector('form[data-upload-form="player"]');
 
+  // Override is a conscious checkbox in the individual and batch forms.
+  // Unknown storage alone is eligible; an actual low-space reading never is.
+  const overrides = Array.from(document.querySelectorAll('[data-storage-override]'));
+  const setOverrideVisible = (unknown) => {
+    for (const label of overrides) {
+      label.hidden = !unknown;
+      const check = label.querySelector('input[name="ignore_storage_check"]');
+      if (check) {
+        check.disabled = !unknown;
+        if (!unknown) check.checked = false;
+      }
+    }
+  };
+  const markUnknown = (message) => {
+    if (playerForm) playerForm.dataset.playerAvailable = '0';
+    strip.dataset.state = 'unknown';
+    label.textContent = 'Speicherprüfung fehlgeschlagen · ' + message;
+    setOverrideVisible(true);
+    if (window.AnthiasStorage) window.AnthiasStorage.lastUnknown = true;
+  };
+  const markKnown = (data) => {
+    if (playerForm) playerForm.dataset.playerAvailable = String(data.usable_bytes);
+    strip.dataset.state = data.usable_bytes > 0 ? 'ready' : 'blocked';
+    label.textContent = data.usable_bytes > 0
+      ? data.usable_gib + ' GiB für Uploads verfügbar'
+      : 'Sicherheitsreserve erreicht – Pi-Speicher prüfen';
+    setOverrideVisible(false);
+    if (window.AnthiasStorage) window.AnthiasStorage.lastUnknown = false;
+  };
+  setOverrideVisible(!Number(strip.dataset.storageKnown));
+
   async function refresh() {
     if (button) button.disabled = true;
     try {
@@ -35,24 +66,23 @@
         credentials:'same-origin', headers:{Accept:'application/json'}, cache:'no-store'
       });
       const data = await response.json();
-      if (!response.ok || !data.ok || !Number.isSafeInteger(data.usable_bytes)) {
-        throw Error(data.message || 'Speicherplatz derzeit nicht lesbar.');
+      if (!response.ok) throw Error('Info-Abfrage HTTP ' + response.status);
+      if (!data.ok || data.status === 'unknown') {
+        markUnknown(data.message || 'Keine nutzbaren Speicherdaten');
+        return null;
       }
-      if (playerForm) playerForm.dataset.playerAvailable = String(data.usable_bytes);
-      strip.dataset.state = data.usable_bytes > 0 ? 'ready' : 'blocked';
-      label.textContent = data.usable_bytes > 0
-        ? data.usable_gib + ' GiB für Uploads verfügbar'
-        : 'Speicherreserve erreicht – Pi-Speicher prüfen';
+      if (!Number.isSafeInteger(data.usable_bytes) || data.usable_bytes < 0) {
+        throw Error('Ungültige Speicherdaten');
+      }
+      markKnown(data);
       return data;
-    } catch (_) {
-      if (playerForm) playerForm.dataset.playerAvailable = '0';
-      strip.dataset.state = 'blocked';
-      label.textContent = 'Speicher nicht abrufbar – Upload geschützt';
+    } catch (error) {
+      markUnknown(error.message || 'Antwort konnte nicht gelesen werden');
       return null;
     } finally {
       if (button) button.disabled = false;
     }
   }
   button?.addEventListener('click', refresh);
-  window.AnthiasStorage = {refresh};
+  window.AnthiasStorage = {refresh, lastUnknown: !Number(strip.dataset.storageKnown)};
 })();

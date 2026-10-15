@@ -1741,7 +1741,7 @@ def test_player_capacity_is_visible_without_exposing_device_admin_controls(env):
     assert 'storage-note' not in playlist
 
     no_disk = client.get('/devices/lab').data.decode('utf-8')
-    assert 'Speicher nicht verfügbar' in no_disk
+    assert 'Speicherprüfung fehlgeschlagen' in no_disk
     assert 'data-player-available="0"' in no_disk
 
 
@@ -1786,3 +1786,45 @@ def test_storage_endpoint_requires_auth_and_registered_player(env):
     board = client.get('/').data.decode('utf-8')
     # No IT controls leaked to view-only users.
     assert 'fleet-settings-content' not in board
+
+
+def test_storage_reason_and_override_only_for_unknown(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    with patch.object(FakeAnthias, 'info', side_effect=anthias.PlayerError('Anthias antwortete mit HTTP 404'), create=True):
+        page = client.get('/devices/lab').data.decode('utf-8')
+        disk = client.get('/devices/lab/storage')
+    assert 'Speicherprüfung fehlgeschlagen' in page
+    assert 'HTTP 404' in page
+    assert 'name="ignore_storage_check"' in page
+    assert 'value="manual-confirmed"' in page
+    assert disk.json['status'] == 'unknown'
+    assert 'HTTP 404' in disk.json['message']
+    with patch.object(FakeAnthias, 'info', return_value={'free_space': '2.0 GB'}, create=True):
+        full_page = client.get('/devices/lab').data.decode('utf-8')
+        full_data = client.get('/devices/lab/storage')
+    assert full_data.json['status'] == 'full'
+    assert full_data.json['ok']
+    assert 'data-storage-known="1"' in full_page
+    assert 'name="ignore_storage_check" value="manual-confirmed" disabled' in full_page
+
+
+def test_single_upload_forwards_manual_acknowledgement(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    media = b'\x89PNG\r\n\x1a\n' + b'bytes'
+    calls = []
+    original = FakeAnthias.upload
+    def recording(self, *args, **kwargs):
+        calls.append(kwargs.get('allow_unknown_space'))
+        return original(self, *args, **kwargs)
+    with patch.object(FakeAnthias, 'upload', recording):
+        no_ack = client.post('/devices/lab/upload', data={
+            'csrf':token(client),'media':(io.BytesIO(media),'x.png'),
+            'duration':'15'},content_type='multipart/form-data')
+        ack = client.post('/devices/lab/upload', data={
+            'csrf':token(client),'media':(io.BytesIO(media),'x.png'),
+            'duration':'15','ignore_storage_check':'manual-confirmed'},
+            content_type='multipart/form-data')
+    assert no_ack.status_code == 302 and ack.status_code == 302
+    assert calls == [None, True]

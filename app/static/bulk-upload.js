@@ -143,10 +143,12 @@
           if (isPlayer && window.AnthiasStorage?.refresh) {
             progressText.textContent = 'Gerätespeicher wird geprüft …';
             const disk = await window.AnthiasStorage.refresh();
-            if (!disk || disk.usable_bytes < files[index].size) {
+            const acknowledge = form.querySelector('[name="ignore_storage_check"]')?.checked;
+            if ((!disk && !acknowledge) ||
+                (disk && disk.usable_bytes < files[index].size)) {
               results.push({name:files[index].name,status:'failed',message:disk ?
                 'Sicherheitsreserve erreicht. Freien Pi-Speicher prüfen.' :
-                'Speicherplatz unbekannt. Zum Schutz des Pi kein Upload.'});
+                'Speicherprüfung fehlgeschlagen: nach manueller Pi-Prüfung „Speicherprüfung ignorieren“ bestätigen.'});
               remaining = files.length - index - 1;
               break;
             }

@@ -47,13 +47,16 @@
           submit.disabled = true;
           const disk = await window.AnthiasStorage.refresh();
           submit.disabled = false;
-          if (!disk) {
-            setMessage('Speicher nicht lesbar. Pi prüfen und Speicheranzeige erneut aktualisieren.', 'error');
+          if (!disk && !form.querySelector('[name="ignore_storage_check"]')?.checked) {
+            setMessage('Speicherprüfung fehlgeschlagen. Pi-Speicher prüfen und anschließend „Speicherprüfung ignorieren“ ausdrücklich bestätigen.', 'error');
             return;
           }
         }
         const usable = Number(form.dataset.playerAvailable || 0);
-        if (!Number.isSafeInteger(usable) || file.size > usable) {
+        const confirmed = form.querySelector('[name="ignore_storage_check"]')?.checked;
+        if (!Number.isSafeInteger(usable) ||
+            (file.size > usable && !(confirmed &&
+                window.AnthiasStorage?.lastUnknown === true))) {
           setMessage(usable > 0
             ? 'Sicherheitsreserve erreicht. Pi-Speicher prüfen und Anzeige aktualisieren.'
             : 'Speicherplatz nicht lesbar. Bitte am Pi prüfen und Anzeige aktualisieren.', 'error');

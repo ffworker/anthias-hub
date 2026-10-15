@@ -20,7 +20,7 @@ def test_capacity_conservative_headroom(raw, minimum, maximum):
     assert result['usable_bytes'] <= max(0, result['free_bytes'] - result['reserve_bytes'])
 
 
-@pytest.mark.parametrize('value', [None, '', '-2 GB', 'unknown', 'NaN GB', '1e9 GB', 1234, '300%'])
+@pytest.mark.parametrize('value', [None, '', '-2 GB', 'unknown', 'NaN GB', '1e9 GB', '300%'])
 def test_capacity_unknown_fails_closed(value):
     assert capacity({'free_space': value}) is None
 
@@ -53,7 +53,7 @@ def test_unknown_space_blocks_before_transfer():
     api = Anthias({'url': 'http://127.0.0.1'})
     api.http.request = MagicMock()
     with patch.object(api, 'info', return_value={}):
-        with pytest.raises(PlayerError, match='nicht zuverlässig'):
+        with pytest.raises(PlayerError, match='Speicherprüfung fehlgeschlagen'):
             api.upload(io.BytesIO(b'1234'), 'x.mp4', 'video/mp4')
     api.http.request.assert_not_called()
 
@@ -76,4 +76,37 @@ def test_upload_rejects_more_than_gib_before_contacting_player():
     api.http.request = MagicMock()
     with pytest.raises(PlayerError, match='größer als 1 GiB'):
         api.upload(VirtualFile(), 'oversized.mp4', 'video/mp4')
+    api.http.request.assert_not_called()
+
+
+def test_legacy_locale_and_integer_bytes_capacity():
+    comma = capacity({'free_space': '15,0\u00a0GB'})
+    assert 11 * GIB < comma['usable_bytes'] < 12 * GIB
+    numeric = capacity({'free_space': 8 * GIB})
+    assert numeric['free_bytes'] == 8 * GIB
+    assert numeric['usable_bytes'] < numeric['free_bytes']
+    assert capacity({'free_space': True}) is None
+
+
+def test_unknown_storage_requires_explicit_override():
+    api = Anthias({'url': 'http://127.0.0.1'})
+    response = MagicMock(status_code=200, content=b'{"uri": "file:///test.mp4"}')
+    response.json.return_value = {'uri': 'file:///test.mp4'}
+    api.http.request = MagicMock(return_value=response)
+    with patch.object(api, 'info', side_effect=PlayerError('Anthias antwortete mit HTTP 404')):
+        with pytest.raises(PlayerError, match='Speicherprüfung fehlgeschlagen'):
+            api.upload(io.BytesIO(b'test'), 'small.mp4', 'video/mp4')
+        result = api.upload(io.BytesIO(b'test'), 'small.mp4', 'video/mp4',
+                            allow_unknown_space=True)
+    assert result['uri'] == 'file:///test.mp4'
+    assert api.http.request.call_count == 1
+
+
+def test_known_insufficient_space_still_blocks_with_override():
+    api = Anthias({'url': 'http://127.0.0.1'})
+    api.http.request = MagicMock()
+    with patch.object(api, 'info', return_value={'free_space': '2.0 GB'}):
+        with pytest.raises(PlayerError, match='Zu wenig'):
+            api.upload(io.BytesIO(b'test'), 'small.mp4', 'video/mp4',
+                       allow_unknown_space=True)
     api.http.request.assert_not_called()

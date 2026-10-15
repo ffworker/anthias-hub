@@ -45,7 +45,9 @@ class Anthias:
         return sorted(data, key=lambda a: (a.get('play_order') or 0, a.get('name') or ''))
 
     def info(self):
-        return self.call('GET', '/api/v2/info', timeout=3)
+        # The upstream info view may wait for Pi network/host diagnostics.
+        # The former 3s limit caused false 'storage unavailable' reports.
+        return self.call('GET', '/api/v2/info', timeout=(5, 25))
 
     def display_power(self, state):
         """Experimental HDMI-CEC control on newer Anthias versions only."""
@@ -89,7 +91,7 @@ class Anthias:
             return 'video'
         return mimetype
 
-    def upload(self, storage, filename, mimetype):
+    def upload(self, storage, filename, mimetype, *, allow_unknown_space=False):
         """Preflight actual Pi capacity and stream multipart without copying into RAM.
 
         The storage estimate is refreshed for EACH upload under a lock to prevent
@@ -106,10 +108,17 @@ class Anthias:
         if not 0 < length <= MAX_MEDIA_BYTES:
             raise PlayerError('Medium ist leer oder größer als 1 GiB')
         with _upload_lock:
-            status = capacity(self.info())
-            if status is None:
-                raise PlayerError('Freier Speicherplatz auf Anthias nicht zuverlässig lesbar; Upload zum Schutz des Players verweigert')
-            if length > status['usable_bytes']:
+            try:
+                status = capacity(self.info())
+            except PlayerError:
+                status = None
+            # An explicit Marketing acknowledgement may override ONLY a
+            # missing/failed measurement, never a known full filesystem.
+            if status is None and not allow_unknown_space:
+                raise PlayerError(
+                    'Speicherprüfung fehlgeschlagen. Erneut prüfen oder nach manueller '
+                    'Kontrolle des Pi-Speichers „Prüfung ignorieren“ bestätigen.')
+            if status is not None and length > status['usable_bytes']:
                 raise PlayerError(
                     f'Zu wenig freier Speicher auf Anthias ({status["reported"]} gemeldet, '
                     f'{status["reserve_gib"]} GiB Sicherheitsreserve). '
