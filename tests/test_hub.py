@@ -1741,7 +1741,7 @@ def test_player_capacity_is_visible_without_exposing_device_admin_controls(env):
     assert 'storage-note' not in playlist
 
     no_disk = client.get('/devices/lab').data.decode('utf-8')
-    assert 'Speicher nicht verfügbar' in no_disk
+    assert 'Speicherprüfung fehlgeschlagen' in no_disk
     assert 'data-player-available="0"' in no_disk
 
 

@@ -107,7 +107,7 @@ def create_app(config=None):
         disk = capacity(info)
         if disk is None:
             app.logger.warning('Anthias storage field missing or unsupported')
-            return None, 'Anthias liefert keinen auswertbaren free_space-Wert'
+            return None, 'Anthias liefert keinen auswertbaren free_space-Wert – Pi-Speicher prüfen'
         return disk, None
 
     def requested_storage_override():
