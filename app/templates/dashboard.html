@@ -2,6 +2,7 @@
 {% from '_device_controls.html' import device_control with context %}
 {% block title %}Bildschirme · Anthias Hub{% endblock %}
 {% block content %}
+{% if logged_user.role in ('it', 'marketing') %}<script defer src="{{ url_for('static', filename='fleet-popovers.js') }}"></script>{% endif %}
 {% set online_count = statuses.values()|selectattr('ok')|list|length %}
 <div class="fleet-workspace">
   <section class="fleet-hero" aria-labelledby="fleet-title">
@@ -55,6 +56,7 @@
           <details class="fleet-settings">
             <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#settings"></use></svg> Verwalten <svg class="icon settings-chevron" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#chevron-down"></use></svg></summary>
             <div class="fleet-settings-content">
+              <p class="fleet-panel-title">Gerät verwalten <span>{{ device.name }}</span></p>
               <p class="code fleet-device-address">{{ device.url }}</p>
               <a class="fleet-native-link" href="{{ device.url }}" target="_blank" rel="noopener noreferrer">Original Anthias ↗</a>
               <form method="post" action="{{ url_for('edit_device', device_id=device.id) }}">
