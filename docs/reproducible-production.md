@@ -2,7 +2,7 @@
 
 **Purpose:** rebuild Anthias Hub from scratch on a new VM, keep the current throwaway VM as test/staging, and stop production from tracking every `main` push. A separate `live` Git branch is unnecessary: production should run a reviewed image reference.
 
-> **CURRENT STATE, 13 Oct 2026:** CI publishes `ghcr.io/ffworker/anthias-hub:main` and `ghcr.io/ffworker/anthias-hub:sha-<FULL_40_CHAR_GIT_SHA>` after a successful `main` build. It does **not** publish `:v1.0.0` tags. `compose.cd.yaml` supports an `ANTHIAS_HUB_IMAGE` override, but `scripts/auto_deploy.py` **hardcodes `:main`**, ignoring that setting, and checks for `:main` or its rollback image. **NEVER install/enable the current `anthias-hub-cd.timer` on the future production VM**; disable any inherited timer before attempting a pinned deployment. This document is the manual, repeatable solution using the already-published SHA-tagged image. Automated approved releases require future code changes.
+> **Current image publishing:** Successful `main` CI runs publish `ghcr.io/ffworker/anthias-hub:latest` for automatic test-VM updates, plus `:sha-<FULL_GIT_SHA>` for reproducible manual pins. There are no prerelease/stable/versioned image channels. The systemd updater always follows `:latest`; keep it disabled on pinned production deployments.
 
 This is a deployment blueprint, **not** an assertion that the current pilot has been validated for unrestricted company-wide/Internet use.
 
@@ -11,7 +11,7 @@ This is a deployment blueprint, **not** an assertion that the current pilot has 
 | Where | Code/image | Trigger |
 | --- | --- | --- |
 | Feature branches | Feature code + PR checks | Developer |
-| `main` | Integrated source; CI publishes `:main` and `:sha-FULL_SHA` | Reviewed merge |
+| `main` | Integrated source; CI publishes `:latest` and `:sha-FULL_SHA` | Reviewed merge |
 | Test VM/staging | Exact SHA-tagged candidate image, real Pi test | Developer/IT |
 | Fresh production VM | `ghcr.io/ffworker/anthias-hub:sha-APPROVED_FULL_SHA` | **Explicit approval and manual deployment** |
 
@@ -152,28 +152,15 @@ Then verify browser login, device list, actual player API and test-TV output. **
 5. Confirm the timer is **not** tracking `:main`. Verify actual running image, `/healthz`, logins, roles, Anthias connectivity and physical screen behavior.
 6. Restore each Pi separately if it lost its own playlist/media; the Hub backup cannot rebuild those assets. Test backup restoration, not just backup creation.
 
-## 5. Version names: latest, stable and definitive releases
+## Image references (minimal)
 
-We should use meaningful names **without confusing convenience with reproducibility**:
+| Reference | Purpose |
+| --- | --- |
+| `ghcr.io/ffworker/anthias-hub:latest` | Moving test-VM image, published from green `main` |
+| `ghcr.io/ffworker/anthias-hub:sha-<FULL_GIT_SHA>` | Per-commit image for manual pinning and recovery |
+| `ghcr.io/ffworker/anthias-hub@sha256:<DIGEST>` | Immutable image-content reference for production-style reproducibility |
 
-| Proposed GHCR reference | Meaning | Production? |
-| --- | --- | --- |
-| `:main` | Most recent successfully built `main` commit | **No**, changes whenever `main` moves |
-| `:latest` | Optional alias for latest successful build (not published today) | **No**, mutable and ambiguous |
-| `:stable` | Optional alias for latest **approved** production release (not published today) | Useful channel for an intentionally automatic fleet, but **still mutable** |
-| `:v0.3.0` | Proposed named approved version (not published today) | Human-readable, record exact image digest |
-| `:sha-<FULL_40_CHAR_SHA>` | **Already published** per successful `main` commit | Best currently available source-to-image pin; tag still technically mutable |
-| `@sha256:<IMAGE_DIGEST>` | Exact content-addressed image | **Best reproducibility**, including rollback |
-
-A Git release named `v0.3.0 — Playlist Studio` may have a friendly title in release notes. That name is **metadata**, not an immutable executable artifact. For the live VM, document **release name + Git SHA + OCI digest**, and pin the deployed image digest wherever practical.
-
-## 5. Future improvements (NOT available yet)
-
-- Versioned releases such as `v0.2.0`: create a Git tag/release tied to an approved commit **and promote the already-tested container image/digest** to a corresponding GHCR `:v0.2.0` alias. The current CI only creates `:main` and `:sha-FULL_SHA`, so creating a Git tag alone does not produce a versioned image. Keep the promotion job behind explicit approval.
-- Optionally add an approved `:stable` channel, but only after updating and testing `scripts/auto_deploy.py` to support an explicit release channel/digest, preserve rollback/quarantine and stop forcing `:main`. Until then, **manual pinned deployments are the safe default**.
-- Introduce real staging checks and documented Pi API write tests before exposing Marketing to production playlists.
-
-The [test-VM automatic deployment guide](auto-deploy.md) documents the existing, intentionally **`:main`-following** timer. It is not the future production release process.
+There are no alpha, beta, stable, or versioned image channels at present. Disable `anthias-hub-cd.timer` on any production host using a pinned SHA or digest. See [automatic test-VM updates](auto-deploy.md) for the one `:latest` channel.
 
 ## Optional network exposure and proxy trust
 

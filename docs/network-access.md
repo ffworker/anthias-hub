@@ -61,7 +61,7 @@ For a reverse proxy on another host, a host-local loopback bind cannot be reache
 
 Standard `compose.yaml` and `compose.cd.yaml` remain unchanged. **All manual Compose commands affecting the Hub must repeat the same `-f <base> -f <absolute override>` list** (including pull/up/rollback), rather than switching back to base-only Compose. The optional test-only `scripts/auto_deploy.py` and `setup-pilot.sh` now read `HUB_COMPOSE_OVERRIDE` from the private `.env` and refuse a missing/non-absolute override. This prevents the next automatic container recreation from dropping the extra port mapping. Do not put LAN addresses in the checked-in source.
 
-Validate `docker compose ... config`, DNS, TLS, login and Pi reachability after changing exposure. Do not turn the test-only `:main` updater into a production rollout mechanism.
+Validate `docker compose ... config`, DNS, TLS, login and Pi reachability after changing exposure. Do not turn the test-only `:latest` updater into a production rollout mechanism.
 
 ## Network boundaries
 
