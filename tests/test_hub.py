@@ -1624,3 +1624,47 @@ def test_anthias_remote_wrappers_use_only_static_v2_api_paths():
         with pytest.raises(anthias.PlayerError):
             p.display_power(state)
     assert len(calls) == 4
+
+def test_ui_refresh_pages_have_well_nested_rendered_markup(env):
+    """Catch misplaced closing tags in nested library options and the drawer."""
+    from html.parser import HTMLParser
+    from app.library import Library
+
+    class Structure(HTMLParser):
+        void = frozenset(('area', 'base', 'br', 'col', 'embed', 'hr', 'img',
+                          'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'))
+        def __init__(self):
+            super().__init__()
+            self.stack = []
+            self.errors = []
+        def handle_starttag(self, tag, attrs):
+            if tag not in self.void:
+                if tag == 'form' and tag in self.stack:
+                    self.errors.append('nested form')
+                self.stack.append(tag)
+        def handle_endtag(self, tag):
+            if tag in self.void:
+                return
+            if not self.stack or self.stack[-1] != tag:
+                self.errors.append(f'closing {tag}, expected {self.stack[-1] if self.stack else "none"}')
+                if tag in self.stack:
+                    self.stack = self.stack[:self.stack.index(tag)]
+            else:
+                self.stack.pop()
+
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    library = Library(app.config['LIBRARY_DIR'])
+    template = library.create('Template')
+    library.add_url(template['id'], 'Website', 'https://example.org', 15)
+    urls = ('/login', '/', '/devices/lab', '/library', f"/library/{template['id']}")
+    for role in ('marketing', 'it', 'viewer'):
+        login(client, role)
+        for url in urls:
+            page = client.get(url)
+            assert page.status_code == 200
+            checker = Structure()
+            checker.feed(page.get_data(as_text=True))
+            assert not checker.errors, f'{role} {url}: {checker.errors[:5]}'
+            assert not checker.stack, f'{role} {url}: unclosed {checker.stack[-5:]}'
+        client.post('/logout', data={'csrf': token(client)})
