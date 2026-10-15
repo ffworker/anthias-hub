@@ -1,0 +1,98 @@
+/* Nordlicht storage: quiet utility, details on hover/tap/keyboard only. */
+.fleet-device-actions:has(>.fleet-storage-menu){
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px;
+  gap:7px;
+}
+.fleet-device-actions:has(>.fleet-remote-marketing):has(>.fleet-storage-menu){
+  grid-template-columns:minmax(0,1fr) 36px;
+}
+.fleet-device-actions>.fleet-storage-menu{
+  position:relative;min-width:36px;width:36px;justify-self:end;
+  margin:0;padding:0;border:0;
+}
+.fleet-device-actions>.fleet-storage-menu>summary{
+  display:grid;place-items:center;position:relative;
+  min-height:37px;width:36px;padding:7px;
+  background:#162c38;border:1px solid #36515f;border-radius:9px;
+  color:#9db7bd;cursor:pointer;list-style:none;
+}
+.fleet-device-actions>.fleet-storage-menu>summary::-webkit-details-marker{display:none}
+.fleet-device-actions>.fleet-storage-menu>summary:hover,
+.fleet-device-actions>.fleet-storage-menu[open]>summary{
+  background:#1d3943;color:#c8f5e8;border-color:#5d8984;
+}
+.fleet-storage-menu>summary .icon{height:17px;width:17px}
+.storage-warning-dot{
+  position:absolute;right:5px;top:5px;width:6px;height:6px;
+  border-radius:50%;background:#f1ae70;box-shadow:0 0 0 2px #162c38;
+}
+.fleet-device-actions .fleet-storage-panel{
+  position:absolute;bottom:calc(100% + 9px);right:0;z-index:80;
+  width:min(260px,calc(100vw - 36px));box-sizing:border-box;
+  padding:15px;border:1px solid #4c6c72;border-radius:12px;
+  background:#102432;color:#e3f3f0;box-shadow:0 17px 38px #0009;
+  font-size:12px;line-height:1.5;
+}
+.fleet-storage-panel .storage-panel-title{
+  font-size:13px;font-weight:750;margin:0 0 10px;
+}
+.fleet-storage-panel dl{margin:0}
+.fleet-storage-panel dl>div{
+  display:flex;justify-content:space-between;align-items:baseline;
+  gap:12px;padding:5px 0;
+}
+.fleet-storage-panel dt{color:#a2c0c8}
+.fleet-storage-panel dd{margin:0;color:#e7f6f2;font-weight:700;text-align:right}
+.fleet-storage-panel .storage-panel-note{
+  color:#a3c0c7;margin:9px 0 0;padding-top:9px;border-top:1px solid #35535a;
+  font-size:11px;
+}
+.fleet-storage-panel .storage-panel-warning{color:#f5c5a7;margin:9px 0 0;font-size:11px}
+.fleet-device:has(.fleet-storage-menu[open]){z-index:46}
+
+/* Upload capacity is contextual, not a second paragraph in the hero. */
+.upload-storage-strip{
+  display:flex;align-items:center;flex-wrap:wrap;gap:8px;
+  margin:5px 0 13px;padding:9px 11px;
+  background:#122936;border:1px solid #36525f;border-radius:10px;
+  font-size:12px;line-height:1.4;color:#c3dcd9;
+}
+.upload-storage-strip>.icon{height:17px;width:17px;flex:none;color:#83cfc1}
+.upload-storage-strip [data-storage-label]{flex:1;min-width:120px}
+.upload-storage-strip[data-state="blocked"]{border-color:#8b6956}
+.upload-storage-strip[data-state="blocked"]>.icon,
+.upload-storage-strip[data-state="blocked"] [data-storage-label]{color:#eac2a3}
+.upload-storage-strip .storage-refresh{
+  flex:none;min-height:29px;min-width:29px;padding:3px 7px;
+  border:1px solid #496674;border-radius:7px;color:#d2e8e8;
+  background:#1b3442;font-size:19px;line-height:1;
+}
+.upload-storage-strip .upload-storage-more{position:relative;flex:none}
+.upload-storage-more>summary{
+  list-style:none;display:grid;place-items:center;cursor:pointer;
+  font-size:11px;font-weight:700;width:26px;min-height:26px;
+  border:1px solid #496674;border-radius:50%;color:#b1d0d1;
+}
+.upload-storage-more>summary::-webkit-details-marker{display:none}
+.upload-storage-more>p{
+  position:absolute;right:0;bottom:calc(100% + 8px);z-index:12;
+  margin:0;padding:13px;width:min(260px,calc(100vw - 55px));
+  border:1px solid #55747a;border-radius:10px;
+  background:#102432;color:#c8e0df;line-height:1.55;
+  box-shadow:0 12px 30px #0008;font-size:12px;
+}
+.upload-storage-strip:has(.upload-storage-more[open]){z-index:6;position:relative}
+.upload-storage-strip .storage-refresh:hover{color:#a5f7e1;border-color:#70a79a}
+.bulk-media-panel .input-support,.library-panel .input-support{
+  margin:0 0 8px;font-size:11px;color:#8fabba;line-height:1.4;
+}
+.bulk-media-panel .bulk-cancel{
+  min-height:32px!important;max-width:max-content;padding:5px 11px;
+  font-size:12px;color:#e6c0ae;border-color:#845e57;background:#272b37;
+}
+.bulk-media-panel .bulk-cancel[hidden]{display:none}
+@media(max-width:380px){
+  .fleet-device-actions:has(>.fleet-storage-menu){gap:5px}
+  .fleet-device-actions>.fleet-storage-menu{width:34px;min-width:34px}
+  .fleet-device-actions>.fleet-storage-menu>summary{width:34px;min-height:36px}
+}

@@ -649,6 +649,23 @@ def create_app(config=None):
                                library_items_available=any(t.get('items') for t in templates),
                                error=error, storage=storage)
 
+    @app.get('/devices/<device_id>/storage')
+    @login_required()
+    def device_storage(device_id):
+        """Fresh read-only capacity report for uploader recovery; no cache or writes."""
+        _, api = player_or_404(device_id)
+        try:
+            disk = capacity(api.info())
+        except (PlayerError, TypeError, ValueError):
+            disk = None
+        if disk is None:
+            return jsonify(ok=False, usable_bytes=0, message=(
+                'Anthias meldet keinen verlässlichen freien Speicher. '
+                'Bitte Geräteverbindung und Speicherplatz am Pi prüfen; '
+                'Medienuploads bleiben zum Schutz gesperrt.'))
+        return jsonify(ok=True, **disk)
+
+
     @app.get('/devices/<device_id>/assets/<asset_id>/preview')
     @login_required()
     def player_asset_preview(device_id, asset_id):

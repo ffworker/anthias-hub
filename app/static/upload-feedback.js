@@ -30,7 +30,7 @@
       feedback.hidden = true;
       bar.style.width = '0%';
     });
-    form.addEventListener('submit', (event) => {
+    form.addEventListener('submit', async (event) => {
       if (busy || !form.reportValidity()) { event.preventDefault(); return; }
       const file = input.files?.[0];
       if (!file || file.size > limit || !goodExtensions.test(file.name)) {
@@ -42,11 +42,21 @@
       }
       event.preventDefault();
       if (isPlayer) {
+        // Re-read capacity after earlier attempts; server also checks immediately before writing.
+        if (window.AnthiasStorage?.refresh) {
+          submit.disabled = true;
+          const disk = await window.AnthiasStorage.refresh();
+          submit.disabled = false;
+          if (!disk) {
+            setMessage('Speicher nicht lesbar. Pi prüfen und Speicheranzeige erneut aktualisieren.', 'error');
+            return;
+          }
+        }
         const usable = Number(form.dataset.playerAvailable || 0);
         if (!Number.isSafeInteger(usable) || file.size > usable) {
           setMessage(usable > 0
-            ? 'Nicht genügend freier Speicher auf Anthias unter Berücksichtigung der Sicherheitsreserve.'
-            : 'Speicherplatz des Players nicht zuverlässig lesbar. Upload gesperrt.', 'error');
+            ? 'Sicherheitsreserve erreicht. Pi-Speicher prüfen und Anzeige aktualisieren.'
+            : 'Speicherplatz nicht lesbar. Bitte am Pi prüfen und Anzeige aktualisieren.', 'error');
           return;
         }
       }

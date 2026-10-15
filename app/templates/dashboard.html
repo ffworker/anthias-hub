@@ -1,6 +1,10 @@
 {% extends 'base.html' %}
 {% from '_device_controls.html' import device_control with context %}
 {% block title %}Bildschirme · Anthias Hub{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='storage-ui.css') }}">
+<script defer src="{{ url_for('static', filename='storage-ui.js') }}"></script>
+{% endblock %}
 {% block content %}
 {% if logged_user.role in ('owner', 'it', 'marketing') %}<script defer src="{{ url_for('static', filename='fleet-popovers.js') }}"></script>{% endif %}
 {% set online_count = statuses.values()|selectattr('ok')|list|length %}
@@ -46,11 +50,6 @@
           <strong>{{ statuses[device.id].count if online else '–' }}</strong>
           <span>Playlist-Inhalte</span>
         </div>
-        <p class="muted fleet-storage">
-          {% set disk = statuses[device.id].storage %}
-          {% if disk %}Speicher: {{ disk.reported }} frei · {{ disk.usable_gib }} GiB für Uploads verfügbar ({{ disk.reserve_gib }} GiB Reserve)
-          {% else %}Speicherplatz derzeit nicht verfügbar · Upload-Schutz aktiv{% endif %}
-        </p>
         <a class="button primary fleet-open" href="{{ url_for('playlist', device_id=device.id) }}">{{ 'Playlist bearbeiten' if logged_user.role in ('owner', 'marketing') else 'Playlist ansehen' }} <span aria-hidden="true">→</span></a>
         {% if logged_user.role in ('owner', 'it', 'marketing') %}
           <div class="fleet-device-actions">
@@ -84,7 +83,32 @@
             </div>
           </details>
         {% endif %}
-        {% if logged_user.role in ('owner', 'it', 'marketing') %}</div>{% endif %}
+        {% if logged_user.role in ('owner', 'it', 'marketing') %}
+          {% set disk = statuses[device.id].storage %}
+          <details class="fleet-storage-menu {{ 'storage-unavailable' if not disk else 'storage-low' if disk.usable_bytes == 0 else '' }}">
+            <summary aria-label="Gerätespeicher von {{ device.name }} anzeigen"
+                     title="Gerätespeicher anzeigen">
+              <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#storage"></use></svg>
+              {% if not disk or disk.usable_bytes == 0 %}<span class="storage-warning-dot" aria-hidden="true"></span>{% endif %}
+            </summary>
+            <div class="fleet-storage-panel">
+              <p class="storage-panel-title">Gerätespeicher</p>
+              {% if disk %}
+                <dl>
+                  <div><dt>Frei gemeldet</dt><dd>{{ disk.reported }}</dd></div>
+                  <div><dt>Für Uploads</dt><dd>{{ disk.usable_gib }} GiB</dd></div>
+                  <div><dt>Sicherheitsreserve</dt><dd>{{ disk.reserve_gib }} GiB</dd></div>
+                </dl>
+                {% if disk.usable_bytes == 0 %}
+                  <p class="storage-panel-warning">Zu wenig Platz: Pi-Speicher prüfen und nicht mehr benötigte Inhalte gezielt entfernen.</p>
+                {% endif %}
+              {% else %}
+                <p class="storage-panel-warning">Speicher derzeit nicht abrufbar. Uploads bleiben geschützt.</p>
+              {% endif %}
+              <p class="storage-panel-note">Videos bis 1 GiB je Datei · Reserve bleibt frei.</p>
+            </div>
+          </details>
+        </div>{% endif %}
       </article>
     {% else %}
       <div class="fleet-empty card">
