@@ -45,7 +45,7 @@ Docker Compose bindet Host **127.0.0.1:8765** an Container-Port 8765; das ist Ab
 
 ### Ersteinrichtung
 
-Voraussetzungen: Docker Engine mit Compose-Plugin, Git, OpenSSL, curl, ss und Netzwerkroute zum Anthias-Pi. **Auf einer neuen VM zuerst einen normalen Admin-User, Windows-SSH-Key und `~/.ssh/config`-Alias einrichten; Root-SSH und Passwort-Login erst nach geprüftem Key-only-Login deaktivieren**. Das komplette Vorgehen mit Hardening, Firewall und dem bestehenden `/root/apps`-Migrationshinweis steht unter [SSH-Zugriff und VM-Hardening](ssh-access.md). Für Deployments `~/apps/` des passenden Admins verwenden.
+Voraussetzungen: Docker Engine mit Compose-Plugin, Git, OpenSSL, curl, ss und Netzwerkroute zum Anthias-Pi. **Auf einer neuen VM zuerst einen normalen Admin-User, SSH-Key für den Admin-Client (PowerShell oder Linux/macOS) und `~/.ssh/config`-Alias einrichten; Root-SSH und Passwort-Login erst nach geprüftem Key-only-Login deaktivieren**. Das komplette Vorgehen mit Hardening, Firewall und dem bestehenden `/root/apps`-Migrationshinweis steht unter [SSH-Zugriff und VM-Hardening](ssh-access.md). Für Deployments `~/apps/` des passenden Admins verwenden.
 
 ~~~bash
 git clone https://github.com/ffworker/anthias-hub.git
@@ -66,11 +66,11 @@ docker compose -p anthias-hub logs --tail=80
 
 Antwort 'ok' auf /healthz prüft **nur den Webprozess**, nicht Anthias, Medienwiedergabe, HDMI oder den TV.
 
-### Zugriff von Windows
+### Zugriff von Windows PowerShell oder Linux/macOS
 
-Einmalig am Admin-PC einen eigenen Ed25519-Key und die beiden SSH-Aliase aus [SSH-Zugriff und VM-Hardening](ssh-access.md) einrichten. Danach in PowerShell:
+Einmalig am Admin-PC einen eigenen Ed25519-Key und die beiden SSH-Aliase aus den **ausklappbaren** [PowerShell-/Linux-Anleitungen zur SSH-Konfiguration](ssh-access.md) einrichten. Danach im Terminal:
 
-~~~powershell
+~~~bash
 ssh gh-pihub           # normale Shell ohne root@ oder User/IP eintippen
 ssh -N gh-pihub-tunnel # separates Fenster für beide lokalen Web-Tunnel
 ~~~
