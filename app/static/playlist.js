@@ -210,9 +210,7 @@
     }
   });
 
-  // Media and reusable library content are the common path for Marketing.
-  // Website is an available but visually secondary option. With no JS, all
-  // forms remain accessible; this only chooses the initial enhanced view.
+  // Three equal drawer tabs; JS only enhances presentation.
   const modeButtons = Array.from(document.querySelectorAll('[data-add-mode]'));
   const panes = Array.from(document.querySelectorAll('[data-add-pane]'));
   function selectMode(mode) {
@@ -225,6 +223,30 @@
   }
   modeButtons.forEach((button) => button.addEventListener('click', () => selectMode(button.dataset.addMode)));
   if (modeButtons.length) selectMode('media');
+  // Filter contents by selected collection without changing the existing API
+  // contract: only the original "source" field is submitted.
+  document.querySelectorAll('[data-library-template]').forEach((templateSelect) => {
+    const form = templateSelect.closest('form');
+    const itemSelect = form?.querySelector('[data-library-source]');
+    if (!itemSelect) return;
+    const groups = Array.from(itemSelect.querySelectorAll('[data-library-group]'));
+    function filterItems() {
+      const selected = templateSelect.value;
+      itemSelect.value = '';
+      for (const group of groups) {
+        const visible = group.dataset.libraryGroup === selected;
+        group.disabled = !visible;
+        group.hidden = !visible;
+        for (const option of group.querySelectorAll('option')) {
+          option.disabled = !visible;
+        }
+      }
+      itemSelect.disabled = !selected;
+    }
+    templateSelect.addEventListener('change', filterItems);
+    filterItems();
+  });
+
 
   // All sorting input methods share one server commit: IDs + optimistic
   // baseline. On error, restore the original DOM and visible positions.
