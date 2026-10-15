@@ -147,7 +147,7 @@ for rollback; do not silently discard the new storage protections to clear an er
 
 ## Validation evidence
 
-Fast suite: 186 Python tests and 30 Node UI tests passed locally. Regression cases
+Fast suite: 189 Python tests and 30 Node UI tests passed locally. Regression cases
 cover unknown/unverified topology, exact URL attestation, known shortage even
 with override, two-copy budgeting, decimal-comma rounding, quota/ENOSPC,
 unknown Hub disk measurement, multipart cleanup, HTTP 507, failed library staging,

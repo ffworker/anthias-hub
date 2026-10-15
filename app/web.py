@@ -1,4 +1,5 @@
 """Anthias Hub: IT owns devices; Marketing owns playlists."""
+import errno
 import json
 import io
 import os
@@ -1047,6 +1048,14 @@ def create_app(config=None):
         if request.accept_mimetypes.best == 'application/json':
             return jsonify(ok=False, error=message), 507
         return message, 507
+
+    @app.errorhandler(OSError)
+    def disk_os_error(exc):
+        # External writers/quota changes can fail directory creation or fsync,
+        # before/after a guarded chunk write. Preserve a controlled response.
+        if exc.errno in (errno.ENOSPC, errno.EDQUOT):
+            return storage_full(HubStorageFull())
+        raise exc
 
     @app.errorhandler(RequestEntityTooLarge)
     def too_large(exc):

@@ -1,4 +1,5 @@
 """All tests offline: no real Anthias device touched."""
+import errno
 import io
 import json
 import os
@@ -1843,3 +1844,15 @@ def test_storage_endpoint_does_not_claim_root_is_media(env, monkeypatch):
     assert response.json['usable_bytes'] == 0
     assert 'Zuordnung' in response.json['message']
     assert 'name="ignore_storage_check" value="manual-confirmed" disabled' not in page
+
+
+@pytest.mark.parametrize('code', [errno.ENOSPC, errno.EDQUOT])
+def test_storage_creation_failure_has_controlled_response(env, code):
+    _, client, _ = env
+    login(client, 'marketing')
+    with patch('app.web.Library.create', side_effect=OSError(code, 'storage failure')):
+        response = client.post('/library', data={'csrf': token(client), 'name': 'Test'},
+                               headers={'Accept': 'application/json'})
+    assert response.status_code == 507
+    assert response.json['ok'] is False
+    assert 'Hub-Speicher' in response.json['error']
