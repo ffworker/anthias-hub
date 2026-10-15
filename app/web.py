@@ -167,7 +167,7 @@ def create_app(config=None):
             archive = library().export_file(template_id)
         except LibraryError:
             abort(404)
-        return send_file(io.BytesIO(archive), mimetype='application/zip', as_attachment=True,
+        return send_file(archive, mimetype='application/zip', as_attachment=True,
                          download_name='anthias-playlist-' + template_id + '.zip')
 
     @app.post('/library/<template_id>/url')

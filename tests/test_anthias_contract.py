@@ -1,5 +1,6 @@
 import io
 import pytest
+from unittest.mock import patch
 from app.anthias import Anthias, PlayerError
 
 
@@ -103,15 +104,19 @@ def test_upload_uses_the_upstream_multipart_field():
     client, recorder = anthias_with_recording_http()
     storage = io.BytesIO(b'fake-png')
 
-    result = client.upload(storage, 'photo.png', 'image/png')
+    # Storage must be checked before any upload, then a streaming encoder is
+    # sent with the exact upstream field name; no eager requests(files=...)
+    with patch.object(client, 'info', return_value={'free_space': '10.0 GB'}):
+        result = client.upload(storage, 'photo.png', 'image/png')
 
     assert result == {'uri': '/data/anthias_assets/upload.tmp', 'ext': '.png'}
     method, url, kwargs = recorder.calls[0]
     assert (method, url) == ('POST', 'http://player.example/api/v2/file_asset')
-    assert kwargs['json'] is None
-    assert kwargs['files'] == {
-        'file_upload': ('photo.png', storage, 'image/png'),
-    }
+    assert 'files' not in kwargs
+    assert kwargs['data'].content_type.startswith('multipart/form-data')
+    assert 'name="file_upload"' in kwargs['data'].to_string().decode('latin1')
+    assert kwargs['headers']['Content-Type'] == kwargs['data'].content_type
+
 
 
 def test_create_requires_asset_id_before_reporting_success():

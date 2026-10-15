@@ -16,7 +16,8 @@ from app.storage import GIB, MAX_MEDIA_BYTES, capacity
 def test_capacity_conservative_headroom(raw, minimum, maximum):
     result = capacity({'free_space': raw})
     assert minimum <= result['usable_bytes'] <= maximum
-    assert result['free_bytes'] - result['usable_bytes'] >= 2 * GIB
+    assert result['reserve_bytes'] >= 2 * GIB
+    assert result['usable_bytes'] <= max(0, result['free_bytes'] - result['reserve_bytes'])
 
 
 @pytest.mark.parametrize('value', [None, '', '-2 GB', 'unknown', 'NaN GB', '1e9 GB', 1234, '300%'])

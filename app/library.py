@@ -101,6 +101,7 @@ class Library:
         except ValueError as exc:
             raise LibraryError(str(exc)) from exc
         title = _title(name)
+        self.get(ident)  # fail before creating any media directory for an invalid template
         directory = self._directory(ident)
         media_dir = directory / 'media'
         media_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
