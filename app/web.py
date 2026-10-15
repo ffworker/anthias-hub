@@ -164,7 +164,7 @@ def create_app(config=None):
     @login_required()
     def library_export(template_id):
         try:
-            archive = library().export(template_id)
+            archive = library().export_file(template_id)
         except LibraryError:
             abort(404)
         return send_file(io.BytesIO(archive), mimetype='application/zip', as_attachment=True,

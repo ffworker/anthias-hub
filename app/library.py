@@ -12,12 +12,14 @@ from pathlib import Path, PurePosixPath
 from threading import RLock
 
 from .anthias import validate_duration, validate_website_url
+from .storage import MAX_MEDIA_BYTES, MAX_REQUEST_BYTES
 
 _lock = RLock()
 _ID = re.compile(r'^[a-f0-9]{32}$')
 _MEDIA = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.mp4': 'video/mp4'}
-MAX_MEDIA = 50 * 1024 * 1024
-MAX_ARCHIVE = 250 * 1024 * 1024
+MAX_MEDIA = MAX_MEDIA_BYTES
+MAX_ARCHIVE = MAX_REQUEST_BYTES - 2 * 1024 * 1024
+COPY_CHUNK = 256 * 1024
 
 
 class LibraryError(ValueError):
@@ -99,25 +101,49 @@ class Library:
         except ValueError as exc:
             raise LibraryError(str(exc)) from exc
         title = _title(name)
-        data = stream.read(max_bytes + 1)
-        if len(data) > max_bytes or not _signature(data[:16], ext):
-            raise LibraryError('Datei zu groß oder Dateiformat ungültig')
-        with _lock:
-            collection = self.get(ident)
-            if len(collection['items']) >= 100:
-                raise LibraryError('Maximal 100 Inhalte je Vorlage')
-            relative = 'media/' + hashlib.sha256(data).hexdigest() + ext
+        directory = self._directory(ident)
+        media_dir = directory / 'media'
+        media_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        temp_name = None
+        try:
+            digest = hashlib.sha256()
+            head = b''
+            amount = 0
+            with tempfile.NamedTemporaryFile(dir=media_dir, delete=False) as temp:
+                temp_name = Path(temp.name)
+                while True:
+                    block = stream.read(COPY_CHUNK)
+                    if not block:
+                        break
+                    amount += len(block)
+                    if amount > max_bytes:
+                        raise LibraryError('Datei zu groß (max. 1 GiB)')
+                    if len(head) < 16:
+                        head += block[:16 - len(head)]
+                    digest.update(block)
+                    temp.write(block)
+                temp.flush()
+                os.fsync(temp.fileno())
+            if not amount or not _signature(head, ext):
+                raise LibraryError('Dateiformat ungültig oder Datei leer')
+            relative = 'media/' + digest.hexdigest() + ext
             dest = self._directory(ident) / relative
-            dest.parent.mkdir(mode=0o700, exist_ok=True)
-            if not dest.exists():
-                with tempfile.NamedTemporaryFile(dir=dest.parent, delete=False) as temp:
-                    temp.write(data)
-                    temp_name = temp.name
-                os.chmod(temp_name, 0o600)
-                os.replace(temp_name, dest)
-            collection['items'].append({'id': uuid.uuid4().hex, 'kind': 'media', 'name': title, 'file': relative, 'duration': seconds})
-            self._save(collection)
-        return collection
+            with _lock:
+                collection = self.get(ident)
+                if len(collection['items']) >= 100:
+                    raise LibraryError('Maximal 100 Inhalte je Vorlage')
+                if not dest.exists():
+                    os.chmod(temp_name, 0o600)
+                    os.replace(temp_name, dest)
+                    temp_name = None
+                collection['items'].append({
+                    'id': uuid.uuid4().hex, 'kind': 'media', 'name': title,
+                    'file': relative, 'duration': seconds})
+                self._save(collection)
+            return collection
+        finally:
+            if temp_name is not None:
+                temp_name.unlink(missing_ok=True)
 
     def media_path(self, ident, item):
         relative = item.get('file', '')
@@ -126,12 +152,24 @@ class Library:
         return self._directory(ident) / relative
 
     def verified_media_path(self, ident, item):
+        """Verify large stored files with bounded memory."""
         path = self.media_path(ident, item)
         try:
-            content = path.read_bytes()
+            if path.stat().st_size > MAX_MEDIA or path.stat().st_size <= 0:
+                raise LibraryError('Vorlagenmedium beschädigt oder zu groß')
+            digest = hashlib.sha256()
+            head = b''
+            with path.open('rb') as stream:
+                while True:
+                    chunk = stream.read(COPY_CHUNK)
+                    if not chunk:
+                        break
+                    if len(head) < 16:
+                        head += chunk[:16 - len(head)]
+                    digest.update(chunk)
         except OSError as exc:
             raise LibraryError('Vorlagenmedium fehlt oder ist nicht lesbar') from exc
-        if len(content) > MAX_MEDIA or hashlib.sha256(content).hexdigest() != path.stem or not _signature(content[:16], path.suffix):
+        if digest.hexdigest() != path.stem or not _signature(head, path.suffix):
             raise LibraryError('Vorlagenmedium beschädigt oder verändert')
         return path
 
@@ -180,73 +218,114 @@ class Library:
                 raise LibraryError('Vorlage konnte nicht vollständig gelöscht werden. Bibliothek prüfen.') from exc
         return collection
 
-    def export(self, ident):
+    def export_file(self, ident):
+        """Create ZIP on disk, not in RAM; caller owns the returned file."""
         collection = self.get(ident)
-        output = io.BytesIO()
-        with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as z:
-            z.writestr('manifest.json', json.dumps({k: collection[k] for k in ('version', 'name', 'items')}, ensure_ascii=False))
-            for filename in {item['file'] for item in collection['items'] if item['kind'] == 'media'}:
-                path = self.verified_media_path(ident, {'file': filename})
-                z.write(path, filename)
-        return output.getvalue()
+        output = tempfile.TemporaryFile(mode='w+b')
+        try:
+            with zipfile.ZipFile(output, 'w', zipfile.ZIP_STORED, allowZip64=True) as z:
+                z.writestr('manifest.json', json.dumps(
+                    {k: collection[k] for k in ('version', 'name', 'items')},
+                    ensure_ascii=False))
+                for filename in {item['file'] for item in collection['items'] if item['kind'] == 'media'}:
+                    path = self.verified_media_path(ident, {'file': filename})
+                    z.write(path, filename)
+            output.seek(0)
+            return output
+        except Exception:
+            output.close()
+            raise
+
+    def export(self, ident):
+        """Small-export compatibility helper; web responses use export_file."""
+        with self.export_file(ident) as output:
+            return output.read()
 
     def import_zip(self, source):
-        try:
-            with zipfile.ZipFile(source) as z:
-                entries = z.infolist()
-                names = [info.filename for info in entries]
-                if 'manifest.json' not in names:
-                    raise LibraryError('Kein Anthias-Hub-Vorlagenbackup: manifest.json fehlt. Für eigene Bilder/Videos bitte „Medien-ZIP importieren“ wählen.')
-                if (len(entries) > 102 or len(set(names)) != len(names)
-                        or sum(info.file_size for info in entries) > MAX_ARCHIVE
-                        or any(info.is_dir() or info.flag_bits & 0x1 or info.filename.startswith('/')
-                               or '..' in PurePosixPath(info.filename).parts for info in entries)):
-                    raise LibraryError('Archiv ist zu groß oder enthält ungültige Pfade')
-                if z.getinfo('manifest.json').file_size > 100_000:
-                    raise LibraryError('Manifest zu groß')
-                raw = z.read('manifest.json')
-                manifest = json.loads(raw)
-                if not isinstance(manifest, dict) or manifest.get('version') != 1 or not isinstance(manifest.get('items'), list) or len(manifest['items']) > 100:
-                    raise LibraryError('Nicht unterstütztes Vorlagenformat')
-                clean = []
-                media = {}
-                for item in manifest['items']:
-                    name = _title(item['name'])
-                    kind = item['kind']
-                    if kind == 'url':
-                        clean.append({'id': uuid.uuid4().hex, 'kind': 'url', 'name': name,
-                                      'url': validate_website_url(item['url']), 'duration': validate_duration(item['duration'])})
-                    elif kind == 'media':
-                        relative = item['file']
-                        # The archive must carry the exact digest-named binary, not a Pi-only URI.
-                        self.media_path('0' * 32, {'file': relative})
-                        if relative not in names:
-                            raise LibraryError('Archiv enthält nicht alle Mediendateien')
-                        data = z.read(relative)
-                        ext = Path(relative).suffix.lower()
-                        if (len(data) > MAX_MEDIA or hashlib.sha256(data).hexdigest() != Path(relative).stem
-                                or not _signature(data[:16], ext)):
-                            raise LibraryError('Mediendatei beschädigt oder zu groß')
-                        media[relative] = data
-                        seconds = 0 if ext == '.mp4' else validate_duration(item['duration'])
-                        clean.append({'id': uuid.uuid4().hex, 'kind': 'media', 'name': name, 'file': relative, 'duration': seconds})
-                    else:
-                        raise LibraryError('Unbekannter Inhaltstyp')
-                if set(names) != {'manifest.json', *media}:
-                    raise LibraryError('Unerwartete Dateien im Archiv')
-                title = _title(manifest['name'])
-        except LibraryError:
-            raise
-        except (zipfile.BadZipFile, KeyError, TypeError, ValueError, UnicodeError, RuntimeError) as exc:
-            raise LibraryError('Ungültiges Playlist-Archiv') from exc
-        with _lock:
-            result = self.create(title)
-            directory = self._directory(result['id'])
-            for relative, data in media.items():
-                (directory / 'media').mkdir(mode=0o700, exist_ok=True)
-                target = directory / relative
-                target.write_bytes(data)
-                os.chmod(target, 0o600)
-            result['items'] = clean
-            self._save(result)
-        return result
+        """Verify and stage the archive with bounded memory before publishing."""
+        self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        with tempfile.TemporaryDirectory(dir=self.root, prefix='.restore-') as staged:
+            stage = Path(staged)
+            try:
+                with zipfile.ZipFile(source) as z:
+                    entries = z.infolist()
+                    names = [info.filename for info in entries]
+                    if 'manifest.json' not in names:
+                        raise LibraryError('Kein Anthias-Hub-Vorlagenbackup: manifest.json fehlt. Für eigene Bilder/Videos bitte „Medien-ZIP importieren“ wählen.')
+                    if (len(entries) > 102 or len(set(names)) != len(names)
+                            or sum(info.file_size for info in entries) > MAX_ARCHIVE
+                            or any(info.is_dir() or info.flag_bits & 0x1
+                                   or info.filename.startswith('/')
+                                   or '..' in PurePosixPath(info.filename).parts for info in entries)):
+                        raise LibraryError('Archiv ist zu groß oder enthält ungültige Pfade')
+                    if z.getinfo('manifest.json').file_size > 100_000:
+                        raise LibraryError('Manifest zu groß')
+                    manifest = json.loads(z.read('manifest.json'))
+                    if (not isinstance(manifest, dict) or manifest.get('version') != 1
+                            or not isinstance(manifest.get('items'), list)
+                            or len(manifest['items']) > 100):
+                        raise LibraryError('Nicht unterstütztes Vorlagenformat')
+                    clean = []
+                    media = {}
+                    for item in manifest['items']:
+                        name = _title(item['name'])
+                        kind = item['kind']
+                        if kind == 'url':
+                            clean.append({
+                                'id': uuid.uuid4().hex, 'kind': 'url',
+                                'name': name, 'url': validate_website_url(item['url']),
+                                'duration': validate_duration(item['duration'])})
+                        elif kind == 'media':
+                            relative = item['file']
+                            self.media_path('0' * 32, {'file': relative})
+                            if relative not in names:
+                                raise LibraryError('Archiv enthält nicht alle Mediendateien')
+                            if relative not in media:
+                                dest = stage / relative
+                                dest.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+                                digest = hashlib.sha256()
+                                head = b''
+                                size = 0
+                                with z.open(relative) as reader, dest.open('wb') as writer:
+                                    while True:
+                                        chunk = reader.read(COPY_CHUNK)
+                                        if not chunk:
+                                            break
+                                        size += len(chunk)
+                                        if size > MAX_MEDIA:
+                                            raise LibraryError('Mediendatei beschädigt oder zu groß')
+                                        if len(head) < 16:
+                                            head += chunk[:16 - len(head)]
+                                        digest.update(chunk)
+                                        writer.write(chunk)
+                                ext = Path(relative).suffix.lower()
+                                if (size != z.getinfo(relative).file_size
+                                        or digest.hexdigest() != Path(relative).stem
+                                        or not _signature(head, ext)):
+                                    raise LibraryError('Mediendatei beschädigt oder zu groß')
+                                media[relative] = dest
+                            ext = Path(relative).suffix.lower()
+                            seconds = 0 if ext == '.mp4' else validate_duration(item['duration'])
+                            clean.append({'id': uuid.uuid4().hex, 'kind': 'media', 'name': name,
+                                          'file': relative, 'duration': seconds})
+                        else:
+                            raise LibraryError('Unbekannter Inhaltstyp')
+                    if set(names) != {'manifest.json', *media}:
+                        raise LibraryError('Unerwartete Dateien im Archiv')
+                    title = _title(manifest['name'])
+            except LibraryError:
+                raise
+            except (zipfile.BadZipFile, KeyError, TypeError, ValueError, UnicodeError, RuntimeError,
+                    OSError, EOFError) as exc:
+                raise LibraryError('Ungültiges Playlist-Archiv') from exc
+            with _lock:
+                result = self.create(title)
+                directory = self._directory(result['id'])
+                for relative, source_path in media.items():
+                    target = directory / relative
+                    target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+                    os.replace(source_path, target)
+                    os.chmod(target, 0o600)
+                result['items'] = clean
+                self._save(result)
+            return result
