@@ -177,3 +177,76 @@ body{background:radial-gradient(ellipse 65% 420px at 74% -165px,#224551,transpar
   .fleet-settings-content{padding-left:18px;padding-right:18px}
 }
 @media(prefers-reduced-motion:reduce){.fleet-device{transition:none}.settings-chevron{transition:none}}
+
+
+/* On-device operations: visible to IT, deliberately quiet for Marketing. */
+.fleet-device:has(.fleet-remote) .fleet-open{margin:auto 0 0!important}
+.fleet-device .fleet-remote{
+  margin:11px -23px 0;padding:0;border:0;
+  border-top:1px solid #334859;color:#c9dbe3
+}
+.fleet-remote>summary{
+  display:flex;align-items:center;gap:9px;list-style:none;
+  cursor:pointer;min-height:44px;box-sizing:border-box;padding:12px 23px;
+  font-size:12px;font-weight:650;color:#c6e3dd
+}
+.fleet-remote>summary::-webkit-details-marker{display:none}
+.fleet-remote>summary:hover{color:#b7fff0;background:#1b303f}
+.fleet-remote>summary:focus-visible{outline:2px solid #82e5ce;outline-offset:-3px}
+.fleet-remote-arrow{margin-left:auto}
+.fleet-remote-body{padding:14px 23px 19px;background:#102031;border-top:1px solid #304654}
+.fleet-remote-note{
+  font-size:11px;line-height:1.6;color:#b2c6d4;margin:0 0 13px
+}
+.fleet-remote-form{display:grid;gap:11px;margin:0}
+.fleet-remote-ack{display:flex;align-items:flex-start;gap:9px;margin:0;
+  font-size:11px;line-height:1.6;color:#d6e5e8;cursor:pointer}
+.fleet-remote-ack strong{font-size:inherit}
+.fleet-remote-ack input[type=checkbox]{flex:none;box-sizing:border-box;
+  margin:2px 0 0;width:18px;min-height:18px;accent-color:#85e9d0}
+.fleet-remote-buttons{display:flex;flex-wrap:wrap;gap:7px}
+.fleet-remote-buttons button,.fleet-remote-reboot{
+  flex:1 1 auto;min-height:39px;padding:8px 10px;
+  border:1px solid #46786f;border-radius:9px;
+  background:#1f4246;color:#e7faf5;
+  font-weight:650;font-size:11px;white-space:normal
+}
+.fleet-remote-buttons button:hover,.fleet-remote-reboot:hover{
+  border-color:#84e9d3;background:#305650
+}
+.fleet-remote-shutdown{
+  margin:15px 0 0;padding:14px 0 0;border:0;
+  border-top:1px solid #524753
+}
+.fleet-remote-shutdown>summary{
+  color:#e6b1bc;font-size:11px;cursor:pointer
+}
+.fleet-remote-shutdown>summary:focus-visible{outline:2px solid #eab5c0}
+.fleet-remote-shutdown form{display:grid;gap:10px;margin:11px 0 0}
+.fleet-remote-shutdown form p{margin:0;color:#d2b3bc;font-size:11px;line-height:1.55}
+.fleet-remote-shutdown form label:not(.fleet-remote-ack){
+  display:block;color:#d6e2e6;font-size:11px;line-height:1.6;margin:0
+}
+.fleet-remote-shutdown form input[type=text]{
+  box-sizing:border-box;width:100%;min-height:40px;margin:6px 0 0;
+  padding:8px;border:1px solid #587584;border-radius:8px;
+  background:#0c1b2a;color:#eaf7fa
+}
+.fleet-remote-shutdown .danger-btn{
+  min-height:40px;margin:0;color:#fff;border-radius:9px;
+  background:#803947;border:1px solid #be6c7c
+}
+.fleet-remote-marketing>summary{
+  color:#94aebc;font-weight:500;font-size:11px
+}
+.fleet-remote-marketing .fleet-remote-body{
+  background:#132333
+}
+.fleet-remote-marketing .fleet-remote-reboot{
+  justify-self:start;padding:8px 15px
+}
+.fleet-remote-it + .fleet-settings{margin:0 -23px}
+@media(max-width:490px){
+  .fleet-remote-buttons{display:grid;grid-template-columns:1fr 1fr}
+  .fleet-remote-buttons button:last-child{grid-column:1/-1}
+}
