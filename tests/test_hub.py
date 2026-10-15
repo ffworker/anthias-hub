@@ -1668,3 +1668,29 @@ def test_ui_refresh_pages_have_well_nested_rendered_markup(env):
             assert not checker.errors, f'{role} {url}: {checker.errors[:5]}'
             assert not checker.stack, f'{role} {url}: unclosed {checker.stack[-5:]}'
         client.post('/logout', data={'csrf': token(client)})
+
+
+def test_floating_device_menus_are_role_scoped_and_safe(env):
+    _, client, _ = env
+    login(client, 'it')
+    dashboard = client.get('/').get_data(as_text=True)
+    assert 'fleet-popovers.js' in dashboard
+    assert 'Gerätesteuerung schließen' in dashboard
+    assert 'Geräteverwaltung schließen' in dashboard
+    assert 'data-close-fleet-menu' in dashboard
+    assert 'name="name_confirmation"' in dashboard
+    assert 'name="action" value="shutdown"' in dashboard
+
+    client.post('/logout', data={'csrf': token(client)})
+    login(client, 'marketing')
+    dashboard = client.get('/').get_data(as_text=True)
+    assert 'fleet-popovers.js' in dashboard
+    assert 'Hilfe-Menü schließen' in dashboard
+    assert 'Geräteverwaltung schließen' not in dashboard
+    assert 'name="action" value="shutdown"' not in dashboard
+
+    client.post('/logout', data={'csrf': token(client)})
+    login(client, 'viewer')
+    dashboard = client.get('/').get_data(as_text=True)
+    assert 'fleet-popovers.js' not in dashboard
+    assert 'data-close-fleet-menu' not in dashboard
