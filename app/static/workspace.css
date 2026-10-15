@@ -389,3 +389,14 @@ html.fleet-popovers-ready .fleet-settings-content .fleet-danger-zone{margin-top:
   .fleet-device-actions{gap:6px}
   .fleet-device-actions>details>summary{font-size:11px;padding:9px 6px}
 }
+
+/* Flyout heading with visible, keyboard-operable close control. */
+.fleet-panel-head{display:flex;align-items:flex-start;gap:12px;min-width:0;
+  margin:0 0 13px;border-bottom:1px solid #38515a;padding-bottom:11px}
+.fleet-panel-head .fleet-panel-title{flex:1;min-width:0;margin:0;padding:0;border:0}
+.fleet-panel-close{display:grid;place-items:center;flex:0 0 38px;
+  box-sizing:border-box;width:38px;min-height:38px;padding:8px;
+  background:#1d3945;border:1px solid #466774;border-radius:10px;
+  color:#d6edeb;box-shadow:none}
+.fleet-panel-close:hover{background:#294c50;border-color:#8ee6cf}
+.fleet-panel-close .icon{width:18px;height:18px}
