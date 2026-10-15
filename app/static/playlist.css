@@ -615,6 +615,7 @@ body.studio-drawer-open{overflow:hidden}
 
 /* Readable editing metadata across narrow viewports. */
 .playlist-studio-v2 .asset-body .asset-meta{font-size:12px}
+.playlist-studio-v2 .asset-side .pill{font-size:11px}
 .playlist-studio-v2 .asset-edit-hint{font-size:12px}
 .playlist-workspace .playlist-overview,.playlist-workspace .overview-note{font-size:12px}
 .playlist-studio-v2 .composer-explainer,.playlist-workspace .composer-footnote{font-size:12px}
