@@ -328,3 +328,5 @@
   .library-item-copy{flex-basis:calc(100% - 130px)}
   .template-options-panel,.library-item-options-menu{max-width:calc(100vw - 36px)}
 }
+
+.library-item-actions>form button .icon{width:16px;height:16px}
