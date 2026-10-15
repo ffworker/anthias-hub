@@ -63,6 +63,10 @@
   }
 
   pairs.forEach((entry) => {
+    entry.panel.querySelector('[data-close-fleet-menu]')?.addEventListener('click', () => {
+      entry.menu.open = false;
+      entry.trigger.focus();
+    });
     entry.menu.addEventListener('toggle', () => {
       if (entry.menu.open) {
         pairs.forEach(other => {
