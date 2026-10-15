@@ -5,13 +5,13 @@ the first side effect, then verify each decompressed file's size and signature.
 """
 import re
 import stat
-import tempfile
 import zipfile
 from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
 from werkzeug.utils import secure_filename
 
+from .upload_disk import GuardedTemporaryFile
 from .anthias import PlayerError
 from .library import MAX_MEDIA, _MEDIA, _signature
 
@@ -99,8 +99,8 @@ def _title_and_filename(raw_name):
 
 
 def _verified_stream(source, expected_size=None, max_bytes=MAX_MEDIA):
-    """Validate while streaming; small inputs in RAM, larger ones in /tmp."""
-    with tempfile.SpooledTemporaryFile(max_size=1024 * 1024, mode='w+b') as output:
+    """Validate with bounded chunks into guarded disk storage."""
+    with GuardedTemporaryFile() as output:
         amount = 0
         head = b''
         while True:

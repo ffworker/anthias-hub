@@ -1,5 +1,13 @@
 # Changelog
 
+## Upload storage safety
+
+- Root-FS readings no longer automatically claim media-mount capacity. Explicit operator topology verification is required; known shortage always blocks manual override.
+- Pi capacity budgets two temporary copies plus reserve; locale rounding is consistent.
+- Incoming media and library/backup writes retain 1 GiB of Hub disk headroom, clean up failed multipart parsing, and refuse an invalid explicit TMPDIR fallback.
+- Backup exports cannot exceed the restore content limit. The per-file cap stays 1 GiB pending the documented 4-GiB qualification.
+- See [end-to-end audit and rollout](docs/large-upload-audit.md) for proxy settings, recovery and acceptance criteria.
+
 ## Large media and player disk safeguards (unreleased)
 
 - Single MP4 uploads can reach 1 GiB; local-library persistence, verification and ZIP backups use disk-backed streaming rather than loading videos in RAM.

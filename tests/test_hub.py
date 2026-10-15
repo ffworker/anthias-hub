@@ -20,6 +20,7 @@ class FakeAnthias:
     ]
     def __init__(self, device):
         self.device=device
+        self.url=device["url"]
     def assets(self):
         return list(self.assets_data)
     def create(self, *args, **kwargs):
@@ -47,7 +48,8 @@ class FakeAnthias:
 
 
 @pytest.fixture()
-def env():
+def env(monkeypatch):
+    monkeypatch.setenv("ANTHIAS_VERIFIED_STORAGE_URLS", "http://127.0.0.1:9999")
     FakeAnthias.changes=[]
     with tempfile.TemporaryDirectory() as tmp:
         users = Path(tmp) / 'users.json'
@@ -1828,3 +1830,16 @@ def test_single_upload_forwards_manual_acknowledgement(env):
             content_type='multipart/form-data')
     assert no_ack.status_code == 302 and ack.status_code == 302
     assert calls == [None, True]
+
+
+def test_storage_endpoint_does_not_claim_root_is_media(env, monkeypatch):
+    _, client, _ = env
+    login(client, 'marketing')
+    monkeypatch.setenv('ANTHIAS_VERIFIED_STORAGE_URLS', '')
+    with patch.object(FakeAnthias, 'info', return_value={'free_space': '20.0 GB'}, create=True):
+        response = client.get('/devices/lab/storage')
+        page = client.get('/devices/lab').data.decode()
+    assert response.json['status'] == 'unknown'
+    assert response.json['usable_bytes'] == 0
+    assert 'Zuordnung' in response.json['message']
+    assert 'name="ignore_storage_check" value="manual-confirmed" disabled' not in page

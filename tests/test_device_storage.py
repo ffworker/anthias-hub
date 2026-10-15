@@ -110,3 +110,51 @@ def test_known_insufficient_space_still_blocks_with_override():
             api.upload(io.BytesIO(b'test'), 'small.mp4', 'video/mp4',
                        allow_unknown_space=True)
     api.http.request.assert_not_called()
+
+
+@pytest.fixture(autouse=True)
+def verified_test_topology(monkeypatch):
+    monkeypatch.setenv('ANTHIAS_VERIFIED_STORAGE_URLS', 'http://127.0.0.1,http://10.0.0.42')
+
+
+def test_unverified_root_requires_override_even_with_plenty_of_space(monkeypatch):
+    monkeypatch.delenv('ANTHIAS_VERIFIED_STORAGE_URLS')
+    api = Anthias({'url': 'http://127.0.0.1'})
+    response = MagicMock(status_code=200, content=b'{}')
+    response.json.return_value = {'uri': '/media/test.tmp'}
+    api.http.request = MagicMock(return_value=response)
+    with patch.object(api, 'info', return_value={'free_space': '10.0 GB'}):
+        with pytest.raises(PlayerError, match='Zuordnung'):
+            api.upload(io.BytesIO(b'test'), 'x.mp4', 'video/mp4')
+        api.http.request.assert_not_called()
+        api.upload(io.BytesIO(b'test'), 'x.mp4', 'video/mp4', allow_unknown_space=True)
+    assert api.http.request.call_count == 1
+
+
+def test_double_copy_preflight_blocks_before_transfer_even_with_override(monkeypatch):
+    # Exactly one file fits above the reserve, but Django needs two copies.
+    class SizedStream(io.BytesIO):
+        def seek(self, offset, whence=0):
+            if whence == 2:
+                return super().seek(GIB)
+            return super().seek(offset, whence)
+    api = Anthias({'url': 'http://127.0.0.1'})
+    api.http.request = MagicMock()
+    for configured in ('http://127.0.0.1', ''):
+        monkeypatch.setenv('ANTHIAS_VERIFIED_STORAGE_URLS', configured)
+        with patch.object(api, 'info', return_value={'free_space': 3 * GIB}):
+            with pytest.raises(PlayerError, match='zwei Dateikopien'):
+                api.upload(SizedStream(b'test'), 'x.mp4', 'video/mp4', allow_unknown_space=True)
+    api.http.request.assert_not_called()
+
+
+def test_capacity_locale_rounding_is_identical():
+    assert capacity({'free_space': '15,0 GB'})['free_bytes'] == capacity({'free_space': '15.0 GB'})['free_bytes']
+
+
+def test_upload_capacity_requires_exact_verified_url(monkeypatch):
+    from app.storage import upload_capacity
+    monkeypatch.setenv('ANTHIAS_VERIFIED_STORAGE_URLS', 'http://192.168.1.10/')
+    assert upload_capacity({'free_space': 8 * GIB}, 'http://192.168.1.10')['usable_bytes'] == 3 * GIB
+    assert upload_capacity({'free_space': 8 * GIB}, 'http://192.168.1.100') is None
+    assert upload_capacity({'free_space': GIB}, 'http://192.168.1.100')['usable_bytes'] == 0
