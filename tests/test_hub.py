@@ -1729,21 +1729,21 @@ def test_owner_has_both_roles_without_expanding_existing_role_grants(env):
 
 
 def test_player_capacity_is_visible_without_exposing_device_admin_controls(env):
-    _, client, _ = env
+    app, client, _ = env
     login(client, 'marketing')
     with patch.object(FakeAnthias, 'info', return_value={'free_space': '6.0 GB'}, create=True):
         dash = client.get('/').data.decode('utf-8')
         playlist = client.get('/devices/lab').data.decode('utf-8')
-    assert 'Speicher:' in dash and '6.0 GB frei' in dash
-    assert 'GiB Reserve' in dash
-    assert 'Anthias-Speicher:' in playlist
+    assert 'fleet-storage-menu' in dash
+    assert '6.0 GB' in dash and 'Sicherheitsreserve' in dash
+    assert 'GiB für Uploads verfügbar' in playlist
     assert 'data-player-available="' in playlist
-    assert 'Sicherheitsreserve' in playlist
+    assert 'storage-note' not in playlist
 
-    # Fail closed in the UI when the player has no readable storage field.
     no_disk = client.get('/devices/lab').data.decode('utf-8')
-    assert 'Speicherplatz nicht verfügbar' in no_disk
+    assert 'Speicher nicht verfügbar' in no_disk
     assert 'data-player-available="0"' in no_disk
+
 
 
 def test_storage_menu_is_small_and_only_shows_detail_on_demand(env):
