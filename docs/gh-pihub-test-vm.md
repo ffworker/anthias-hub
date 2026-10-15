@@ -2,6 +2,8 @@
 
 This is a **disposable test/staging VM** procedure for Debian 13 with Docker Engine + Compose plugin, Git, curl, OpenSSL and OpenSSH. It is **not** the approved production release workflow. The apps remain entirely independent: separate Git repos, Compose projects, credentials, data and backups. This script does **not** install system packages, adjust SSH/network settings, fetch new code into existing checkouts, auto-approve releases, delete anything, or install systemd CD timers.
 
+**SSH access:** New installations should use a non-root administrator with a Windows ED25519 key and a short `ssh gh-pihub` alias. Set this up, and harden SSH only **after verifying key login**, using [SSH access & VM hardening](ssh-access.md). The existing root-owned throwaway VM needs deliberate migration; do not disable its only working SSH/admin path blindly.
+
 ## Existing VM (both repositories already cloned)
 
 Assuming `~/apps/anthias-hub` and `~/apps/rss2slideshow` are siblings, as on GH-PiHub:
@@ -24,8 +26,9 @@ Before running `deploy`, **edit/review** RSS `.env`, `config.yaml` and `content/
 ## Fresh test VM (new clean machine)
 
 1. Configure a **unique, stable IP / DHCP reservation**, verify no duplicate address, working DNS, NTP and VM console. The SSH host fingerprint changing after a disconnection may be a network/IP issue; never bypass SSH host-key validation.
-2. Install Docker Engine + Compose plugin from Docker's official Debian instructions. Check `docker version`, `docker compose version`, `docker info`. Avoid duplicate Docker APT repository entries with conflicting `Signed-By` keys. Ensure `git curl openssl openssh-client` are installed.
-3. Use one operator account consistently for Git and the private deploy key. Docker daemon access is effectively root-level; do not grant it broadly.
+2. **Before cloning apps**, provision a non-root administrative account (e.g. `hubadmin`) with sudo, install its authorized Windows-PC ED25519 key, verify a key-only second login, then disable SSH root/password auth and restrict the SSH firewall: [copy-paste Windows + VM guide](ssh-access.md). Keep console access throughout. Use `~/apps/` owned by that account, **not** `/root/apps/`.
+3. Install Docker Engine + Compose plugin from Docker's official Debian instructions. Check `docker version`, `docker compose version`, `docker info`. Avoid duplicate Docker APT repository entries with conflicting `Signed-By` keys. Ensure `git curl openssl openssh-client` are installed.
+4. Use one operator account consistently for Git and the **separate VM-to-GitHub RSS deploy key**. Docker daemon access (including the Docker group) is effectively root-level; do not grant it broadly.
 
 ```bash
 mkdir -p ~/apps && cd ~/apps
@@ -55,13 +58,14 @@ bash scripts/bootstrap-test-vm.sh status
 | Anthias Hub | `127.0.0.1:8765` | `anthias-hub` | `curl -fsS http://127.0.0.1:8765/healthz` |
 | RSS2Slideshow | `127.0.0.1:8085` by default (configurable) | `rss2slideshow` | `curl -fsS http://127.0.0.1:8085/healthz` and `/api/articles` |
 
-Hub over an SSH tunnel from the admin workstation:
+From the Windows admin workstation, after configuring [SSH key + aliases](ssh-access.md):
 
 ```powershell
-ssh -N -L 8765:127.0.0.1:8765 root@TEST_VM_IP
+ssh gh-pihub            # normal administrative shell, key authentication
+ssh -N gh-pihub-tunnel  # separate terminal: Hub 8765 + RSS 8085
 ```
 
-Then browse to http://localhost:8765. Neither default port listens on the VM's external interface. The **RSS kiosk page must be deliberately published on a reachable internal address** before the Anthias Pi can load it (internal reverse proxy, or a carefully constrained bind/network path). Keep `/admin` protected; do not expose Hub, RSS admin access or Pi management APIs broadly. Test authentication, real RSS article freshness, the actual Pi playlist, and a complete TV loop. `/healthz` alone is insufficient.
+Then browse to http://127.0.0.1:8765 (Hub) and http://127.0.0.1:8085 (RSS). Neither default port listens on the VM's external interface. The **RSS kiosk page must be deliberately published on a reachable internal address** before the Anthias Pi can load it (internal reverse proxy, or a carefully constrained bind/network path). Keep `/admin` protected; do not expose Hub, RSS admin access or Pi management APIs broadly. Test authentication, real RSS article freshness, the actual Pi playlist, and a complete TV loop. `/healthz` alone is insufficient.
 
 For troubleshooting use:
 
