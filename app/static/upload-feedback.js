@@ -2,7 +2,7 @@
  * A 100% browser upload is not a completed Anthias transfer. */
 (() => {
   'use strict';
-  const limit = 50 * 1024 * 1024;
+  const limit = 1024 * 1024 * 1024;
   const goodExtensions = /\.(png|jpe?g|webp|mp4)$/i;
   const humanSize = (n) => n < 1024 * 1024
     ? (n / 1024).toFixed(0) + ' KB'
@@ -36,11 +36,20 @@
       if (!file || file.size > limit || !goodExtensions.test(file.name)) {
         event.preventDefault();
         setMessage(!file ? 'Bitte eine Datei auswählen.'
-          : file.size > limit ? 'Datei zu groß – höchstens 50 MB.'
+          : file.size > limit ? 'Datei zu groß – höchstens 1 GiB.'
           : 'Unterstützt werden PNG, JPG, WebP und MP4.', 'error');
         return;
       }
       event.preventDefault();
+      if (isPlayer) {
+        const usable = Number(form.dataset.playerAvailable || 0);
+        if (!Number.isSafeInteger(usable) || file.size > usable) {
+          setMessage(usable > 0
+            ? 'Nicht genügend freier Speicher auf Anthias unter Berücksichtigung der Sicherheitsreserve.'
+            : 'Speicherplatz des Players nicht zuverlässig lesbar. Upload gesperrt.', 'error');
+          return;
+        }
+      }
       const originalLabel = submit.textContent;
       busy = true;
       submit.disabled = true;
@@ -51,7 +60,7 @@
       const request = new XMLHttpRequest();
       request.open('POST', form.action);
       request.setRequestHeader('Accept', 'application/json');
-      request.timeout = 240000;
+      request.timeout = 2400000; // upload to Hub + potentially slow transfer to Pi
       request.upload.addEventListener('progress', (progress) => {
         if (!progress.lengthComputable) {
           setMessage('Datei wird an Anthias Hub übertragen …', 'progress');
@@ -79,7 +88,7 @@
           return;
         }
         setMessage(data?.error || (request.status === 413
-          ? 'Datei zu groß – höchstens 50 MB.'
+          ? 'Datei zu groß – höchstens 1 GiB.'
           : request.status === 401 || request.status === 403
             ? 'Sitzung abgelaufen oder kein Zugriff. Bitte neu anmelden.'
             : 'Speichern fehlgeschlagen. ' + (isPlayer

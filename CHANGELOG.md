@@ -1,5 +1,12 @@
 # Changelog
 
+## Large media and player disk safeguards (unreleased)
+
+- Single MP4 uploads can reach 1 GiB; local-library persistence, verification and ZIP backups use disk-backed streaming rather than loading videos in RAM.
+- Player storage status is shown from the Anthias `/api/v2/info` response, with an explicit reserve (minimum 2 GiB and 20% of reported free space) and fail-closed upload preflight.
+- Ordinary ZIP uploads keep conservative zip-bomb limits; multiple loose files can total at most 1 GiB; streamed player upload with extended timeouts.
+- **Still needs a real 600-MB video, Pi SD/mount-capacity and interrupted-upload pilot test.**
+
 ## Pilot validation notes — 2026-10-15
 
 - **User-reported practical confirmation:** Anthias Hub library import/export and the template-backup function are working in the current pilot installation.

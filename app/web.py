@@ -517,9 +517,15 @@ def create_app(config=None):
         statuses = {}
         for device in devices:
             try:
-                statuses[device['id']] = {'ok': True, 'count': len(Anthias(device).assets())}
+                api = Anthias(device)
+                items = api.assets()
+                try:
+                    storage = capacity(api.info())
+                except (PlayerError, AttributeError, TypeError, ValueError):
+                    storage = None
+                statuses[device['id']] = {'ok': True, 'count': len(items), 'storage': storage}
             except PlayerError:
-                statuses[device['id']] = {'ok': False, 'count': None}
+                statuses[device['id']] = {'ok': False, 'count': None, 'storage': None}
         return render_template('dashboard.html', devices=devices, statuses=statuses)
 
     @app.post('/devices')
@@ -626,6 +632,12 @@ def create_app(config=None):
             assets = api.assets()
         except PlayerError as exc:
             error = str(exc)
+        storage = None
+        if not error:
+            try:
+                storage = capacity(api.info())
+            except (PlayerError, AttributeError, TypeError, ValueError):
+                pass
         templates = []
         if not error and current_user()['role'] in ('marketing', 'owner'):
             try:
@@ -635,7 +647,7 @@ def create_app(config=None):
         return render_template('playlist.html', device=device, assets=assets,
                                library_templates=templates,
                                library_items_available=any(t.get('items') for t in templates),
-                               error=error)
+                               error=error, storage=storage)
 
     @app.get('/devices/<device_id>/assets/<asset_id>/preview')
     @login_required()

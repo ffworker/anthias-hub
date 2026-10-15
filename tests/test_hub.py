@@ -1723,3 +1723,6 @@ def test_owner_has_both_roles_without_expanding_existing_role_grants(env):
     assert client.post('/devices/lab/control', data={
         'csrf': token(client), 'action': 'reboot', 'confirm': 'lab', 'ack': 'yes'
     }).status_code == 403
+
+
+# Large-media boundaries and device capacity are exercised by test_device_storage.py.

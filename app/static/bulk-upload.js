@@ -42,8 +42,8 @@
       const archives = files.filter((file) => /\.zip$/i.test(file.name));
       if (!files.length || files.length > 20 || (archives.length && files.length !== 1) ||
           files.some((file) => !allowed.test(file.name)) ||
-          files.reduce((n, file) => n + file.size, 0) > 50 * MiB) {
-        showError('Bitte 1 ZIP allein oder bis zu 20 PNG/JPG/WebP/MP4 auswählen; maximal 50 MB Upload gesamt.');
+          files.reduce((n, file) => n + file.size, 0) > (archives.length ? 50 : 1024) * MiB) {
+        showError('Bitte 1 ZIP allein oder bis zu 20 PNG/JPG/WebP/MP4 auswählen; maximal 1 GiB Medien gesamt oder 50 MiB pro ZIP.');
         return;
       }
       inFlight = true;
@@ -58,7 +58,7 @@
       const xhr = new XMLHttpRequest();
       xhr.open('POST', form.action);
       xhr.setRequestHeader('Accept', 'application/json');
-      xhr.timeout = 350000;
+      xhr.timeout = 2400000;
       xhr.upload.addEventListener('progress', (e) => {
         if (!e.lengthComputable) {
           progressText.textContent = 'Dateien werden hochgeladen …';
@@ -81,7 +81,7 @@
         try { payload = JSON.parse(xhr.responseText); } catch (_) { /* HTML or error page */ }
         if (!payload || !Array.isArray(payload.results)) {
           showError(payload?.error || (xhr.status === 413
-            ? 'Upload zu groß (höchstens 50 MB gesamt).'
+            ? 'Upload zu groß (höchstens 1 GiB Medien oder 50 MiB ZIP).'
             : 'Import konnte nicht abgeschlossen werden. Ziel prüfen, bevor du erneut hochlädst.'));
           release();
           return;
