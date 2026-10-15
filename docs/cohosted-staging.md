@@ -1,12 +1,12 @@
-# GH-PiHub: repeatable two-app TEST VM bootstrap
+# Co-hosted staging: repeatable two-app TEST VM bootstrap
 
 This is a **disposable test/staging VM** procedure for Debian 13 with Docker Engine + Compose plugin, Git, curl, OpenSSL and OpenSSH. It is **not** the approved production release workflow. The apps remain entirely independent: separate Git repos, Compose projects, credentials, data and backups. This script does **not** install system packages, adjust SSH/network settings, fetch new code into existing checkouts, auto-approve releases, delete anything, or install systemd CD timers.
 
-**SSH access:** New installations should use a non-root administrator with an admin-workstation ED25519 key (PowerShell or Linux/macOS) and a short `ssh gh-pihub` alias. Set this up, and harden SSH only **after verifying key login**, using [SSH access & VM hardening](ssh-access.md). The existing root-owned throwaway VM needs deliberate migration; do not disable its only working SSH/admin path blindly.
+**SSH access:** New installations should use a non-root administrator with an admin-workstation ED25519 key (PowerShell or Linux/macOS) and a short `ssh signage-host` alias. Set this up, and harden SSH only **after verifying key login**, using [SSH access & VM hardening](ssh-access.md). The existing root-owned throwaway VM needs deliberate migration; do not disable its only working SSH/admin path blindly.
 
 ## Existing VM (both repositories already cloned)
 
-Assuming `~/apps/anthias-hub` and `~/apps/rss2slideshow` are siblings, as on GH-PiHub:
+Assuming `~/apps/anthias-hub` and `~/apps/rss2slideshow` are siblings, for example:
 
 ```bash
 cd ~/apps/anthias-hub
@@ -21,7 +21,7 @@ bash scripts/bootstrap-test-vm.sh status   # read-only compose/HTTP checks
 
 **If RSS startup reports `IsADirectoryError: '/app/config.yaml'`:** Docker encountered a missing host-side `config.yaml` and created a directory at that path. In the RSS checkout, stop only signage with `docker compose -p rss2slideshow stop signage`; run `ls -la config.yaml`. If this is an **empty directory**, run `rmdir config.yaml`, then `cp config.example.yaml config.yaml && chmod 600 config.yaml` and review the sample before restarting. If it is not empty, inspect and preserve its contents; do **not** use `rm -rf`. The bootstrap now rejects directories as config files, and RSS Compose disables auto-creation of that bind source. After repairing, `docker compose -p rss2slideshow up -d --build --force-recreate signage` refreshes the container bind mount.
 
-Before running `deploy`, **edit/review** RSS `.env`, `config.yaml` and `content/feeds.txt`; new samples are *not* the live Bistro settings. No RSS auto-updates are configured. Example feeds are not acceptable as a production acceptance test.
+Before running `deploy`, **edit/review** RSS `.env`, `config.yaml` and `content/feeds.txt`; new samples are *not* the live example site settings. No RSS auto-updates are configured. Example feeds are not acceptable as a production acceptance test.
 
 ## Fresh test VM (new clean machine)
 
@@ -61,8 +61,8 @@ bash scripts/bootstrap-test-vm.sh status
 From the Windows PowerShell or Linux/macOS admin workstation, choose the relevant expandable [SSH key + alias instructions](ssh-access.md):
 
 ```powershell
-ssh gh-pihub            # normal administrative shell, key authentication
-ssh -N gh-pihub-tunnel  # separate terminal: Hub 8765 + RSS 8085
+ssh signage-host            # normal administrative shell, key authentication
+ssh -N signage-host-tunnel  # separate terminal: Hub 8765 + RSS 8085
 ```
 
 Then browse to http://127.0.0.1:8765 (Hub) and http://127.0.0.1:8085 (RSS). Neither default port listens on the VM's external interface. The **RSS kiosk page must be deliberately published on a reachable internal address** before the Anthias Pi can load it (internal reverse proxy, or a carefully constrained bind/network path). Keep `/admin` protected; do not expose Hub, RSS admin access or Pi management APIs broadly. Test authentication, real RSS article freshness, the actual Pi playlist, and a complete TV loop. `/healthz` alone is insufficient.

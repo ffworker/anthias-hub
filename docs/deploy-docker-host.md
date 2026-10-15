@@ -3,7 +3,7 @@
 > **Disposable test system:** This page describes the current pilot. For a newly installed long-term VM, pinned images, explicit deployment approval and repeatable disaster recovery, follow **[Reproducible VM installation & controlled releases](reproducible-production.md)**. Do not carry test credentials or the existing `:main` auto-update timer into the new production VM.
 
 
-This is a **test installation only**. The operator has confirmed that an existing Pi's playlist loads in the hub; mutations and broad deployment remain unverified. It must **not** modify the existing RSS2Slideshow
+This is a **test installation only**. The operator has confirmed that an existing Pi's playlist loads in the hub; mutations and broad deployment remain unverified. It must **not** modify the another application's
 repository or Compose stack. Anthias player endpoints and their API semantics must
 be verified against your actual test Pi before making any playlist changes.
 
@@ -13,7 +13,7 @@ Public source: https://github.com/ffworker/anthias-hub . Never publish `.env`, `
 
 ## 1. Check host and Pi route (read-only)
 
-First configure a **non-root SSH administrator, verified ED25519 key and a host alias** (see [SSH & VM hardening](ssh-access.md)); on a PowerShell or Linux/macOS admin client use `ssh gh-pihub` instead of SSH root/password authentication. On the Linux VM, run:
+First configure a **non-root SSH administrator, verified ED25519 key and a host alias** (see [SSH & VM hardening](ssh-access.md)); on a PowerShell or Linux/macOS admin client use `ssh signage-host` instead of SSH root/password authentication. On the Linux VM, run:
 
 ```bash
 hostname
@@ -55,10 +55,10 @@ explicitly named `anthias-hub`. Other Compose projects and their services are un
 Choose your system in the expandable [SSH key + `~/.ssh/config` guide](ssh-access.md); launch **both** local forwards if Anthias Hub and RSS2Slideshow share a VM:
 
 ```bash
-ssh -N gh-pihub-tunnel
+ssh -N signage-host-tunnel
 ```
 
-In your browser open http://127.0.0.1:8765 for Hub (and http://127.0.0.1:8085 for RSS, if installed). Sign in to Hub as `it`. Use `ssh gh-pihub` for an ordinary administrative shell. The tunnel is **client-local only** and does not provide an RSS URL reachable by the Pis.
+In your browser open http://127.0.0.1:8765 for Hub (and http://127.0.0.1:8085 for RSS, if installed). Sign in to Hub as `it`. Use `ssh signage-host` for an ordinary administrative shell. The tunnel is **client-local only** and does not provide an RSS URL reachable by the Pis.
 Use the IT dashboard to register the Pi by its private IP.
 
 The `marketing` account manages playlists **inside the hub UI**; IT sees a
@@ -88,3 +88,7 @@ URL may bypass the hub's IT/Marketing roles.
 
 No live display preview is included in the pilot. The hub can show the playlist
 and online/API status; a real capture of the TV output is a separate feature.
+
+## Optional LAN / HTTPS access
+
+See [network-access.md](network-access.md). SSH tunneling is the safe default; only explicitly approved internal clients should reach the Hub. For HTTPS set `COOKIE_SECURE=1`, use TLS termination at a trusted proxy and only enable `TRUSTED_PROXY_COUNT=1` when direct backend access is blocked. An external `HUB_COMPOSE_OVERRIDE` must be passed to **every manual Compose invocation**; setup and the test-only CD updater honor the private setting.

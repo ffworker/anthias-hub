@@ -35,3 +35,10 @@ For each operation, compare the Hub playlist with the Pi's native UI/API **and w
 ## 3. Go / no-go
 
 Ship to the intended internal audience only if: the exact image passed CI, the above operations passed on the installed Anthias version and physical display, access isolation was observed from the real client, and Hub **and Pi** restores were rehearsed. Obtain IT/Marketing sign-off, pin the approved image, retain a rollback image, and repeat login/API/display checks after promotion. Record any known limitations (including global Marketing access, static accounts, and absence of drafts/approvals). If any destructive operation or boundary check fails, remain in pilot and fix it first. Do not delay solely for cosmetic UI perfection; prioritize mistakes that could alter or delete screen content.
+
+## Public-ready checks (still require physical pilot sign-off)
+
+- [ ] Test a fresh `--solo` Owner installation and unchanged IT/Marketing upgrade, including unauthorized POSTs.
+- [ ] Verify optional external Compose override after container recreation, update and rollback.
+- [ ] For regular users, confirm HTTPS, secure cookie, trusted proxy boundary and network ACLs.
+- [ ] Verify no live internal identifiers in screenshots, docs or tracked files; inspect repository history separately.

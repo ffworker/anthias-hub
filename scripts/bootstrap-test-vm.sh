@@ -73,7 +73,7 @@ prepare_key() {
   install -d -m 700 "$(dirname "$key")"
   if [[ ! -e "$key" ]]; then
     [[ ! -e "$key.pub" ]] || fail "Public key exists but private key missing; investigate, do not overwrite."
-    ssh-keygen -q -t ed25519 -f "$key" -C 'rss2slideshow-test-vm' -N ''
+    ssh-keygen -q -t ed25519 -f "$key" -C 'secondary-test-vm' -N ''
   fi
   chmod 600 "$key"
   say "Register this PUBLIC key as a READ-ONLY deploy key at:"

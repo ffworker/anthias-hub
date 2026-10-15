@@ -1,5 +1,14 @@
 # Changelog
 
+## Public-ready candidate (unreleased)
+
+- Combined Owner account for solo self-hosters; existing IT/Marketing roles remain separate.
+- Optional VM-local Compose override for direct LAN pilot access; updater and rollback preserve it.
+- Explicit trusted-proxy setting for HTTPS deployments and dedicated network guide.
+- Public README/operations documentation streamlined with placeholder-only example network names.
+- **Still pilot:** live player write/CEC verification and formal release approval outstanding.
+
+
 ## Pilot UI handoff candidate — 2026-10-15
 
 **Status: pilot/testing, not a production release.** The checked-in `main` commit and the

@@ -50,3 +50,6 @@ Die Zeit zwischen erfolgreichem GitHub-Build und VM-Update beträgt gewöhnlich 
 **Produktiv-Migration:** Bei einer bestehenden Installation den Timer zuerst mit `sudo systemctl disable --now anthias-hub-cd.timer` anhalten, dann die Pin-/Backup-Anleitung in [reproducible-production.md](reproducible-production.md) befolgen. Keine automatische `:main`-Aktualisierung mit einem Release-Pin vermischen.
 
 **Wichtig:** Diese Dateien im Git-Repo richten keinen Timer auf deiner VM ein. Ohne VM-Zugang konnten wir die tatsächliche Migration, Rechte, Docker-Compose-Version und Live-Health nicht prüfen.
+## Optional host-local Compose configuration
+
+For a separately approved LAN bind or TLS deployment, set `HUB_COMPOSE_OVERRIDE=/ABSOLUTE/PATH/TO/override.yaml` in the **private** `.env` (see [network-access.md](network-access.md)). The updater includes it in `docker compose -f compose.cd.yaml -f ...` for status, pull, update **and rollback**, and stops if the file is missing. The setup script also honors this setting. Manual commands in this guide require the same additional `-f` argument if an override is active; do not run base-only `up` on an overridden service. This option does not make the `:main` updater production safe.
