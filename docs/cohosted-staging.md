@@ -25,6 +25,8 @@ Before running `deploy`, **edit/review** RSS `.env`, `config.yaml` and `content/
 
 ## Fresh test VM (new clean machine)
 
+For the optional second, separately owned application, set `RSS_REPO_SSH_URL` in the VM shell to an SSH clone URL you are permitted to access. Never add the actual remote, deploy key, or private app settings to this public checkout. Commands that only inspect the existing co-hosted services do not need the remote URL.
+
 1. Configure a **unique, stable IP / DHCP reservation**, verify no duplicate address, working DNS, NTP and VM console. The SSH host fingerprint changing after a disconnection may be a network/IP issue; never bypass SSH host-key validation.
 2. **Before cloning apps**, provision a non-root administrative account (e.g. `hubadmin`) with sudo, install its authorized Windows-PC ED25519 key, verify a key-only second login, then disable SSH root/password auth and restrict the SSH firewall: [selectable PowerShell/Linux client guide + VM hardening](ssh-access.md). Keep console access throughout. Use `~/apps/` owned by that account, **not** `/root/apps/`.
 3. Install Docker Engine + Compose plugin from Docker's official Debian instructions. Check `docker version`, `docker compose version`, `docker info`. Avoid duplicate Docker APT repository entries with conflicting `Signed-By` keys. Ensure `git curl openssl openssh-client` are installed.
@@ -37,10 +39,12 @@ cd anthias-hub
 bash scripts/bootstrap-test-vm.sh key
 ```
 
-The `key` command generates a **new ED25519 key for this VM only if missing** and prints **only the public key**. Register it in the private [RSS2Slideshow repository deploy keys](https://github.com/ffworker/rss2slideshow/settings/keys) with **read-only** access. On first SSH contact verify [GitHub's published SSH fingerprints](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints). Do not upload or paste the private key anywhere, and do not disable host-key verification.
+The `key` command generates a **new ED25519 key for this VM only if missing** and prints **only the public key**. Register it in the private [RSS2Slideshow repository deploy keys](https://github.com/OWNER/PRIVATE_REPO/settings/keys) with **read-only** access. On first SSH contact verify [GitHub's published SSH fingerprints](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints). Do not upload or paste the private key anywhere, and do not disable host-key verification.
 
 ```bash
 cd ~/apps/anthias-hub
+export RSS_REPO_SSH_URL='git@github.com:OWNER/PRIVATE_REPO.git' # set only in your VM shell
+# Optional: RSS_REPO_HTTPS_URL for an already cloned HTTPS origin
 bash scripts/bootstrap-test-vm.sh clone-rss   # after GitHub deploy key is approved
 bash scripts/bootstrap-test-vm.sh doctor
 bash scripts/bootstrap-test-vm.sh init        # prompts for fresh Hub IT and Marketing passwords
@@ -80,7 +84,7 @@ docker compose -p rss2slideshow logs --tail=80 signage
 
 - **Do not delete `.env` to repair accounts.** The two-app `init` command refuses incomplete Hub state, but the Hub's own `bash scripts/setup-pilot.sh` can now resume missing IT/Marketing accounts without replacing `.env`, data, or valid accounts. Use `--reset-users` only when intentionally rotating an existing password. Protect owner-only secrets and make tested **off-host backups** before any upgrade/rebuild.
 - The `deploy` command checks both Compose configs before building either app. It refuses to use the Hub pilot Compose file when `ANTHIAS_HUB_IMAGE` is set in the Hub `.env`, to avoid accidentally reverting a pinned release to a local pilot build.
-- `main` is **not** an approved production version. Don't install Anthias Hub's `anthias-hub-cd.timer` on the future production VM; its current updater follows `:main`. See [Hub approved-SHA production runbook](reproducible-production.md) and [RSS manual deployment](https://github.com/ffworker/rss2slideshow/blob/main/docs/manual-vm-deploy.md) (private).
+- `main` is **not** an approved production version. Don't install Anthias Hub's `anthias-hub-cd.timer` on the future production VM; its current updater follows `:main`. See [Hub approved-SHA production runbook](reproducible-production.md) and [RSS manual deployment](https://github.com/OWNER/PRIVATE_REPO/blob/main/docs/manual-vm-deploy.md) (private).
 - On a new **production** VM, create a different deploy key; pick an explicitly **tested/approved commit** and Hub immutable image reference, preserve a rollback reference, back up data and verify the output at the physical screen. This test script is intentionally **not** a production promotion tool.
 - To update the source deliberately, use each repository's own reviewed update runbook. Running this script by itself never updates Git.
 
