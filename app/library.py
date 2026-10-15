@@ -11,6 +11,7 @@ import zipfile
 from pathlib import Path, PurePosixPath
 from threading import RLock
 
+from .upload_disk import GuardedTemporaryFile, HubStorageFull, guarded_write
 from .anthias import validate_duration, validate_website_url
 from .storage import MAX_MEDIA_BYTES, MAX_REQUEST_BYTES
 
@@ -122,7 +123,7 @@ class Library:
                     if len(head) < 16:
                         head += block[:16 - len(head)]
                     digest.update(block)
-                    temp.write(block)
+                    guarded_write(temp, block)
                 temp.flush()
                 os.fsync(temp.fileno())
             if not amount or not _signature(head, ext):
@@ -222,14 +223,23 @@ class Library:
     def export_file(self, ident):
         """Create ZIP on disk, not in RAM; caller owns the returned file."""
         collection = self.get(ident)
-        output = tempfile.TemporaryFile(mode='w+b')
+        manifest = json.dumps({k: collection[k] for k in ('version', 'name', 'items')},
+                              ensure_ascii=False)
+        manifest_bytes = len(manifest.encode('utf-8'))
+        if manifest_bytes > 100_000:
+            raise LibraryError('Vorlagenmanifest überschreitet die Backup-Grenze von 100000 Bytes. '
+                               'Vorlage vor Export aufteilen; dieses Backup wäre nicht importierbar.')
+        paths = {filename: self.verified_media_path(ident, {'file': filename})
+                 for filename in {item['file'] for item in collection['items']
+                                  if item['kind'] == 'media'}}
+        if manifest_bytes + sum(path.stat().st_size for path in paths.values()) > MAX_ARCHIVE:
+            raise LibraryError('Vorlage überschreitet die Backup-Grenze von 2 GiB. '
+                               'Vorlage vor Export aufteilen; dieses Backup wäre nicht importierbar.')
+        output = GuardedTemporaryFile()
         try:
             with zipfile.ZipFile(output, 'w', zipfile.ZIP_STORED, allowZip64=True) as z:
-                z.writestr('manifest.json', json.dumps(
-                    {k: collection[k] for k in ('version', 'name', 'items')},
-                    ensure_ascii=False))
-                for filename in {item['file'] for item in collection['items'] if item['kind'] == 'media'}:
-                    path = self.verified_media_path(ident, {'file': filename})
+                z.writestr('manifest.json', manifest)
+                for filename, path in paths.items():
                     z.write(path, filename)
             output.seek(0)
             return output
@@ -298,7 +308,7 @@ class Library:
                                         if len(head) < 16:
                                             head += chunk[:16 - len(head)]
                                         digest.update(chunk)
-                                        writer.write(chunk)
+                                        guarded_write(writer, chunk)
                                 ext = Path(relative).suffix.lower()
                                 if (size != z.getinfo(relative).file_size
                                         or digest.hexdigest() != Path(relative).stem
@@ -314,7 +324,7 @@ class Library:
                     if set(names) != {'manifest.json', *media}:
                         raise LibraryError('Unerwartete Dateien im Archiv')
                     title = _title(manifest['name'])
-            except LibraryError:
+            except (LibraryError, HubStorageFull):
                 raise
             except (zipfile.BadZipFile, KeyError, TypeError, ValueError, UnicodeError, RuntimeError,
                     OSError, EOFError) as exc:

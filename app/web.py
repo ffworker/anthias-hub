@@ -1,4 +1,5 @@
 """Anthias Hub: IT owns devices; Marketing owns playlists."""
+import errno
 import json
 import io
 import os
@@ -16,12 +17,14 @@ from flask import (Flask, Response, abort, flash, g, jsonify, redirect, render_t
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.utils import secure_filename
 
+from .upload_disk import DiskRequest, HubStorageFull, validate_temp_directory
+
 from .auth import authenticate, current_user, csrf_token, login_required, require_csrf
 from .anthias import ASSET_ID, Anthias, PlayerError, validate_duration, validate_website_url
 from .bulk_media import BatchError, execute_batch
 from .devices import load, save, get, validate_device
 from .library import Library, LibraryError
-from .storage import MAX_MEDIA_BYTES, MAX_REQUEST_BYTES, capacity
+from .storage import MAX_MEDIA_BYTES, MAX_REQUEST_BYTES, upload_capacity
 
 _audit_lock = threading.Lock()
 _apply_lock = threading.Lock()
@@ -29,7 +32,9 @@ MEDIA = {'.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.webp':
 
 
 def create_app(config=None):
+    validate_temp_directory()
     app = Flask(__name__)
+    app.request_class = DiskRequest
     app.config.update(
         SECRET_KEY=os.environ.get('APP_SECRET_KEY', ''),
         USERS_FILE=os.environ.get('USERS_FILE', '/config/users.json'),
@@ -104,10 +109,10 @@ def create_app(config=None):
                 reason = 'Info-API nicht erreichbar oder Zeitüberschreitung'
             app.logger.warning('Anthias storage lookup failed: %s', reason)
             return None, reason
-        disk = capacity(info)
+        disk = upload_capacity(info, api.url)
         if disk is None:
             app.logger.warning('Anthias storage field missing or unsupported')
-            return None, 'Anthias liefert keinen auswertbaren free_space-Wert – Pi-Speicher prüfen'
+            return None, 'Speichermessung oder Zuordnung von Root-, Medien- und Upload-Dateisystem nicht bestätigt – Pi-Speicher prüfen'
         return disk, None
 
     def requested_storage_override():
@@ -193,8 +198,9 @@ def create_app(config=None):
     def library_export(template_id):
         try:
             archive = library().export_file(template_id)
-        except LibraryError:
-            abort(404)
+        except LibraryError as exc:
+            flash(str(exc), 'error')
+            return redirect(url_for('library_index'))
         return send_file(archive, mimetype='application/zip', as_attachment=True,
                          download_name='anthias-playlist-' + template_id + '.zip')
 
@@ -1035,6 +1041,21 @@ def create_app(config=None):
         audit('asset.delete', device_id, asset_id)
         flash('Playlist-Element gelöscht.', 'success')
         return redirect(url_for('playlist', device_id=device_id))
+
+    @app.errorhandler(HubStorageFull)
+    def storage_full(exc):
+        message = str(exc)
+        if request.accept_mimetypes.best == 'application/json':
+            return jsonify(ok=False, error=message), 507
+        return message, 507
+
+    @app.errorhandler(OSError)
+    def disk_os_error(exc):
+        # External writers/quota changes can fail directory creation or fsync,
+        # before/after a guarded chunk write. Preserve a controlled response.
+        if exc.errno in (errno.ENOSPC, errno.EDQUOT):
+            return storage_full(HubStorageFull())
+        raise exc
 
     @app.errorhandler(RequestEntityTooLarge)
     def too_large(exc):

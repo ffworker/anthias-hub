@@ -124,3 +124,8 @@ def test_create_requires_asset_id_before_reporting_success():
     recorder.request = lambda method, url, **kwargs: FakeResponse({'unexpected': True})
     with pytest.raises(PlayerError, match='Asset-ID'):
         client.create('Site', 'https://example.org', 30)
+
+
+@pytest.fixture(autouse=True)
+def verified_test_topology(monkeypatch):
+    monkeypatch.setenv('ANTHIAS_VERIFIED_STORAGE_URLS', 'http://player.example')

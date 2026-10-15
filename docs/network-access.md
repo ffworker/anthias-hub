@@ -43,6 +43,13 @@ server {
     ssl_certificate /etc/ssl/private/hub-cert.pem;
     ssl_certificate_key /etc/ssl/private/hub-key.pem;
     location / {
+        # Hub backup request limit: 2 GiB + 2 MiB, including multipart body.
+        client_max_body_size 2050m;
+        client_body_timeout 2400s;
+        proxy_read_timeout 2400s;
+        proxy_send_timeout 2400s;
+        proxy_request_buffering off;
+        proxy_http_version 1.1;
         proxy_pass http://127.0.0.1:8765;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto https;

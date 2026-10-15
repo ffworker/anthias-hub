@@ -4,7 +4,7 @@ import threading
 from urllib.parse import urlsplit
 import requests
 from requests_toolbelt.multipart.encoder import MultipartEncoder
-from .storage import MAX_MEDIA_BYTES, capacity
+from .storage import MAX_MEDIA_BYTES, capacity, root_matches_media
 
 ASSET_ID = re.compile(r'^[a-zA-Z0-9_-]{1,128}$')
 _upload_lock = threading.Lock()  # one upload at a time in the single-worker Hub
@@ -112,18 +112,18 @@ class Anthias:
                 status = capacity(self.info())
             except PlayerError:
                 status = None
-            # An explicit Marketing acknowledgement may override ONLY a
-            # missing/failed measurement, never a known full filesystem.
-            if status is None and not allow_unknown_space:
-                raise PlayerError(
-                    'Speicherprüfung fehlgeschlagen. Erneut prüfen oder nach manueller '
-                    'Kontrolle des Pi-Speichers „Prüfung ignorieren“ bestätigen.')
-            if status is not None and length > status['usable_bytes']:
+            # Known shortage is never overridden, even with unverified mounts.
+            if status is not None and 2 * length > status['usable_bytes']:
                 raise PlayerError(
                     f'Zu wenig freier Speicher auf Anthias ({status["reported"]} gemeldet, '
                     f'{status["reserve_gib"]} GiB Sicherheitsreserve). '
-                    'Vor einem erneuten Upload Playlist und Pi-Speicher prüfen. '
-                    'Bereits hochgeladene Medien können Speicher belegen.')
+                    'Upload benötigt vorübergehend zwei Dateikopien. '
+                    'Vor einem erneuten Upload Playlist und Pi-Speicher prüfen.')
+            if (status is None or not root_matches_media(self.url)) and not allow_unknown_space:
+                raise PlayerError(
+                    'Speicherprüfung fehlgeschlagen: Messung oder Zuordnung von Root-, '
+                    'Medien- und Upload-Dateisystem nicht bestätigt. Erneut prüfen oder '
+                    'nach manueller Kontrolle des Pi-Speichers „Prüfung ignorieren“ bestätigen.')
             encoder = MultipartEncoder(
                 fields={'file_upload': (filename, storage, mimetype)})
             try:

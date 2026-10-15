@@ -1,3 +1,5 @@
+> Aktuelle Speicherregeln: siehe [Upload-Audit](large-upload-audit.md). Root-Speicher allein bestätigt den Medienmount nicht. Automatische Freigabe erfordert eine IT-bestätigte Dateisystem-Zuordnung; das Uploadbudget berücksichtigt zwei temporäre Kopien. Die 1-GiB-Dateigrenze bleibt bestehen. Bei unbekannter Messung/Zuordnung ist nur die ausdrücklich bestätigte manuelle Ausnahme möglich; nachgewiesener Platzmangel bleibt gesperrt.
+
 # Marketing: Medien als ZIP oder Mehrfachauswahl hochladen
 
 **Gilt für Anthias Hub (Test/Pilot)**. **Praxisrückmeldung vom 15.10.2026:** Der Betreiber bestätigt die Nutzung der Import-/Export- und Vorlagenbackup-Funktionen. Ein dokumentierter vollständiger Restore auf einer frischen Instanz, ein Prüfsummenvergleich und ein Backup der Raspberry-Pi-Daten sind damit **nicht** bestätigt (siehe [Pilot-Abnahme](pilot-acceptance.md)). Es gibt **zwei verschiedene ZIP-Funktionen**:
@@ -65,7 +67,7 @@ Bei großen Uploads wird der Multipart-Body zum Pi **gestreamt**, nicht komplett
 
 Die bisherige JS-Sammelgrenze von 1 GiB bezog sich auf **alle ausgewählten Dateien zusammen**. Das neue UI sendet große Dateien einzeln und gibt die Schaltfläche auch nach Abbruch oder Fehler wieder frei. Ein laufender Upload ist explizit abbrechbar, **ein Abbruch kann bereits am Pi angekommene Dateien nicht zurücknehmen**.
 
-Ist die verbleibende Pi-Kapazität zu klein oder meldet Anthias keine zuverlässige `free_space`-Angabe, bleibt die Sicherheitsprüfung erhalten: Pi-Playlist, Pi-Dateisystem und gegebenenfalls unvollständige Medien/SD-Karte prüfen, dann im Upload-Bereich per **↻** neu messen. Fehlende oder zu knappe Kapazität kann **nicht** durch UI-Reset freigeschaltet werden. Bitte keine unsichere Umgehung der 2-GiB-/20-%-Reserve oder blindes erneutes Hochladen. Bibliotheksimporte verwenden hingegen Hub-Speicher, nicht den des Pis.
+Ist die verbleibende Pi-Kapazität zu klein oder meldet Anthias keine zuverlässige `free_space`-Angabe, bleibt die Sicherheitsprüfung erhalten: Pi-Playlist, Pi-Dateisystem und gegebenenfalls unvollständige Medien/SD-Karte prüfen, dann im Upload-Bereich per **↻** neu messen. Ein UI-Reset umgeht keine Speicherprüfung. Bei fehlender Messung/Zuordnung gilt ausschließlich die unten beschriebene bewusste Ausnahme; bei zu knapper Kapazität gibt es keine Ausnahme. Bitte keine unsichere Umgehung der 2-GiB-/20-%-Reserve oder blindes erneutes Hochladen. Bibliotheksimporte verwenden hingegen Hub-Speicher, nicht den des Pis.
 
 
 ### Speicherprüfung fehlgeschlagen: bewusster manueller Upload
