@@ -58,7 +58,7 @@
                 <button class="drag-handle" type="button" draggable="true"
                         title="Reihenfolge ändern: ziehen oder Leertaste, Pfeiltasten, Enter"
                         aria-label="{{ asset.name or 'Element' }} verschieben, Position {{ loop.index }} von {{ assets|length }}"
-                        aria-describedby="queue-help" aria-pressed="false">⠿</button>
+                        aria-describedby="queue-help" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#grip"></use></svg></button>
               {% endif %}
               {% if logged_user.role == 'marketing' and not error %}
                 <label class="asset-bulk-choice" title="Zum gemeinsamen Löschen auswählen">
@@ -187,7 +187,7 @@
       {% if logged_user.role == 'marketing' and not error and assets %}
         <div class="playlist-bottom-actions">
           <a href="#add-content" class="button studio-bottom-add studio-add-trigger" data-open-composer
-             aria-haspopup="dialog" aria-controls="add-content"><span aria-hidden="true">＋</span> Weiteren Inhalt hinzufügen</a>
+             aria-haspopup="dialog" aria-controls="add-content"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Weiteren Inhalt hinzufügen</a>
           <span class="playlist-bottom-note">Bild, Video, Webseite oder Bibliotheksvorlage ergänzen</span>
         </div>
         <details class="playlist-bulk-management" data-bulk-management>
