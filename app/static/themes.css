@@ -4,21 +4,6 @@
 .site-nav-link .icon{width:17px;height:17px}
 .asset-kind .icon,.fleet-device-icon .icon{width:24px;height:24px}
 .add-mode .icon,.edit-panel .icon,.composer-bubble .icon{width:18px;height:18px}
-.theme-picker{position:relative;border:0;padding:0;margin:0;z-index:12;flex:none}
-.theme-picker>summary{display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;min-height:42px;padding:8px 11px;border:1px solid var(--border);border-radius:10px;color:var(--ink);font-size:12px;font-weight:700;background:var(--surface)}
-.theme-picker>summary::-webkit-details-marker{display:none}
-.theme-picker>summary:hover,.theme-picker[open]>summary{border-color:var(--blue)}
-.theme-picker>summary .icon{width:17px;height:17px;color:var(--blue)}
-.theme-options{position:absolute;right:0;top:calc(100% + 8px);width:190px;padding:7px;border:1px solid var(--border);border-radius:12px;background:var(--raised);box-shadow:0 20px 45px #0008;display:grid;gap:3px}
-.theme-options button{width:100%;justify-content:flex-start;min-height:44px;padding:8px 9px;border:0;background:transparent;color:var(--ink);box-shadow:none;font-size:12px}
-.theme-options button:hover,.theme-options button[aria-pressed="true"]{background:var(--surface);color:var(--blue)}
-.theme-swatch{display:inline-block;width:19px;height:19px;flex:none;border:2px solid #fff9;border-radius:50%;box-shadow:0 0 0 1px #0005}
-.theme-swatch.nordlicht{background:linear-gradient(135deg,#09222c 45%,#7bebd2 45%)}
-.theme-swatch.tageslicht{background:linear-gradient(135deg,#f8f3e8 45%,#166e72 45%)}
-.theme-swatch.kupfer{background:linear-gradient(135deg,#291e31 45%,#f3aa74 45%)}
-.site-header:has(.theme-picker-guest) .theme-picker{margin-left:auto}
-.site-header:has(.theme-picker-guest) .header-greeting{margin-left:0}
-
 /* Action hierarchy: move next to the item, edit below, create in the composer. */
 .playlist-workspace .section-title .jump-link{display:inline-flex}
 .playlist-workspace .asset-toolbar{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 14px;align-items:center;padding:10px 15px}
