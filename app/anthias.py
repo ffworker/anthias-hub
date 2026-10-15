@@ -112,7 +112,9 @@ class Anthias:
             if length > status['usable_bytes']:
                 raise PlayerError(
                     f'Zu wenig freier Speicher auf Anthias ({status["reported"]} gemeldet, '
-                    f'{status["reserve_gib"]} GiB Sicherheitsreserve). Upload abgebrochen')
+                    f'{status["reserve_gib"]} GiB Sicherheitsreserve). '
+                    'Vor einem erneuten Upload Playlist und Pi-Speicher prüfen. '
+                    'Bereits hochgeladene Medien können Speicher belegen.')
             encoder = MultipartEncoder(
                 fields={'file_upload': (filename, storage, mimetype)})
             try:

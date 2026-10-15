@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}{{ device.name }} · Playlist · Anthias Hub{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='playlist.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-lightbox.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='bulk-upload.css') }}">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='playlist.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-lightbox.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='bulk-upload.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='storage-ui.css') }}"><script defer src="{{ url_for('static', filename='storage-ui.js') }}"></script>{% endblock %}
 {% block content %}
 <div class="playlist-workspace playlist-studio-v2" data-can-edit="{{ 'yes' if logged_user.role in ('marketing', 'owner') and not error else 'no' }}">
   <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Alle Bildschirme</a><span aria-hidden="true">›</span><span>{{ device.name }}</span><span aria-hidden="true">·</span><a href="{{ url_for('library_index') }}">Bibliothek</a></nav>
@@ -15,10 +15,6 @@
     <div class="hero-status">
       <span class="pill {{ 'bad' if error else 'ok' }}">{{ 'Nicht erreichbar' if error else 'API erreichbar' }}</span>
       <small>Anzeige am TV nicht live geprüft</small>
-      <small class="storage-note">
-        {% if storage %}Anthias-Speicher: {{ storage.reported }} frei · {{ storage.usable_gib }} GiB für Uploads ({{ storage.reserve_gib }} GiB Sicherheitsreserve)
-        {% else %}Speicherplatz nicht verfügbar – Medienuploads zum Schutz gesperrt{% endif %}
-      </small>
     </div>
   </header>
 
@@ -263,10 +259,21 @@
 
         <div class="composer-pane" data-add-pane="media">
           <p class="composer-explainer">Ein Bild oder Video zur Playlist hinzufügen.</p>
+          <div class="upload-storage-strip" data-storage-status data-storage-url="{{ url_for('device_storage', device_id=device.id) }}">
+            <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#storage"></use></svg>
+            <span data-storage-label role="status" aria-live="polite">
+              {% if storage %}{{ storage.usable_gib }} GiB für Uploads verfügbar{% else %}Speicher nicht verfügbar · Upload geschützt{% endif %}
+            </span>
+            <button type="button" class="storage-refresh" data-storage-refresh aria-label="Speicherplatz aktualisieren" title="Speicherplatz erneut prüfen">↻</button>
+            <details class="upload-storage-more">
+              <summary aria-label="Details zu Upload-Grenzen">i</summary>
+              <p>Max. 1 GiB je Video. {{ storage.reserve_gib ~ ' GiB' if storage else 'Mindestens 2 GiB' }} Sicherheitsreserve bleiben frei. Wird der Speicher nicht erkannt oder ist zu knapp, keine Uploads – Pi-Speicher und bereits übertragene Dateien prüfen.</p>
+            </details>
+          </div>
           <form method="post" enctype="multipart/form-data" data-upload-form="player" data-player-available="{{ storage.usable_bytes if storage else 0 }}" action="{{ url_for('upload', device_id=device.id) }}">
             <input type="hidden" name="csrf" value="{{ csrf() }}">
             <label>Datei auswählen<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label>
-            <p class="muted input-support">PNG · JPG · WebP · MP4 · Video bis 1 GiB · Upload nur mit ausreichendem Gerätespeicher</p><p class="upload-selected" role="status" aria-live="polite"></p>
+            <p class="muted input-support">PNG · JPG · WebP · MP4 · max. 1 GiB je Video</p><p class="upload-selected" role="status" aria-live="polite"></p>
             <label>Titel <span class="label-note">optional</span><input name="name" maxlength="100" placeholder="z. B. Herbstaktion"></label>
             <label>Bilddauer <span class="label-note">Sekunden; Videos automatisch</span><input name="duration" type="number" min="5" max="3600" value="15"></label>
             <button type="submit" class="primary full-width">Datei zur Playlist hinzufügen <span aria-hidden="true">→</span></button>
@@ -281,7 +288,7 @@
   <label>Dateien oder ZIP auswählen
     <input type="file" name="media" accept=".zip,.png,.jpg,.jpeg,.webp,.mp4" multiple required>
   </label>
-  <p class="muted">1 normale ZIP (allein) oder bis zu 20 Medien; Videos einzeln bis 1 GiB, Mehrfachauswahl max. 1 GiB gesamt. ZIP: max. 50 MiB Archiv / 150 MiB entpackt / 50 MiB pro ZIP-Datei. Unterordner sind erlaubt. Videodauer automatisch.</p>
+  <p class="muted input-support">Bis zu 20 Medien, einzeln nacheinander · max. 1 GiB je Datei. ZIP max. 50 MiB.</p>
   <label>Bilddauer (Sekunden)<input type="number" name="duration" min="5" max="3600" value="15" required></label>
   <p class="bulk-selected" data-bulk-selected role="status" aria-live="polite"></p>
   <button type="submit" class="primary">Medien importieren →</button>
