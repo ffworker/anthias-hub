@@ -5,13 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Anthias Hub{% endblock %}</title>
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
-  <script src="{{ url_for('static', filename='theme-init.js') }}"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='modern.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='workspace.css') }}">
   {% block extra_head %}{% endblock %}
   <link rel="stylesheet" href="{{ url_for('static', filename='themes.css') }}">
-  <script defer src="{{ url_for('static', filename='themes.js') }}"></script>
 </head>
 <body>
 <header class="top site-top">
@@ -19,17 +17,9 @@
     <a class="brand site-brand" href="{{ url_for('dashboard') }}" aria-label="Anthias Hub – zur Bildschirmübersicht"><span class="brand-symbol" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#mark"></use></svg></span><span>Anthias <strong>Hub</strong></span></a>
     {% if logged_user %}
     <nav class="site-nav" aria-label="Hauptnavigation">
-      <a class="site-nav-link" href="{{ url_for('dashboard') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg> Bildschirme</a>
-      <a class="site-nav-link" href="{{ url_for('library_index') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Bibliothek</a>
+      <a class="site-nav-link {{ 'is-active' if request.path == '/' or request.path.startswith('/devices/') else '' }}" {% if request.path == '/' or request.path.startswith('/devices/') %}aria-current="page"{% endif %} href="{{ url_for('dashboard') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg> Bildschirme</a>
+      <a class="site-nav-link {{ 'is-active' if request.path.startswith('/library') else '' }}" {% if request.path.startswith('/library') %}aria-current="page"{% endif %} href="{{ url_for('library_index') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Bibliothek</a>
     </nav>
-    <details class="theme-picker">
-      <summary title="Farbschema wählen" aria-label="Farbschema wählen"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#palette"></use></svg><span>Design</span></summary>
-      <div class="theme-options" role="group" aria-label="Farbschema">
-        <button type="button" data-theme-choice="nordlicht" aria-pressed="true"><span class="theme-swatch nordlicht" aria-hidden="true"></span> Nordlicht</button>
-        <button type="button" data-theme-choice="tageslicht" aria-pressed="false"><span class="theme-swatch tageslicht" aria-hidden="true"></span> Tageslicht</button>
-        <button type="button" data-theme-choice="kupfer" aria-pressed="false"><span class="theme-swatch kupfer" aria-hidden="true"></span> Kupfer</button>
-      </div>
-    </details>
     <div class="user site-user">
       <span class="user-avatar" aria-hidden="true">{{ logged_user.username[0]|upper }}</span>
       <span class="user-details"><span class="user-name">{{ logged_user.username }}</span><span class="role">{{ 'IT' if logged_user.role == 'it' else 'MARKETING' if logged_user.role == 'marketing' else 'VIEWER' }}</span></span>
@@ -39,7 +29,6 @@
       </form>
     </div>
     {% else %}
-    <details class="theme-picker theme-picker-guest"><summary title="Farbschema wählen" aria-label="Farbschema wählen"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#palette"></use></svg><span>Design</span></summary><div class="theme-options" role="group" aria-label="Farbschema"><button type="button" data-theme-choice="nordlicht" aria-pressed="true"><span class="theme-swatch nordlicht" aria-hidden="true"></span> Nordlicht</button><button type="button" data-theme-choice="tageslicht" aria-pressed="false"><span class="theme-swatch tageslicht" aria-hidden="true"></span> Tageslicht</button><button type="button" data-theme-choice="kupfer" aria-pressed="false"><span class="theme-swatch kupfer" aria-hidden="true"></span> Kupfer</button></div></details>
     <span class="header-greeting">Deine Screens. Dein Studio. <span aria-hidden="true">✦</span></span>
     {% endif %}
   </div>
