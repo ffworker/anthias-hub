@@ -506,3 +506,107 @@ body.studio-drawer-open{overflow:hidden}
   .playlist-studio-v2.js-ready .composer{transition:none!important}
   .playlist-studio-v2 .asset-edit-hint{transition:none!important}
 }
+
+
+/* Playlist finishing actions: easy to add at the end, cautious to remove. */
+.playlist-studio-v2 .playlist-bottom-actions{
+  margin:14px 0 10px;display:flex;align-items:center;
+  justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:16px 18px;border:1px dashed #3d6265;border-radius:13px;
+  background:#162a33
+}
+.playlist-studio-v2 .studio-bottom-add{
+  display:inline-flex;align-items:center;gap:9px;min-height:41px;
+  padding:8px 13px;border:1px solid #547c74;border-radius:10px;
+  background:#234139;color:#cef7e9;font-size:13px;font-weight:700;
+  text-decoration:none
+}
+.playlist-studio-v2 .studio-bottom-add:hover,
+.playlist-studio-v2 .studio-bottom-add:focus-visible{
+  background:#305548;border-color:#8de7cb;color:#fff
+}
+.playlist-studio-v2 .playlist-bottom-note{color:#9cb6bd;font-size:11px}
+.playlist-studio-v2 .asset-bulk-choice{
+  display:flex;align-items:center;justify-content:center;flex:none;
+  padding:8px;margin:0;border:0;border-radius:9px;cursor:pointer
+}
+.playlist-studio-v2 .asset-bulk-choice input{
+  width:19px;height:19px;min-height:19px;margin:0;cursor:pointer;
+  accent-color:var(--studio-aqua)
+}
+.playlist-studio-v2.js-ready:not(.bulk-select-mode) .asset-bulk-choice{
+  display:none
+}
+.playlist-studio-v2 .asset:has(.asset-bulk-choice input:checked){
+  border-color:#79b7a9;background:#1b3440
+}
+.playlist-studio-v2 .playlist-bulk-management{
+  position:relative;margin:8px 0 22px;padding:0;
+  border:1px solid #354a59;border-radius:13px;
+  background:#121e2b;color:#b7cbd0
+}
+.playlist-studio-v2 .playlist-bulk-management>summary{
+  list-style:none;cursor:pointer;padding:14px 17px;
+  font-size:12px;font-weight:650
+}
+.playlist-studio-v2 .playlist-bulk-management>summary::-webkit-details-marker{display:none}
+.playlist-studio-v2 .playlist-bulk-management>summary::before{
+  content:'⚙';margin-right:9px;font-size:15px;color:#9abcb5
+}
+.playlist-studio-v2 .playlist-bulk-management[open]>summary{
+  border-bottom:1px solid #33495b
+}
+.playlist-studio-v2 .playlist-bulk-content{padding:16px 17px 18px}
+.playlist-studio-v2 .playlist-bulk-content>p{max-width:760px;font-size:12px;line-height:1.6}
+.playlist-studio-v2 .playlist-bulk-content form{display:grid;gap:15px;margin:15px 0 0}
+.playlist-studio-v2 .bulk-selection-tools{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap
+}
+.playlist-studio-v2 .bulk-selection-tools button{
+  border-radius:9px;min-height:39px;padding:8px 12px;
+  border-color:#52746f;background:#213c41;color:#e3f6ee;font-size:12px
+}
+.playlist-studio-v2 .bulk-selection-tools button[hidden]{display:none!important}
+.playlist-studio-v2 .bulk-selection-count{font-size:12px;color:#b4c8d6}
+.playlist-studio-v2 .bulk-delete-ack{
+  display:flex;align-items:flex-start;gap:9px;
+  font-size:12px;line-height:1.6;margin:0;cursor:pointer
+}
+.playlist-studio-v2 .bulk-delete-ack input{
+  flex:none;width:19px;min-height:19px;margin:1px 0 0;
+  accent-color:#ed9aa9
+}
+.playlist-studio-v2 .bulk-delete-selected,
+.playlist-studio-v2 .bulk-clear-all{
+  justify-self:start;min-height:41px;border:1px solid #ba6573;
+  background:#773344;color:#ffe8eb;border-radius:9px;padding:9px 15px;
+  font-size:12px
+}
+.playlist-studio-v2 .bulk-delete-selected:disabled,
+.playlist-studio-v2 .bulk-clear-all:disabled{opacity:.45;cursor:not-allowed}
+.playlist-studio-v2 .playlist-clear-confirm{
+  border-top:1px solid #3a4556;padding:13px 0 0;margin:3px 0 0;
+  max-width:600px
+}
+.playlist-studio-v2 .playlist-clear-confirm>summary{
+  color:#e7aab2;font-size:12px;cursor:pointer
+}
+.playlist-studio-v2 .playlist-clear-confirm>p{
+  font-size:12px;line-height:1.65;margin:10px 0
+}
+.playlist-studio-v2 .playlist-clear-confirm label{
+  display:block;color:#dce5e9;font-size:12px;margin:0 0 12px
+}
+.playlist-studio-v2 .playlist-clear-confirm input{
+  display:block;box-sizing:border-box;max-width:350px;width:100%;
+  margin:6px 0 0;padding:9px;border:1px solid #607480;
+  border-radius:8px;background:#102031;color:#f4fcfc
+}
+@media(max-width:600px){
+  .playlist-studio-v2 .playlist-bottom-actions{padding:13px}
+  .playlist-studio-v2 .playlist-bottom-note{width:100%}
+  .playlist-studio-v2 .asset-bulk-choice{padding:5px}
+  .playlist-studio-v2 .bulk-delete-selected,.playlist-studio-v2 .bulk-clear-all{
+    justify-self:stretch;width:100%
+  }
+}
