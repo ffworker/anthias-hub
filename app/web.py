@@ -853,6 +853,58 @@ def create_app(config=None):
         flash('Inhalt aktiviert.' if after else 'Inhalt pausiert.', 'success')
         return redirect(url_for('playlist', device_id=device_id))
 
+    @app.post('/devices/<device_id>/bulk-delete')
+    @login_required('marketing')
+    def bulk_delete_assets(device_id):
+        """Delete confirmed player assets, never devices or local library templates.
+
+        Anthias v2 deletes one asset per call, not transactionally. A complete
+        ordered snapshot check rejects stale page selections before any write.
+        """
+        device, api = player_or_404(device_id)
+        mode = request.form.get('mode')
+        if mode not in ('selected', 'all') or request.form.get('ack') != 'yes':
+            abort(400, 'Löschung ausdrücklich bestätigen')
+        baseline = request.form.getlist('baseline')
+        selected = request.form.getlist('selected')
+        if not baseline or len(baseline) > 500 or len(set(baseline)) != len(baseline):
+            abort(400, 'Ungültige Playlist-Auswahl')
+        try:
+            for item_id in baseline:
+                api.valid_id(item_id)
+            if len(selected) != len(set(selected)) or any(item_id not in baseline for item_id in selected):
+                abort(400, 'Ungültige Playlist-Auswahl')
+            if mode == 'selected' and not selected:
+                abort(400, 'Bitte mindestens einen Inhalt auswählen')
+            if mode == 'all' and request.form.get('name_confirmation') != device['name']:
+                abort(400, 'Bildschirmname stimmt nicht überein')
+            with _apply_lock:
+                current = [str(a['asset_id']) for a in api.assets()]
+                if current != baseline or len(current) != len(set(current)):
+                    abort(409, 'Die Playlist hat sich verändert. Bitte neu laden und erneut auswählen. Nichts gelöscht.')
+                targets = selected if mode == 'selected' else baseline
+                # Delete only snapshot-confirmed IDs. No unscoped wipe call.
+                removed = 0
+                try:
+                    for item_id in targets:
+                        api.remove(item_id)
+                        removed += 1
+                        audit('asset.bulk-delete' if mode == 'selected' else 'asset.clear', device_id, item_id)
+                except PlayerError as exc:
+                    flash(f'{removed} von {len(targets)} Löschungen bestätigt. '
+                          'Beim nächsten Inhalt trat ein Fehler auf: ' + str(exc) +
+                          '. Player-Playlist jetzt prüfen, nicht blind erneut löschen.', 'error')
+                    return redirect(url_for('playlist', device_id=device_id))
+        except PlayerError as exc:
+            flash(str(exc) + '. Nichts gelöscht.', 'error')
+            return redirect(url_for('playlist', device_id=device_id))
+        if mode == 'all':
+            flash(f'{removed} Inhalte vom Player entfernt. Playlist am TV prüfen; '
+                  'Gerät und Bibliotheksvorlagen bleiben erhalten.', 'success')
+        else:
+            flash(f'{removed} ausgewählte Inhalte entfernt. Playlist am TV prüfen.', 'success')
+        return redirect(url_for('playlist', device_id=device_id))
+
     @app.post('/devices/<device_id>/assets/<asset_id>/delete')
     @login_required('marketing')
     def delete_asset(device_id, asset_id):
