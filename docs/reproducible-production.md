@@ -68,9 +68,9 @@ git rev-parse HEAD
 
 The initial `setup-pilot.sh` builds/starts `anthias-hub:pilot` *only for first-time account setup*. The subsequent `compose.cd.yaml` commands replace it with the approved prebuilt image. If setup is interrupted or `users.json` is deleted, rerun `bash scripts/setup-pilot.sh` from this checkout: it keeps `.env` and existing accounts and creates missing roles, using the pinned image when `ANTHIAS_HUB_IMAGE` is set. Use `--reset-users` to choose which existing role passwords to replace. Never `docker compose pull` the default `compose.yaml`: its `anthias-hub:pilot` tag is local-only. Do not start `scripts/install-auto-deploy.sh` on production.
 
-To access from Windows, configure an **independent production key and alias** as in [SSH access & VM hardening](ssh-access.md). For a production VM rename the example `gh-pihub` / `gh-pihub-tunnel` aliases to `hub-prod` / `hub-prod-tunnel` and replace `VM_IP` with its own address. Then:
+To access from Windows PowerShell or Linux/macOS, choose the expandable client instructions and configure an **independent production key and alias** as in [SSH access & VM hardening](ssh-access.md). For a production VM rename the example `gh-pihub` / `gh-pihub-tunnel` aliases to `hub-prod` / `hub-prod-tunnel` and replace `VM_IP` with its own address. Then:
 
-```powershell
+```bash
 ssh hub-prod           # authenticated admin shell
 ssh -N hub-prod-tunnel # separate PowerShell window: Hub 8765 + optional RSS 8085
 ```
