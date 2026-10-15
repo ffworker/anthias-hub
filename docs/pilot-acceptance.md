@@ -10,6 +10,15 @@ Keep this step outside the repository deployment: verify the colleague's **clien
 
 For a **spare test Pi**, give the colleague a Marketing login and the [practice sheet](marketing-praxistest.pdf), keep IT controls separate, verify simple read-only navigation first, and supervise the first write/upload. Do not call the pilot production-ready until the acceptance checklist below is met.
 
+## Field feedback: library import/export and template backup (15 October 2026)
+
+- [x] **Operator-confirmed:** Import/export functions used successfully in the running Anthias Hub pilot.
+- [x] **Operator-confirmed:** Backup function used successfully in the Hub's library workflow (template backup).
+- [ ] **Still to document/verify:** Exact archive and media contents, checksum/integrity comparisons, and a controlled restore onto a separate clean instance; capture results without private URLs or device details.
+- [ ] **Still separate:** A full Hub-host backup of `.env`, `config/`, `data/` and a separate Anthias Pi playlist/media backup **with a restore rehearsal**.
+
+These checked items record the **operator's practical feedback**, not an independently witnessed acceptance run or proof of disaster recovery. Hub-exported template ZIPs contain library data/media only, **not** Pi-stored content, user accounts, application secrets or the complete Hub state. Other checks below remain open until explicitly verified.
+
 ## 1. Prepare and establish the boundary
 
 - [ ] Record a backup of Hub `.env`, `config/`, `data/`, **and separately the Pi playlist/media**. Verify an off-host copy exists and restore each kind of backup to a disposable staging instance; check login, library manifests and media, and Pi content after restoration. Do not replace live state for this exercise.
