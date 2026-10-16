@@ -97,6 +97,26 @@ def add_profile(path, device_id, name, days, start, end):
     return profile
 
 
+
+def edit_profile(path, device_id, profile_id, name, days, start, end):
+    profile = valid_rule(name, days, start, end)
+    with _LOCK:
+        data = _load(path)
+        entries = data.get(device_id, [])
+        index = next((i for i, e in enumerate(entries) if e['id'] == profile_id), None)
+        if index is None:
+            raise ScheduleError('Zeitplan nicht gefunden.')
+        if any(e['id'] != profile_id and
+               e['name'].casefold() == profile['name'].casefold() for e in entries):
+            raise ScheduleError('Der Zeitplanname existiert bereits.')
+        profile['id'] = profile_id
+        entries[index] = profile
+        data[device_id] = entries
+        _save(path, data)
+    # Existing assets keep their *native* rules until explicitly reassigned.
+    return profile
+
+
 def remove_profile(path, device_id, profile_id):
     with _LOCK:
         data = _load(path)
