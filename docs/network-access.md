@@ -273,6 +273,35 @@ the latter does not upgrade, back up or restore Caddy's systemd configuration
 or its CA files. **This runbook does not deploy certificates, host firewall
 rules or changes to a running VM on its own.**
 
+### Reported staging outcome (16 October 2026)
+
+The operator confirmed that the Hub **login works** over HTTPS after
+updating the existing external Compose override to remove its LAN port-80
+publish and setting `COOKIE_SECURE=1` plus `TRUSTED_PROXY_COUNT=1`.
+The container was reported to run from
+`ghcr.io/ffworker/anthias-hub:latest`; the localhost `8765` binding was
+kept and the existing auto-deploy remained the intended update mechanism.
+Caddy runs independently on the host. The remaining browser **"Not secure"**
+warning has **not yet been confirmed resolved**: it is a separate Windows
+root-CA trust step, not an application login or Docker problem.
+
+The below state is **not** a checked-in site configuration; private DNS
+names, LAN IPs, `.env`, and the actual absolute Compose override stay on
+the server. For an operator on this topology:
+
+- **Normal Hub restart, no environment changes:** `docker compose -f compose.cd.yaml -f "$OVERRIDE" -p anthias-hub restart anthias-hub`.
+- **After editing the private `.env` or Compose override:** use `docker compose -f compose.cd.yaml -f "$OVERRIDE" -p anthias-hub up -d --no-build --no-deps --force-recreate anthias-hub`.
+- **Never use** plain `docker compose up -d --build` on the auto-deployed VM: it selects the wrong base Compose file and may switch images / port settings.
+- Read the absolute override path from `HUB_COMPOSE_OVERRIDE` in the
+  private `.env`; do not delete the override file even when it is effectively
+  empty. Confirm the effective published port bindings before recreating a
+  service. Docker `restart` does **not** reload `.env` changes.
+
+For a hostname already served by Caddy, users should validate the issued
+leaf's host name, certificate expiry and chain; only then import the verified
+**public** CA root. An imported root cannot fix a name mismatch, expiration,
+or unrelated browser warning. Never export/share the CA private key.
+
 ## Troubleshooting: login fails with CSRF error on a new browser
 
 A **first-time login should work on its first attempt**. The login form's hidden

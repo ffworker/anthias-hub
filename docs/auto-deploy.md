@@ -66,6 +66,34 @@ Compose change and resume afterward. Never remove or rename
 Caddy's configuration nor its CA/private keys: these need separate encrypted
 backups and restoration procedures.
 
+### Aktueller Test-VM-Stand (vom Operator bestätigt, 16.10.2026)
+
+Der HTTPS-Login funktioniert jetzt über den hostseitigen Caddy-Proxy.
+`COOKIE_SECURE=1` und `TRUSTED_PROXY_COUNT=1` sind gesetzt; der
+öffentliche HTTP-Bind der bisherigen externen LAN-Override wurde entfernt.
+Der Hub bleibt intern auf `127.0.0.1:8765` und verwendet weiterhin
+`ghcr.io/ffworker/anthias-hub:latest`. Das separate RSS2Slideshow-Projekt
+bleibt unberührt. **Die Windows-Vertrauensstellung der privaten Caddy-CA
+ist als verbleibender Schritt noch nicht abschließend bestätigt.**
+
+**Korrekte manuelle Kommandos** auf dieser VM (im Checkout):
+
+```bash
+cd ~/apps/anthias-hub
+OVERRIDE=$(sed -n 's/^HUB_COMPOSE_OVERRIDE=//p' .env)
+test -n "$OVERRIDE" && test -f "$OVERRIDE" || exit 1
+
+# Neustart OHNE neue .env-Werte:
+docker compose -f compose.cd.yaml -f "$OVERRIDE" -p anthias-hub restart anthias-hub
+
+# Nach .env-/Override-Änderungen (nur Hub, kein Image-Build):
+docker compose -f compose.cd.yaml -f "$OVERRIDE" -p anthias-hub up -d --no-build --no-deps --force-recreate anthias-hub
+```
+
+Nie allein `docker compose up -d --build` ausführen; das nutzt auf diesem
+Host die falsche Compose-Basis. Nach Änderungen den Hub, HTTPS-Login,
+tatsächliche Portbelegung und `anthias-hub-cd.timer` prüfen.
+
 ## Optional host-local Compose configuration
 
 For a separately approved LAN bind or TLS deployment, set `HUB_COMPOSE_OVERRIDE=/ABSOLUTE/PATH/TO/override.yaml` in the **private** `.env` (see [network-access.md](network-access.md)). The updater includes it in `docker compose -f compose.cd.yaml -f ...` for status, pull, update **and rollback**, and stops if the file is missing. The setup script also honors this setting. Manual commands in this guide require the same additional `-f` argument if an override is active; do not run base-only `up` on an overridden service. This option does not make the `:latest` updater production safe.
