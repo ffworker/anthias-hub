@@ -37,20 +37,28 @@
     <form class="library-publish-form" method="post" data-template-transfer data-transfer-overview-path="{{ url_for('device_overview', device_id='__DEVICE__') }}" action="{{ url_for('append_library_from_template', template_id=template.id) }}">
       <input type="hidden" name="csrf" value="{{ csrf() }}">
       <input type="hidden" name="confirm" value="append">
-      <label class="library-publish-target">Zielbildschirm
-        <select name="device" required {% if not devices %}disabled{% endif %}>
-          <option value="">Bildschirm auswählen …</option>
-          {% for device in devices %}<option value="{{ device.id }}">{{ device.name }} · {{ device.location or 'Ohne Standort' }}</option>{% endfor %}
-        </select>
-      </label>
-      {{ library_schedule_select() }}
-      <label class="library-publish-confirm">
-        <input type="checkbox" name="ack" value="yes" required>
-        <span>Jetzt zur bestehenden Playlist hinzufügen</span>
-      </label>
-      <button type="submit" class="primary library-publish-button" {% if not devices or not template['items'] %}disabled{% endif %}>
-        {{ template['items']|length }} Inhalte hinzufügen <span aria-hidden="true">→</span>
-      </button>
+      <div class="library-publish-fields">
+        <fieldset class="library-publish-target schedule-choice">
+          <legend>Zielbildschirm</legend>
+          <label>Bildschirm
+            <select name="device" required {% if not devices %}disabled{% endif %}>
+              <option value="">Bildschirm auswählen …</option>
+              {% for device in devices %}<option value="{{ device.id }}">{{ device.name }} · {{ device.location or 'Ohne Standort' }}</option>{% endfor %}
+            </select>
+          </label>
+          <p class="schedule-choice-hint">Wähle den Bildschirm für diese Vorlage.</p>
+        </fieldset>
+        {{ library_schedule_select() }}
+      </div>
+      <div class="library-publish-actions">
+        <label class="library-publish-confirm">
+          <input type="checkbox" name="ack" value="yes" required>
+          <span>Jetzt zur bestehenden Playlist hinzufügen</span>
+        </label>
+        <button type="submit" class="primary library-publish-button" {% if not devices or not template['items'] %}disabled{% endif %}>
+          {{ template['items']|length }} Inhalte hinzufügen <span aria-hidden="true">→</span>
+        </button>
+      </div>
       <div class="template-transfer-feedback" data-transfer-feedback role="status" aria-live="polite" hidden><span class="template-transfer-spinner" aria-hidden="true"></span><strong data-transfer-message>Übertragung läuft …</strong><small data-transfer-live>Inhalte werden auf dem Pi hinzugefügt. Bitte nicht erneut klicken.</small></div>
     </form>
     {% if not template['items'] %}

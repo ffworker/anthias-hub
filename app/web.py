@@ -14,7 +14,7 @@ from pathlib import Path
 
 from flask import (Flask, Response, abort, flash, g, jsonify, redirect, render_template, request,
                    send_file, session, stream_with_context, url_for)
-from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 from werkzeug.utils import secure_filename
 
 from .upload_disk import DiskRequest, HubStorageFull, validate_temp_directory
@@ -68,7 +68,20 @@ def create_app(config=None):
     @app.before_request
     def protect_post():
         if request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
-            require_csrf()
+            try:
+                require_csrf()
+            except BadRequest:
+                if request.endpoint != 'login':
+                    raise
+                # Keep login protected: a missing/mismatched cookie must never
+                # turn into a CSRF bypass. Render a fresh, actionable form.
+                # Log only the failure category, never credentials or tokens.
+                reason = 'missing_session_token' if not session.get('csrf') else 'token_mismatch'
+                app.logger.warning(
+                    'Login CSRF rejected: %s; https=%s; secure_cookie=%s',
+                    reason, request.is_secure, app.config['SESSION_COOKIE_SECURE'],
+                )
+                return render_template('login.html', login_csrf_error=True), 400
 
     @app.after_request
     def headers(response):

@@ -64,6 +64,40 @@ In the private `.env`, set `COOKIE_SECURE=1`. Set `TRUSTED_PROXY_COUNT=1` **only
 
 For a reverse proxy on another host, a host-local loopback bind cannot be reached: use an explicitly protected private/VPN interface listener with network ACLs instead. Do not replace loopback with `0.0.0.0` or rely on DNS alone for security.
 
+## Troubleshooting: login fails with CSRF error on a new browser
+
+A **first-time login should work on its first attempt**. The login form's hidden
+CSRF token belongs to a signed browser session cookie issued by `GET /login`.
+`POST /login` needs that cookie **and** the corresponding form token. If the
+cookie is missing, blocked, or signed by a different secret, the request is
+rejected; the Hub does not skip CSRF even for the first login.
+
+- **Verify the browser URL:** Keep the same exact origin (hostname/IP,
+  scheme and port) from opening the login form through submitting it. Avoid
+  switching HTTP ↔ HTTPS or IP ↔ DNS name across requests.
+- **Verify cookie mode:** `COOKIE_SECURE=1` requires HTTPS for ordinary remote
+  browsers. Direct LAN HTTP is only permitted during isolated testing with
+  `COOKIE_SECURE=0`. After changing the private `.env`, recreate the Hub
+  container via the correct Compose base and existing LAN override. Do not
+  weaken cookie settings on a regular HTTPS deployment.
+- **Check DevTools locally:** Network → `GET /login` should receive
+  `Set-Cookie: session=...`; the matching `POST /login` should send a
+  `Cookie: session=...` header. Inspect the browser's cookie-block reason.
+  Never paste actual cookie contents or form tokens into an issue/chat.
+- **Check logs:** The Hub logs `Login CSRF rejected:
+  missing_session_token` when the submitted session has no token, or
+  `token_mismatch` when the form and saved token differ. It also records
+  only the request HTTPS state and secure-cookie setting, **not** credentials,
+  cookies or token values. A missing session can also indicate inconsistent
+  `APP_SECRET_KEY` values across multiple application instances.
+- **Stale tabs:** Refresh the login page after changing the URL or deployment
+  before retrying. The displayed message does not imply a bad password.
+
+Login CSRF errors are a **browser → Hub session** problem, not a
+Hub → Raspberry Pi API/firewall problem. If a clean HTTPS session still fails,
+record the browser URL scheme (no internal hostname required), cookie blocked
+reason and sanitized log failure category.
+
 ## Updates, rollback and local overrides
 
 Standard `compose.yaml` and `compose.cd.yaml` remain unchanged. **All manual Compose commands affecting the Hub must repeat the same `-f <base> -f <absolute override>` list** (including pull/up/rollback), rather than switching back to base-only Compose. The optional test-only `scripts/auto_deploy.py` and `setup-pilot.sh` now read `HUB_COMPOSE_OVERRIDE` from the private `.env` and refuse a missing/non-absolute override. This prevents the next automatic container recreation from dropping the extra port mapping. Do not put LAN addresses in the checked-in source.

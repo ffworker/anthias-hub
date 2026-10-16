@@ -135,7 +135,8 @@
 /* Scheduling selectors follow the Playlist Studio rather than browser-default
    square inputs. Consistent on direct upload, in-asset editor and library. */
 .playlist-workspace .schedule-choice select,
-[data-library-device-schedule] select{
+[data-library-device-schedule] select,
+.library-publish-target select{
  appearance:none;-webkit-appearance:none;display:block;width:100%;max-width:100%;
  min-height:43px;border:1px solid #456777;border-radius:11px;
  padding:10px 40px 10px 13px;color:#ecf6f8;background-color:#122a38;
@@ -145,9 +146,11 @@
  transition:border-color .14s,box-shadow .14s
 }
 .playlist-workspace .schedule-choice select:hover,
-[data-library-device-schedule] select:hover{border-color:#68a89b}
+[data-library-device-schedule] select:hover,
+.library-publish-target select:hover{border-color:#68a89b}
 .playlist-workspace .schedule-choice select:focus-visible,
-[data-library-device-schedule] select:focus-visible{
+[data-library-device-schedule] select:focus-visible,
+.library-publish-target select:focus-visible{
  outline:2px solid #8af2d448;outline-offset:1px;border-color:#85e2d0
 }
 .playlist-workspace .schedule-choice,.library-publish-form .schedule-choice{
