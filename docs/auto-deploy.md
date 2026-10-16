@@ -51,6 +51,29 @@ sudo systemctl stop anthias-hub-cd.timer     # Auto-Deploy pausieren
 
 Verwende für **manuelle** Hub-Deployments nur `compose.cd.yaml` mit genau demselben externen Compose-Override. Ein Start mit `compose.yaml` würde wieder das lokale `:pilot`-Image verwenden. Die Registry kann ausfallen, ohne dass das laufende Image dadurch gelöscht wird. `/healthz` beweist nur die Web-Erreichbarkeit, nicht das tatsächliche TV-Bild. Dieser automatisch bewegte Kanal ist für die Test-/Staging-VM gedacht; für einen späteren Produktivhost den Timer deaktivieren und ein geprüftes SHA-/Digest-Image pinnen.
 
+## Routine manual Hub commands
+
+Always use the **pull-based** Compose file and the same private override
+configured for automatic deploy. `restart` does not reload changed `.env`
+values; use `up --force-recreate` for those changes:
+
+```bash
+cd ~/apps/anthias-hub
+OVERRIDE=$(sed -n 's/^HUB_COMPOSE_OVERRIDE=//p' .env)
+test -n "$OVERRIDE" && test -f "$OVERRIDE" || exit 1
+
+# Ordinary restart:
+docker compose -f compose.cd.yaml -f "$OVERRIDE" -p anthias-hub restart anthias-hub
+
+# After .env/override edits (Hub only):
+docker compose -f compose.cd.yaml -f "$OVERRIDE" -p anthias-hub up -d --no-build --no-deps --force-recreate anthias-hub
+```
+
+Use these examples for the current override-based test VM. A fresh
+installation without `HUB_COMPOSE_OVERRIDE` must omit the second `-f`
+instead of inventing a file. Do **not** use plain `docker compose up -d
+--build` on an auto-deployed host.
+
 ## Optional HTTPS with host-local Caddy
 
 For a VM without an enterprise certificate authority or public certificate,
