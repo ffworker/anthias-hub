@@ -156,3 +156,57 @@
 .schedule-global-delete .schedule-remove:hover{background:#603342;color:white}
 @media(max-width:690px){.schedule-collection-note{padding:11px 13px}
  .schedule-default-panel{gap:14px}.schedule-section-heading .muted{max-width:none}}
+
+/* Scheduling is a device assignment workspace first; shared rule editing is
+   a quiet, secondary disclosure once at least one reusable rule exists. */
+.schedule-secondary-area{display:grid;gap:10px;margin:27px 0 10px}
+.schedule-secondary-panel{
+ margin:0;padding:0;overflow:hidden;border:1px solid #314d5c;
+ border-radius:14px;background:#122333;color:#b7ccd6;
+ box-shadow:inset 0 1px #ffffff08
+}
+.schedule-secondary-panel>summary{
+ display:flex;align-items:center;gap:12px;list-style:none;cursor:pointer;
+ padding:12px 16px;min-height:54px;transition:background .15s,border-color .15s
+}
+.schedule-secondary-panel>summary::-webkit-details-marker{display:none}
+.schedule-secondary-panel>summary:hover,
+.schedule-secondary-panel[open]>summary{background:#1a3540}
+.schedule-secondary-panel>summary:focus-visible{
+ outline:2px solid #8ae9d5;outline-offset:-3px;border-radius:13px
+}
+.schedule-secondary-icon{
+ width:33px;height:33px;display:grid;place-items:center;flex:none;
+ background:#1b3843;color:#9bdacb;border:1px solid #376065;border-radius:10px
+}
+.schedule-secondary-icon .icon{width:16px;height:16px}
+.schedule-secondary-copy{display:grid;gap:2px;flex:1;min-width:0}
+.schedule-secondary-copy strong{color:#d5e8eb;font-size:12px;font-weight:700}
+.schedule-secondary-copy small{color:#9fb8c1;font-size:11px;line-height:1.4}
+.schedule-secondary-chevron{flex:none;font-size:20px;color:#9bcfc7;transition:transform .15s}
+.schedule-secondary-panel[open] .schedule-secondary-chevron{transform:rotate(180deg)}
+.schedule-secondary-body{padding:15px 17px 18px;border-top:1px solid #345160}
+.schedule-secondary-body>.schedule-collection-note{margin-bottom:14px}
+.schedule-secondary-body .schedule-presets{gap:11px}
+.schedule-secondary-body .schedule-rule{box-shadow:none}
+.schedule-secondary-body .schedule-default-panel{
+ margin:0;border:0;box-shadow:none;padding:3px 0 0;background:transparent
+}
+.schedule-secondary-body .schedule-default-panel .eyebrow{display:none}
+.schedule-secondary-body .schedule-default-panel h3{font-size:13px}
+.schedule-secondary-body .schedule-default-panel .muted{font-size:11px}
+.schedule-secondary-body .schedule-new{margin-top:12px}
+.schedule-onboarding{margin-top:16px}
+.schedule-onboarding>.schedule-presets{margin-bottom:10px}
+.schedule-onboarding>.schedule-new{border-color:#4b8679;background:#16343c}
+.schedule-onboarding>.schedule-new>summary{color:#d6fff4}
+.schedule-workspace #schedule-assign{margin-top:18px}
+.schedule-workspace #schedule-assign .schedule-section-heading h2{font-size:24px}
+.schedule-workspace #schedule-assign .schedule-section-heading .muted{
+ max-width:400px;line-height:1.45
+}
+@media(max-width:690px){
+ .schedule-secondary-panel>summary{padding:11px 12px}
+ .schedule-secondary-body{padding:13px}
+ .schedule-secondary-copy small{font-size:10px}
+}

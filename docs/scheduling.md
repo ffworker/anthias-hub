@@ -8,6 +8,12 @@ Unter **Bildschirme → Playlist** teilen sich **Playlist** und **Zeitplanung** 
 
 Auf der **Zeitplanung**-Ansicht können Marketing und IT **gemeinsame Zeitplanvorlagen für alle Geräte** erstellen, z. B. Werktag_Default (Mo–Fr, 08–18 Uhr) oder Event (Sa, 10–14 Uhr). Ein auf Pi 3 erstellter Plan ist sofort auf Pi 5 und jedem zukünftig registrierten Gerät verfügbar. **Es gibt keine gerätespezifischen Kopien der Vorlage.** Die Zuordnung gilt hingegen immer nur für die ausgewählten Inhalte auf dem gerade geöffneten Pi. Die Wiedergabezeiten werden nativ auf Anthias gespeichert; **jeder Inhalt besitzt genau ein wiederkehrendes Zeitfenster**.
 
+## Reihenfolge im Zeitplanung-Tab
+
+**Der übliche Fall – Inhalte zuordnen – steht ganz oben.** Sobald mindestens ein gemeinsamer Zeitplan existiert, zeigt Hub zuerst die Auswahl einer Regel und die Liste der Medien dieses Pis. Die seltener verwendeten Einstellungen **Standard für neue Inhalte** und **Gemeinsame Zeitpläne verwalten** sind darunter als kompakte, standardmäßig geschlossene Bereiche erreichbar. Die komplette Regel-Sammlung wird erst auf ausdrücklichen Klick eingeblendet.
+
+**Erstinstallation ohne Zeitpläne:** Statt leerer Verwaltungsbereiche erscheint oben die direkte Aufforderung, einen ersten gemeinsamen Zeitplan anzulegen. Das Formular ist dann bereits offen. Die vorhandenen Rollen-/Sicherheitsregeln gelten weiterhin.
+
 ## Geräte-Standard und neue Inhalte
 
 Jeder Pi hat optional **seinen eigenen Geräte-Standard aus der gemeinsamen Sammlung**, der bei neuen Inhalten vorgeschlagen wird. Ohne Standard werden neue Inhalte zeitlich nicht eingeschränkt. Für jeden direkten Website-, Einzelmedien-, Mehrfach- und ZIP-Upload sowie für das Übertragen einer Bibliotheksvorlage oder eines einzelnen Bibliotheksinhalts kann Marketing den Geräte-Standard übernehmen, einen anderen benannten Zeitplan wählen oder ausdrücklich **Ohne Zeitplan** wählen. Bei direkten Pi-Uploads gibt es zusätzlich eine Auswahl für individuelle Wochenzeiten.
