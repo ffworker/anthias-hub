@@ -1,0 +1,82 @@
+/* Nordlicht scheduling studio, one device at a time. */
+.schedule-workspace{max-width:1170px;margin:0 auto 64px}
+.schedule-hero{display:flex;justify-content:space-between;align-items:center;gap:24px;
+  padding:25px 29px;margin-bottom:32px;border:1px solid #3b5e62;border-radius:18px;
+  background:linear-gradient(120deg,#173638,#122539 75%);}
+.schedule-hero h1{font-size:clamp(27px,3.5vw,41px);margin:0 0 10px}
+.schedule-hero p:not(.eyebrow){color:#c5d9dd;font-size:13px;max-width:720px;margin:0}
+.schedule-hero strong{color:#e4fff4}
+.schedule-back{flex:none;text-decoration:none;white-space:nowrap}
+.schedule-section{margin-top:30px}
+.schedule-section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin:0 0 15px}
+.schedule-section-heading h2{font-size:23px;margin:0}
+.schedule-section-heading .muted{font-size:12px;max-width:400px;text-align:right}
+.schedule-presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:13px}
+.schedule-rule{padding:19px;background:#132334}
+.schedule-rule-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.schedule-rule h3{font-size:17px;margin:0 0 3px;color:#eaf8f6}
+.schedule-times{font-size:20px;font-weight:760;color:#a5f3df;margin:3px 0 14px}
+.schedule-day-pill{font-size:11px;border:1px solid #3c6a65;background:#1b413f;padding:6px 9px;color:#dbf9f0;border-radius:8px}
+.schedule-rule-edit{border:0;border-top:1px solid #35525d;padding:10px 0 0;margin:5px 0 0}
+.schedule-rule-edit>summary{font-size:12px;font-weight:700;color:#9cead6;cursor:pointer;padding:5px 0}
+.schedule-rule-edit form{margin-top:13px;display:grid;gap:10px}
+.schedule-rule-edit label,.schedule-new label,.schedule-assign-controls label{display:grid;gap:6px;min-width:0}
+.schedule-rule-edit input,.schedule-new input,.schedule-assign select{max-width:100%}
+.schedule-time-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.schedule-day-fieldset{display:flex;flex-wrap:wrap;gap:7px;border:0;margin:0;padding:0}
+.schedule-day-fieldset legend{font-size:11px;color:#b5ccce;font-weight:750;margin:0 0 7px}
+.schedule-day-fieldset label{display:inline-flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;
+  font-size:11px;background:#192e40;border:1px solid #456070;border-radius:8px;padding:6px 8px}
+.schedule-day-fieldset input{width:15px;height:15px;min-height:15px;accent-color:#7ce3ca;margin:0}
+.schedule-remove-form{margin:10px 0 0}
+.schedule-remove{min-height:28px;border:0;background:transparent;color:#bfaeae;box-shadow:none;padding:2px 3px;font-size:11px}
+.schedule-remove:hover{color:#ffb7b7}
+.schedule-hint,.schedule-footer-note{font-size:11px;line-height:1.55;color:#9eb9c0}
+.schedule-new{margin-top:16px;padding:0;background:#132537}
+.schedule-new>summary{display:flex;gap:10px;align-items:center;cursor:pointer;color:#c5f8ed;font-size:13px;font-weight:800;padding:17px 19px}
+.schedule-new>summary .icon{width:18px;height:18px}
+.schedule-new>form{padding:0 19px 19px;display:grid;gap:13px}
+.schedule-quick{display:flex;align-items:center;flex-wrap:wrap;gap:7px;color:#b3c7cb;font-size:11px}
+.schedule-quick button{min-height:29px;background:#1c3c41;color:#bdece2;border-color:#396f6a;padding:5px 9px;font-size:11px}
+.schedule-save{justify-self:start}
+.schedule-empty{padding:22px;color:#b6cbd1;font-size:13px}
+.schedule-assign{padding:0;background:#142334;overflow:hidden}
+.schedule-assign-controls{display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px;padding:20px;border-bottom:1px solid #2d4455}
+.schedule-assign-controls label{flex:1;min-width:min(100%,255px)}
+.schedule-assign-controls select{min-height:44px;width:100%}
+.schedule-assign-controls p{flex:1;min-width:240px;margin:0;color:#a9c4c7;font-size:12px}
+.schedule-select-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 19px;border-bottom:1px solid #2a4350}
+.schedule-select-tools strong{margin-right:auto;font-size:12px}
+.schedule-select-tools button{font-size:11px;min-height:29px;padding:5px 9px;background:#1b3543}
+.schedule-assets{max-height:440px;overflow-y:auto}
+.schedule-asset{display:flex;align-items:center;gap:14px;min-height:53px;padding:11px 19px;
+  border-bottom:1px solid #273b4b;font-size:12px;cursor:pointer}
+.schedule-asset:last-child{border-bottom:0}
+.schedule-asset:hover{background:#1c3441}
+.schedule-asset input{width:17px;height:17px;min-height:17px;flex:none;accent-color:#80e3d0;margin:0}
+.schedule-asset-title{flex:1;min-width:0;color:#e0edf2;overflow-wrap:anywhere;font-weight:650}
+.schedule-asset-title small{font-size:10px;color:#9eb0b9}
+.schedule-assigned{flex:none;max-width:45%;padding:5px 9px;border-radius:7px;border:1px solid #3d5c68;
+  color:#a8d9d1;background:#18343f;text-align:right;font-size:11px;overflow-wrap:anywhere}
+.schedule-submit-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;
+  padding:16px 19px;border-top:1px solid #345260}
+.schedule-submit-row p{margin:0;max-width:550px;color:#a9c6cd;font-size:11px;line-height:1.5}
+.schedule-submit-row button{flex:none}
+.schedule-assign>[data-schedule-feedback]{margin:0 19px 15px;color:#aaf3df}
+.schedule-footer-note{margin:20px 0 0}
+.schedule-footer-note strong{color:#d5e7e7}
+.fleet-schedule-link{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;
+  margin:0 0 12px;font-size:11px;color:#9ddacf;text-decoration:none;font-weight:680}
+.fleet-schedule-link:hover{color:#d5fff0}
+.fleet-schedule-link .icon{width:14px;height:14px}
+.schedule-hero-link{display:inline-flex;gap:7px;align-items:center;margin:11px 0 0;font-size:12px;
+  color:#a6e9d9;text-decoration:none;font-weight:680}
+.schedule-hero-link:hover{color:#e6fff5}
+.schedule-hero-link .icon{width:15px;height:15px}
+@media(max-width:690px){
+  .schedule-hero{flex-direction:column;align-items:flex-start;padding:21px}
+  .schedule-section-heading{display:block}
+  .schedule-section-heading .muted{text-align:left;margin-top:9px}
+  .schedule-submit-row button{width:100%}
+  .schedule-assigned{max-width:43%}
+}

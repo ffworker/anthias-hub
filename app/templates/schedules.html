@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block title %}Zeitpläne · {{ device.name }} · Anthias Hub{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='schedules.css') }}">
+<script defer src="{{ url_for('static', filename='schedules.js') }}"></script>
+{% endblock %}
+{% block content %}
+<div class="schedule-workspace">
+  <nav class="breadcrumbs" aria-label="Pfad">
+    <a href="{{ url_for('dashboard') }}">Bildschirme</a><span aria-hidden="true">›</span>
+    <a href="{{ url_for('playlist', device_id=device.id) }}">{{ device.name }}</a>
+    <span aria-hidden="true">›</span><span>Zeitpläne</span>
+  </nav>
+  <header class="schedule-hero">
+    <div>
+      <p class="eyebrow">INHALTSPLANUNG · {{ device.location or 'Ohne Standort' }}</p>
+      <h1>Zeitpläne für {{ device.name }}</h1>
+      <p>Bestimme, <strong>wann welche Inhalte</strong> auf diesem Bildschirm laufen. Die Regeln werden direkt auf dem Anthias-Gerät gespeichert.</p>
+    </div>
+    <a class="button schedule-back" href="{{ url_for('playlist', device_id=device.id) }}">← Zur Playlist</a>
+  </header>
+
+  {% if problem %}
+    <div class="notice error" role="alert">Anthias-Playlist aktuell nicht abrufbar: {{ problem }}. Vorlagen können verwaltet werden; das Zuweisen ist bis zur Verbindung nicht möglich.</div>
+  {% endif %}
+
+  <section class="schedule-section">
+    <div class="schedule-section-heading">
+      <div><p class="eyebrow">01 · ZEITFENSTER</p><h2>Deine Zeitpläne <span class="count">{{ profiles|length }}</span></h2></div>
+      <p class="muted">Ein Plan gilt für die ausgewählten Inhalte, nicht pauschal für den gesamten Bildschirm.</p>
+    </div>
+
+    <div class="schedule-presets">
+      {% for rule in profiles %}
+        <article class="card schedule-rule">
+          <div class="schedule-rule-top">
+            <div><h3>{{ rule.name }}</h3><p class="schedule-times">{{ rule.start }} – {{ rule.end }} Uhr</p></div>
+            <span class="schedule-day-pill">
+              {% for day, label in [(1,'Mo'),(2,'Di'),(3,'Mi'),(4,'Do'),(5,'Fr'),(6,'Sa'),(7,'So')] %}{% if day in rule.days %}{{ label }}{% if not loop.last %} {% endif %}{% endif %}{% endfor %}
+            </span>
+          </div>
+          {% if can_edit %}
+            <details class="schedule-rule-edit">
+              <summary>Zeitfenster bearbeiten</summary>
+              <form method="post" action="{{ url_for('device_schedule_edit', device_id=device.id, profile_id=rule.id) }}" data-schedule-form>
+                <input type="hidden" name="csrf" value="{{ csrf() }}">
+                <label>Name<input name="name" maxlength="60" required value="{{ rule.name }}"></label>
+                <div class="schedule-time-fields">
+                  <label>Von<input type="time" name="start" required value="{{ rule.start }}"></label>
+                  <label>Bis<input type="time" name="end" required value="{{ rule.end }}"></label>
+                </div>
+                <fieldset class="schedule-day-fieldset"><legend>Wochentage</legend>
+                  {% for day, label in [(1,'Mo'),(2,'Di'),(3,'Mi'),(4,'Do'),(5,'Fr'),(6,'Sa'),(7,'So')] %}
+                    <label><input type="checkbox" name="days" value="{{ day }}" {% if day in rule.days %}checked{% endif %}>{{ label }}</label>
+                  {% endfor %}
+                </fieldset>
+                <p class="schedule-hint">Änderungen an der Vorlage werden erst wirksam, wenn du die betroffenen Inhalte unten erneut zuweist.</p>
+                <button class="primary" type="submit">Zeitplan speichern</button>
+              </form>
+            </details>
+            <form class="schedule-remove-form" method="post" action="{{ url_for('device_schedule_delete', device_id=device.id, profile_id=rule.id) }}">
+              <input type="hidden" name="csrf" value="{{ csrf() }}">
+              <input type="hidden" name="confirm" value="{{ rule.id }}">
+              <button class="schedule-remove" type="submit" title="Nur benannte Vorlage entfernen, nicht die Playlist">Vorlage entfernen</button>
+            </form>
+          {% endif %}
+        </article>
+      {% else %}
+        <div class="card schedule-empty">
+          <p>Noch keine benannten Zeitpläne. Ohne zeitliche Einschränkung laufen aktive Inhalte wie bisher.</p>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if can_edit %}
+      <details class="card schedule-new" {% if not profiles %}open{% endif %}>
+        <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Neuen Zeitplan erstellen</summary>
+        <form method="post" action="{{ url_for('device_schedule_add', device_id=device.id) }}" data-schedule-form>
+          <input type="hidden" name="csrf" value="{{ csrf() }}">
+          <div class="schedule-quick">
+            <span>Beispiele:</span>
+            <button type="button" data-schedule-example="weekday">Mo–Fr · 08–18 Uhr</button>
+            <button type="button" data-schedule-example="event">Samstag · 10–14 Uhr</button>
+          </div>
+          <label>Name<input name="name" maxlength="60" placeholder="z. B. Werktag_Default" required></label>
+          <div class="schedule-time-fields">
+            <label>Von<input type="time" name="start" value="08:00" required></label>
+            <label>Bis<input type="time" name="end" value="18:00" required></label>
+          </div>
+          <fieldset class="schedule-day-fieldset"><legend>Wochentage</legend>
+            {% for day, label in [(1,'Mo'),(2,'Di'),(3,'Mi'),(4,'Do'),(5,'Fr'),(6,'Sa'),(7,'So')] %}
+              <label><input type="checkbox" name="days" value="{{ day }}" {% if day < 6 %}checked{% endif %}>{{ label }}</label>
+            {% endfor %}
+          </fieldset>
+          <button type="submit" class="primary schedule-save">Zeitplan anlegen</button>
+        </form>
+      </details>
+    {% endif %}
+  </section>
+
+  <section class="schedule-section" id="schedule-assign">
+    <div class="schedule-section-heading">
+      <div><p class="eyebrow">02 · INHALTE ZUORDNEN</p><h2>Was soll wann laufen?</h2></div>
+      <p class="muted">Jeder Inhalt kann genau ein wiederkehrendes Wochen-Zeitfenster haben.</p>
+    </div>
+    {% if assets %}
+      {% if can_edit %}
+        <form class="card schedule-assign" method="post" action="{{ url_for('device_schedule_apply', device_id=device.id) }}" data-schedule-assign>
+          <input type="hidden" name="csrf" value="{{ csrf() }}">
+          <div class="schedule-assign-controls">
+            <label>Zeitplan auswählen
+              <select name="profile_id" required>
+                <option value="">Bitte wählen …</option>
+                <option value="always">Ohne Zeitplan · immer verfügbar</option>
+                {% for rule in profiles %}
+                  <option value="{{ rule.id }}">{{ rule.name }} · {{ rule.start }}–{{ rule.end }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <p>Nur die unten markierten Inhalte werden geändert. Pausierung, Reihenfolge und Anzeigedauer bleiben erhalten.</p>
+          </div>
+          <div class="schedule-select-tools">
+            <strong>{{ assets|length }} Inhalte auf dem Pi</strong>
+            <button type="button" data-schedule-select-all>Alle auswählen</button>
+            <button type="button" data-schedule-select-none>Auswahl aufheben</button>
+          </div>
+          <div class="schedule-assets">
+            {% for asset in assets %}
+              <label class="schedule-asset">
+                <input type="checkbox" name="asset_ids" value="{{ asset.asset_id }}">
+                <span class="schedule-asset-title">{{ asset.name or 'Unbenannter Inhalt' }}{% if not asset.is_enabled %} <small>(pausiert)</small>{% endif %}</span>
+                <span class="schedule-assigned">{{ asset.schedule_label }}</span>
+              </label>
+            {% endfor %}
+          </div>
+          <div class="schedule-submit-row">
+            <p>„Ohne Zeitplan“ entfernt nur die Wochen-/Uhrzeitbegrenzung. Ein gesetzter Datumsbereich und der Pause-Status bleiben bestehen.</p>
+            <button type="submit" class="primary">Auf ausgewählte Inhalte anwenden →</button>
+          </div>
+          <p class="schedule-hint" role="status" data-schedule-feedback hidden>Speichert Zeitplanung auf dem Pi. Bitte nicht erneut klicken …</p>
+        </form>
+      {% else %}
+        <div class="card schedule-assign">
+          <div class="schedule-assets">
+            {% for asset in assets %}
+              <div class="schedule-asset">
+                <span class="schedule-asset-title">{{ asset.name or 'Unbenannter Inhalt' }}</span>
+                <span class="schedule-assigned">{{ asset.schedule_label }}</span>
+              </div>
+            {% endfor %}
+          </div>
+          <p class="schedule-hint">Nur Marketing und IT dürfen Zeitpläne ändern.</p>
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="card schedule-empty">Noch keine Inhalte verfügbar. Übertrage zuerst Medien oder Webseiten in die Playlist.</div>
+    {% endif %}
+  </section>
+
+  <p class="schedule-footer-note">Die Zeitplanung wird von Anthias anhand der <strong>lokalen Zeitzone des Pi</strong> ausgeführt. Zeitfenster über Mitternacht sind erlaubt. Einzelne, direkt in Anthias geänderte Regeln werden als „Individuell in Anthias“ angezeigt und nicht automatisch überschrieben. Die separaten Bildschirm-Ein-/Ausschaltzeiten sind hier nicht gemeint.</p>
+</div>
+{% endblock %}
