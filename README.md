@@ -52,9 +52,10 @@ HTTPS login behind host-installed Caddy and the separate Anthias Hub
 `127.0.0.1:8765` Hub publish; the formerly direct LAN port-80 publish
 was removed from the existing external Compose override. The Hub's test
 auto-deploy and separately hosted RSS2Slideshow were to remain untouched.
-**Windows client trust of Caddy's self-managed internal CA is not yet
-confirmed**; browser TLS warnings may persist until the verified public
-root certificate has been imported. This is a test-VM report, not evidence
+**Windows client trust of Caddy's self-managed internal CA was confirmed**
+on the operator's workstation: after importing the verified public root,
+the browser's certificate warning disappeared. Other staff PCs still need
+their own explicit trust installation or centrally managed GPO rollout. This is a test-VM report, not evidence
 of production certification or a completed off-host CA backup.
 
 For the exact optional setup, Windows trust steps, secure CA backup, and

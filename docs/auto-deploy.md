@@ -73,8 +73,10 @@ Der HTTPS-Login funktioniert jetzt über den hostseitigen Caddy-Proxy.
 öffentliche HTTP-Bind der bisherigen externen LAN-Override wurde entfernt.
 Der Hub bleibt intern auf `127.0.0.1:8765` und verwendet weiterhin
 `ghcr.io/ffworker/anthias-hub:latest`. Das separate RSS2Slideshow-Projekt
-bleibt unberührt. **Die Windows-Vertrauensstellung der privaten Caddy-CA
-ist als verbleibender Schritt noch nicht abschließend bestätigt.**
+bleibt unberührt. **Die Windows-Vertrauensstellung der privaten Caddy-CA wurde am
+Administrator-PC anschließend erfolgreich bestätigt:** Die Browserwarnung
+ist weg. Weitere Arbeitsplätze benötigen eine eigene, verifizierte Root-CA-
+Installation oder eine zentral verwaltete GPO.
 
 **Korrekte manuelle Kommandos** auf dieser VM (im Checkout):
 
