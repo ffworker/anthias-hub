@@ -25,6 +25,10 @@ from .bulk_media import BatchError, execute_batch
 from .devices import load, save, get, validate_device
 from .library import Library, LibraryError
 from .storage import MAX_MEDIA_BYTES, MAX_REQUEST_BYTES, upload_capacity
+from .schedules import (
+    ScheduleError, profiles_for, add_profile, edit_profile, remove_profile,
+    describe_asset, apply_to_assets,
+)
 
 _audit_lock = threading.Lock()
 _apply_lock = threading.Lock()
@@ -41,6 +45,7 @@ def create_app(config=None):
         DEVICES_FILE=os.environ.get('DEVICES_FILE', '/data/devices.json'),
         AUDIT_FILE=os.environ.get('AUDIT_FILE', '/data/audit.jsonl'),
         LIBRARY_DIR=os.environ.get('LIBRARY_DIR', '/data/library'),
+        SCHEDULES_FILE=os.environ.get('SCHEDULES_FILE', '/data/schedules.json'),
         SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax',
         SESSION_COOKIE_SECURE=os.environ.get('COOKIE_SECURE', '1') == '1',
         PERMANENT_SESSION_LIFETIME=60 * 60 * 8,
@@ -686,6 +691,94 @@ def create_app(config=None):
                                library_templates=templates,
                                library_items_available=any(t.get('items') for t in templates),
                                error=error, storage=storage, storage_reason=storage_reason)
+
+    @app.get('/devices/<device_id>/schedules')
+    @login_required()
+    def device_schedules(device_id):
+        device, api = player_or_404(device_id)
+        try:
+            profiles = profiles_for(app.config['SCHEDULES_FILE'], device_id)
+        except ScheduleError as exc:
+            profiles = []
+            flash(str(exc), 'error')
+        assets, problem = [], None
+        try:
+            assets = api.assets()
+        except PlayerError as exc:
+            problem = str(exc)
+        for asset in assets:
+            asset['schedule_label'] = describe_asset(asset, profiles)
+        return render_template('schedules.html', device=device,
+                               profiles=profiles, assets=assets,
+                               problem=problem,
+                               can_edit=current_user()['role'] in ('owner', 'it', 'marketing'))
+
+    @app.post('/devices/<device_id>/schedules/add')
+    @login_required('it', 'marketing')
+    def device_schedule_add(device_id):
+        player_or_404(device_id)  # Registered devices only.
+        try:
+            saved = add_profile(
+                app.config['SCHEDULES_FILE'], device_id,
+                request.form.get('name', ''), request.form.getlist('days'),
+                request.form.get('start', ''), request.form.get('end', ''),
+            )
+            audit('schedule.add', device_id, saved['id'])
+            flash('Zeitplan gespeichert. Wähle nun die Inhalte, die er steuern soll.', 'success')
+        except ScheduleError as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('device_schedules', device_id=device_id))
+
+    @app.post('/devices/<device_id>/schedules/<profile_id>/edit')
+    @login_required('it', 'marketing')
+    def device_schedule_edit(device_id, profile_id):
+        player_or_404(device_id)
+        try:
+            saved = edit_profile(
+                app.config['SCHEDULES_FILE'], device_id, profile_id,
+                request.form.get('name', ''), request.form.getlist('days'),
+                request.form.get('start', ''), request.form.get('end', ''),
+            )
+            audit('schedule.edit', device_id, saved['id'])
+            flash('Zeitplanvorlage aktualisiert. Bereits zugeordnete Pi-Inhalte behalten ihre '
+                  'bisherigen Zeiten, bis du sie unten erneut zuweist.', 'success')
+        except ScheduleError as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('device_schedules', device_id=device_id))
+
+    @app.post('/devices/<device_id>/schedules/<profile_id>/delete')
+    @login_required('it', 'marketing')
+    def device_schedule_delete(device_id, profile_id):
+        player_or_404(device_id)
+        if request.form.get('confirm') != profile_id:
+            abort(400, 'Zeitplan entfernen ausdrücklich bestätigen')
+        try:
+            remove_profile(app.config['SCHEDULES_FILE'], device_id, profile_id)
+            audit('schedule.delete', device_id, profile_id)
+            flash('Benannte Vorlage entfernt. Bestehende Zeiten am Pi wurden nicht verändert. '
+                  'Zum Aufheben unten „Ohne Zeitplan“ zuweisen.', 'success')
+        except ScheduleError as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('device_schedules', device_id=device_id))
+
+    @app.post('/devices/<device_id>/schedules/apply')
+    @login_required('it', 'marketing')
+    def device_schedule_apply(device_id):
+        _, api = player_or_404(device_id)
+        try:
+            choice = request.form.get('profile_id', '')
+            profiles = profiles_for(app.config['SCHEDULES_FILE'], device_id)
+            profile = None if choice == 'always' else next(
+                (p for p in profiles if p['id'] == choice), None)
+            if not choice or (choice != 'always' and profile is None):
+                raise ScheduleError('Bitte einen vorhandenen Zeitplan wählen.')
+            count = apply_to_assets(api, profile, request.form.getlist('asset_ids'))
+            audit('schedule.apply', device_id, choice)
+            flash(f'{count} Inhalte auf dem Pi zeitlich aktualisiert. '
+                  'Der Pi entscheidet anhand seiner lokalen Zeitzone, wann sie laufen.', 'success')
+        except (ScheduleError, PlayerError) as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('device_schedules', device_id=device_id))
 
     @app.get('/devices/<device_id>/storage')
     @login_required()

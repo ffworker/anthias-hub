@@ -15,6 +15,7 @@
     <div class="hero-status">
       <span class="pill {{ 'bad' if error else 'ok' }}">{{ 'Nicht erreichbar' if error else 'API erreichbar' }}</span>
       <small>Anzeige am TV nicht live geprüft</small>
+      <a class="schedule-hero-link" href="{{ url_for('device_schedules', device_id=device.id) }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg> Zeitpläne</a>
     </div>
   </header>
 
