@@ -94,7 +94,7 @@ def test_unknown_storage_requires_explicit_override():
     response.json.return_value = {'uri': 'file:///test.mp4'}
     api.http.request = MagicMock(return_value=response)
     with patch.object(api, 'info', side_effect=PlayerError('Anthias antwortete mit HTTP 404')):
-        with pytest.raises(PlayerError, match='Speicherprüfung fehlgeschlagen'):
+        with pytest.raises(PlayerError, match='keinen auswertbaren freien Speicher'):
             api.upload(io.BytesIO(b'test'), 'small.mp4', 'video/mp4')
         result = api.upload(io.BytesIO(b'test'), 'small.mp4', 'video/mp4',
                             allow_unknown_space=True)
