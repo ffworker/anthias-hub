@@ -543,3 +543,56 @@ def test_shared_schedule_global_delete_requires_confirmation(hub):
     post(client,base+'/'+rule['id']+'/delete',
          {'confirm':rule['id'],'confirm_global':'yes'})
     assert profiles_for(app.config['SCHEDULES_FILE'],'lab')==[]
+
+
+def test_schedule_workspace_prioritizes_assignment_when_shared_plans_exist(hub):
+    app, client, _ = hub
+    sign_in(client, 'marketing')
+    base='/devices/lab/schedules'
+    post(client,base+'/add',{'name':'Werktag_Default','days':['1','2','3','4','5'],
+                            'start':'08:00','end':'18:00'})
+    page=client.get(base)
+    assert page.status_code == 200
+    html=page.get_data(as_text=True)
+    # Actual content assignment is above all low-frequency administration.
+    assert html.index('id="schedule-assign"') < html.index('data-schedule-default')
+    assert html.index('id="schedule-assign"') < html.index('data-schedule-library')
+    assert 'Inhalte zeitlich planen' in html
+    assert 'data-schedule-onboarding' not in html
+    assert '<details class="schedule-secondary-panel schedule-library-accordion" data-schedule-library>' in html
+    assert '<details class="schedule-secondary-panel schedule-default-accordion" data-schedule-default>' in html
+    assert '<details class="schedule-secondary-panel schedule-library-accordion" data-schedule-library open' not in html
+    assert '<details class="schedule-secondary-panel schedule-default-accordion" data-schedule-default open' not in html
+    # All prior functions remain reachable within the collapsible settings.
+    assert 'Gemeinsamen Zeitplan erstellen' in html
+    assert 'Zeitfenster bearbeiten' in html
+    assert 'Vorlage entfernen' in html
+    assert 'Auf ausgewählte Inhalte anwenden' in html
+
+
+def test_schedule_workspace_onboards_when_no_shared_plans_exist(hub):
+    _, client, _ = hub
+    sign_in(client, 'marketing')
+    html=client.get('/devices/lab/schedules').get_data(as_text=True)
+    assert 'data-schedule-onboarding' in html
+    assert 'Ersten Zeitplan erstellen' in html
+    assert 'Gemeinsamen Zeitplan erstellen' in html
+    assert '<details class="card schedule-new" open>' in html
+    assert html.index('data-schedule-onboarding') < html.index('id="schedule-assign"')
+    assert 'data-schedule-library' not in html
+    assert 'data-schedule-default' not in html
+    assert 'Ohne Zeitplan' in html
+
+
+def test_viewer_still_reads_assignment_but_cannot_edit_collapsed_shared_collection(hub):
+    _, client, _ = hub
+    sign_in(client, 'marketing')
+    post(client,'/devices/lab/schedules/add',{'name':'Event','days':['6'],
+                                               'start':'10:00','end':'14:00'})
+    post(client,'/logout',{})
+    sign_in(client,'viewer')
+    html=client.get('/devices/lab/schedules').get_data(as_text=True)
+    assert html.index('id="schedule-assign"') < html.index('data-schedule-library')
+    assert 'Event' in html
+    assert 'data-schedule-form' not in html
+    assert 'Auf ausgewählte Inhalte anwenden' not in html
