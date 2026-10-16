@@ -121,6 +121,13 @@ body{background:radial-gradient(ellipse 65% 420px at 74% -165px,#224551,transpar
 .auth-card input:focus{border-color:var(--studio-aqua)}
 .auth-submit{width:100%;min-height:50px;justify-content:space-between!important;font-size:14px;margin-top:8px}
 .auth-help{color:#95aebe;text-align:center;font-size:11px;margin:20px 0 0}
+.auth-session-notice{
+  margin:0 0 18px;padding:12px 14px;
+  border:1px solid #a07855;border-radius:11px;
+  background:#3b302b;color:#ffe2c9;
+  font-size:12px;line-height:1.55;overflow-wrap:anywhere
+}
+.auth-session-notice strong{display:block;margin-bottom:4px;color:#fff0de}
 .studio-error{max-width:720px;margin:75px auto 100px;padding:49px 45px;text-align:center;background:radial-gradient(circle at 75% 10%,#2c5b5460,transparent 45%),#122233;border:1px solid #415e66;border-radius:23px;box-shadow:0 25px 55px #0003}
 .studio-error-symbol{display:grid;place-items:center;border-radius:18px;border:1px solid #5f6e74;background:#29404a;color:#a8e5da;font-size:40px;width:76px;height:76px;margin:0 auto 25px}
 .studio-error h1{font-size:35px;margin-bottom:12px}
