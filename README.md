@@ -16,6 +16,7 @@ Anthias Hub gives solo Raspberry Pi enthusiasts and small teams one interface to
 - **Screen overview** – register individual players, view connectivity and playlists.
 - **Playlist studio** – add websites, PNG/JPEG/WebP/MP4, reorder and edit individual items.
 - **Reusable library** – save playlists and media, import/export template ZIPs, append items to players. Single MP4 uploads and media-ZIP imports up to 4 GiB (pilot/test; at most 4 GiB unpacked per media ZIP) are supported with streaming and conservative per-player disk-space checks (reserve of at least 2 GiB or 20%, whichever is larger, plus room for two temporary copies). Automatic Pi uploads use the Anthias API free-space reading directly; no per-device storage attestation required. For history and limitations on external media mounts, see the [large-upload audit](docs/large-upload-audit.md).
+- **Native Anthias content schedules** – per-device named weekday/time presets with explicit playlist-item assignment and an “unscheduled” option; Marketing and IT can edit, Viewer can inspect. Real scheduling stays on each Pi even when the Hub is offline. See [scheduling guide](docs/scheduling.md).
 - **Role-based access** – **Owner** (both device and playlist administration), **IT** (devices), **Marketing** (playlists), **Viewer** (read-only). Existing IT/Marketing installations keep their accounts.
 - **Optional remote power controls** – reboot/shutdown and experimental HDMI-CEC on supported players; actions require confirmation.
 - **Independent, self-hosted** – Docker Compose and local configuration, with optional internal network access and HTTPS termination.
@@ -49,6 +50,7 @@ For a colleague or another LAN machine, see the optional [network access guide](
 | View registered screens and library | ✓ | ✓ | ✓ | ✓ |
 | Register, edit, remove players | ✓ | ✓ | – | – |
 | Edit playlists and local library | ✓ | – | ✓ | – |
+| Configure per-device content schedules | ✓ | ✓ | ✓ | View |
 | HDMI-CEC and Pi shutdown | ✓ | ✓ | – | – |
 | Confirmed Pi reboot | ✓ | ✓ | ✓ | – |
 
@@ -62,7 +64,7 @@ Every Marketing user currently has access to **all** registered screens. Player 
 - [IT administration guide](docs/IT_ADMIN_GUIDE.md) – maintenance, roles and recovery.
 - [Controlled releases / new host](docs/reproducible-production.md) – image pins, rollout and rollback.
 - [Test-only auto-deploy](docs/auto-deploy.md) – follows `:latest`, with health check and automatic rollback.
-- [Marketing bulk import](docs/marketing-bulk-import.md) · [UI behavior](docs/ui-ux-review.md)
+- [Marketing bulk import](docs/marketing-bulk-import.md) · [Native Anthias schedules](docs/scheduling.md) · [UI behavior](docs/ui-ux-review.md)
 - [Pilot acceptance checklist](docs/pilot-acceptance.md) · [Changelog](CHANGELOG.md)
 
 Successful `main` CI runs publish `ghcr.io/ffworker/anthias-hub:latest` for the test VM, plus a per-commit `:sha-<FULL_COMMIT_SHA>` image for traceability and recovery. **No alpha, beta or stable release channels are configured.** Real-device verification is still required before any production promises.
