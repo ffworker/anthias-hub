@@ -1731,22 +1731,55 @@ def test_owner_has_both_roles_without_expanding_existing_role_grants(env):
 # Large-media boundaries and device capacity are exercised by test_device_storage.py.
 
 
-def test_player_capacity_is_visible_without_exposing_device_admin_controls(env):
-    app, client, _ = env
+def test_fleet_renders_without_any_player_calls_and_storage_is_deferred(env):
+    _, client, _ = env
     login(client, 'marketing')
-    with patch.object(FakeAnthias, 'info', return_value={'free_space': '6.0 GB'}, create=True):
-        dash = client.get('/').data.decode('utf-8')
+    with patch.object(FakeAnthias, 'assets', side_effect=AssertionError('slow player call')) as assets, \
+         patch.object(FakeAnthias, 'info', side_effect=AssertionError('slow info call')) as info:
+        dashboard = client.get('/')
+    assert dashboard.status_code == 200
+    assert 'fleet-status.js' in dashboard.get_data(as_text=True)
+    assert 'data-overview-state="pending"' in dashboard.get_data(as_text=True)
+    assert 'Wird geprüft' in dashboard.get_data(as_text=True)
+    assert 'data-fleet-online' in dashboard.get_data(as_text=True)
+    assert 'data-storage-url=' in dashboard.get_data(as_text=True)
+    assets.assert_not_called()
+    info.assert_not_called()
+
+
+def test_player_capacity_is_fetched_after_playlist_renders(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    with patch.object(FakeAnthias, 'info', side_effect=AssertionError('info must be lazy')) as info:
         playlist = client.get('/devices/lab').data.decode('utf-8')
-    assert 'fleet-storage-menu' in dash
-    assert '6.0 GB' in dash and 'Sicherheitsreserve' in dash
-    assert 'GiB für Uploads verfügbar' in playlist
-    assert 'data-player-available="' in playlist
-    assert 'storage-note' not in playlist
+    info.assert_not_called()
+    assert 'Speicher wird geprüft' in playlist
+    assert 'data-storage-loading="1"' in playlist
+    assert 'data-player-available="0"' in playlist
+    assert 'template-transfer.js' in playlist
 
-    no_disk = client.get('/devices/lab').data.decode('utf-8')
-    assert 'Speicherwert nicht verfügbar' in no_disk
-    assert 'data-player-available="0"' in no_disk
+    with patch.object(FakeAnthias, 'info', return_value={'free_space':'6.0 GB'}, create=True):
+        disk = client.get('/devices/lab/storage')
+    assert disk.status_code == 200 and disk.json['ok']
+    assert disk.json['reported'] == '6.0 GB'
+    assert disk.json['usable_bytes'] > 0
 
+
+def test_device_overview_reports_actual_count_without_info_or_credentials(env):
+    _, client, _ = env
+    assert client.get('/devices/lab/overview').status_code in (302, 401, 403)
+    login(client, 'marketing')
+    with patch.object(FakeAnthias, 'info', side_effect=AssertionError('unexpected info')) as info:
+        response = client.get('/devices/lab/overview')
+    info.assert_not_called()
+    assert response.status_code == 200
+    assert response.json == {'ok':True, 'count':len(FakeAnthias.assets_data)}
+    assert response.headers['Cache-Control'] == 'no-store'
+    assert client.get('/devices/does-not-exist/overview').status_code == 404
+    with patch.object(FakeAnthias, 'assets', side_effect=anthias.PlayerError('device offline')):
+        down = client.get('/devices/lab/overview')
+    assert down.status_code == 200
+    assert down.json == {'ok':False, 'count':None}
 
 
 def test_storage_menu_is_small_and_only_shows_detail_on_demand(env):
@@ -1797,19 +1830,19 @@ def test_storage_reason_and_override_only_for_unknown(env):
     with patch.object(FakeAnthias, 'info', side_effect=anthias.PlayerError('Anthias antwortete mit HTTP 404'), create=True):
         page = client.get('/devices/lab').data.decode('utf-8')
         disk = client.get('/devices/lab/storage')
-    assert 'Speicherwert nicht verfügbar' in page
-    assert 'HTTP 404' in page
+    assert 'Speicher wird geprüft' in page
+    assert 'data-storage-loading="1"' in page
     assert 'name="ignore_storage_check"' in page
     assert 'value="manual-confirmed"' in page
     assert disk.json['status'] == 'unknown'
     assert 'HTTP 404' in disk.json['message']
     with patch.object(FakeAnthias, 'info', return_value={'free_space': '2.0 GB'}, create=True):
-        full_page = client.get('/devices/lab').data.decode('utf-8')
         full_data = client.get('/devices/lab/storage')
     assert full_data.json['status'] == 'full'
     assert full_data.json['ok']
-    assert 'data-storage-known="1"' in full_page
-    assert 'name="ignore_storage_check" value="manual-confirmed" disabled' in full_page
+    # Browser only offers overrides after a genuinely unknown API response;
+    # valid but insufficient capacity cannot be bypassed.
+    assert 'data-storage-loading="1"' in page
 
 
 def test_single_upload_forwards_manual_acknowledgement(env):
@@ -1844,8 +1877,9 @@ def test_api_storage_reading_enables_upload_without_attestation(env, monkeypatch
     assert response.json['ok']
     assert response.json['reported'] == '20.0 GB'
     assert response.json['usable_bytes'] > 0
-    assert 'GiB für Uploads verfügbar' in page
-    assert 'data-player-available="0"' not in page
+    assert 'Speicher wird geprüft' in page
+    assert 'data-storage-loading="1"' in page
+    assert 'data-player-available="0"' in page
     assert 'name="ignore_storage_check" value="manual-confirmed" disabled' in page
 
 
@@ -1861,14 +1895,13 @@ def test_storage_creation_failure_has_controlled_response(env, code):
     assert 'Hub-Speicher' in response.json['error']
 
 
-def test_dashboard_storage_popover_shows_api_space_without_attestation(env, monkeypatch):
+def test_dashboard_storage_popover_fetches_only_when_opened(env):
     _, client, _ = env
     login(client, 'marketing')
-    monkeypatch.delenv('ANTHIAS_VERIFIED_STORAGE_URLS', raising=False)
-    with patch.object(FakeAnthias, 'info', return_value={'free_space': '15.0 GB'}, create=True):
-        board = client.get('/').data.decode()
-        playlist = client.get('/devices/lab').data.decode()
-    assert '15.0 GB' in board
-    assert 'Anthias meldet frei' in board
-    assert 'GiB für Uploads verfügbar' in playlist
-    assert 'data-player-available="0"' not in playlist
+    dashboard = client.get('/').get_data(as_text=True)
+    assert 'data-storage-url="/devices/lab/storage"' in dashboard
+    assert 'fleet-status.js' in dashboard
+    assert 'Anthias meldet frei' in dashboard
+    assert 'data-storage-values hidden' in dashboard
+    assert 'Wird beim Öffnen abgefragt' in dashboard
+    assert 'data-storage-warning hidden' in dashboard
