@@ -31,6 +31,18 @@
 - Keep normal browser upload and bulk import progress states; a 100% transfer to Hub is not proof of finished Anthias transfer.
 - No extra frontend framework or external icon dependency. No deployment or Pi operations as part of UI changes.
 
+## Responsive library publication (October 16, 2026)
+
+The template detail's prominent publication section uses two balanced,
+min-width-zero fields for target device and shared time schedule, with the
+acknowledgement and CTA on a separate aligned action row. Narrow viewports
+stack the two fields and make the CTA full width. All selects use the same
+Nordlicht rounded dropdown, not a native-looking mismatched field. The
+library item flyout remains card-bound; avoid adding fixed minimum widths to
+nested library forms. Static Node regression guards cover the publishing
+markup and responsive CSS, but real browser screenshots at 1440/1024/768/390
+and 200% zoom are still recommended before pilot handoff.
+
 ## Acceptance checks
 
 - `python -m pytest -q`
