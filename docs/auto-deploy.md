@@ -89,35 +89,17 @@ Compose change and resume afterward. Never remove or rename
 Caddy's configuration nor its CA/private keys: these need separate encrypted
 backups and restoration procedures.
 
-### Aktueller Test-VM-Stand (vom Operator bestätigt, 16.10.2026)
+### Aktueller Test-VM-Stand
 
-Der HTTPS-Login funktioniert jetzt über den hostseitigen Caddy-Proxy.
-`COOKIE_SECURE=1` und `TRUSTED_PROXY_COUNT=1` sind gesetzt; der
-öffentliche HTTP-Bind der bisherigen externen LAN-Override wurde entfernt.
-Der Hub bleibt intern auf `127.0.0.1:8765` und verwendet weiterhin
-`ghcr.io/ffworker/anthias-hub:latest`. Das separate RSS2Slideshow-Projekt
-bleibt unberührt. **Die Windows-Vertrauensstellung der privaten Caddy-CA wurde am
-Administrator-PC anschließend erfolgreich bestätigt:** Die Browserwarnung
-ist weg. Weitere Arbeitsplätze benötigen eine eigene, verifizierte Root-CA-
-Installation oder eine zentral verwaltete GPO.
+HTTPS über hostseitigen Caddy funktioniert; der Hub nutzt
+`COOKIE_SECURE=1`, `TRUSTED_PROXY_COUNT=1` und ausschließlich
+`127.0.0.1:8765`. Die zusätzliche LAN-Port-80-Bindung ist entfernt.
+Die Windows-CA-Vertrauensstellung wurde am Admin-PC getestet; weitere
+Clients benötigen den verifizierten CA-Root. Der `:latest`-Updater und
+RSS2Slideshow sind separate Dienste.
 
-**Korrekte manuelle Kommandos** auf dieser VM (im Checkout):
-
-```bash
-cd ~/apps/anthias-hub
-OVERRIDE=$(sed -n 's/^HUB_COMPOSE_OVERRIDE=//p' .env)
-test -n "$OVERRIDE" && test -f "$OVERRIDE" || exit 1
-
-# Neustart OHNE neue .env-Werte:
-docker compose -f compose.cd.yaml -f "$OVERRIDE" -p anthias-hub restart anthias-hub
-
-# Nach .env-/Override-Änderungen (nur Hub, kein Image-Build):
-docker compose -f compose.cd.yaml -f "$OVERRIDE" -p anthias-hub up -d --no-build --no-deps --force-recreate anthias-hub
-```
-
-Nie allein `docker compose up -d --build` ausführen; das nutzt auf diesem
-Host die falsche Compose-Basis. Nach Änderungen den Hub, HTTPS-Login,
-tatsächliche Portbelegung und `anthias-hub-cd.timer` prüfen.
+Für manuelle Neustarts und `.env`-Änderungen gelten **ausschließlich**
+die Befehle unter „Routine manual Hub commands“ oben.
 
 ## Optional host-local Compose configuration
 

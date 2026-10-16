@@ -60,9 +60,12 @@ docker compose -f compose.cd.yaml -f "$OVERRIDE" -p anthias-hub up -d --no-build
 
 **Do not run plain `docker compose up -d --build` on a pull-based installation.** It selects the local-build `compose.yaml` and may restore obsolete bindings. First-time installations without an override follow the setup script instead. For full operations see [auto-deploy](docs/auto-deploy.md), [installation and release management](docs/reproducible-production.md), and [network access](docs/network-access.md).
 
-### Current deployment feedback
+### Current deployment
 
-On **16 October 2026**, the operator reported a working internal HTTPS login through a host-side Caddy reverse proxy, `COOKIE_SECURE=1`, `TRUSTED_PROXY_COUNT=1`, and an Anthias Hub container exposed only on `127.0.0.1:8765`. A browser warning disappeared after the Caddy root CA was trusted on the operator's Windows workstation; other devices need their own approved trust installation. The separate RSS2Slideshow container remains independent. **This is staging feedback, not a certified production deployment or proof of backup restoration.**
+The test VM uses host-side Caddy HTTPS, secure cookies and a loopback-only
+Hub backend; the separate RSS2Slideshow service remains independent.
+Client devices must trust the Caddy CA. This does **not** imply production
+certification. See [network access](docs/network-access.md) for TLS setup.
 
 ## Documentation
 
