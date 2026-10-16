@@ -57,7 +57,8 @@
     setOverrideVisible(false);
     if (window.AnthiasStorage) window.AnthiasStorage.lastUnknown = false;
   };
-  setOverrideVisible(!Number(strip.dataset.storageKnown));
+  // Pending isn't unknown capacity: no manual bypass until API replied.
+  setOverrideVisible(strip.dataset.storageLoading === '1' ? false : !Number(strip.dataset.storageKnown));
 
   async function refresh() {
     if (button) button.disabled = true;
@@ -84,5 +85,6 @@
     }
   }
   button?.addEventListener('click', refresh);
-  window.AnthiasStorage = {refresh, lastUnknown: !Number(strip.dataset.storageKnown)};
+  window.AnthiasStorage = {refresh, lastUnknown: strip.dataset.storageLoading !== '1' && !Number(strip.dataset.storageKnown)};
+  if (strip.dataset.storageLoading === '1') void refresh();
 })();

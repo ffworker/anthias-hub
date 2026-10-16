@@ -553,17 +553,20 @@ def create_app(config=None):
     @app.get('/')
     @login_required()
     def dashboard():
+        # Do not block Hub navigation on serial Pi API calls or slow info.
         devices = load(app.config['DEVICES_FILE'])
-        statuses = {}
-        for device in devices:
-            try:
-                api = Anthias(device)
-                items = api.assets()
-                storage, reason = read_player_storage(api)
-                statuses[device['id']] = {'ok': True, 'count': len(items), 'storage': storage, 'storage_reason': reason}
-            except PlayerError:
-                statuses[device['id']] = {'ok': False, 'count': None, 'storage': None, 'storage_reason': 'Anthias nicht erreichbar'}
-        return render_template('dashboard.html', devices=devices, statuses=statuses)
+        return render_template('dashboard.html', devices=devices)
+
+    @app.get('/devices/<device_id>/overview')
+    @login_required()
+    def device_overview(device_id):
+        """Small, authenticated player count; no expensive system-info call."""
+        _, api = player_or_404(device_id)
+        try:
+            items = api.assets()
+        except PlayerError:
+            return jsonify(ok=False, count=None)
+        return jsonify(ok=True, count=len(items))
 
     @app.post('/devices')
     @login_required('it')
@@ -669,9 +672,10 @@ def create_app(config=None):
             assets = api.assets()
         except PlayerError as exc:
             error = str(exc)
-        storage, storage_reason = (None, None)
-        if not error:
-            storage, storage_reason = read_player_storage(api)
+        # Fetch slow Anthias system info asynchronously after rendering.
+        # Server-side upload preflight still rechecks actual Pi capacity.
+        storage = None
+        storage_reason = 'Speicher wird geprüft …' if not error else None
         templates = []
         if not error and current_user()['role'] in ('marketing', 'owner'):
             try:
