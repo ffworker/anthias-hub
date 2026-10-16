@@ -17,9 +17,13 @@ from .library import MAX_MEDIA, _MEDIA, _signature
 
 MAX_FILES = 20
 MAX_ZIP_ENTRIES = 60  # directory records count too
-MAX_TOTAL_UNPACKED = 150 * 1024 * 1024
-MAX_ARCHIVE_BYTES = 50 * 1024 * 1024
-MAX_ZIP_MEDIA_BYTES = 50 * 1024 * 1024
+# ZIP imports may now carry real multi-GB video assets. Bound both the
+# compressed request and the cumulative expanded size to one 4-GiB batch.
+# Entry counts, path checks, supported methods and compression ratio limits
+# still apply to reject archive bombs before any user-visible writes.
+MAX_TOTAL_UNPACKED = MAX_MEDIA
+MAX_ARCHIVE_BYTES = MAX_MEDIA
+MAX_ZIP_MEDIA_BYTES = MAX_MEDIA
 MAX_BATCH_BYTES = MAX_MEDIA
 MAX_RATIO = 150
 CHUNK = 64 * 1024
@@ -70,12 +74,12 @@ def _safe_zip_members(archive):
         if member.is_dir():
             continue
         if member.file_size > MAX_ZIP_MEDIA_BYTES:
-            raise BatchError('ZIP enthält Medien über 50 MB.')
+            raise BatchError('ZIP enthält Medien über 4 GiB.')
         if member.file_size > MAX_RATIO * max(1, member.compress_size):
             raise BatchError('ZIP wurde wegen ungewöhnlich hoher Komprimierung abgelehnt.')
         total += member.file_size
         if total > MAX_TOTAL_UNPACKED:
-            raise BatchError('ZIP enthält über 150 MB entpackte Daten.')
+            raise BatchError('ZIP enthält über 4 GiB entpackte Daten insgesamt.')
         members.append(member)
     if not members:
         raise BatchError('ZIP enthält keine Dateien.')
@@ -109,7 +113,7 @@ def _verified_stream(source, expected_size=None, max_bytes=MAX_MEDIA):
                 break
             amount += len(block)
             if amount > max_bytes:
-                raise ValueError('Datei zu groß (Einzelvideo max. 4 GiB, ZIP-Eintrag max. 50 MiB).')
+                raise ValueError('Datei zu groß (Einzelvideo max. 4 GiB, ZIP-Eintrag max. 4 GiB).')
             if len(head) < 16:
                 head += block[:16 - len(head)]
             output.write(block)
@@ -177,7 +181,7 @@ def execute_batch(uploads, *, duration, destination, on_media):
         raise BatchError('Eine ZIP bitte allein auswählen; keine gemischten Dateien.')
     if from_zip:
         if _size(uploads[0].stream) > MAX_ARCHIVE_BYTES:
-            raise BatchError('ZIP-Datei zu groß (max. 50 MB).')
+            raise BatchError('ZIP-Datei zu groß (max. 4 GiB).')
         try:
             archive = zipfile.ZipFile(uploads[0].stream)
         except (OSError, zipfile.BadZipFile, zipfile.LargeZipFile):

@@ -21,7 +21,7 @@ Playlist-Einträge haben für Marketing jetzt **Titel direkt im Eintrag** und be
 
 **Direkt zum Player:** `Bildschirme → gewünschten Bildschirm öffnen → Inhalt hinzufügen → Bild / Video → Mehrere Medien auf einmal`. Die Inhalte werden einzeln an die **bestehende** Playlist angehängt; es wird nichts gelöscht, zurückgesetzt oder umsortiert. Die Reihenfolge orientiert sich an der Dateireihenfolge im ZIP bzw. im Auswahlfeld.
 
-Für beide Ziele funktioniert alternativ die Browser-Mehrfachauswahl von PNG/JPG/WebP/MP4 ohne ZIP. Der Browser sendet jede Datei **in einem eigenen Request** (auch fünf 500-MB-Videos), prüft vor jedem Pi-Upload den freien Speicher neu und stoppt bei Fehler oder Abbruch. Server-seitig bleiben max. 4 GiB pro Datei sowie beim Formular ohne JavaScript 1 GiB insgesamt; ZIP-Dateien bleiben auf 50 MiB begrenzt. Die Videodauer wird automatisch gesetzt; `Bilddauer` gilt für sämtliche Bilder des Imports. Der Titel stammt aus dem Dateinamen (ohne Dateiendung).
+Für beide Ziele funktioniert alternativ die Browser-Mehrfachauswahl von PNG/JPG/WebP/MP4 ohne ZIP. Der Browser sendet jede Datei **in einem eigenen Request** (auch fünf 500-MB-Videos), prüft vor jedem Pi-Upload den freien Speicher neu und stoppt bei Fehler oder Abbruch. Server-seitig bleiben max. 4 GiB pro Datei sowie beim Formular ohne JavaScript 4 GiB insgesamt; ZIP-Dateien dürfen bis 4 GiB groß sein und höchstens 4 GiB Medien enthalten (entpackt). Die Videodauer wird automatisch gesetzt; `Bilddauer` gilt für sämtliche Bilder des Imports. Der Titel stammt aus dem Dateinamen (ohne Dateiendung).
 
 ### Grenzen und Schutzmechanismen
 
@@ -32,9 +32,9 @@ Für beide Ziele funktioniert alternativ die Browser-Mehrfachauswahl von PNG/JPG
 | Einzelvideo | maximal 4 GiB (4096 MiB) |
 | HTTP-Anfrage an Hub | maximal 4 GiB plus 16 MiB Formular-/ZIP64-Overhead (für Vorlagenbackups) |
 | Browser-Mehrfachauswahl (ohne ZIP) | bis zu 20 Dateien, je max. 4 GiB, nacheinander übertragen |
-| Normale Medien-ZIP | maximal 50 MiB Archiv; nach Entpackung max. 150 MiB |
-| Entpackte ZIP-Dateien insgesamt | maximal 150 MiB |
-| Einzelne entpackte ZIP-Datei | maximal 50 MiB |
+| Normale Medien-ZIP | maximal 4 GiB Archiv; nach Entpackung insgesamt max. 4 GiB |
+| Entpackte ZIP-Dateien insgesamt | maximal 4 GiB |
+| Einzelne entpackte ZIP-Datei | maximal 4 GiB |
 | Maximal ZIP-Verzeichniseinträge (inkl. Ordner) | 60 |
 | ZIP-Kompressionsverhältnis pro Datei | maximal 150:1 |
 | ZIP-Verfahren | STORED oder DEFLATED |
@@ -51,7 +51,7 @@ Ohne JavaScript funktioniert ein regulärer Formular-POST mit einer verkürzten 
 
 ### IT / Deployment
 
-Das Feature verändert weder gespeicherte Bibliotheksmedien noch die ursprüngliche Playlist-ZIP-Import/Exportfunktion. Die neue Batch-Route nutzt dieselben Marketing-Rollen und CSRF-Prüfungen wie die bisherigen Uploads. Gunicorn lässt bei großen Uploads bis zu 7200 Sekunden zu; zusätzlich hat der Browser einen Timeout von 40 Minuten. Eine langsame Pi-Übertragung kann dennoch abbrechen. Für den Pilot zuerst auf einem **Testbildschirm** prüfen.
+Das Feature verändert weder gespeicherte Bibliotheksmedien noch die ursprüngliche Playlist-ZIP-Import/Exportfunktion. Die neue Batch-Route nutzt dieselben Marketing-Rollen und CSRF-Prüfungen wie die bisherigen Uploads. Gunicorn lässt bei großen Uploads bis zu 7200 Sekunden zu; zusätzlich hat der Browser einen Timeout von 120 Minuten. Eine langsame Pi-Übertragung kann dennoch abbrechen. Für den Pilot zuerst auf einem **Testbildschirm** prüfen.
 
 Die Test-VM verwendet den automatischen `:latest`-Updater mit Healthcheck und Rollback, siehe [Auto-Deploy](auto-deploy.md). Neue Host-Skripte benötigen dennoch einen manuellen `git pull --ff-only`.
 
@@ -81,7 +81,7 @@ Die exakte Ursache am betroffenen Pi muss anhand seiner tatsächlichen Info-API-
 
 ### 4-GiB-Pilottest (16.10.2026)
 
-Eine **einzelne** Mediendatei darf jetzt höchstens **4 GiB (4.294.967.296 Bytes)** umfassen. Der Browser sendet bis zu 20 Dateien weiterhin **nacheinander**, je als eigenen Multipart-Request; gewöhnliche Medien-ZIPs bleiben sicherheitsbedingt bei 50 MiB. Die Flask-Anfragegrenze ist **4 GiB + 16 MiB** für Multipart-/ZIP64-Overhead. Vorlagenbackups haben eine Gesamtgrenze von rund 4 GiB (plus begrenztem Overhead); größere Vorlagen müssen aufgeteilt werden. Browser- und Server-Timeouts sind für langsame Pi-3-Transfers auf bis zu 120 Minuten angehoben; kein Upload-Resume und kein automatischer Retry.
+Eine **einzelne** Mediendatei darf jetzt höchstens **4 GiB (4.294.967.296 Bytes)** umfassen. Der Browser sendet bis zu 20 Dateien weiterhin **nacheinander**, je als eigenen Multipart-Request; gewöhnliche Medien-ZIPs dürfen bis 4 GiB groß sein (max. 4 GiB entpackt). Die Flask-Anfragegrenze ist **4 GiB + 16 MiB** für Multipart-/ZIP64-Overhead. Vorlagenbackups haben eine Gesamtgrenze von rund 4 GiB (plus begrenztem Overhead); größere Vorlagen müssen aufgeteilt werden. Browser- und Server-Timeouts sind für langsame Pi-3-Transfers auf bis zu 120 Minuten angehoben; kein Upload-Resume und kein automatischer Retry.
 
 **Storage-Schutz unverändert:** Die Hub-VM benötigt genug Platz in `/data` für Eingangs-Spooling und gegebenenfalls zusätzliche Bibliotheks-/Backupkopien, zuzüglich **1 GiB Hub-Reserve**. Der Pi kann beim Upload zwei Dateikopien gleichzeitig halten. Für ein 4-GiB-Video sind daher mindestens **ungefähr 10 GiB real freier Platz** auf den relevanten Pi-Dateisystemen nötig (mehr wegen Rundung); getrennte Mounts einzeln überprüfen. Eine nachgewiesene Platzunterschreitung kann nicht ignoriert werden. Bei unbekannter Mount-Zuordnung ist die explizite manuelle Bestätigung weiterhin erforderlich.
 
@@ -93,3 +93,10 @@ Eine **einzelne** Mediendatei darf jetzt höchstens **4 GiB (4.294.967.296 Bytes
 Für den regulären Raspberry-Pi-Betrieb verwendet der Hub den **von Anthias gelieferten freien Speicher direkt**. Eine leere oder fehlende `ANTHIAS_VERIFIED_STORAGE_URLS`-Konfiguration blockiert den Upload ab dieser Version nicht mehr; diese Einstellung ist obsolet. Die automatische Speicherprüfung vergleicht die **konkret ausgewählte Datei** mit dem aktuellen API-basierten Uploadbudget. Die 4 GiB bilden ausschließlich die Obergrenze **pro Datei**, nicht eine erforderliche Mindestmenge an freiem Speicher auf dem Pi. Kleinere Medien können auch bei weniger als 4 GiB gemeldetem freien Speicher hochgeladen werden, sofern die bisherige Reserve (mind. 2 GiB oder 20%) und Platz für zwei temporäre Dateikopien verbleiben.
 
 Eine gemessene Knappheit kann nicht ignoriert werden. Nur wenn `free_space` fehlt oder die Info-API nicht erreichbar ist, wird die ausdrücklich bestätigte manuelle Ausnahme angeboten. **Grenze der API:** Anthias misst den Root-Speicher. Bei einem tatsächlich anders angebundenen externen Medienmount kann das von der Medienkapazität abweichen; diese Bereitstellung muss der Betreiber separat absichern.
+
+
+### Große Medien-ZIPs (16.10.2026)
+
+Der alte Deckel von **50 MiB pro Medien-ZIP** wurde für große Marketingvideos auf **4 GiB pro ZIP-Archiv** erhöht. **Zusätzlich maximal 4 GiB entpackte Inhalte insgesamt** und **4 GiB pro Eintrag**; maximal 20 Medien. Ein ZIP wird als eine Anfrage zum Hub gesendet; enthaltene Dateien werden dort einzeln geprüft und danach nacheinander zur Playlist/Bibliothek hinzugefügt. Vor dem ersten Import prüfen wir Metadaten, Pfade, erlaubte ZIP-Kompression und Größen aller Einträge; beim Entpacken streamen wir in begrenzten Blöcken mit Hub-Festplattenreserve. Der Schutz gegen ZIP-Bombs bleibt erhalten (u. a. maximales Kompressionsverhältnis 150:1, keine Traversal-Pfade, keine Links, keine doppelten Einträge). Backup-ZIPs mit `manifest.json` sind eine **separate** Funktion.
+
+**Hinweis:** Ein 3-GiB-ZIP benötigt vorübergehend Platz für das Hub-Eingangsarchiv und die entpackten Medien, bei Bibliotheksimport zusätzlich für die gespeicherten Kopien. Auch auf dem Pi gilt weiterhin die aktuelle Anthias-API-Speicherprüfung **pro tatsächlich importierter Datei**. Erreicht ein Archiv diese Grenzen oder schlägt ein Upload nach einem Teilerfolg fehl, werden keine Dateien automatisch erneut gesendet oder zurückgerollt. Auf Pi 3 zuerst klein beginnen und dann größere Archive stufenweise testen.
