@@ -1,16 +1,16 @@
 # Scheduling 2.0 – Playlist und Zeitplanung
 
-**Stand:** 16. Oktober 2026 · Pro Anthias-Gerät · Deutsch.
+**Stand:** 16. Oktober 2026 · Gemeinsame Hub-Zeitplansammlung, individuelle Pi-Zuordnung · Deutsch.
 
 ## Navigation und Arbeit
 
 Unter **Bildschirme → Playlist** teilen sich **Playlist** und **Zeitplanung** denselben Header und sind gleichwertige Ansichten desselben Pis. Die Playlist ist der Standard-Tab. Jeder Playlist-Inhalt zeigt seinen Zeitplan direkt an; im aufgeklappten Editor kann Marketing die Zeitplanung ändern, einschließlich „Ohne Zeitplan“, benannter Vorlage oder individueller Wochentage/Uhrzeiten.
 
-Auf der **Zeitplanung**-Ansicht können Marketing und IT benannte Wochenfenster erstellen, z. B. Werktag_Default (Mo–Fr, 08–18 Uhr) oder Event (Sa, 10–14 Uhr), und mehreren Inhalten zuweisen. Die Wochentage und Uhrzeiten werden direkt in Anthias gespeichert; **jeder Inhalt besitzt genau ein natives wiederkehrendes Zeitfenster**.
+Auf der **Zeitplanung**-Ansicht können Marketing und IT **gemeinsame Zeitplanvorlagen für alle Geräte** erstellen, z. B. Werktag_Default (Mo–Fr, 08–18 Uhr) oder Event (Sa, 10–14 Uhr). Ein auf Pi 3 erstellter Plan ist sofort auf Pi 5 und jedem zukünftig registrierten Gerät verfügbar. **Es gibt keine gerätespezifischen Kopien der Vorlage.** Die Zuordnung gilt hingegen immer nur für die ausgewählten Inhalte auf dem gerade geöffneten Pi. Die Wiedergabezeiten werden nativ auf Anthias gespeichert; **jeder Inhalt besitzt genau ein wiederkehrendes Zeitfenster**.
 
 ## Geräte-Standard und neue Inhalte
 
-Jeder Pi hat optional **einen Geräte-Standard**, der bei neuen Inhalten vorgeschlagen wird. Ohne Standard werden neue Inhalte zeitlich nicht eingeschränkt. Für jeden direkten Website-, Einzelmedien-, Mehrfach- und ZIP-Upload sowie für das Übertragen einer Bibliotheksvorlage oder eines einzelnen Bibliotheksinhalts kann Marketing den Geräte-Standard übernehmen, einen anderen benannten Zeitplan wählen oder ausdrücklich **Ohne Zeitplan** wählen. Bei direkten Pi-Uploads gibt es zusätzlich eine Auswahl für individuelle Wochenzeiten.
+Jeder Pi hat optional **seinen eigenen Geräte-Standard aus der gemeinsamen Sammlung**, der bei neuen Inhalten vorgeschlagen wird. Ohne Standard werden neue Inhalte zeitlich nicht eingeschränkt. Für jeden direkten Website-, Einzelmedien-, Mehrfach- und ZIP-Upload sowie für das Übertragen einer Bibliotheksvorlage oder eines einzelnen Bibliotheksinhalts kann Marketing den Geräte-Standard übernehmen, einen anderen benannten Zeitplan wählen oder ausdrücklich **Ohne Zeitplan** wählen. Bei direkten Pi-Uploads gibt es zusätzlich eine Auswahl für individuelle Wochenzeiten.
 
 Bei Sammeluploads gilt eine Auswahl für die gesamte Aktion; einzelne Inhalte können später abweichen. Bereits vorhandene Pi-Inhalte werden durch einen neuen Standard **nicht** verändert. Beim Übertragen einer Vorlage werden übersprungene schon vorhandene Webseiten nicht umgeplant.
 
@@ -22,11 +22,13 @@ Anthias ist die alleinige Wiedergabe-Engine: API v2 Asset-Felder play_days (1=Mo
 
 Neue Inhalte mit einem Zeitplan werden **deaktiviert angelegt**, erst nach bestätigtem Schreiben der Wochenregel aktiviert. Bei einem API-Fehler bleibt ein teilweise angelegter Eintrag deaktiviert und muss überprüft werden. Die Reihenfolge und der Pause-Status bestehender Medien werden nicht verändert.
 
-Benannte Regeln, Geräte-Standards und explizite Inhalt-zu-Regel-Zuordnungen werden im persistenten Hub-Volume unter **/data/schedules.json** gespeichert, kompatibel zu früheren Versionen. Die tatsächlichen Zeiten bleiben in Anthias. Bei externen Änderungen zeigt der Hub **Abweichend in Anthias** statt den eigenen Stand ungefragt wiederherzustellen.
+Die **gemeinsamen benannten Regeln**, **pro Pi gewählten Geräte-Standards** und **pro Pi gespeicherten Inhalt-zu-Regel-Zuordnungen** werden unter **/data/schedules.json** gespeichert. Beim ersten Schreibvorgang migriert Hub ältere, je Gerät angelegte Zeitpläne ohne ursprüngliche Datensätze zu löschen. Identische Namen mit identischen Zeiten werden zusammengeführt; bei gleichem Namen und unterschiedlichen Zeiten wird die abweichende Vorlage mit Gerätekennung unterscheidbar benannt. Geräte-Standards und Inhalt-Zuordnungen zeigen anschließend weiterhin auf die richtigen Regeln. Vor einem Rollout die bestehende `schedules.json` wie die anderen Hub-Daten sichern. Die tatsächlichen Zeiten bleiben in Anthias. Bei externen Änderungen zeigt der Hub **Abweichend in Anthias** statt den eigenen Stand ungefragt wiederherzustellen.
 
 ## Änderung, Löschung und Teilfehler
 
-Das Bearbeiten einer benannten Vorlage verändert die bisherigen Pi-Inhalte zunächst **nicht**. Eine explizite Checkbox bietet an, bestätigte, noch unverändert zugeordnete Assets beim Speichern ebenfalls zu aktualisieren. Direkt in Anthias veränderte Elemente werden dabei ausgespart. Das Entfernen eines Presets verändert den Pi überhaupt nicht; die geplanten Zeiten bleiben erhalten, bis Marketing sie bewusst per „Ohne Zeitplan“ zurücksetzt. Dabei bleiben Datumslimits und Pause-Status unverändert.
+Das Bearbeiten einer gemeinsamen Vorlage ändert deren Namen und Zeiten in allen Hub-Auswahllisten, verändert jedoch zunächst **keinen Pi**. Eine explizite Checkbox aktualisiert bei Bedarf die bisher noch unverändert zugeordneten Assets **nur auf dem aktuell geöffneten Pi**. Andere Geräte können die geänderte Vorlage später kontrolliert übernehmen: `Aktualisierung ausstehend` heißt, dass Anthias noch die zuletzt bestätigten alten Zeiten ausführt. `Abweichend in Anthias` heißt, dass dort jemand die Regeln unabhängig vom Hub geändert hat – diese Einträge werden niemals automatisch überschrieben.
+
+Das **hubweite Löschen** einer Vorlage erfordert eine zweite Bestätigung. Es entfernt diese Regel aus der Sammlung, löscht sie als Geräte-Standard auf **allen Pis** und bereinigt alle Zuordnungen im Hub. Die **tatsächlichen Pi-Zeitfenster bleiben erhalten**, bis Marketing sie ausdrücklich auf „Ohne Zeitplan“ setzt. Dabei bleiben Datumslimits und Pause-Status unverändert.
 
 Bei teilweise erfolgten API-Aktionen zeigt Hub die bestätigte Anzahl an und fordert zur Prüfung der Pi-Playlist auf. **Kein automatischer Retry und kein automatischer Rollback.**
 
