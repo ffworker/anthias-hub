@@ -16,7 +16,7 @@ from .anthias import PlayerError
 _LOCK = threading.Lock()
 TIME = re.compile(r'^(?:[01]\d|2[0-3]):[0-5]\d$')
 DAYS = (1, 2, 3, 4, 5, 6, 7)
-MAX_PROFILES = 20
+MAX_PROFILES = 100
 
 
 class ScheduleError(ValueError):
@@ -41,10 +41,66 @@ def valid_rule(name, days, start, end):
     return {'name': name, 'days': chosen, 'start': start, 'end': end}
 
 
+def _migrate_legacy(doc):
+    """In-memory, lossless promotion of per-device rules into one global library.
+
+    Identical name+window on different Pis becomes ONE shared preset. A same
+    name with different windows is renamed with the originating device ID,
+    never silently overwritten. Old device-scoped records are retained for
+    recovery; the new global key is saved atomically on the next mutation.
+    """
+    if 'global_profiles' in doc:
+        if not isinstance(doc['global_profiles'], list):
+            raise ValueError('invalid global schedule list')
+        return doc
+
+    shared = []
+    defaults = dict(doc['defaults'])
+    assignments = {d: dict(records) for d, records in doc['assignments'].items()}
+    for device_id, entries in doc['devices'].items():
+        if not isinstance(entries, list):
+            raise ValueError('invalid device schedule list')
+        remap = {}
+        for item in entries:
+            profile = dict(item)
+            if not isinstance(profile.get('id'), str):
+                raise ValueError('invalid schedule ID')
+            existing = next((p for p in shared if
+                             p['name'].casefold() == profile['name'].casefold() and
+                             p['days'] == profile['days'] and
+                             p['start'] == profile['start'] and
+                             p['end'] == profile['end']), None)
+            if existing:
+                remap[profile['id']] = existing['id']
+                continue
+            if any(p['name'].casefold() == profile['name'].casefold() for p in shared):
+                # Explicit conflict marker preserves the original Pi's distinct rule.
+                base = profile['name'][:max(1, 56 - len(device_id))]
+                profile['name'] = (base + ' (' + device_id[:12] + ')')[:60]
+                index = 2
+                while any(p['name'].casefold() == profile['name'].casefold() for p in shared):
+                    suffix = ' (' + str(index) + ')'
+                    profile['name'] = (base[:60 - len(suffix)] + suffix)
+                    index += 1
+            if any(p['id'] == profile['id'] for p in shared):
+                profile['id'] = secrets.token_hex(8)
+            remap[item['id']] = profile['id']
+            shared.append(profile)
+        if defaults.get(device_id) in remap:
+            defaults[device_id] = remap[defaults[device_id]]
+        for record in assignments.get(device_id, {}).values():
+            if record.get('profile_id') in remap:
+                record['profile_id'] = remap[record['profile_id']]
+    doc['global_profiles'] = shared
+    doc['defaults'] = defaults
+    doc['assignments'] = assignments
+    return doc
+
+
 def _document(path):
     file = Path(path)
     if not file.exists():
-        return {'devices': {}, 'defaults': {}, 'assignments': {}}
+        return {'devices': {}, 'global_profiles': [], 'defaults': {}, 'assignments': {}}
     try:
         with file.open(encoding='utf-8') as stream:
             content = json.load(stream)
@@ -54,27 +110,20 @@ def _document(path):
             raise ValueError()
         content.setdefault('defaults', {})
         content.setdefault('assignments', {})
-        return content
+        return _migrate_legacy(content)
     except (OSError, ValueError, KeyError, TypeError) as exc:
         raise ScheduleError('Zeitplan-Datei nicht lesbar. IT muss Hub-Daten prüfen; nichts überschrieben.') from exc
 
 
-def _load(path):
-    return _document(path)['devices']
-
-
-def profiles_for(path, device_id):
+def profiles_for(path, device_id=None):
+    """The whole Hub has one common preset collection. Device is optional."""
     with _LOCK:
-        data = _load(path)
-        profiles = data.get(device_id, [])
-        if not isinstance(profiles, list):
-            raise ScheduleError('Zeitplan-Datei enthält ungültige Gerätedaten.')
-        return [dict(profile) for profile in profiles]
+        return [dict(item) for item in _document(path)['global_profiles']]
 
 
 def _save(path, data):
     doc = _document(path)
-    doc['devices'] = data
+    doc['global_profiles'] = data
     _save_document(path, doc)
 
 
@@ -94,62 +143,60 @@ def _save_document(path, data):
 
 
 def add_profile(path, device_id, name, days, start, end):
+    """Add to the shared library, regardless of the currently open Pi."""
     profile = valid_rule(name, days, start, end)
     with _LOCK:
-        data = _load(path)
-        entries = data.get(device_id, [])
-        if not isinstance(entries, list):
-            raise ScheduleError('Zeitplan-Datei enthält ungültige Gerätedaten.')
+        doc = _document(path)
+        entries = doc['global_profiles']
         if len(entries) >= MAX_PROFILES:
-            raise ScheduleError('Höchstens 20 benannte Zeitpläne pro Gerät.')
+            raise ScheduleError('Höchstens 100 gemeinsame Zeitpläne im Hub.')
         if any(e['name'].casefold() == profile['name'].casefold() for e in entries):
-            raise ScheduleError('Der Zeitplanname existiert auf diesem Gerät bereits.')
+            raise ScheduleError('Dieser Zeitplanname existiert bereits in der gemeinsamen Sammlung.')
         profile['id'] = secrets.token_hex(8)
-        data[device_id] = entries + [profile]
-        _save(path, data)
+        doc['global_profiles'] = entries + [profile]
+        _save_document(path, doc)
     return profile
-
 
 
 def edit_profile(path, device_id, profile_id, name, days, start, end):
     profile = valid_rule(name, days, start, end)
     with _LOCK:
-        data = _load(path)
-        entries = data.get(device_id, [])
-        index = next((i for i, e in enumerate(entries) if e['id'] == profile_id), None)
+        doc = _document(path)
+        entries = doc['global_profiles']
+        index = next((i for i, item in enumerate(entries)
+                      if item['id'] == profile_id), None)
         if index is None:
             raise ScheduleError('Zeitplan nicht gefunden.')
-        if any(e['id'] != profile_id and
-               e['name'].casefold() == profile['name'].casefold() for e in entries):
-            raise ScheduleError('Der Zeitplanname existiert bereits.')
+        if any(item['id'] != profile_id and
+               item['name'].casefold() == profile['name'].casefold()
+               for item in entries):
+            raise ScheduleError('Dieser Name existiert bereits in der gemeinsamen Sammlung.')
         profile['id'] = profile_id
         entries[index] = profile
-        data[device_id] = entries
-        _save(path, data)
-    # Existing assets keep their *native* rules until explicitly reassigned.
+        _save_document(path, doc)
+    # Updates never silently push to other Pis.
     return profile
 
 
 def remove_profile(path, device_id, profile_id):
     with _LOCK:
-        data = _load(path)
-        entries = data.get(device_id, [])
+        doc = _document(path)
+        entries = doc['global_profiles']
         remaining = [p for p in entries if p['id'] != profile_id]
         if len(remaining) == len(entries):
             raise ScheduleError('Zeitplan nicht gefunden.')
-        data[device_id] = remaining
-        doc = _document(path)
-        doc['devices'] = data
-        if doc['defaults'].get(device_id) == profile_id:
-            doc['defaults'].pop(device_id, None)
-        # Keep the original Pi fields; obsolete bindings are only local labels.
-        doc['assignments'].setdefault(device_id, {})
-        doc['assignments'][device_id] = {
-            ident: record for ident, record in doc['assignments'][device_id].items()
-            if record.get('profile_id') != profile_id
-        }
+        doc['global_profiles'] = remaining
+        # A global deletion must clear the default and binding on EVERY device.
+        # The actual native Pi times remain unchanged.
+        for ident, default_id in list(doc['defaults'].items()):
+            if default_id == profile_id:
+                doc['defaults'].pop(ident, None)
+        for ident, records in doc['assignments'].items():
+            doc['assignments'][ident] = {
+                asset_id: record for asset_id, record in records.items()
+                if record.get('profile_id') != profile_id
+            }
         _save_document(path, doc)
-    # Intentional: never change an Anthias playlist when deleting a Hub preset.
 
 
 def native_fields(rule=None):
@@ -231,8 +278,8 @@ def set_default(path, device_id, profile_id):
     with _LOCK:
         doc = _document(path)
         if profile_id is not None and not any(
-                entry['id'] == profile_id for entry in doc['devices'].get(device_id, [])):
-            raise ScheduleError('Dieser Zeitplan gehört nicht zum ausgewählten Gerät.')
+                entry['id'] == profile_id for entry in doc['global_profiles']):
+            raise ScheduleError('Dieser Zeitplan existiert nicht in der gemeinsamen Sammlung.')
         if profile_id is None:
             doc['defaults'].pop(device_id, None)
         else:
