@@ -189,7 +189,7 @@ def describe_asset(asset, profiles):
         return 'Zeitplan auf Anthias nicht verfügbar'
 
 
-def apply_to_assets(api, profile, ids):
+def apply_to_assets(api, profile, ids, on_applied=None):
     """Preflight every chosen ID, patch only native schedule fields, never enable
     or delete an asset. A partial failure is reported, never automatically retried.
     """
@@ -210,6 +210,8 @@ def apply_to_assets(api, profile, ids):
             result = api.patch(ident, changes)
             if not isinstance(result, dict) or native_key(result) != native_key(changes):
                 raise ScheduleError('Anthias hat die Zeitplanung nicht bestätigt. Version prüfen.')
+            if on_applied is not None:
+                on_applied(ident, changes)
             updated += 1
         except (PlayerError, ScheduleError, OSError) as exc:
             raise ScheduleError(
