@@ -74,3 +74,17 @@ test('device and library actions retain guarded responsive positioning', () => {
   assert.match(library, /\.library-item-options-menu\{[\s\S]*?right:12px;left:auto/);
   assert.match(library, /\.template-options-panel \.template-delete-confirm\{[\s\S]*?position:static/);
 });
+
+test('template publishing keeps target, schedule and actions together at narrow widths', () => {
+  const detail = fs.readFileSync(path.join(__dirname,'../app/templates/library_detail.html'),'utf8');
+  const library = fs.readFileSync(path.join(staticDir,'library.css'),'utf8');
+  const refinements = fs.readFileSync(path.join(staticDir,'ui-refinements.css'),'utf8');
+  assert.match(detail, /class="library-publish-fields"/);
+  assert.match(detail, /class="library-publish-target schedule-choice"/);
+  assert.match(detail, /class="library-publish-actions"/);
+  assert.match(library, /\.library-publish-fields\{[\s\S]*?grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(library, /@media\(max-width:640px\)\{[\s\S]*?\.library-publish-fields\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.match(library, /\.library-publish-form\{\s*display:grid;\s*grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(refinements, /\.library-publish-target select/);
+  assert.doesNotMatch(library, /\.library-publish-form\{\s*display:grid;\s*grid-template-columns:minmax\(0,1fr\) auto/);
+});
