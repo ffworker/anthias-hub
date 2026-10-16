@@ -103,9 +103,9 @@
                   <p class="storage-panel-warning">Zu wenig Platz: Pi-Speicher prüfen und nicht mehr benötigte Inhalte gezielt entfernen.</p>
                 {% endif %}
               {% else %}
-                <p class="storage-panel-warning">Speicherabfrage derzeit fehlgeschlagen. Im Upload-Bereich kannst du nach eigener Prüfung des Pi-Speichers bewusst fortfahren.</p>
+                <p class="storage-panel-warning">{{ statuses[device.id].storage_reason or 'Keine verlässliche Medienkapazität verfügbar.' }} Nach Prüfung der tatsächlichen Medien-/Upload-Datenträger ist eine bewusste Ausnahme für Einzeluploads möglich.</p>
               {% endif %}
-              <p class="storage-panel-note">Videos bis 1 GiB je Datei · Zwei temporäre Kopien und Reserve berücksichtigt.</p>
+              <p class="storage-panel-note">Videos bis 4 GiB je Datei · Zwei temporäre Kopien und Reserve berücksichtigt.</p>
             </div>
           </details>
         </div>{% endif %}

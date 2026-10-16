@@ -24,7 +24,7 @@ from .anthias import ASSET_ID, Anthias, PlayerError, validate_duration, validate
 from .bulk_media import BatchError, execute_batch
 from .devices import load, save, get, validate_device
 from .library import Library, LibraryError
-from .storage import MAX_MEDIA_BYTES, MAX_REQUEST_BYTES, upload_capacity
+from .storage import MAX_MEDIA_BYTES, MAX_REQUEST_BYTES, capacity, upload_capacity
 
 _audit_lock = threading.Lock()
 _apply_lock = threading.Lock()
@@ -111,8 +111,16 @@ def create_app(config=None):
             return None, reason
         disk = upload_capacity(info, api.url)
         if disk is None:
-            app.logger.warning('Anthias storage field missing or unsupported')
-            return None, 'Speichermessung oder Zuordnung von Root-, Medien- und Upload-Dateisystem nicht bestätigt – Pi-Speicher prüfen'
+            root = capacity(info)
+            if root is not None:
+                # The Pi measurement WORKED. It measures /, not necessarily
+                # the upload temp directory and Anthias media directory.
+                app.logger.info('Anthias root capacity available, media filesystem not IT-attested')
+                return None, ('Anthias meldet ' + root['reported'] +
+                              ' frei auf dem Systemlaufwerk (/). '
+                              'Medien-/Upload-Dateisystem noch nicht durch IT bestätigt.')
+            app.logger.warning('Anthias capacity field missing or unsupported')
+            return None, 'Anthias meldet keinen auswertbaren freien System-Speicher – Pi prüfen'
         return disk, None
 
     def requested_storage_override():
@@ -559,10 +567,10 @@ def create_app(config=None):
             try:
                 api = Anthias(device)
                 items = api.assets()
-                storage, _ = read_player_storage(api)
-                statuses[device['id']] = {'ok': True, 'count': len(items), 'storage': storage}
+                storage, reason = read_player_storage(api)
+                statuses[device['id']] = {'ok': True, 'count': len(items), 'storage': storage, 'storage_reason': reason}
             except PlayerError:
-                statuses[device['id']] = {'ok': False, 'count': None, 'storage': None}
+                statuses[device['id']] = {'ok': False, 'count': None, 'storage': None, 'storage_reason': 'Anthias nicht erreichbar'}
         return render_template('dashboard.html', devices=devices, statuses=statuses)
 
     @app.post('/devices')

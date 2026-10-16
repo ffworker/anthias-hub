@@ -262,7 +262,7 @@
           <div class="upload-storage-strip" data-storage-status data-storage-known="{{ '1' if storage else '0' }}" data-storage-url="{{ url_for('device_storage', device_id=device.id) }}">
             <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#storage"></use></svg>
             <span data-storage-label role="status" aria-live="polite">
-              {% if storage %}{{ storage.usable_gib }} GiB für Uploads verfügbar{% else %}Speicherprüfung fehlgeschlagen{% if storage_reason %} · {{ storage_reason }}{% endif %}{% endif %}
+              {% if storage %}{{ storage.usable_gib }} GiB für Uploads verfügbar{% else %}Uploadkapazität nicht bestätigt{% if storage_reason %} · {{ storage_reason }}{% endif %}{% endif %}
             </span>
             <button type="button" class="storage-refresh" data-storage-refresh aria-label="Speicherplatz aktualisieren" title="Speicherplatz erneut prüfen">↻</button>
             <details class="upload-storage-more">

@@ -1744,7 +1744,7 @@ def test_player_capacity_is_visible_without_exposing_device_admin_controls(env):
     assert 'storage-note' not in playlist
 
     no_disk = client.get('/devices/lab').data.decode('utf-8')
-    assert 'Speicherprüfung fehlgeschlagen' in no_disk
+    assert 'Uploadkapazität nicht bestätigt' in no_disk
     assert 'data-player-available="0"' in no_disk
 
 
@@ -1797,7 +1797,7 @@ def test_storage_reason_and_override_only_for_unknown(env):
     with patch.object(FakeAnthias, 'info', side_effect=anthias.PlayerError('Anthias antwortete mit HTTP 404'), create=True):
         page = client.get('/devices/lab').data.decode('utf-8')
         disk = client.get('/devices/lab/storage')
-    assert 'Speicherprüfung fehlgeschlagen' in page
+    assert 'Uploadkapazität nicht bestätigt' in page
     assert 'HTTP 404' in page
     assert 'name="ignore_storage_check"' in page
     assert 'value="manual-confirmed"' in page
@@ -1842,7 +1842,9 @@ def test_storage_endpoint_does_not_claim_root_is_media(env, monkeypatch):
         page = client.get('/devices/lab').data.decode()
     assert response.json['status'] == 'unknown'
     assert response.json['usable_bytes'] == 0
-    assert 'Zuordnung' in response.json['message']
+    assert '20.0 GB' in response.json['message']
+    assert 'Systemlaufwerk' in response.json['message']
+    assert 'nicht durch IT bestätigt' in response.json['message']
     assert 'name="ignore_storage_check" value="manual-confirmed" disabled' not in page
 
 
@@ -1856,3 +1858,16 @@ def test_storage_creation_failure_has_controlled_response(env, code):
     assert response.status_code == 507
     assert response.json['ok'] is False
     assert 'Hub-Speicher' in response.json['error']
+
+
+def test_dashboard_storage_popover_distinguishes_root_measurement_from_media(env, monkeypatch):
+    _, client, _ = env
+    login(client, 'marketing')
+    monkeypatch.setenv('ANTHIAS_VERIFIED_STORAGE_URLS', '')
+    with patch.object(FakeAnthias, 'info', return_value={'free_space': '15.0 GB'}, create=True):
+        board = client.get('/').data.decode()
+        playlist = client.get('/devices/lab').data.decode()
+    assert '15.0 GB' in board
+    assert 'Systemlaufwerk' in board
+    assert 'Uploadkapazität nicht bestätigt' in playlist
+    assert 'data-player-available="0"' in playlist
