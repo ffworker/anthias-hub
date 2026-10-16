@@ -268,6 +268,20 @@ CA key during a VM rebuild may require distributing a new trusted root
 to all clients; theft would compromise every client trusting it. For a
 larger organization, prefer its centrally managed PKI over an ad hoc CA.
 
+If the service is reachable under an additional DNS alias (for example a CNAME),
+add that hostname as a separate Caddy site address (or include it in the
+existing site's address list). DNS aliases alone do not authorize a new
+HTTPS hostname: Caddy must serve a certificate covering the alias. When
+Caddy keeps the same internal CA, existing client CA trust remains valid.
+Test the new alias with `curl --cacert` and in a trusted browser. Use the
+preferred alias consistently for login; sessions are hostname-specific.
+
+On macOS, an authorized administrator may add the independently verified
+**public** Caddy root certificate to System Keychain via Keychain Access or
+`security add-trusted-cert`. Future Windows trust distribution can use an
+IT-approved GPO. Do not distribute or import the CA private key, and do not
+bypass a red certificate warning to enter credentials.
+
 The Caddy service is separate from the Hub's GHCR automatic-image updater;
 the latter does not upgrade, back up or restore Caddy's systemd configuration
 or its CA files. **This runbook does not deploy certificates, host firewall
