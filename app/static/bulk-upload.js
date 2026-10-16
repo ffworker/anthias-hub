@@ -120,12 +120,12 @@
       if (!files.length || files.length > 20 ||
           (archives.length && files.length !== 1) ||
           files.some(file => !allowed.test(file.name)) ||
-          files.some(file => file.size > (archives.length ? 50 : 4096) * MiB)) {
+          files.some(file => file.size > 4096 * MiB)) {
         report.replaceChildren();
         report.hidden = false;
         report.dataset.state = 'error';
         const error = document.createElement('p');
-        error.textContent = 'Max. 20 Medien, je 4 GiB (einzeln übertragen); ZIP allein max. 50 MiB.';
+        error.textContent = 'Max. 20 Medien, je 4 GiB (einzeln übertragen); ZIP max. 4 GiB Archiv und 4 GiB entpackt.';
         report.appendChild(error);
         return;
       }

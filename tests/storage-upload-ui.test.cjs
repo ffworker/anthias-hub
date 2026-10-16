@@ -23,7 +23,7 @@ function harness(failAt=0, opts={}) {
     '[data-bulk-progress]':'progress','[data-bulk-progress-bar]':'bar',
     '[data-bulk-progress-text]':'progressText','[data-bulk-report]':'report'};
   for(const name of Object.values(map))parts[name]=createElement();
-  parts.input.files=Array.from({length:5},(_,i)=>({name:'movie-'+i+'.mp4',size:opts.fileSize || 500*1024*1024}));
+  parts.input.files=opts.files || Array.from({length:5},(_,i)=>({name:'movie-'+i+'.mp4',size:opts.fileSize || 500*1024*1024}));
   parts.submit.textContent='Import starten';
   const listeners={};
   const ack={checked:!!opts.confirmUnknown};
@@ -102,4 +102,18 @@ test('four-GiB synthetic file references pass per-file browser validation withou
   assert.equal(h.sent.length,5);
   assert.equal(h.parts.report.dataset.state,'success');
   assert.equal(h.parts.submit.disabled,false);
+});
+
+test('media ZIP over old 50-MiB ceiling is accepted as one request',async()=>{
+  const h=harness(0,{files:[{name:'bistro-videos.zip',size:600*1024**2}]});
+  await h.listeners.submit({preventDefault(){}});
+  assert.equal(h.sent.length,1);
+  assert.equal(h.sent[0][0][1].size,600*1024**2);
+  assert.equal(h.parts.report.dataset.state,'success');
+});
+test('archive exceeding four-GiB ceiling remains rejected in browser',async()=>{
+  const h=harness(0,{files:[{name:'too-big.zip',size:4*1024**3+1}]});
+  await h.listeners.submit({preventDefault(){}});
+  assert.equal(h.sent.length,0);
+  assert.equal(h.parts.report.dataset.state,'error');
 });
