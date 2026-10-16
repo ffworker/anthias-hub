@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% from '_schedule_controls.html' import schedule_select %}
 {% block title %}{{ device.name }} · Playlist · Anthias Hub{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='playlist.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-lightbox.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='bulk-upload.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='storage-ui.css') }}"><script defer src="{{ url_for('static', filename='storage-ui.js') }}"></script>{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='playlist.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-lightbox.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='bulk-upload.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='storage-ui.css') }}"><script defer src="{{ url_for('static', filename='storage-ui.js') }}"></script><script defer src="{{ url_for('static', filename='schedule-choice.js') }}"></script>{% endblock %}
 {% block content %}
 <div class="playlist-workspace playlist-studio-v2" data-can-edit="{{ 'yes' if logged_user.role in ('marketing', 'owner') and not error else 'no' }}">
   <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Alle Bildschirme</a><span aria-hidden="true">›</span><span>{{ device.name }}</span><span aria-hidden="true">·</span><a href="{{ url_for('library_index') }}">Bibliothek</a></nav>
@@ -15,9 +16,10 @@
     <div class="hero-status">
       <span class="pill {{ 'bad' if error else 'ok' }}">{{ 'Nicht erreichbar' if error else 'API erreichbar' }}</span>
       <small>Anzeige am TV nicht live geprüft</small>
-      <a class="schedule-hero-link" href="{{ url_for('device_schedules', device_id=device.id) }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg> Zeitpläne</a>
+
     </div>
   </header>
+  {% include '_device_tabs.html' %}
 
   {% if error %}<div class="notice error" role="alert">Gerät nicht erreichbar: {{ error }}. Die Playlist kann derzeit nicht bearbeitet werden.</div>{% endif %}
 
@@ -98,6 +100,7 @@
                   </span>
                   <span class="asset-name">{{ asset.name or 'Ohne Titel' }}</span>
                   <span class="muted clip">{{ asset.uri or 'Lokales Medium' }}</span>
+                  <span class="asset-schedule-summary"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg>{{ asset.schedule_label }}</span>
               {% if logged_user.role in ('marketing', 'owner') and not error %}
                   <span class="asset-edit-hint" aria-hidden="true">Bearbeiten <span class="asset-chevron">⌄</span></span>
                 </button>
@@ -140,6 +143,14 @@
                     <span class="inline-video-duration" title="Videolänge wird automatisch vom Player bestimmt">Dauer automatisch</span>
                   {% endif %}
                 </form>
+                <details class="asset-schedule-details">
+                  <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg> Zeitplanung · {{ asset.schedule_label }}</summary>
+                  <form method="post" action="{{ url_for('asset_schedule', device_id=device.id, asset_id=asset.asset_id) }}">
+                    <input type="hidden" name="csrf" value="{{ csrf() }}">
+                    {{ schedule_select(schedule_profiles, schedule_default, mode='always', title='Wann soll dieser Inhalt laufen?') }}
+                    <button class="button primary" type="submit">Zeitplanung speichern</button>
+                  </form>
+                </details>
                 <div class="asset-toolbar-actions" aria-label="Aktionen für {{ asset.name or 'Element' }}">
                   <form method="post" class="quick-toggle-form" action="{{ url_for('toggle_asset', device_id=device.id, asset_id=asset.asset_id) }}">
                     <input type="hidden" name="csrf" value="{{ csrf() }}">
@@ -254,6 +265,7 @@
             <label>Titel<input name="name" required maxlength="100" placeholder="z. B. Bistro News"></label>
             <label>Webadresse<input name="url" required type="url" placeholder="https://beispiel.de/anzeige"></label>
             <label>Anzeigedauer <span class="label-note">in Sekunden</span><input name="duration" type="number" min="5" max="3600" value="30" required></label>
+            {{ schedule_select(schedule_profiles, schedule_default) }}
             <button class="primary full-width">Webseite hinzufügen <span aria-hidden="true">→</span></button>
           </form>
         </div>
@@ -281,6 +293,7 @@
             <p class="muted input-support">PNG · JPG · WebP · MP4 · max. 4 GiB je Video</p><p class="upload-selected" role="status" aria-live="polite"></p>
             <label>Titel <span class="label-note">optional</span><input name="name" maxlength="100" placeholder="z. B. Herbstaktion"></label>
             <label>Bilddauer <span class="label-note">Sekunden; Videos automatisch</span><input name="duration" type="number" min="5" max="3600" value="15"></label>
+            {{ schedule_select(schedule_profiles, schedule_default) }}
             <button type="submit" class="primary full-width">Datei zur Playlist hinzufügen <span aria-hidden="true">→</span></button>
             <div class="upload-feedback" hidden role="status" aria-live="polite"><div class="upload-progress" aria-hidden="true"><span data-upload-bar></span></div><small data-upload-text></small></div>
           </form>
@@ -300,6 +313,7 @@
   <p class="muted input-support">Bis zu 20 Medien, einzeln nacheinander · max. 4 GiB je Datei. ZIP max. 4 GiB (auch entpackt).</p>
   <label>Bilddauer (Sekunden)<input type="number" name="duration" min="5" max="3600" value="15" required></label>
   <p class="bulk-selected" data-bulk-selected role="status" aria-live="polite"></p>
+  {{ schedule_select(schedule_profiles, schedule_default) }}
   <button type="submit" class="primary">Medien importieren →</button>
   <button type="button" class="bulk-cancel" data-bulk-cancel hidden>Abbrechen</button>
   <div class="bulk-progress" data-bulk-progress hidden role="status" aria-live="polite">
@@ -341,6 +355,7 @@
               </select>
             </label>
             <p class="muted">Wird sofort auf diesem Player hinzugefügt. Bestehende Inhalte behalten ihre Reihenfolge.</p>
+            {{ schedule_select(schedule_profiles, schedule_default) }}
             <button type="submit" class="primary full-width">Inhalt zur Playlist hinzufügen →</button>
           </form>
           <details class="library-template-append">
@@ -362,6 +377,7 @@
               <label class="append-confirm"><input type="checkbox" name="ack" value="yes" required>
                 Alle Inhalte jetzt auf diesem Bildschirm anhängen
               </label>
+              {{ schedule_select(schedule_profiles, schedule_default, title='Zeitplanung für neu hinzugefügte Inhalte') }}
               <button type="submit" class="primary full-width">Alle Inhalte zur Playlist hinzufügen →</button>
               <div class="template-transfer-feedback" data-transfer-feedback role="status" aria-live="polite" hidden><span class="template-transfer-spinner" aria-hidden="true"></span><strong data-transfer-message>Übertragung läuft …</strong><small data-transfer-live>Bestehende Playlist bleibt erhalten. Bitte nicht erneut klicken.</small></div>
             </form>

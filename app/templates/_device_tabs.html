@@ -1,0 +1,4 @@
+<nav class="device-workspace-tabs" aria-label="Bildschirm-Arbeitsbereich">
+  <a href="{{ url_for('playlist', device_id=device.id) }}" {% if request.endpoint == 'playlist' %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Playlist</a>
+  <a href="{{ url_for('device_schedules', device_id=device.id) }}" {% if request.endpoint == 'device_schedules' %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg> Zeitplanung</a>
+</nav>
