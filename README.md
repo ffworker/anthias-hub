@@ -41,7 +41,7 @@ ssh -N -L 127.0.0.1:8765:127.0.0.1:8765 ADMIN@SERVER_IP
 
 Open **http://127.0.0.1:8765** locally, log in and register your Anthias player's **private IP**. The web UI is currently German; the public documentation is English. Successful `/healthz` alone does not prove the Pi or TV works.
 
-For a colleague or another LAN machine, see the optional [network access guide](docs/network-access.md): isolated direct LAN HTTP for limited tests, or **HTTPS through an existing reverse proxy** for regular users. No extra proxy container is installed by default.
+For a colleague or another LAN machine, see the optional [network access guide](docs/network-access.md): isolated direct LAN HTTP for limited tests or **HTTPS via a reverse proxy** for regular users. **No company CA or public certificate?** The [optional Caddy + own internal HTTPS CA guide](docs/network-access.md#d-optional-caddy--your-own-internal-https-ca-no-external-ca-required) covers Debian host installation, trusted-root distribution to Windows, secure cookies, safely retiring HTTP and keeping the test-VM auto-updater intact. No proxy container is installed by default.
 
 ## Roles
 
@@ -58,7 +58,7 @@ Every Marketing user currently has access to **all** registered screens. Player 
 
 ## Deployment, operations and development
 
-- [Optional LAN / HTTPS deployment](docs/network-access.md) – DNS examples use placeholders only.
+- [Optional LAN / HTTPS deployment](docs/network-access.md) – reverse-proxy and DNS examples use placeholders only; includes [Caddy with its own HTTPS CA](docs/network-access.md#d-optional-caddy--your-own-internal-https-ca-no-external-ca-required) for LAN environments without a trusted CA.
 - [Docker host deployment](docs/deploy-docker-host.md) – setup, local access and administration.
 - [Security model](SECURITY.md) – boundaries, secrets, authentication, backups and reporting.
 - [IT administration guide](docs/IT_ADMIN_GUIDE.md) – maintenance, roles and recovery.
