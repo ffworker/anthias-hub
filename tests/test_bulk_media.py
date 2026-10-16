@@ -10,6 +10,8 @@ import pytest
 from werkzeug.security import generate_password_hash
 
 from app.anthias import PlayerError
+from app.bulk_media import BatchError, _safe_zip_members, execute_batch, MAX_ARCHIVE_BYTES, MAX_TOTAL_UNPACKED, MAX_ZIP_MEDIA_BYTES
+from app.storage import GIB, MIB
 from app.library import Library
 from app.web import create_app
 
@@ -275,3 +277,75 @@ def test_ui_shows_both_bulk_targets_and_keeps_single_upload_forms(env):
     assert b'data-upload-form="library"' in library
     assert b'/devices/lab/bulk-media' in playlist
     assert f"/library/{template['id']}/bulk-media".encode() in library
+
+
+
+def test_large_media_zip_limits_align_with_4gib_and_preserve_bomb_guard():
+    """Boundary checks use ZIP directory metadata; no 4-GiB allocation."""
+    assert MAX_ARCHIVE_BYTES == MAX_TOTAL_UNPACKED == MAX_ZIP_MEDIA_BYTES == 4 * GIB
+
+    class Archive:
+        def __init__(self, *entries):
+            self.entries = entries
+        def infolist(self):
+            return list(self.entries)
+
+    def media(filename, size, packed=None):
+        entry = zipfile.ZipInfo(filename)
+        entry.compress_type = zipfile.ZIP_STORED
+        entry.file_size = size
+        entry.compress_size = size if packed is None else packed
+        return entry
+
+    # Exactly the size cap is permitted in the ZIP central directory.
+    assert len(_safe_zip_members(Archive(media('large.mp4', 4 * GIB)))) == 1
+    with pytest.raises(BatchError, match='über 4 GiB'):
+        _safe_zip_members(Archive(media('too-large.mp4', 4 * GIB + 1)))
+    with pytest.raises(BatchError, match='über 4 GiB entpackte'):
+        _safe_zip_members(Archive(media('one.mp4', 3 * GIB),
+                                  media('two.mp4', 2 * GIB)))
+    with pytest.raises(BatchError, match='Komprimierung'):
+        _safe_zip_members(Archive(media('bomb.mp4', 100 * MIB, 1024)))
+
+
+def test_oversize_zip_is_rejected_before_zipfile_open_or_side_effects():
+    """A virtual >4-GiB archive is declined before attempting decompression."""
+    class OversizeStream:
+        def seek(self, offset, whence=0):
+            self.position = (MAX_ARCHIVE_BYTES + 1 if whence == 2 else offset)
+        def tell(self):
+            return self.position
+    class Upload:
+        filename = 'too-large.zip'
+        stream = OversizeStream()
+    calls = []
+    with pytest.raises(BatchError, match='max. 4 GiB'):
+        execute_batch([Upload()], duration=15, destination='library',
+                      on_media=lambda *args: calls.append(args))
+    assert calls == []
+
+
+def test_zip_over_old_50_mib_limit_imports_to_library_with_disk_streaming(env, tmp_path):
+    """Real >50-MiB STORED ZIP with an MP4, streamed to/from disk without huge RAM."""
+    _, client, lib, template = env
+    login(client)
+    zip_path = tmp_path / 'large-media.zip'
+    header = b'\x00\x00\x00\x18ftypisom'
+    chunk = b'x' * MIB
+    with zipfile.ZipFile(zip_path, 'w', compression=zipfile.ZIP_STORED, allowZip64=True) as archive:
+        with archive.open('spot.mp4', 'w', force_zip64=True) as writer:
+            writer.write(header)
+            for _ in range(51):
+                writer.write(chunk)
+    assert zip_path.stat().st_size > 50 * MIB
+    with zip_path.open('rb') as upload:
+        response = client.post(f"/library/{template['id']}/bulk-media",
+                               data={'csrf': csrf(client), 'duration': '15',
+                                     'media': (upload, 'spots.zip')},
+                               content_type='multipart/form-data', headers=JSON)
+    assert response.status_code == 200
+    assert response.json['ok'], response.json
+    assert response.json['imported'] == 1
+    item = lib.get(template['id'])['items'][0]
+    assert item['duration'] == 0
+    assert lib.verified_media_path(template['id'], item).stat().st_size == 51 * MIB + len(header)
