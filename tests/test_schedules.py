@@ -137,7 +137,7 @@ def test_schedule_ui_is_per_device_and_has_examples(hub):
     assert 'Individuell in Anthias' in html  # explanation in footer
     assert 'schedules.js' in html
     assert 'Zeitpläne' in client.get('/').get_data(as_text=True)
-    assert 'Zeitpläne' in client.get('/devices/lab').get_data(as_text=True)
+    assert 'Zeitplanung' in client.get('/devices/lab').get_data(as_text=True)
     assert client.get('/devices/unknown/schedules').status_code == 404
 
 

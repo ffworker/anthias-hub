@@ -736,9 +736,16 @@ def create_app(config=None):
         bindings = assignments_for(app.config['SCHEDULES_FILE'], device_id)
         for asset in assets:
             asset['schedule_label'] = describe_linked_asset(asset, schedule_profiles, bindings)
-            asset['schedule_choice'] = next(
-                (p['id'] for p in schedule_profiles
-                 if asset['schedule_label'] == p['name']), 'always'
+            matched = next((p['id'] for p in schedule_profiles
+                            if asset['schedule_label'] == p['name']), None)
+            asset['schedule_choice'] = (
+                matched if matched else
+                'always' if asset['schedule_label'] == 'Ohne Zeitplan' else
+                'custom' if asset['schedule_label'] == 'Individuell in Anthias'
+                    and isinstance(asset.get('play_time_from'), str)
+                    and isinstance(asset.get('play_time_to'), str)
+                    and asset['play_time_from'].endswith(':00')
+                    and asset['play_time_to'].endswith(':00') else 'choose'
             )
         return render_template('playlist.html', device=device, assets=assets,
                                library_templates=templates,
