@@ -45,6 +45,16 @@ For each operation, compare the Hub playlist with the Pi's native UI/API **and w
 
 Ship to the intended internal audience only if: the exact image passed CI, the above operations passed on the installed Anthias version and physical display, access isolation was observed from the real client, and Hub **and Pi** restores were rehearsed. Obtain IT/Marketing sign-off, pin the approved image, retain a rollback image, and repeat login/API/display checks after promotion. Record any known limitations (including global Marketing access, static accounts, and absence of drafts/approvals). If any destructive operation or boundary check fails, remain in pilot and fix it first. Do not delay solely for cosmetic UI perfection; prioritize mistakes that could alter or delete screen content.
 
+## Public release and repository hygiene
+
+- [ ] Inspect tracked content **and Git history**, tags, releases and CI artifacts for secrets/internal inventory. Deleting a file does not erase its history; rotate leaked secrets before considering history rewriting.
+- [ ] Verify code/license ownership and preserve MIT/third-party attribution; do not imply Screenly or Anthias sponsorship.
+- [ ] Fresh `--solo` installation and existing multi-role migration pass authentication and role tests.
+- [ ] Use only generated/demo inventory for public screenshots.
+- [ ] Perform physical Pi and monitor checks and rehearsal restores before declaring production-ready.
+- [ ] Record the approved immutable image reference/digest and the tested rollback procedure.
+- [ ] Prepare appropriate contribution/issue guidance when actively soliciting community releases.
+
 ## Public-ready checks (still require physical pilot sign-off)
 
 - [ ] Test a fresh `--solo` Owner installation and unchanged IT/Marketing upgrade, including unauthorized POSTs.
