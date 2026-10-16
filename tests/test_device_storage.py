@@ -176,6 +176,8 @@ def test_exact_4_gib_synthetic_stream_stays_streaming_and_can_be_accepted():
     class VirtualFourGiB:
         def __init__(self):
             self.position = 0
+            # requests-toolbelt needs a known content length to stream a file.
+            self.len = 4 * GIB
         def tell(self):
             return self.position
         def seek(self, offset, whence=0):
