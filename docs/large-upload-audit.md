@@ -2,6 +2,21 @@
 
 > **Pilot amendment · 16 October 2026:** The operator has requested a **4-GiB hard per-file limit** for staged testing with a fresh Anthias Pi 3. Browser, Flask, streaming player upload, library and template ZIP backup limits have been aligned; the request cap is 4 GiB + 16 MiB, ZIP64 is kept, and browser/Gunicorn/Pi read timeouts are extended. **No 4-GiB real-device transfer has been verified yet.** The two-copy disk accounting, mounted-filesystem verification, 2-GiB/20% Pi reserve, 1-GiB Hub reserve and explicit unknown-only override remain unchanged. A 4-GiB file needs roughly 10+ GiB of genuine Pi free space. FAT32 cannot hold a full 4-GiB file. Test a small MP4 then 600 MB before larger sizes. Tables and results below describe the historical **1-GiB baseline** audited on 15 October, not the updated limits. See [Marketing upload limits](marketing-bulk-import.md).
 
+
+> **Policy amendment · 16 October 2026:** The operator chose Anthias
+> `/api/v2/info.free_space` as the authoritative source for the Pi3/Pi5 pilot.
+> Automatic uploads no longer depend on `ANTHIAS_VERIFIED_STORAGE_URLS`.
+> Each file is checked against the **API-derived, current available budget**,
+> retaining space for two concurrent Pi copies and the existing reserve of
+> max(2 GiB, 20% of measured free). The 4-GiB per-file hard cap is separate:
+> a smaller file may still fit on a Pi with less than 4 GiB reported free.
+> Explicit manual override is only for an unknown/unavailable API reading;
+> reported insufficient space still blocks.
+>
+> The older storage attestation instructions and baseline below document
+> historical policy and are superseded. Anthias measures root free space;
+> external/separate media mounts remain a known accuracy limitation.
+
 Audit base: Hub `4576e70` (2026-10-15). Upstream source inspected at
 [Anthias 0edf7917](https://github.com/Screenly/Anthias/tree/0edf7917f776005167d26330c970b24dcc9a7959).
 No live Hub or Pi was changed or load-tested. Installed Pi version, mount layout,
