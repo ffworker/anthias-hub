@@ -363,3 +363,52 @@ def test_schedule_individual_and_reset_from_existing_playlist_editor(hub):
     post(client,'/devices/lab/assets/a/schedule',{'schedule_choice':'always'})
     assert Player.records['a']['play_time_from'] is None
     assert Player.records['a']['is_enabled'] is True
+
+
+
+def test_default_applies_to_library_append_when_no_explicit_choice(hub):
+    app,client,_=hub
+    sign_in(client,'marketing')
+    from app.library import Library
+    store=Library(app.config['LIBRARY_DIR'])
+    template=store.create('Bistro Wochenmenü')
+    store.add_url(template['id'],'Wochenangebot','https://example.org/weekly',30)
+    base='/devices/lab/schedules'
+    post(client,base+'/add',{'name':'Werktag_Default','days':['1','2','3','4','5'],
+                            'start':'08:00','end':'18:00'})
+    rule=profiles_for(app.config['SCHEDULES_FILE'],'lab')[0]
+    post(client,base+'/default',{'profile_id':rule['id']})
+    before=store.get(template['id'])
+    result=post(client,f'/library/{template["id"]}/append-to-device', {
+        'device':'lab','confirm':'append','ack':'yes'})
+    assert 'Inhalte aus der Vorlage hinzugefügt' in result.get_data(as_text=True)
+    item=next(v for v in Player.records.values() if v['name']=='Wochenangebot')
+    assert item['play_days']==[1,2,3,4,5]
+    assert item['play_time_from']=='08:00:00'
+    assert store.get(template['id'])==before
+
+
+def test_default_is_per_device_and_preset_delete_only_clears_local_default(tmp_path):
+    from app.schedules import default_for, set_default, assignments_for
+    file=tmp_path/'schedules.json'
+    morning=add_profile(file,'pi3','Früh',['1','2'],'07:00','13:00')
+    evening=add_profile(file,'pi5','Spät',['6'],'15:00','21:00')
+    set_default(file,'pi3',morning['id'])
+    set_default(file,'pi5',evening['id'])
+    assert default_for(file,'pi3')==morning['id']
+    assert default_for(file,'pi5')==evening['id']
+    with pytest.raises(ScheduleError):
+        set_default(file,'pi3',evening['id'])
+    remove_profile(file,'pi3',morning['id'])
+    assert default_for(file,'pi3') is None
+    assert default_for(file,'pi5')==evening['id']
+    assert profiles_for(file,'pi5')==[evening]
+
+
+def test_schedule_gap_warning_is_only_advisory():
+    from app.schedules import weekday_warning
+    no_schedule=asset('a','Always')
+    assert weekday_warning([no_schedule])==''
+    scheduled=asset('a','Event',[6],'10:00:00','14:00:00')
+    assert 'Mögliche Zeitlücken' in weekday_warning([scheduled])
+    assert weekday_warning([{'name':'unknown','is_enabled':True}])==''

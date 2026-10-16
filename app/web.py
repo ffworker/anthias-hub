@@ -1087,6 +1087,9 @@ def create_app(config=None):
             if len(title) > 100:
                 raise ValueError('Titel zu lang')
             length = 0 if ext == '.mp4' else validate_duration(request.form.get('duration', 15))
+            # Reject a missing/invalid selected schedule BEFORE uploading bytes.
+            # Pi media should not be orphaned by a simple form-selection error.
+            chosen_schedule(device_id)
             # Once the transfer starts, an error may leave a file on Anthias.
             # Never promise that retrying is safe without reviewing the playlist.
             transferred = True
