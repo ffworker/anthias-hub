@@ -4,7 +4,6 @@ Anthias reports Django filesizeformat text (e.g. "15.0\u00a0GB"), NOT exact
 bytes or the total filesystem size. Never infer more available space than
 reported. The margin accommodates its one-decimal rounding.
 """
-import os
 import re
 from decimal import Decimal, InvalidOperation
 
@@ -60,24 +59,19 @@ def capacity(info):
             'reserve_gib': f'{reserve / GIB:.1f}'}
 
 
-def root_matches_media(url):
-    """Operator-attested topology, never inferred from an API response.
 
-    Reconfirm after mount/container changes. Include Django's temporary upload
-    filesystem as well as assetdir; both copies must fit the measured root FS.
+def upload_capacity(info, url=None):
+    """Capacity available for one media file, from Anthias' API alone.
+
+    The API's reported free space is the authoritative measurement for the
+    standard Pi deployment. Budget two simultaneous on-device file copies
+    (Django staging and final asset) and preserve the existing free-space
+    reserve. The optional URL is accepted for older callers, not required
+    for storage authorization.
     """
-    verified = os.environ.get('ANTHIAS_VERIFIED_STORAGE_URLS', '').split(',')
-    return url.rstrip('/') in {value.strip().rstrip('/') for value in verified if value.strip()}
-
-
-def upload_capacity(info, url):
-    """Expose capacity only for verified topology; retain known zero-space blocks."""
     disk = capacity(info)
     if disk is None:
         return None
-    # A single-shot Django upload can coexist with its copy in assetdir.
     disk['usable_bytes'] //= 2
     disk['usable_gib'] = f"{disk['usable_bytes'] / GIB:.1f}"
-    if disk['usable_bytes'] == 0 or root_matches_media(url):
-        return disk
-    return None
+    return disk

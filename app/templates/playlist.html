@@ -262,12 +262,12 @@
           <div class="upload-storage-strip" data-storage-status data-storage-known="{{ '1' if storage else '0' }}" data-storage-url="{{ url_for('device_storage', device_id=device.id) }}">
             <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#storage"></use></svg>
             <span data-storage-label role="status" aria-live="polite">
-              {% if storage %}{{ storage.usable_gib }} GiB für Uploads verfügbar{% else %}Uploadkapazität nicht bestätigt{% if storage_reason %} · {{ storage_reason }}{% endif %}{% endif %}
+              {% if storage %}{{ storage.usable_gib }} GiB für Uploads verfügbar{% else %}Speicherwert nicht verfügbar{% if storage_reason %} · {{ storage_reason }}{% endif %}{% endif %}
             </span>
             <button type="button" class="storage-refresh" data-storage-refresh aria-label="Speicherplatz aktualisieren" title="Speicherplatz erneut prüfen">↻</button>
             <details class="upload-storage-more">
               <summary aria-label="Details zu Upload-Grenzen">i</summary>
-              <p>Max. 4 GiB je Video. {{ storage.reserve_gib ~ ' GiB' if storage else 'Mindestens 2 GiB' }} Sicherheitsreserve bleiben frei; temporär werden zwei Dateikopien berücksichtigt. Bei unbekanntem Speicher kann die Prüfung nach eigener Kontrolle ausdrücklich ignoriert werden. Bei nachgewiesenem Platzmangel bleibt der Upload gesperrt.</p>
+              <p>Max. 4 GiB je Video. {{ storage.reserve_gib ~ ' GiB' if storage else 'Mindestens 2 GiB' }} Sicherheitsreserve bleiben frei; temporär werden zwei Dateikopien berücksichtigt. Die Anthias-API liefert den freien Gerätespeicher. Gesperrt wird nur, wenn die gewählte Datei nicht mit Sicherheitsreserve und zwei temporären Kopien hineinpasst. Bei nicht verfügbarer API ist eine bewusste Ausnahme möglich.</p>
             </details>
           </div>
           <form method="post" enctype="multipart/form-data" data-upload-form="player" data-player-available="{{ storage.usable_bytes if storage else 0 }}" action="{{ url_for('upload', device_id=device.id) }}">

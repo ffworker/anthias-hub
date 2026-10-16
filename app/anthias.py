@@ -4,7 +4,7 @@ import threading
 from urllib.parse import urlsplit
 import requests
 from requests_toolbelt.multipart.encoder import MultipartEncoder
-from .storage import MAX_MEDIA_BYTES, capacity, root_matches_media
+from .storage import MAX_MEDIA_BYTES, upload_capacity
 
 ASSET_ID = re.compile(r'^[a-zA-Z0-9_-]{1,128}$')
 _upload_lock = threading.Lock()  # one upload at a time in the single-worker Hub
@@ -109,21 +109,24 @@ class Anthias:
             raise PlayerError('Medium ist leer oder größer als 4 GiB')
         with _upload_lock:
             try:
-                status = capacity(self.info())
+                status = upload_capacity(self.info())
             except PlayerError:
                 status = None
-            # Known shortage is never overridden, even with unverified mounts.
-            if status is not None and 2 * length > status['usable_bytes']:
+            # The API is authoritative: refuse only when the *current file*
+            # exceeds the safe remaining budget, not because the device has
+            # less than the global 4-GiB maximum or lacks IT attestation.
+            if status is not None and length > status['usable_bytes']:
                 raise PlayerError(
-                    f'Zu wenig freier Speicher auf Anthias ({status["reported"]} gemeldet, '
+                    f'Zu wenig freier Speicher für dieses Medium auf Anthias '
+                    f'({status["reported"]} gemeldet, '
                     f'{status["reserve_gib"]} GiB Sicherheitsreserve). '
-                    'Upload benötigt vorübergehend zwei Dateikopien. '
-                    'Vor einem erneuten Upload Playlist und Pi-Speicher prüfen.')
-            if (status is None or not root_matches_media(self.url)) and not allow_unknown_space:
+                    'Zwei Dateikopien während des Uploads berücksichtigt. '
+                    'Playlist und Pi-Speicher vor erneutem Versuch prüfen.')
+            if status is None and not allow_unknown_space:
                 raise PlayerError(
-                    'Speicherprüfung fehlgeschlagen: Messung oder Zuordnung von Root-, '
-                    'Medien- und Upload-Dateisystem nicht bestätigt. Erneut prüfen oder '
-                    'nach manueller Kontrolle des Pi-Speichers „Prüfung ignorieren“ bestätigen.')
+                    'Anthias meldet keinen auswertbaren freien Speicher. '
+                    'Erneut prüfen oder nach manueller Kontrolle des Pi-Speichers '
+                    '„Speicherprüfung ignorieren“ bestätigen.')
             encoder = MultipartEncoder(
                 fields={'file_upload': (filename, storage, mimetype)})
             try:

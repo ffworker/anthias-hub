@@ -24,7 +24,7 @@ from .anthias import ASSET_ID, Anthias, PlayerError, validate_duration, validate
 from .bulk_media import BatchError, execute_batch
 from .devices import load, save, get, validate_device
 from .library import Library, LibraryError
-from .storage import MAX_MEDIA_BYTES, MAX_REQUEST_BYTES, capacity, upload_capacity
+from .storage import MAX_MEDIA_BYTES, MAX_REQUEST_BYTES, upload_capacity
 
 _audit_lock = threading.Lock()
 _apply_lock = threading.Lock()
@@ -93,7 +93,7 @@ def create_app(config=None):
         return Library(app.config['LIBRARY_DIR'])
 
     def read_player_storage(api):
-        """Return (capacity, failure reason). Missing data != verified low space.
+        """Return (API-based upload capacity, failure reason).
 
         Do not leak the upstream device URL or response body to the UI.
         """
@@ -109,18 +109,10 @@ def create_app(config=None):
                 reason = 'Info-API nicht erreichbar oder Zeitüberschreitung'
             app.logger.warning('Anthias storage lookup failed: %s', reason)
             return None, reason
-        disk = upload_capacity(info, api.url)
+        disk = upload_capacity(info)
         if disk is None:
-            root = capacity(info)
-            if root is not None:
-                # The Pi measurement WORKED. It measures /, not necessarily
-                # the upload temp directory and Anthias media directory.
-                app.logger.info('Anthias root capacity available, media filesystem not IT-attested')
-                return None, ('Anthias meldet ' + root['reported'] +
-                              ' frei auf dem Systemlaufwerk (/). '
-                              'Medien-/Upload-Dateisystem noch nicht durch IT bestätigt.')
-            app.logger.warning('Anthias capacity field missing or unsupported')
-            return None, 'Anthias meldet keinen auswertbaren freien System-Speicher – Pi prüfen'
+            app.logger.warning('Anthias free_space missing or unsupported')
+            return None, 'Anthias meldet keinen auswertbaren freien Speicher – Pi prüfen'
         return disk, None
 
     def requested_storage_override():
