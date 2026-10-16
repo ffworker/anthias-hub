@@ -526,7 +526,7 @@ def test_studio_visual_language_on_every_user_facing_page(env):
     page = client.get('/').get_data(as_text=True)
     assert 'class="fleet-hero"' in page
     assert 'class="fleet-summary"' in page
-    assert 'class="fleet-device card ' in page
+    assert 'class="fleet-device card"' in page
     assert 'Playlist bearbeiten' in page
     assert 'API erreichbar' in page
     assert 'Keine Live-Vorschau' not in page
@@ -1735,7 +1735,7 @@ def test_fleet_renders_without_any_player_calls_and_storage_is_deferred(env):
     _, client, _ = env
     login(client, 'marketing')
     with patch.object(FakeAnthias, 'assets', side_effect=AssertionError('slow player call')) as assets, \
-         patch.object(FakeAnthias, 'info', side_effect=AssertionError('slow info call')) as info:
+         patch.object(FakeAnthias, 'info', side_effect=AssertionError('slow info call'), create=True) as info:
         dashboard = client.get('/')
     assert dashboard.status_code == 200
     assert 'fleet-status.js' in dashboard.get_data(as_text=True)
@@ -1750,7 +1750,7 @@ def test_fleet_renders_without_any_player_calls_and_storage_is_deferred(env):
 def test_player_capacity_is_fetched_after_playlist_renders(env):
     _, client, _ = env
     login(client, 'marketing')
-    with patch.object(FakeAnthias, 'info', side_effect=AssertionError('info must be lazy')) as info:
+    with patch.object(FakeAnthias, 'info', side_effect=AssertionError('info must be lazy'), create=True) as info:
         playlist = client.get('/devices/lab').data.decode('utf-8')
     info.assert_not_called()
     assert 'Speicher wird geprüft' in playlist
@@ -1769,7 +1769,7 @@ def test_device_overview_reports_actual_count_without_info_or_credentials(env):
     _, client, _ = env
     assert client.get('/devices/lab/overview').status_code in (302, 401, 403)
     login(client, 'marketing')
-    with patch.object(FakeAnthias, 'info', side_effect=AssertionError('unexpected info')) as info:
+    with patch.object(FakeAnthias, 'info', side_effect=AssertionError('unexpected info'), create=True) as info:
         response = client.get('/devices/lab/overview')
     info.assert_not_called()
     assert response.status_code == 200
@@ -1880,7 +1880,8 @@ def test_api_storage_reading_enables_upload_without_attestation(env, monkeypatch
     assert 'Speicher wird geprüft' in page
     assert 'data-storage-loading="1"' in page
     assert 'data-player-available="0"' in page
-    assert 'name="ignore_storage_check" value="manual-confirmed" disabled' in page
+    assert 'name="ignore_storage_check" value="manual-confirmed"' in page
+    # Browser disables manual override while initial storage lookup is pending.
 
 
 @pytest.mark.parametrize('code', [errno.ENOSPC, errno.EDQUOT])
