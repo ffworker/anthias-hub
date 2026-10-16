@@ -64,7 +64,7 @@ def test_storage_report_has_zero_usable_below_reserve():
     assert cap['reserve_bytes'] >= 2 * GIB
 
 
-def test_upload_rejects_more_than_gib_before_contacting_player():
+def test_upload_rejects_more_than_4_gib_before_contacting_player():
     class VirtualFile:
         def __init__(self):
             self.position = 0
@@ -74,7 +74,7 @@ def test_upload_rejects_more_than_gib_before_contacting_player():
             self.position = MAX_MEDIA_BYTES + 1 if mode == 2 else position
     api = Anthias({'url': 'http://127.0.0.1'})
     api.http.request = MagicMock()
-    with pytest.raises(PlayerError, match='größer als 1 GiB'):
+    with pytest.raises(PlayerError, match='größer als 4 GiB'):
         api.upload(VirtualFile(), 'oversized.mp4', 'video/mp4')
     api.http.request.assert_not_called()
 
@@ -158,3 +158,37 @@ def test_upload_capacity_requires_exact_verified_url(monkeypatch):
     assert upload_capacity({'free_space': 8 * GIB}, 'http://192.168.1.10')['usable_bytes'] == 3 * GIB
     assert upload_capacity({'free_space': 8 * GIB}, 'http://192.168.1.100') is None
     assert upload_capacity({'free_space': GIB}, 'http://192.168.1.100')['usable_bytes'] == 0
+
+
+
+def test_4_gib_policy_agrees_for_player_library_batch_and_backup():
+    from app.storage import MAX_REQUEST_BYTES, MIB
+    from app.library import MAX_MEDIA, MAX_ARCHIVE
+    from app.bulk_media import MAX_BATCH_BYTES
+    assert MAX_MEDIA_BYTES == 4 * GIB
+    assert MAX_MEDIA == MAX_BATCH_BYTES == MAX_MEDIA_BYTES
+    assert MAX_REQUEST_BYTES == MAX_MEDIA_BYTES + 16 * MIB
+    assert MAX_MEDIA_BYTES < MAX_ARCHIVE < MAX_REQUEST_BYTES
+
+
+def test_exact_4_gib_synthetic_stream_stays_streaming_and_can_be_accepted():
+    """No huge allocation: metadata-only virtual stream and mocked HTTP transport."""
+    class VirtualFourGiB:
+        def __init__(self):
+            self.position = 0
+        def tell(self):
+            return self.position
+        def seek(self, offset, whence=0):
+            self.position = 4 * GIB + offset if whence == 2 else offset
+            return self.position
+        def read(self, n=-1):
+            raise AssertionError('4 GiB payload must not be read during setup')
+    api = Anthias({'url': 'http://127.0.0.1'})
+    response = MagicMock(status_code=200, content=b'{"uri": "/media/test.mp4"}')
+    response.json.return_value = {'uri': '/media/test.mp4'}
+    api.http.request = MagicMock(return_value=response)
+    with patch.object(api, 'info', return_value={'free_space': 20 * GIB}):
+        result = api.upload(VirtualFourGiB(), 'test.mp4', 'video/mp4')
+    assert result['uri'] == '/media/test.mp4'
+    encoder = api.http.request.call_args.kwargs['data']
+    assert len(encoder) > 4 * GIB

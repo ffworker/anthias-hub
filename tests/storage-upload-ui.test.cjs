@@ -23,7 +23,7 @@ function harness(failAt=0, opts={}) {
     '[data-bulk-progress]':'progress','[data-bulk-progress-bar]':'bar',
     '[data-bulk-progress-text]':'progressText','[data-bulk-report]':'report'};
   for(const name of Object.values(map))parts[name]=createElement();
-  parts.input.files=Array.from({length:5},(_,i)=>({name:'movie-'+i+'.mp4',size:500*1024*1024}));
+  parts.input.files=Array.from({length:5},(_,i)=>({name:'movie-'+i+'.mp4',size:opts.fileSize || 500*1024*1024}));
   parts.submit.textContent='Import starten';
   const listeners={};
   const ack={checked:!!opts.confirmUnknown};
@@ -94,4 +94,12 @@ test('known full Pi remains blocked even with manual acknowledgement',async()=>{
   const full=harness(0,{low:true,confirmUnknown:true});
   await full.listeners.submit({preventDefault(){}});
   assert.equal(full.sent.length,0);
+});
+
+test('four-GiB synthetic file references pass per-file browser validation without allocation',async()=>{
+  const h=harness(0,{fileSize:4 * 1024**3});
+  await h.listeners.submit({preventDefault(){}});
+  assert.equal(h.sent.length,5);
+  assert.equal(h.parts.report.dataset.state,'success');
+  assert.equal(h.parts.submit.disabled,false);
 });

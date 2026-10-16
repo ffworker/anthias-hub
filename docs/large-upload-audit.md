@@ -1,5 +1,7 @@
 # Large uploads: audited limits and controlled rollout
 
+> **Pilot amendment · 16 October 2026:** The operator has requested a **4-GiB hard per-file limit** for staged testing with a fresh Anthias Pi 3. Browser, Flask, streaming player upload, library and template ZIP backup limits have been aligned; the request cap is 4 GiB + 16 MiB, ZIP64 is kept, and browser/Gunicorn/Pi read timeouts are extended. **No 4-GiB real-device transfer has been verified yet.** The two-copy disk accounting, mounted-filesystem verification, 2-GiB/20% Pi reserve, 1-GiB Hub reserve and explicit unknown-only override remain unchanged. A 4-GiB file needs roughly 10+ GiB of genuine Pi free space. FAT32 cannot hold a full 4-GiB file. Test a small MP4 then 600 MB before larger sizes. Tables and results below describe the historical **1-GiB baseline** audited on 15 October, not the updated limits. See [Marketing upload limits](marketing-bulk-import.md).
+
 Audit base: Hub `4576e70` (2026-10-15). Upstream source inspected at
 [Anthias 0edf7917](https://github.com/Screenly/Anthias/tree/0edf7917f776005167d26330c970b24dcc9a7959).
 No live Hub or Pi was changed or load-tested. Installed Pi version, mount layout,
