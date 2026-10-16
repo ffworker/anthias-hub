@@ -51,6 +51,21 @@ sudo systemctl stop anthias-hub-cd.timer     # Auto-Deploy pausieren
 
 Verwende für **manuelle** Hub-Deployments nur `compose.cd.yaml` mit genau demselben externen Compose-Override. Ein Start mit `compose.yaml` würde wieder das lokale `:pilot`-Image verwenden. Die Registry kann ausfallen, ohne dass das laufende Image dadurch gelöscht wird. `/healthz` beweist nur die Web-Erreichbarkeit, nicht das tatsächliche TV-Bild. Dieser automatisch bewegte Kanal ist für die Test-/Staging-VM gedacht; für einen späteren Produktivhost den Timer deaktivieren und ein geprüftes SHA-/Digest-Image pinnen.
 
+## Optional HTTPS with host-local Caddy
+
+For a VM without an enterprise certificate authority or public certificate,
+see [Caddy + its own HTTPS CA](network-access.md#d-optional-caddy--your-own-internal-https-ca-no-external-ca-required).
+Caddy runs independently as a host systemd service and handles TCP/443.
+Distribute only its verified public `root.crt` to authorized clients. Keep
+`COOKIE_SECURE=0` until a trusted HTTPS login works; then set it to `1`,
+retire the LAN TCP/80 Docker publish via the **existing external override**
+and, only when Caddy is the sole trusted backend entry point, use
+`TRUSTED_PROXY_COUNT=1`. Pause the Hub CD timer only during the coordinated
+Compose change and resume afterward. Never remove or rename
+`HUB_COMPOSE_OVERRIDE` just to close port 80. The updater touches neither
+Caddy's configuration nor its CA/private keys: these need separate encrypted
+backups and restoration procedures.
+
 ## Optional host-local Compose configuration
 
 For a separately approved LAN bind or TLS deployment, set `HUB_COMPOSE_OVERRIDE=/ABSOLUTE/PATH/TO/override.yaml` in the **private** `.env` (see [network-access.md](network-access.md)). The updater includes it in `docker compose -f compose.cd.yaml -f ...` for status, pull, update **and rollback**, and stops if the file is missing. The setup script also honors this setting. Manual commands in this guide require the same additional `-f` argument if an override is active; do not run base-only `up` on an overridden service. This option does not make the `:latest` updater production safe.
