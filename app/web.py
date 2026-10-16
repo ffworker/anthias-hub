@@ -823,7 +823,7 @@ def create_app(config=None):
                 request.form.get('start', ''), request.form.get('end', ''),
             )
             audit('schedule.add', device_id, saved['id'])
-            flash('Zeitplan gespeichert. Wähle nun die Inhalte, die er steuern soll.', 'success')
+            flash('Gemeinsamer Zeitplan gespeichert – jetzt auf allen Geräten verfügbar.', 'success')
         except ScheduleError as exc:
             flash(str(exc), 'error')
         return redirect(url_for('device_schedules', device_id=device_id))
@@ -867,8 +867,8 @@ def create_app(config=None):
                       'zugeordneten Inhalten auf Anthias zugewiesen. '
                       'Extern angepasste Inhalte wurden ausgespart.', 'success')
             else:
-                flash('Zeitplanvorlage aktualisiert. Bereits zugeordnete Pi-Inhalte behalten ihre '
-                      'bisherigen Zeiten, bis du sie erneut zuweist.', 'success')
+                flash('Gemeinsame Vorlage aktualisiert. Vorhandene Pi-Zeitfenster bleiben '
+                      'unverändert, bis sie auf dem jeweiligen Gerät erneut zugewiesen werden.', 'success')
         except (ScheduleError, PlayerError) as exc:
             flash(str(exc), 'error')
         return redirect(url_for('device_schedules', device_id=device_id))
@@ -877,13 +877,15 @@ def create_app(config=None):
     @login_required('it', 'marketing')
     def device_schedule_delete(device_id, profile_id):
         player_or_404(device_id)
-        if request.form.get('confirm') != profile_id:
-            abort(400, 'Zeitplan entfernen ausdrücklich bestätigen')
+        if (request.form.get('confirm') != profile_id or
+                request.form.get('confirm_global') != 'yes'):
+            abort(400, 'Hubweites Entfernen des Zeitplans ausdrücklich bestätigen')
         try:
             remove_profile(app.config['SCHEDULES_FILE'], device_id, profile_id)
             audit('schedule.delete', device_id, profile_id)
-            flash('Benannte Vorlage entfernt. Bestehende Zeiten am Pi wurden nicht verändert. '
-                  'Zum Aufheben unten „Ohne Zeitplan“ zuweisen.', 'success')
+            flash('Zeitplan aus der gemeinsamen Sammlung entfernt. Geräte-Standards und '
+                  'Hub-Zuordnungen wurden bereinigt. Wiedergabezeiten auf den Pis '
+                  'wurden nicht verändert.', 'success')
         except ScheduleError as exc:
             flash(str(exc), 'error')
         return redirect(url_for('device_schedules', device_id=device_id))
