@@ -33,3 +33,27 @@
 
 @media(max-width:680px){.playlist-workspace .asset-toolbar{display:grid;grid-template-columns:1fr;gap:7px}.playlist-workspace .edit-panel{justify-self:stretch;width:100%}.playlist-workspace .edit-panel[open]{grid-column:1;grid-row:auto}.playlist-workspace .edit-panel>summary{width:100%;justify-content:center}.playlist-workspace .asset-edit{grid-template-columns:1fr}.playlist-workspace .asset-edit .check,.playlist-workspace .asset-edit button{grid-column:auto;grid-row:auto}.playlist-workspace .move-controls::before{margin-right:auto}.playlist-workspace .asset-side{margin-top:7px}}
 
+
+/* Per-device statuses don't hold the entire dashboard hostage; avoid false
+   offline indicators while the individual API requests are in flight. */
+.fleet-device[data-overview-state="pending"] [data-device-state]{color:#acbdce}
+.fleet-storage-panel [hidden],.fleet-storage-menu [hidden]{display:none!important}
+
+/* Honest, indeterminate feedback for long native multi-media transfers.
+   No fake byte percentage: Pi playlist count is fetched separately. */
+.template-transfer-feedback[hidden]{display:none!important}
+.template-transfer-feedback{
+  display:grid;grid-template-columns:19px minmax(0,1fr);
+  gap:4px 11px;align-items:center;margin:13px 0 2px;padding:13px;
+  border:1px solid #497d75;border-radius:10px;background:#133333;
+  color:#d6fff2;font-size:12px;line-height:1.45
+}
+.template-transfer-feedback strong{font-size:13px;font-weight:700}
+.template-transfer-feedback small{grid-column:2;display:block;color:#b3d7d1;font-size:11px;line-height:1.45}
+.template-transfer-spinner{
+  display:block;grid-row:1/3;width:18px;height:18px;align-self:center;
+  border:2px solid #527d79;border-top-color:#b3ffdf;border-radius:50%;
+  animation:transfer-spin .8s linear infinite
+}
+@keyframes transfer-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.template-transfer-spinner{animation:none;border-color:#a1ead6}}
