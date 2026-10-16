@@ -64,6 +64,215 @@ In the private `.env`, set `COOKIE_SECURE=1`. Set `TRUSTED_PROXY_COUNT=1` **only
 
 For a reverse proxy on another host, a host-local loopback bind cannot be reached: use an explicitly protected private/VPN interface listener with network ACLs instead. Do not replace loopback with `0.0.0.0` or rely on DNS alone for security.
 
+## D. Optional: Caddy + your own internal HTTPS CA (no external CA required)
+
+This option is suitable for a **private test/LAN VM** with an existing DNS A
+record, no enterprise CA and no publicly trusted certificate. Caddy runs as
+a **host systemd service**, not inside the Anthias Hub Compose project. Its
+`tls internal` directive creates a Caddy-managed **local root CA and leaf
+certificate**. Clients do **not** trust this CA automatically: IT must verify
+and install the public root certificate on each authorized client (or deploy
+it centrally). This is not publicly trusted Let's Encrypt HTTPS.
+
+**Example values only:** `hub.example.internal` and `192.0.2.10`. Use the
+actual VM DNS name and the VM's dedicated LAN address on your own system;
+**never commit real company hostnames, IPs, credentials or CA keys.**
+
+### 1. Check the existing services; keep both applications running
+
+On the Hub VM, read-only:
+
+```bash
+sudo ss -lntp | grep -E ':(80|443|8765|8085)[[:space:]]' || true
+docker ps --format 'table {{.Names}}\t{{.Ports}}'
+systemctl is-active anthias-hub-cd.timer || true
+curl -fsS http://127.0.0.1:8765/healthz
+```
+
+Confirm TCP/443 is available, the Hub still listens on
+`127.0.0.1:8765`, and any second co-hosted app retains its own separate
+Compose project and ports. If another HTTPS proxy is already installed,
+**integrate with it instead of replacing or conflicting with it**. Resolve
+`hub.example.internal` to the VM LAN address **from an actual workstation**
+(the VM itself might use different DNS). Do not restart Docker or RSS2Slideshow.
+
+### 2. Install and configure the host-local Caddy service
+
+Debian/Ubuntu example using the distro-provided Caddy package:
+
+```bash
+sudo apt update
+sudo apt install -y caddy
+sudo cp -a /etc/caddy/Caddyfile "/etc/caddy/Caddyfile.bak-$(date +%Y%m%d-%H%M%S)"
+sudoedit /etc/caddy/Caddyfile
+```
+
+Example **entire** `/etc/caddy/Caddyfile` (replace the example name and IP):
+
+```caddyfile
+{
+    auto_https disable_redirects
+}
+
+https://hub.example.internal {
+    bind 192.0.2.10
+    tls internal
+    reverse_proxy 127.0.0.1:8765
+}
+```
+
+Binding only to the VM LAN address on port 443 keeps the existing Docker
+port-80 mapping undisturbed during the trial. `disable_redirects` prevents
+Caddy from trying to serve an automatic port-80 redirect during this phase.
+A package's initial default Caddy service may fail to bind port 80 if Docker
+already owns that port; after replacing the configuration, check the service:
+
+```bash
+sudo caddy validate --config /etc/caddy/Caddyfile
+sudo systemctl reset-failed caddy
+sudo systemctl enable --now caddy
+sudo systemctl restart caddy
+sudo systemctl is-active caddy
+sudo ss -lntp | grep ':443 '
+```
+
+Validate HTTPS using Caddy's **public** root certificate (the Debian package's
+default storage path; locate it from Caddy's data directory if customized):
+
+```bash
+sudo test -f /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt
+curl --fail --silent --show-error \
+  --cacert /var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt \
+  --resolve hub.example.internal:443:192.0.2.10 \
+  https://hub.example.internal/healthz
+```
+
+Expected: `ok`. This proves that the **server's** certificate chains to the
+new local CA; it does not yet make client browsers trust that CA. Do not
+use `curl -k` or click through browser security warnings as a substitute.
+
+### 3. Establish CA trust on an authorized Windows client
+
+Transfer **only the public CA root certificate** via an authorized SSH/SCP
+channel. Example Windows PowerShell (`ADMIN@SERVER` requires read access
+to the public `root.crt` file; an administrator may need to make a temporary
+readable copy for SCP):
+
+```powershell
+scp ADMIN@SERVER:/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt "$env:USERPROFILE\Downloads\hub-caddy-root.crt"
+Get-FileHash "$env:USERPROFILE\Downloads\hub-caddy-root.crt" -Algorithm SHA256
+```
+
+On the VM, independently calculate `sudo sha256sum
+/var/lib/caddy/.local/share/caddy/pki/authorities/local/root.crt`.
+**Compare the file's SHA256 hashes through your trusted SSH channel** before
+importing. Trusting a root CA lets it issue certificates for *any* host; do
+not install a root certificate from an unknown source or publish it as an
+unverified web download.
+
+For a single, explicitly authorized Windows user:
+
+```powershell
+Import-Certificate -FilePath "$env:USERPROFILE\Downloads\hub-caddy-root.crt" -CertStoreLocation Cert:\CurrentUser\Root
+```
+
+Windows domain-wide deployment should be an IT-approved GPO to **Trusted
+Root Certification Authorities**, with appropriate ownership and lifecycle.
+Close and reopen Edge/Chrome after importing. Firefox or non-Windows clients
+may use separate certificate stores and need their own trust setup. Verify
+`https://hub.example.internal/login` opens **without** a TLS warning and
+that a freshly loaded form logs in on the **first attempt**. Do not switch
+between IP address, `http://` and the DNS name while testing cookies. If
+the browser still reports `Invalid CSRF token`, use the troubleshooting
+section below; HTTPS alone does not prove or cure session-cookie issues.
+
+### 4. Switch cookies to HTTPS and retire direct LAN HTTP
+
+Do this **only once the HTTPS browser test succeeds**. Changing
+`COOKIE_SECURE` alone does not protect port 80: the existing LAN Docker
+publish remains reachable until the external Compose override is changed.
+Conversely, enabling secure cookies while staff still use HTTP makes their
+login fail.
+
+For an existing `:latest` test VM with the systemd updater, **do not run
+`scripts/setup-pilot.sh` or switch back to `compose.yaml`**. Take an
+off-host backup of `.env`, `config/` and `data/` and inspect the currently
+installed `HUB_COMPOSE_OVERRIDE` first. Pause only the Hub auto-deploy
+timer during the coordinated switch:
+
+```bash
+cd ~/apps/anthias-hub
+sudo systemctl stop anthias-hub-cd.timer
+grep -E '^(COOKIE_SECURE|TRUSTED_PROXY_COUNT|HUB_COMPOSE_OVERRIDE|ANTHIAS_HUB_IMAGE)=' .env
+# Back up .env and the existing external override in a restricted location.
+# Edit the existing .env and override carefully; never replace other settings.
+```
+
+In the private `.env`, set `COOKIE_SECURE=1`. Remove the **LAN port
+80 publish** from the existing external Compose override, while retaining
+the base `127.0.0.1:8765` port and all other site-specific changes. The
+override file must **continue to exist at the same absolute path** because
+the updater relies on `HUB_COMPOSE_OVERRIDE`. If the override contained
+*only* an additional LAN port, its minimal contents may become:
+
+```yaml
+services:
+  anthias-hub: {}
+```
+
+With that port closed, and **only if Caddy is the sole trusted proxy route
+to the backend**, set `TRUSTED_PROXY_COUNT=1` so Flask recognizes Caddy's
+forwarded HTTPS scheme. Do not enable this while clients can connect
+directly to Hub port 80 or another untrusted backend entry point: forged
+`X-Forwarded-*` headers would then be accepted.
+
+Preview **the actual resolved published ports** before any recreate;
+Compose's full unfiltered output contains expanded secrets, so do not paste
+it into logs or public issues:
+
+```bash
+OVERRIDE=$(sed -n 's/^HUB_COMPOSE_OVERRIDE=//p' .env)
+test -n "$OVERRIDE" && test -f "$OVERRIDE" || { echo 'Missing override'; exit 1; }
+docker compose -f compose.cd.yaml -f "$OVERRIDE" -p anthias-hub config --format json \
+  | python3 -c 'import json,sys; print(json.dumps(json.load(sys.stdin)["services"]["anthias-hub"]["ports"],indent=2))'
+# Expected: only the loopback 127.0.0.1:8765 binding; NO LAN :80.
+```
+
+If correct, recreate **only** Anthias Hub to apply environment and port
+changes, keeping the existing `:latest` image:
+
+```bash
+docker compose -f compose.cd.yaml -f "$OVERRIDE" -p anthias-hub up -d --no-build --no-deps anthias-hub
+curl -fsS http://127.0.0.1:8765/healthz
+sudo ss -lntp | grep -E ':(80|443|8765|8085)[[:space:]]' || true
+sudo systemctl start anthias-hub-cd.timer
+```
+
+Check the HTTPS login, authenticated navigation and transfers from an
+authorized client. Port 443 should still be owned by Caddy; the Hub should
+not be reachable over direct LAN HTTP. Confirm the Hub timer is active and
+the other co-hosted application's container was never recreated. If
+anything fails, restore the saved private environment/override through a
+controlled rollback while keeping the previous service isolated from normal
+LAN users.
+
+### 5. Back up the CA; understand its trust scope
+
+Caddy stores its local CA under its data directory (default on this setup:
+`/var/lib/caddy/.local/share/caddy/pki/`). Back up **CA configuration,
+certificate and private keys** securely, encrypted and **off-host**, with
+limited administrator access and a tested restore procedure. Never commit
+`root.key` or any private key to Git, distribute it to clients, or bundle
+it with an application backup. Clients get **only `root.crt`**. Losing the
+CA key during a VM rebuild may require distributing a new trusted root
+to all clients; theft would compromise every client trusting it. For a
+larger organization, prefer its centrally managed PKI over an ad hoc CA.
+
+The Caddy service is separate from the Hub's GHCR automatic-image updater;
+the latter does not upgrade, back up or restore Caddy's systemd configuration
+or its CA files. **This runbook does not deploy certificates, host firewall
+rules or changes to a running VM on its own.**
+
 ## Troubleshooting: login fails with CSRF error on a new browser
 
 A **first-time login should work on its first attempt**. The login form's hidden
