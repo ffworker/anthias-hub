@@ -61,7 +61,7 @@ class Anthias:
             raise PlayerError('Ungültiger Gerätebefehl')
         return self.call('POST', '/api/v2/' + action, timeout=8)
 
-    def create(self, name, uri, duration, mimetype='webpage', ext=None):
+    def create(self, name, uri, duration, mimetype='webpage', ext=None, *, schedule=None):
         body = {
             'name': name, 'uri': uri, 'duration': duration,
             'mimetype': self._asset_mimetype(mimetype),
@@ -78,6 +78,17 @@ class Anthias:
         result = self.call('POST', '/api/v2/assets', payload=body, timeout=15)
         if not isinstance(result, dict) or not result.get('asset_id'):
             raise PlayerError('Anthias-Antwort enthält keine Asset-ID; Playlist prüfen, bevor du erneut speicherst')
+        if schedule is not None:
+            # A new asset must remain disabled until the Pi confirms its
+            # weekdays/time window; no momentary out-of-hours playback.
+            from .schedules import native_fields, native_key, ScheduleError
+            expected = native_fields(schedule)
+            try:
+                response = self.patch(result['asset_id'], expected)
+                if not isinstance(response, dict) or native_key(response) != native_key(expected):
+                    raise PlayerError('Anthias hat die Zeitplanung nicht bestätigt; Inhalt bleibt deaktiviert.')
+            except ScheduleError as exc:
+                raise PlayerError('Anthias unterstützt diese Zeitplanung nicht; Inhalt bleibt deaktiviert.') from exc
         self.patch(result['asset_id'], {'is_enabled': True})
         return result
 
