@@ -843,7 +843,7 @@ def create_app(config=None):
             size = file.stream.tell()
             file.stream.seek(0)
             if size > MAX_MEDIA_BYTES:
-                raise ValueError('Datei zu groß (max. 1 GiB)')
+                raise ValueError('Datei zu groß (max. 4 GiB)')
             head = file.stream.read(16)
             file.stream.seek(0)
             signatures = {
@@ -1060,8 +1060,8 @@ def create_app(config=None):
     @app.errorhandler(RequestEntityTooLarge)
     def too_large(exc):
         if request.accept_mimetypes.best == 'application/json':
-            return jsonify(ok=False, error='Datei zu groß (max. 2 GiB pro Anfrage; 1 GiB pro Medium)'), 413
-        return ('Datei zu groß (max. 2 GiB pro Anfrage; 1 GiB pro Medium)', 413)
+            return jsonify(ok=False, error='Datei zu groß (max. 4 GiB pro Medium plus Formular-Overhead)'), 413
+        return ('Datei zu groß (max. 4 GiB pro Medium plus Formular-Overhead)', 413)
 
     @app.errorhandler(PlayerError)
     def api_error(exc):

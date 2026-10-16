@@ -109,7 +109,7 @@ def _verified_stream(source, expected_size=None, max_bytes=MAX_MEDIA):
                 break
             amount += len(block)
             if amount > max_bytes:
-                raise ValueError('Datei zu groß (Einzelvideo max. 1 GiB, ZIP-Eintrag max. 50 MiB).')
+                raise ValueError('Datei zu groß (Einzelvideo max. 4 GiB, ZIP-Eintrag max. 50 MiB).')
             if len(head) < 16:
                 head += block[:16 - len(head)]
             output.write(block)
@@ -145,7 +145,7 @@ def checked_direct_media(source, name):
     title, filename, ext = _title_and_filename(name)
     amount = _size(source)
     if not 0 < amount <= MAX_MEDIA:
-        raise ValueError('Medium ist leer oder größer als 1 GiB')
+        raise ValueError('Medium ist leer oder größer als 4 GiB')
     head = source.read(16)
     source.seek(0)
     if not _signature(head, ext):
@@ -197,7 +197,7 @@ def execute_batch(uploads, *, duration, destination, on_media):
             entries = list(process())
     else:
         if sum(_size(item.stream) for item in uploads) > MAX_BATCH_BYTES:
-            raise BatchError('Maximal 1 GiB je Mehrfachupload insgesamt.')
+            raise BatchError('Maximal 4 GiB je direktem Mehrfach-HTTP-Request (Browser sendet Dateien einzeln).')
         entries = []
         for item in uploads:
             name = item.filename
