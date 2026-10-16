@@ -3,6 +3,7 @@ import errno
 import io
 import json
 import os
+import re
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -71,6 +72,56 @@ def login(client, name):
     client.get('/login')
     r=client.post('/login',data={'csrf':token(client),'username':name,'password':'safe-password-123'})
     assert r.status_code==302
+
+
+def test_fresh_browser_can_log_in_on_its_first_try(env):
+    app, _, _ = env
+    browser = app.test_client()
+    page = browser.get('/login')
+    assert page.status_code == 200
+    assert 'Set-Cookie' in page.headers
+    csrf = re.search(r'name="csrf" value="([^"]+)"', page.get_data(as_text=True)).group(1)
+    response = browser.post('/login', data={
+        'csrf': csrf, 'username': 'marketing', 'password': 'safe-password-123',
+    })
+    assert response.status_code == 302
+    assert browser.get('/').status_code == 200
+
+
+def test_first_login_missing_or_stale_session_never_bypasses_csrf(env):
+    app, _, _ = env
+    blocked = app.test_client(use_cookies=False)
+    page = blocked.get('/login')
+    csrf = re.search(r'name="csrf" value="([^"]+)"', page.get_data(as_text=True)).group(1)
+    rejected = blocked.post('/login', data={
+        'csrf': csrf, 'username': 'marketing', 'password': 'safe-password-123',
+    })
+    assert rejected.status_code == 400
+    assert 'Dein Browser hat die Anmeldesitzung nicht korrekt übermittelt' in rejected.get_data(as_text=True)
+    assert rejected.headers['Cache-Control'] == 'no-store'
+    assert blocked.get('/').status_code == 302
+
+    stale = app.test_client()
+    stale.get('/login')
+    mismatch = stale.post('/login', data={
+        'csrf': 'stale', 'username': 'marketing', 'password': 'safe-password-123',
+    })
+    assert mismatch.status_code == 400
+    refreshed = mismatch.get_data(as_text=True)
+    fresh_csrf = re.search(r'name="csrf" value="([^"]+)"', refreshed).group(1)
+    assert stale.post('/login', data={
+        'csrf': fresh_csrf, 'username': 'marketing', 'password': 'safe-password-123',
+    }).status_code == 302
+
+
+def test_login_warns_when_secure_cookie_is_used_over_http(env):
+    app, _, _ = env
+    app.config['SESSION_COOKIE_SECURE'] = True
+    client = app.test_client()
+    http_page = client.get('/login').get_data(as_text=True)
+    assert 'HTTP-Zugriff mit HTTPS-Cookies erkannt.' in http_page
+    https_page = client.get('/login', base_url='https://hub.example.test').get_data(as_text=True)
+    assert 'HTTP-Zugriff mit HTTPS-Cookies erkannt.' not in https_page
 
 
 def test_frontend_is_independent_from_other_projects(env):
