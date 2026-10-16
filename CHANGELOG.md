@@ -1,60 +1,21 @@
 # Changelog
 
-## Upload storage safety
+This file summarizes the **current feature baseline and meaningful changes**.
+For individual commits and historical implementation decisions, use
+[GitHub history](https://github.com/ffworker/anthias-hub/commits/main).
 
-- Root-FS readings no longer automatically claim media-mount capacity. Explicit operator topology verification is required; known shortage always blocks manual override.
-- Pi capacity budgets two temporary copies plus reserve; locale rounding is consistent.
-- Incoming media and library/backup writes retain 1 GiB of Hub disk headroom, clean up failed multipart parsing, and refuse an invalid explicit TMPDIR fallback.
-- Backup exports cannot exceed the restore content limit. The per-file cap stays 1 GiB pending the documented 4-GiB qualification.
-- See [end-to-end audit and rollout](docs/large-upload-audit.md) for proxy settings, recovery and acceptance criteria.
+## 2026-10-16 — Current main baseline
 
-## Large media and player disk safeguards (unreleased)
+- Shared hub-wide named schedules, per-device defaults and playlist item assignments, with native Anthias scheduling and explicit synchronization.
+- Compact Nordlicht-only fleet, playlist and library UI; accessible responsive controls and template publication.
+- Media/library upload limits up to **4 GiB per media file** and **4 GiB per ordinary media ZIP (including extracted contents)**. Sequential batch uploads, disk-backed streaming, storage checks using Anthias `/api/v2/info.free_space`, conservative reserves and partial-transfer feedback.
+- Owner, IT, Marketing and Viewer role model, CSRF protection, session-cookie diagnostics and optional player power controls.
+- GHCR `:latest` for disposable test-VM automatic updates; SHA images for reproducible, explicitly approved deployments.
+- Optional host-local Caddy HTTPS with an internal CA. Operator-confirmed working HTTPS login and Windows CA trust. Each additional workstation must trust the verified public root independently or through a managed rollout.
 
-- Single MP4 uploads can reach 1 GiB; local-library persistence, verification and ZIP backups use disk-backed streaming rather than loading videos in RAM.
-- Player storage status is shown from the Anthias `/api/v2/info` response, with an explicit reserve (minimum 2 GiB and 20% of reported free space) and fail-closed upload preflight.
-- Ordinary ZIP uploads keep conservative zip-bomb limits; multiple loose files can total at most 1 GiB; streamed player upload with extended timeouts.
-- **Still needs a real 600-MB video, Pi SD/mount-capacity and interrupted-upload pilot test.**
+## Operational limitations
 
-## Pilot validation notes — 2026-10-15
-
-- **User-reported practical confirmation:** Anthias Hub library import/export and the template-backup function are working in the current pilot installation.
-- This updates documentation/test status **only**. Full VM/Hub state backup plus separate Pi backup, clean restore drills and comprehensive player-write compatibility remain unverified. See [pilot acceptance](docs/pilot-acceptance.md).
-
-## Public-ready candidate (unreleased)
-
-- Combined Owner account for solo self-hosters; existing IT/Marketing roles remain separate.
-- Optional VM-local Compose override for direct LAN pilot access; updater and rollback preserve it.
-- Explicit trusted-proxy setting for HTTPS deployments and dedicated network guide.
-- Public README/operations documentation streamlined with placeholder-only example network names.
-- **Still pilot:** live player write/CEC verification and formal release approval outstanding.
-
-
-## Pilot UI handoff candidate — 2026-10-15
-
-**Status: pilot/testing, not a production release.** The checked-in `main` commit and the
-CI-published `ghcr.io/ffworker/anthias-hub:sha-<FULL_COMMIT_SHA>` image identify a
-reproducible build. There is currently no separate stable/release channel and no
-version-tag automation. See [controlled releases](docs/reproducible-production.md).
-
-### Included in the pilot UI baseline
-
-- Nordlicht-only appearance, explicit active navigation and readable mobile tabs.
-- Compact screen cards with secondary IT controls and a restrained Marketing help action.
-- Side-opening viewport-bounded device flyouts, compact button hierarchy and safe close behavior.
-- Playlist Studio media cards, add-content drawer, single and batch upload workflows.
-- Simplified template library and contextual publishing/management actions.
-- CSS maintenance: remove obsolete tab/theme rules, keep late shared rules in
-  `ui-refinements.css`, remove overridden declarations without intentionally changing visuals.
-- Offline Python/Node regression tests, including responsive flyout behavior,
-  stylesheet order and stylesheet block checks.
-
-### Not yet certified
-
-- Live Anthias write/upload/delete compatibility on every intended Pi version.
-- Network isolation, TLS/VPN/client reachability and firewall rules.
-- Physical-display verification, backup/restore rehearsal and formal IT/Marketing acceptance.
-
-**Before colleague testing:** use [pilot acceptance](docs/pilot-acceptance.md) and the
-[one-page Marketing practice sheet](docs/marketing-praxistest.pdf).
-No automatic updates or changes to the Hub VM, firewall or Anthias Pis are performed
-by this documentation/stylesheet cleanup.
+- Real-Pi compatibility, physical TV playback and 4-GiB uploads are not comprehensively certified; follow the [acceptance checks](docs/pilot-acceptance.md).
+- The Hub library backup is **not** a backup of Hub credentials/configuration or a Pi's media/playlist. Rehearsed off-host restores are still required.
+- Marketing currently has access to content on all registered screens. Pi management APIs must be protected at the network layer.
+- The test-VM `:latest` channel is not a production release process. See [controlled releases](docs/reproducible-production.md).

@@ -176,4 +176,4 @@ Für einen echten Produktionshost zusätzlich: Sicherheitsupdates, Firewall/ACL 
 
 Der Wegwerf-Host nutzt möglicherweise `/root/apps/anthias-hub` und `/root/apps/rss2slideshow`. Ein neues `hubadmin`-Konto darf standardmäßig nicht auf `/root/apps/` zugreifen; Checkouts, Docker- und Dateiberechtigungen sowie der **separate RSS-GitHub-Deploy-Key** müssen zuerst bewusst migriert werden. **Nicht** einfach `PermitRootLogin no` setzen, solange das der einzige funktionsfähige Verwaltungsweg ist. Für die spätere VM ist ein sauberer Neuaufbau mit `hubadmin` und `~/apps/` vorzuziehen.
 
-Mehr dazu: [gemeinsame Test-VM](cohosted-staging.md) · [Produktionsinstallation](reproducible-production.md) · [Docker-Deployment](deploy-docker-host.md) · [IT-Admin-Guide](IT_ADMIN_GUIDE.md).
+Mehr dazu: [gemeinsame Test-VM](cohosted-staging.md) · [Produktionsinstallation](reproducible-production.md) · [IT-Admin-Guide](IT_ADMIN_GUIDE.md).

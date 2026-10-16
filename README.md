@@ -1,93 +1,94 @@
 # Anthias Hub
 
-**A lightweight, self-hosted dashboard for managing multiple Anthias digital-signage players.**
+**Self-hosted control panel for multiple Anthias digital-signage players.**
 
 [![Tests & Publish](https://github.com/ffworker/anthias-hub/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/ffworker/anthias-hub/actions/workflows/tests.yml)
-[![MIT License](https://img.shields.io/github/license/ffworker/anthias-hub)](LICENSE)
-[![Pilot](https://img.shields.io/badge/status-pilot-orange)](docs/pilot-acceptance.md)
-[![Docker](https://img.shields.io/badge/deployment-Docker-blue)](docs/deploy-docker-host.md)
+[![MIT](https://img.shields.io/github/license/ffworker/anthias-hub)](LICENSE)
+[![Docker](https://img.shields.io/badge/deployment-Docker-blue)](docs/reproducible-production.md)
 
-Anthias Hub gives solo Raspberry Pi enthusiasts and small teams one interface to view connected screens, edit their individual playlists, upload media, and reuse content. The **Anthias player still runs on every Pi**; Hub talks to the player over its REST API. No cloud service, database, subscription, or separate central CMS required.
+Manage screens, playlists, local media and reusable content in one web UI. Each Raspberry Pi runs its own **Anthias** player; the Hub talks to its REST API. No cloud account, database or central player service is required.
 
-> **Pilot software, not production-certified.** API connectivity and read-only playlist display have been observed. On **15 October 2026**, the operator also reported successful use of the library's **import/export and template-backup functions**. This is field feedback, **not** proof of a complete Hub-host or Pi backup/restore. Player write/upload/delete compatibility across real player versions, power controls and recovery still require on-device acceptance. Do not put the current application directly on the public internet. See [pilot acceptance](docs/pilot-acceptance.md) and [security boundaries](SECURITY.md).
+**Status:** Actively developed, **not production-certified**. Automated tests do not replace testing uploads, schedules and playback on real Pi hardware. Do not expose the Hub or the players' management APIs to the public internet.
 
 ## Features
 
-- **Screen overview** – register individual players, view connectivity and playlists.
-- **Playlist studio** – add websites, PNG/JPEG/WebP/MP4, reorder and edit individual items.
-- **Reusable library** – save playlists and media, import/export template ZIPs, append items to players. Single MP4 uploads and media-ZIP imports up to 4 GiB (pilot/test; at most 4 GiB unpacked per media ZIP) are supported with streaming and conservative per-player disk-space checks (reserve of at least 2 GiB or 20%, whichever is larger, plus room for two temporary copies). Automatic Pi uploads use the Anthias API free-space reading directly; no per-device storage attestation required. For history and limitations on external media mounts, see the [large-upload audit](docs/large-upload-audit.md).
-- **Scheduling 2.0** – integrated Playlist/Zeitplanung tabs, a **hub-wide reusable collection of named schedules**, independent per-device defaults, inline per-asset scheduling and overrides on uploads/library-to-Pi transfers. Marketing and IT can schedule; actual timing runs natively on Anthias. See [scheduling guide](docs/scheduling.md).
-- **Role-based access** – **Owner** (both device and playlist administration), **IT** (devices), **Marketing** (playlists), **Viewer** (read-only). Existing IT/Marketing installations keep their accounts.
-- **Optional remote power controls** – reboot/shutdown and experimental HDMI-CEC on supported players; actions require confirmation.
-- **Independent, self-hosted** – Docker Compose and local configuration, with optional internal network access and HTTPS termination.
+- **Screens and playlists:** Register players, view status, add/edit/reorder/pause content and preview stored media.
+- **Local library:** Reusable templates, images, videos and websites. Import ordinary media ZIPs separately from Hub template-backup ZIPs. Append to existing playlists without replacing their contents.
+- **Schedules:** Shared named schedule library across devices, independent device defaults, per-asset assignments and custom time windows. Scheduling runs natively on Anthias. See [scheduling](docs/scheduling.md).
+- **Media:** PNG/JPEG/WebP/MP4, sequential batch uploads (up to 20 files) and ZIP import. Up to **4 GiB per file**, and **4 GiB total extracted media per ZIP**, subject to disk capacity and proxy limits. See [media import](docs/marketing-bulk-import.md).
+- **Accounts:** Owner (IT + Marketing), IT, Marketing and Viewer. Marketing can edit content across **all** registered screens. Optional confirmed reboot/shutdown and experimental HDMI-CEC where supported.
+- **Single-theme UI:** Nordlicht design, desktop/mobile layouts, no additional frontend framework.
 
 ## Quick start
 
-Prerequisites: Linux with Docker Engine + Compose plugin, Git, OpenSSL and a network route to an existing compatible Anthias Pi.
+Prerequisites: Linux, Docker Engine + Compose plugin, Git and a reachable Anthias player.
 
 ```bash
 git clone https://github.com/ffworker/anthias-hub.git
 cd anthias-hub
-bash scripts/setup-pilot.sh --solo  # one Owner account for a solo installation
-# Alternatively: bash scripts/setup-pilot.sh (separate IT and Marketing accounts)
+bash scripts/setup-pilot.sh --solo
 curl -fsS http://127.0.0.1:8765/healthz
 ```
 
-The setup interactively creates strong credentials and a random application secret. It does not overwrite an existing `.env` or valid accounts. It binds the web port to **127.0.0.1:8765** by default (not to your LAN). Use an SSH tunnel from your workstation:
+For separate IT and Marketing accounts omit `--solo`. Setup creates account hashes and a random session secret; it does not overwrite existing valid state. The default container binds **only** `127.0.0.1:8765`. Connect over an SSH tunnel:
 
 ```bash
 ssh -N -L 127.0.0.1:8765:127.0.0.1:8765 ADMIN@SERVER_IP
 ```
 
-Open **http://127.0.0.1:8765** locally, log in and register your Anthias player's **private IP**. The web UI is currently German; the public documentation is English. Successful `/healthz` alone does not prove the Pi or TV works.
+Open `http://127.0.0.1:8765`, sign in and register a player's private URL.
 
-For a colleague or another LAN machine, see the optional [network access guide](docs/network-access.md): isolated direct LAN HTTP for limited tests or **HTTPS via a reverse proxy** for regular users. **No company CA or public certificate?** The [optional Caddy + own internal HTTPS CA guide](docs/network-access.md#d-optional-caddy--your-own-internal-https-ca-no-external-ca-required) covers Debian host installation, trusted-root distribution to Windows, secure cookies, safely retiring HTTP and keeping the test-VM auto-updater intact. No proxy container is installed by default.
+For regular LAN users, use a **restricted HTTPS reverse proxy**. The optional [Caddy guide](docs/network-access.md#d-optional-caddy--your-own-internal-https-ca-no-external-ca-required) explains a self-managed internal CA, browser trust on Windows, secure cookies and safely retiring direct HTTP. Installing a root CA grants broad trust; never distribute the CA private key.
 
-## HTTPS staging deployment status (operator report, 16 October 2026)
+## Running and updating
 
-On the current **disposable test VM**, the operator confirmed a working
-HTTPS login behind host-installed Caddy and the separate Anthias Hub
-`ghcr.io/ffworker/anthias-hub:latest` container. The active setup uses
-`COOKIE_SECURE=1`, `TRUSTED_PROXY_COUNT=1`, and only the loopback
-`127.0.0.1:8765` Hub publish; the formerly direct LAN port-80 publish
-was removed from the existing external Compose override. The Hub's test
-auto-deploy and separately hosted RSS2Slideshow were to remain untouched.
-**Windows client trust of Caddy's self-managed internal CA was confirmed**
-on the operator's workstation: after importing the verified public root,
-the browser's certificate warning disappeared. Other staff PCs still need
-their own explicit trust installation or centrally managed GPO rollout. This is a test-VM report, not evidence
-of production certification or a completed off-host CA backup.
+CI on `main` publishes `ghcr.io/ffworker/anthias-hub:latest` and a per-commit `:sha-<FULL_SHA>` image. The optional **test-VM** auto-updater follows `:latest`; use an approved immutable image reference and manual promotion for production.
 
-For the exact optional setup, Windows trust steps, secure CA backup, and
-correct `compose.cd.yaml` manual restart/recreate commands, see
-[Network access: Caddy private CA](docs/network-access.md#d-optional-caddy--your-own-internal-https-ca-no-external-ca-required).
+If your deployment uses `compose.cd.yaml` and an external Compose override, **include both files in every manual command**:
 
-## Roles
+```bash
+cd ~/apps/anthias-hub
+OVERRIDE=$(sed -n 's/^HUB_COMPOSE_OVERRIDE=//p' .env)
+test -n "$OVERRIDE" && test -f "$OVERRIDE" || exit 1
 
-| Capability | Owner | IT | Marketing | Viewer |
-| --- | :---: | :---: | :---: | :---: |
-| View registered screens and library | ✓ | ✓ | ✓ | ✓ |
-| Register, edit, remove players | ✓ | ✓ | – | – |
-| Edit playlists and local library | ✓ | – | ✓ | – |
-| Configure per-device content schedules | ✓ | ✓ | ✓ | View |
-| HDMI-CEC and Pi shutdown | ✓ | ✓ | – | – |
-| Confirmed Pi reboot | ✓ | ✓ | ✓ | – |
+# Restart the existing container (does not reload .env changes):
+docker compose -f compose.cd.yaml -f "$OVERRIDE" -p anthias-hub restart anthias-hub
 
-Every Marketing user currently has access to **all** registered screens. Player API access must be restricted at the network layer; Hub role checks do not secure a Pi reachable directly from another client.
+# Apply changed .env / Compose settings to the Hub only:
+docker compose -f compose.cd.yaml -f "$OVERRIDE" -p anthias-hub up -d --no-build --no-deps --force-recreate anthias-hub
+```
 
-## Deployment, operations and development
+**Do not run plain `docker compose up -d --build` on a pull-based installation.** It selects the local-build `compose.yaml` and may restore obsolete bindings. First-time installations without an override follow the setup script instead. For full operations see [auto-deploy](docs/auto-deploy.md), [installation and release management](docs/reproducible-production.md), and [network access](docs/network-access.md).
 
-- [Optional LAN / HTTPS deployment](docs/network-access.md) – reverse-proxy and DNS examples use placeholders only; includes [Caddy with its own HTTPS CA](docs/network-access.md#d-optional-caddy--your-own-internal-https-ca-no-external-ca-required) for LAN environments without a trusted CA.
-- [Docker host deployment](docs/deploy-docker-host.md) – setup, local access and administration.
-- [Security model](SECURITY.md) – boundaries, secrets, authentication, backups and reporting.
-- [IT administration guide](docs/IT_ADMIN_GUIDE.md) – maintenance, roles and recovery.
-- [Controlled releases / new host](docs/reproducible-production.md) – image pins, rollout and rollback.
-- [Test-only auto-deploy](docs/auto-deploy.md) – follows `:latest`, with health check and automatic rollback.
-- [Marketing bulk import](docs/marketing-bulk-import.md) · [Native Anthias schedules](docs/scheduling.md) · [UI behavior](docs/ui-ux-review.md)
-- [Pilot acceptance checklist](docs/pilot-acceptance.md) · [Changelog](CHANGELOG.md)
+### Current deployment feedback
 
-Successful `main` CI runs publish `ghcr.io/ffworker/anthias-hub:latest` for the test VM, plus a per-commit `:sha-<FULL_COMMIT_SHA>` image for traceability and recovery. **No alpha, beta or stable release channels are configured.** Real-device verification is still required before any production promises.
+On **16 October 2026**, the operator reported a working internal HTTPS login through a host-side Caddy reverse proxy, `COOKIE_SECURE=1`, `TRUSTED_PROXY_COUNT=1`, and an Anthias Hub container exposed only on `127.0.0.1:8765`. A browser warning disappeared after the Caddy root CA was trusted on the operator's Windows workstation; other devices need their own approved trust installation. The separate RSS2Slideshow container remains independent. **This is staging feedback, not a certified production deployment or proof of backup restoration.**
 
-## License & upstream
+## Documentation
 
-Anthias Hub is an independently authored third-party REST API client under the **[MIT license](LICENSE)**. It does **not** bundle the Anthias player, whose source and licenses are separate. This project is **not affiliated with, endorsed by or supported by Screenly, Inc. or the Anthias maintainers**. See [licensing notes](docs/LICENSING.md). Contributions and bug reports are welcome, but **never include private credentials, real internal URLs or employee/company data** in public issues.
+| Guide | When to use it |
+| --- | --- |
+| [Network / Caddy HTTPS](docs/network-access.md) | LAN access, client CA trust, CSRF and TLS |
+| [Test-VM auto-deploy](docs/auto-deploy.md) | GHCR `:latest`, timer, rollback and manual Compose |
+| [New host and controlled releases](docs/reproducible-production.md) | Reproducible install, backups and approved images |
+| [IT administration](docs/IT_ADMIN_GUIDE.md) | Accounts, maintenance, Pi routes and recovery |
+| [SSH and host hardening](docs/ssh-access.md) | Secure administrator access |
+| [Shared schedules](docs/scheduling.md) | Device defaults, assignments and Anthias semantics |
+| [Media / ZIP import](docs/marketing-bulk-import.md) | Limits, storage checks and partial transfers |
+| [Acceptance checklist](docs/pilot-acceptance.md) | Real Pi testing and release readiness |
+| [Co-hosted staging](docs/cohosted-staging.md) | Optional separate RSS2Slideshow VM workflow |
+
+Also see [Security](SECURITY.md), [License](LICENSE) and [Changelog](CHANGELOG.md). The UI is in German; documentation is a mix of German and English.
+
+## Development
+
+Backend: Python/Flask, server-rendered templates, plain JavaScript and CSS. `style.css` provides the base, `modern.css` the Nordlicht theme, `workspace.css` shared layout, page-specific styles load through `extra_head`, and `ui-refinements.css` loads **last**. Keep form controls, popovers and grids responsive; do not add a second theme or framework.
+
+```bash
+python -m pytest -q
+node --test tests/*.test.cjs
+```
+
+## License and attribution
+
+Anthias Hub is a standalone **MIT-licensed** REST client. It neither bundles the Anthias player nor claims affiliation with, sponsorship from or support by Screenly or the Anthias maintainers. Anthias runs separately and retains its own licenses. See [licensing notes](docs/LICENSING.md).

@@ -149,7 +149,7 @@ Then verify browser login, device list, actual player API and test-TV output. **
 2. Recover the approved **Git commit + exact image reference/digest** from an off-host release record.
 3. Checkout that source SHA (as in section 2). Use `setup-pilot.sh` **only** for a clean first installation, never over restored state.
 4. For a genuine restore, instead restore your backed-up `.env`, `config/` and `data/` securely (correct owners/permissions), then use `compose.cd.yaml` with the saved `ANTHIAS_HUB_IMAGE`.
-5. Confirm the timer is **not** tracking `:main`. Verify actual running image, `/healthz`, logins, roles, Anthias connectivity and physical screen behavior.
+5. Confirm the test-only `:latest` timer is **disabled**. Verify actual running image, `/healthz`, logins, roles, Anthias connectivity and physical screen behavior.
 6. Restore each Pi separately if it lost its own playlist/media; the Hub backup cannot rebuild those assets. Test backup restoration, not just backup creation.
 
 ## Image references (minimal)

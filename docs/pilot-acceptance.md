@@ -22,7 +22,7 @@ These checked items record the **operator's practical feedback**, not an indepen
 ## 1. Prepare and establish the boundary
 
 - [ ] Record a backup of Hub `.env`, `config/`, `data/`, **and separately the Pi playlist/media**. Verify an off-host copy exists and restore each kind of backup to a disposable staging instance; check login, library manifests and media, and Pi content after restoration. Do not replace live state for this exercise.
-- [ ] Deploy the tested Hub image to staging (pin a SHA or OCI digest). Record its running image ID and verify login, roles, device inventory, read-only playlist and `/healthz`. Leave production auto-deploy of `:main` disabled.
+- [ ] Deploy the tested Hub image to staging (pin a SHA or OCI digest). Record its running image ID and verify login, roles, device inventory, read-only playlist and `/healthz`. Keep the test-only `:latest` timer disabled on production.
 - [ ] Check the VM SSH boundary: a named non-root admin uses a verified ED25519 key, password/root SSH logins are disabled **after** a successful separate-session test, and the management firewall allows only trusted IT/VPN sources. Confirm the Windows SSH aliases and localhost-only 8765/8085 tunnels per [SSH/hardening guide](ssh-access.md); the Pi-accessible RSS kiosk URL is a distinct, restricted route. Keep console recovery working.
 - [ ] Confirm the intended IT and Marketing accounts have distinct credentials and Marketing cannot add/edit/remove devices. Marketing currently has access to **every** registered screen; if teams must be separated by screen/location, stop and implement authorization before their rollout.
 - [ ] From an actual Marketing workstation, verify the approved Hub HTTPS/VPN route works, while a direct request to each Pi management UI/API fails. From the Hub host/container verify the authorized Pi API is reachable. Record the source, target, port, test command and observed outcome. A Hub role check is not sufficient if the client can bypass the Hub.
@@ -44,6 +44,16 @@ For each operation, compare the Hub playlist with the Pi's native UI/API **and w
 ## 3. Go / no-go
 
 Ship to the intended internal audience only if: the exact image passed CI, the above operations passed on the installed Anthias version and physical display, access isolation was observed from the real client, and Hub **and Pi** restores were rehearsed. Obtain IT/Marketing sign-off, pin the approved image, retain a rollback image, and repeat login/API/display checks after promotion. Record any known limitations (including global Marketing access, static accounts, and absence of drafts/approvals). If any destructive operation or boundary check fails, remain in pilot and fix it first. Do not delay solely for cosmetic UI perfection; prioritize mistakes that could alter or delete screen content.
+
+## Public release and repository hygiene
+
+- [ ] Inspect tracked content **and Git history**, tags, releases and CI artifacts for secrets/internal inventory. Deleting a file does not erase its history; rotate leaked secrets before considering history rewriting.
+- [ ] Verify code/license ownership and preserve MIT/third-party attribution; do not imply Screenly or Anthias sponsorship.
+- [ ] Fresh `--solo` installation and existing multi-role migration pass authentication and role tests.
+- [ ] Use only generated/demo inventory for public screenshots.
+- [ ] Perform physical Pi and monitor checks and rehearsal restores before declaring production-ready.
+- [ ] Record the approved immutable image reference/digest and the tested rollback procedure.
+- [ ] Prepare appropriate contribution/issue guidance when actively soliciting community releases.
 
 ## Public-ready checks (still require physical pilot sign-off)
 
