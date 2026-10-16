@@ -53,7 +53,7 @@ def test_unknown_space_blocks_before_transfer():
     api = Anthias({'url': 'http://127.0.0.1'})
     api.http.request = MagicMock()
     with patch.object(api, 'info', return_value={}):
-        with pytest.raises(PlayerError, match='Speicherprüfung fehlgeschlagen'):
+        with pytest.raises(PlayerError, match='keinen auswertbaren freien Speicher'):
             api.upload(io.BytesIO(b'1234'), 'x.mp4', 'video/mp4')
     api.http.request.assert_not_called()
 
@@ -94,7 +94,7 @@ def test_unknown_storage_requires_explicit_override():
     response.json.return_value = {'uri': 'file:///test.mp4'}
     api.http.request = MagicMock(return_value=response)
     with patch.object(api, 'info', side_effect=PlayerError('Anthias antwortete mit HTTP 404')):
-        with pytest.raises(PlayerError, match='Speicherprüfung fehlgeschlagen'):
+        with pytest.raises(PlayerError, match='keinen auswertbaren freien Speicher'):
             api.upload(io.BytesIO(b'test'), 'small.mp4', 'video/mp4')
         result = api.upload(io.BytesIO(b'test'), 'small.mp4', 'video/mp4',
                             allow_unknown_space=True)
@@ -112,27 +112,19 @@ def test_known_insufficient_space_still_blocks_with_override():
     api.http.request.assert_not_called()
 
 
-@pytest.fixture(autouse=True)
-def verified_test_topology(monkeypatch):
-    monkeypatch.setenv('ANTHIAS_VERIFIED_STORAGE_URLS', 'http://127.0.0.1,http://10.0.0.42')
-
-
-def test_unverified_root_requires_override_even_with_plenty_of_space(monkeypatch):
-    monkeypatch.delenv('ANTHIAS_VERIFIED_STORAGE_URLS')
+def test_api_space_allows_normal_upload_without_attestation(monkeypatch):
+    monkeypatch.delenv('ANTHIAS_VERIFIED_STORAGE_URLS', raising=False)
     api = Anthias({'url': 'http://127.0.0.1'})
     response = MagicMock(status_code=200, content=b'{}')
     response.json.return_value = {'uri': '/media/test.tmp'}
     api.http.request = MagicMock(return_value=response)
     with patch.object(api, 'info', return_value={'free_space': '10.0 GB'}):
-        with pytest.raises(PlayerError, match='Zuordnung'):
-            api.upload(io.BytesIO(b'test'), 'x.mp4', 'video/mp4')
-        api.http.request.assert_not_called()
-        api.upload(io.BytesIO(b'test'), 'x.mp4', 'video/mp4', allow_unknown_space=True)
+        result = api.upload(io.BytesIO(b'test'), 'x.mp4', 'video/mp4')
+    assert result['uri'] == '/media/test.tmp'
     assert api.http.request.call_count == 1
 
 
-def test_double_copy_preflight_blocks_before_transfer_even_with_override(monkeypatch):
-    # Exactly one file fits above the reserve, but Django needs two copies.
+def test_double_copy_preflight_blocks_when_api_space_is_too_low():
     class SizedStream(io.BytesIO):
         def seek(self, offset, whence=0):
             if whence == 2:
@@ -140,11 +132,9 @@ def test_double_copy_preflight_blocks_before_transfer_even_with_override(monkeyp
             return super().seek(offset, whence)
     api = Anthias({'url': 'http://127.0.0.1'})
     api.http.request = MagicMock()
-    for configured in ('http://127.0.0.1', ''):
-        monkeypatch.setenv('ANTHIAS_VERIFIED_STORAGE_URLS', configured)
-        with patch.object(api, 'info', return_value={'free_space': 3 * GIB}):
-            with pytest.raises(PlayerError, match='zwei Dateikopien'):
-                api.upload(SizedStream(b'test'), 'x.mp4', 'video/mp4', allow_unknown_space=True)
+    with patch.object(api, 'info', return_value={'free_space': 3 * GIB}):
+        with pytest.raises(PlayerError, match='Dateikopien'):
+            api.upload(SizedStream(b'test'), 'x.mp4', 'video/mp4', allow_unknown_space=True)
     api.http.request.assert_not_called()
 
 
@@ -152,13 +142,20 @@ def test_capacity_locale_rounding_is_identical():
     assert capacity({'free_space': '15,0 GB'})['free_bytes'] == capacity({'free_space': '15.0 GB'})['free_bytes']
 
 
-def test_upload_capacity_requires_exact_verified_url(monkeypatch):
+def test_upload_capacity_uses_api_for_all_devices_without_attestation(monkeypatch):
     from app.storage import upload_capacity
-    monkeypatch.setenv('ANTHIAS_VERIFIED_STORAGE_URLS', 'http://192.168.1.10/')
+    monkeypatch.delenv('ANTHIAS_VERIFIED_STORAGE_URLS', raising=False)
+    assert upload_capacity({'free_space': 8 * GIB})['usable_bytes'] == 3 * GIB
     assert upload_capacity({'free_space': 8 * GIB}, 'http://192.168.1.10')['usable_bytes'] == 3 * GIB
-    assert upload_capacity({'free_space': 8 * GIB}, 'http://192.168.1.100') is None
+    assert upload_capacity({'free_space': 8 * GIB}, 'http://192.168.1.100')['usable_bytes'] == 3 * GIB
     assert upload_capacity({'free_space': GIB}, 'http://192.168.1.100')['usable_bytes'] == 0
+    assert upload_capacity({}) is None
 
+
+def test_storage_guard_checks_actual_file_and_not_global_four_gib_floor():
+    from app.storage import upload_capacity
+    budget = upload_capacity({'free_space': 3 * GIB})
+    assert 0 < budget['usable_bytes'] < GIB
 
 
 def test_4_gib_policy_agrees_for_player_library_batch_and_backup():

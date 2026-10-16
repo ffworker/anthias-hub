@@ -15,7 +15,7 @@ Anthias Hub gives solo Raspberry Pi enthusiasts and small teams one interface to
 
 - **Screen overview** – register individual players, view connectivity and playlists.
 - **Playlist studio** – add websites, PNG/JPEG/WebP/MP4, reorder and edit individual items.
-- **Reusable library** – save playlists and media, import/export template ZIPs, append items to players. Single MP4 uploads up to 4 GiB (pilot/test) are supported with streaming and conservative per-player disk-space checks (reserve of at least 2 GiB or 20%, whichever is larger, plus room for two temporary copies). Automatic Pi uploads require verified storage topology; see the [large-upload audit](docs/large-upload-audit.md).
+- **Reusable library** – save playlists and media, import/export template ZIPs, append items to players. Single MP4 uploads up to 4 GiB (pilot/test) are supported with streaming and conservative per-player disk-space checks (reserve of at least 2 GiB or 20%, whichever is larger, plus room for two temporary copies). Automatic Pi uploads use the Anthias API free-space reading directly; no per-device storage attestation required. For history and limitations on external media mounts, see the [large-upload audit](docs/large-upload-audit.md).
 - **Role-based access** – **Owner** (both device and playlist administration), **IT** (devices), **Marketing** (playlists), **Viewer** (read-only). Existing IT/Marketing installations keep their accounts.
 - **Optional remote power controls** – reboot/shutdown and experimental HDMI-CEC on supported players; actions require confirmation.
 - **Independent, self-hosted** – Docker Compose and local configuration, with optional internal network access and HTTPS termination.

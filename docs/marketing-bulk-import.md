@@ -1,4 +1,4 @@
-> Aktuelle Speicherregeln: siehe [Upload-Audit](large-upload-audit.md). Root-Speicher allein bestätigt den Medienmount nicht. Automatische Freigabe erfordert eine IT-bestätigte Dateisystem-Zuordnung; das Uploadbudget berücksichtigt zwei temporäre Kopien. Die 1-GiB-Dateigrenze bleibt bestehen. Bei unbekannter Messung/Zuordnung ist nur die ausdrücklich bestätigte manuelle Ausnahme möglich; nachgewiesener Platzmangel bleibt gesperrt.
+> Aktuelle Speicherregel: Die Anthias-API `/api/v2/info.free_space` ist die maßgebliche Quelle für jeden Pi. Der Hub prüft die **konkret ausgewählte Datei** gegen ein Budget aus API-Freiraum mit zwei möglichen Dateikopien und bestehender Sicherheitsreserve. Keine manuelle IT-Dateisystemfreigabe notwendig. 4 GiB pro Mediendatei bleiben die technische Dateigrößengrenze; Medien-ZIPs sind unabhängig begrenzt.
 
 # Marketing: Medien als ZIP oder Mehrfachauswahl hochladen
 
@@ -67,7 +67,7 @@ Bei großen Uploads wird der Multipart-Body zum Pi **gestreamt**, nicht komplett
 
 Die bisherige JS-Sammelgrenze von 1 GiB bezog sich auf **alle ausgewählten Dateien zusammen**. Das neue UI sendet große Dateien einzeln und gibt die Schaltfläche auch nach Abbruch oder Fehler wieder frei. Ein laufender Upload ist explizit abbrechbar, **ein Abbruch kann bereits am Pi angekommene Dateien nicht zurücknehmen**.
 
-Ist die verbleibende Pi-Kapazität zu klein oder meldet Anthias keine zuverlässige `free_space`-Angabe, bleibt die Sicherheitsprüfung erhalten: Pi-Playlist, Pi-Dateisystem und gegebenenfalls unvollständige Medien/SD-Karte prüfen, dann im Upload-Bereich per **↻** neu messen. Ein UI-Reset umgeht keine Speicherprüfung. Bei fehlender Messung/Zuordnung gilt ausschließlich die unten beschriebene bewusste Ausnahme; bei zu knapper Kapazität gibt es keine Ausnahme. Bitte keine unsichere Umgehung der 2-GiB-/20-%-Reserve oder blindes erneutes Hochladen. Bibliotheksimporte verwenden hingegen Hub-Speicher, nicht den des Pis.
+Ist die verbleibende Pi-Kapazität zu klein oder meldet Anthias keine zuverlässige `free_space`-Angabe, bleibt die Sicherheitsprüfung erhalten: Pi-Playlist, Pi-Dateisystem und gegebenenfalls unvollständige Medien/SD-Karte prüfen, dann im Upload-Bereich per **↻** neu messen. Ein UI-Reset umgeht keine Speicherprüfung. Bei fehlender API-Messung gilt ausschließlich die unten beschriebene bewusste Ausnahme; bei zu knapper Kapazität gibt es keine Ausnahme. Bitte keine unsichere Umgehung der 2-GiB-/20-%-Reserve oder blindes erneutes Hochladen. Bibliotheksimporte verwenden hingegen Hub-Speicher, nicht den des Pis.
 
 
 ### Speicherprüfung fehlgeschlagen: bewusster manueller Upload
@@ -86,3 +86,10 @@ Eine **einzelne** Mediendatei darf jetzt höchstens **4 GiB (4.294.967.296 Bytes
 **Storage-Schutz unverändert:** Die Hub-VM benötigt genug Platz in `/data` für Eingangs-Spooling und gegebenenfalls zusätzliche Bibliotheks-/Backupkopien, zuzüglich **1 GiB Hub-Reserve**. Der Pi kann beim Upload zwei Dateikopien gleichzeitig halten. Für ein 4-GiB-Video sind daher mindestens **ungefähr 10 GiB real freier Platz** auf den relevanten Pi-Dateisystemen nötig (mehr wegen Rundung); getrennte Mounts einzeln überprüfen. Eine nachgewiesene Platzunterschreitung kann nicht ignoriert werden. Bei unbekannter Mount-Zuordnung ist die explizite manuelle Bestätigung weiterhin erforderlich.
 
 **Vor Übergabe an Marketing:** Auf dem frischen Pi 3 erst eine kleine MP4-Datei, danach etwa 600 MB, dann stufenweise größer testen. Die 4-GiB-Grenze ist softwareseitig implementiert, aber **noch nicht mit echtem Pi-3-Datenträger und installierter Anthias-Version erprobt**. FAT32 hat eine maximale Einzeldateigröße von 4 GiB minus 1 Byte und kann daher keine volle 4-GiB-Datei aufnehmen. Prüfe außerdem echte Dateisysteme, Netzwerk/Proxy, Pi-CPU und den Codec bei der TV-Wiedergabe.
+
+
+### API als Speicherquelle (16.10.2026)
+
+Für den regulären Raspberry-Pi-Betrieb verwendet der Hub den **von Anthias gelieferten freien Speicher direkt**. Eine leere oder fehlende `ANTHIAS_VERIFIED_STORAGE_URLS`-Konfiguration blockiert den Upload ab dieser Version nicht mehr; diese Einstellung ist obsolet. Die automatische Speicherprüfung vergleicht die **konkret ausgewählte Datei** mit dem aktuellen API-basierten Uploadbudget. Die 4 GiB bilden ausschließlich die Obergrenze **pro Datei**, nicht eine erforderliche Mindestmenge an freiem Speicher auf dem Pi. Kleinere Medien können auch bei weniger als 4 GiB gemeldetem freien Speicher hochgeladen werden, sofern die bisherige Reserve (mind. 2 GiB oder 20%) und Platz für zwei temporäre Dateikopien verbleiben.
+
+Eine gemessene Knappheit kann nicht ignoriert werden. Nur wenn `free_space` fehlt oder die Info-API nicht erreichbar ist, wird die ausdrücklich bestätigte manuelle Ausnahme angeboten. **Grenze der API:** Anthias misst den Root-Speicher. Bei einem tatsächlich anders angebundenen externen Medienmount kann das von der Medienkapazität abweichen; diese Bereitstellung muss der Betreiber separat absichern.

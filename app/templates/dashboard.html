@@ -95,7 +95,7 @@
               <p class="storage-panel-title">Gerätespeicher</p>
               {% if disk %}
                 <dl>
-                  <div><dt>Frei gemeldet</dt><dd>{{ disk.reported }}</dd></div>
+                  <div><dt>Anthias meldet frei</dt><dd>{{ disk.reported }}</dd></div>
                   <div><dt>Für Uploads</dt><dd>{{ disk.usable_gib }} GiB</dd></div>
                   <div><dt>Sicherheitsreserve</dt><dd>{{ disk.reserve_gib }} GiB</dd></div>
                 </dl>
@@ -103,9 +103,9 @@
                   <p class="storage-panel-warning">Zu wenig Platz: Pi-Speicher prüfen und nicht mehr benötigte Inhalte gezielt entfernen.</p>
                 {% endif %}
               {% else %}
-                <p class="storage-panel-warning">{{ statuses[device.id].storage_reason or 'Keine verlässliche Medienkapazität verfügbar.' }} Nach Prüfung der tatsächlichen Medien-/Upload-Datenträger ist eine bewusste Ausnahme für Einzeluploads möglich.</p>
+                <p class="storage-panel-warning">{{ statuses[device.id].storage_reason or 'Anthias-Speicherwert nicht verfügbar.' }} Nach eigener Prüfung des Pi-Speichers ist eine bewusste Ausnahme möglich.</p>
               {% endif %}
-              <p class="storage-panel-note">Videos bis 4 GiB je Datei · Zwei temporäre Kopien und Reserve berücksichtigt.</p>
+              <p class="storage-panel-note">Videos bis 4 GiB je Datei · Platzbedarf wird pro Upload anhand der Anthias-API geprüft.</p>
             </div>
           </details>
         </div>{% endif %}
