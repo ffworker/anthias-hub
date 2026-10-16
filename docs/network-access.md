@@ -281,9 +281,10 @@ publish and setting `COOKIE_SECURE=1` plus `TRUSTED_PROXY_COUNT=1`.
 The container was reported to run from
 `ghcr.io/ffworker/anthias-hub:latest`; the localhost `8765` binding was
 kept and the existing auto-deploy remained the intended update mechanism.
-Caddy runs independently on the host. The remaining browser **"Not secure"**
-warning has **not yet been confirmed resolved**: it is a separate Windows
-root-CA trust step, not an application login or Docker problem.
+Caddy runs independently on the host. The browser **"Not secure"** warning was subsequently resolved on the
+operator's Windows workstation by trusting Caddy's public root CA.
+Other Windows clients still require an authorized individual import or an
+IT-approved domain GPO. Never distribute Caddy's private CA key.
 
 The below state is **not** a checked-in site configuration; private DNS
 names, LAN IPs, `.env`, and the actual absolute Compose override stay on
