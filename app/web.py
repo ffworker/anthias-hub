@@ -359,7 +359,7 @@ def create_app(config=None):
             if report['failed']:
                 report['message'] += ' Player-Playlist prüfen; kein automatischer Rollback oder Retry.'
             return finish_bulk(report, destination_url)
-        except (BatchError, PlayerError) as exc:
+        except (BatchError, PlayerError, ScheduleError) as exc:
             return reject_bulk(exc, destination_url)
 
     @app.post('/library/<template_id>/move/<item_id>')
@@ -414,7 +414,7 @@ def create_app(config=None):
                                          mimetype=MEDIA[ext], ext=uploaded.get('ext'))
             audit('library.apply', device_id, template['id'])
             flash('Vorlage übertragen. Playlist und Ausgabe am TV prüfen.', 'success')
-        except (LibraryError, PlayerError, OSError) as exc:
+        except (LibraryError, PlayerError, ScheduleError, OSError) as exc:
             flash(str(exc) + ' Keine automatische Wiederholung: Playlist am Player prüfen (Teilübertragung möglich).', 'error')
         return redirect(url_for('playlist', device_id=device_id))
 
@@ -492,7 +492,7 @@ def create_app(config=None):
             added, skipped = append_library_template(device_id, request.form.get('template_id', ''))
             flash(f'{added} Inhalte hinzugefügt, {skipped} bereits vorhandene Webseiten übersprungen. '
                   'Bestehende Playlist wurde nicht gelöscht. Ausgabe am TV prüfen.', 'success')
-        except (LibraryError, PlayerError, OSError) as exc:
+        except (LibraryError, PlayerError, ScheduleError, OSError) as exc:
             flash(str(exc) + ' Keine automatische Wiederholung: Playlist auf dem Player prüfen.', 'error')
         return redirect(url_for('playlist', device_id=device_id))
 
@@ -506,7 +506,7 @@ def create_app(config=None):
             added, skipped = append_library_template(device_id, template_id)
             flash(f'{added} Inhalte aus der Vorlage hinzugefügt, {skipped} vorhandene Webseiten übersprungen. '
                   'Der Bildschirm wurde nicht geleert.', 'success')
-        except (LibraryError, PlayerError, OSError) as exc:
+        except (LibraryError, PlayerError, ScheduleError, OSError) as exc:
             flash(str(exc) + ' Keine automatische Wiederholung: Ziel-Playlist prüfen.', 'error')
         return redirect(url_for('library_detail', template_id=template_id))
 
@@ -554,7 +554,7 @@ def create_app(config=None):
         try:
             append_library_item(device_id, template_id, item_id)
             flash('Ein Bibliotheksinhalt hinzugefügt. Bestehende Playlist bleibt erhalten; Ausgabe am TV prüfen.', 'success')
-        except (LibraryError, PlayerError, OSError) as exc:
+        except (LibraryError, PlayerError, ScheduleError, OSError) as exc:
             flash(str(exc) + ' Keine automatische Wiederholung: Playlist prüfen (Teilübertragung möglich).', 'error')
         return redirect(url_for('playlist', device_id=device_id))
 
@@ -567,7 +567,7 @@ def create_app(config=None):
         try:
             append_library_item(device_id, template_id, item_id)
             flash('Ein Inhalt zur ausgewählten Playlist hinzugefügt; bestehende Inhalte bleiben erhalten.', 'success')
-        except (LibraryError, PlayerError, OSError) as exc:
+        except (LibraryError, PlayerError, ScheduleError, OSError) as exc:
             flash(str(exc) + ' Keine automatische Wiederholung: Ziel-Playlist prüfen (Teilübertragung möglich).', 'error')
         return redirect(url_for('library_detail', template_id=template_id))
 
@@ -826,15 +826,43 @@ def create_app(config=None):
     def device_schedule_edit(device_id, profile_id):
         player_or_404(device_id)
         try:
+            previous = next((p for p in profiles_for(app.config['SCHEDULES_FILE'], device_id)
+                             if p['id'] == profile_id), None)
             saved = edit_profile(
                 app.config['SCHEDULES_FILE'], device_id, profile_id,
                 request.form.get('name', ''), request.form.getlist('days'),
                 request.form.get('start', ''), request.form.get('end', ''),
             )
             audit('schedule.edit', device_id, saved['id'])
-            flash('Zeitplanvorlage aktualisiert. Bereits zugeordnete Pi-Inhalte behalten ihre '
-                  'bisherigen Zeiten, bis du sie unten erneut zuweist.', 'success')
-        except ScheduleError as exc:
+            if request.form.get('sync_assigned') == 'yes':
+                # Sync only explicitly linked and still-unmodified native values;
+                # an externally edited Pi rule is never overwritten.
+                _, api = player_or_404(device_id)
+                linked = assignments_for(app.config['SCHEDULES_FILE'], device_id)
+                originals = {x['asset_id']: x for x in api.assets()}
+                to_sync = []
+                for ident, record in linked.items():
+                    if record.get('profile_id') != profile_id or ident not in originals:
+                        continue
+                    try:
+                        from .schedules import native_key
+                        if previous and native_key(originals[ident]) == native_key(native_fields(previous)):
+                            to_sync.append(ident)
+                    except ScheduleError:
+                        pass
+                if to_sync:
+                    apply_to_assets(
+                        api, saved, to_sync,
+                        on_applied=lambda ident, values: bind_asset(
+                            app.config['SCHEDULES_FILE'], device_id,
+                            ident, profile_id, values))
+                flash(f'Zeitplanvorlage gespeichert und {len(to_sync)} unveränderten '
+                      'zugeordneten Inhalten auf Anthias zugewiesen. '
+                      'Extern angepasste Inhalte wurden ausgespart.', 'success')
+            else:
+                flash('Zeitplanvorlage aktualisiert. Bereits zugeordnete Pi-Inhalte behalten ihre '
+                      'bisherigen Zeiten, bis du sie erneut zuweist.', 'success')
+        except (ScheduleError, PlayerError) as exc:
             flash(str(exc), 'error')
         return redirect(url_for('device_schedules', device_id=device_id))
 

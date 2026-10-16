@@ -9,7 +9,7 @@
       {% endif %}
       <option value="always" {% if mode == 'always' %}selected{% endif %}>Ohne Zeitplan · jederzeit</option>
       {% for rule in profiles %}
-      <option value="{{ rule.id }}">{{ rule.name }} · {{ rule.start }}–{{ rule.end }} Uhr</option>
+      <option value="{{ rule.id }}" {% if mode == rule.id %}selected{% endif %}>{{ rule.name }} · {{ rule.start }}–{{ rule.end }} Uhr</option>
       {% endfor %}
       <option value="custom">Individuelles Zeitfenster …</option>
     </select>

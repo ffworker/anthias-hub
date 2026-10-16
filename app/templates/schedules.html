@@ -74,7 +74,8 @@
                     <label><input type="checkbox" name="days" value="{{ day }}" {% if day in rule.days %}checked{% endif %}>{{ label }}</label>
                   {% endfor %}
                 </fieldset>
-                <p class="schedule-hint">Änderungen an der Vorlage werden erst wirksam, wenn du die betroffenen Inhalte unten erneut zuweist.</p>
+                <p class="schedule-hint">Ohne Übernahme ändern sich bestehende Pi-Inhalte nicht. Extern abweichende Inhalte werden auch bei Übernahme nicht überschrieben.</p>
+                <label class="schedule-sync-check"><input type="checkbox" name="sync_assigned" value="yes"> Bestehende, unveränderte Zuordnungen nach Bestätigung aktualisieren</label>
                 <button class="primary" type="submit">Zeitplan speichern</button>
               </form>
             </details>
