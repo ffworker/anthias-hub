@@ -100,7 +100,7 @@
 {% else %}<li class="card library-empty">Noch keine Inhalte in dieser Vorlage.</li>{% endfor %}
 </ol></section>
 {% if logged_user.role in ('marketing', 'owner') %}<aside class="library-actions">
-<section class="card library-panel"><h2>Bild oder Video speichern</h2><p class="muted">PNG · JPG · WebP · MP4 · max. 1 GiB je Datei</p><form method="post" data-upload-form="library" action="{{ url_for('library_add_media', template_id=template.id) }}" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf() }}"><label>Datei<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label><label>Titel (optional)<input name="name" maxlength="100"></label><label>Bilddauer in Sekunden (Video automatisch)<input name="duration" type="number" min="5" max="3600" value="15"></label><p class="upload-selected" role="status" aria-live="polite"></p><button class="primary" type="submit">In Vorlage speichern</button><div class="upload-feedback" hidden role="status" aria-live="polite"><div class="upload-progress" aria-hidden="true"><span data-upload-bar></span></div><small data-upload-text></small></div></form></section>
+<section class="card library-panel"><h2>Bild oder Video speichern</h2><p class="muted">PNG · JPG · WebP · MP4 · max. 4 GiB je Datei</p><form method="post" data-upload-form="library" action="{{ url_for('library_add_media', template_id=template.id) }}" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf() }}"><label>Datei<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label><label>Titel (optional)<input name="name" maxlength="100"></label><label>Bilddauer in Sekunden (Video automatisch)<input name="duration" type="number" min="5" max="3600" value="15"></label><p class="upload-selected" role="status" aria-live="polite"></p><button class="primary" type="submit">In Vorlage speichern</button><div class="upload-feedback" hidden role="status" aria-live="polite"><div class="upload-progress" aria-hidden="true"><span data-upload-bar></span></div><small data-upload-text></small></div></form></section>
 <details class="card library-panel library-bulk-compact">
   <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#upload"></use></svg> Mehrere Dateien oder ZIP hinzufügen</summary>
 <div class="bulk-media-panel">
@@ -111,7 +111,7 @@
   <label>Dateien oder ZIP auswählen
     <input type="file" name="media" accept=".zip,.png,.jpg,.jpeg,.webp,.mp4" multiple required>
   </label>
-  <p class="muted input-support">Bis zu 20 Medien, einzeln nacheinander · max. 1 GiB je Datei. ZIP max. 50 MiB.</p>
+  <p class="muted input-support">Bis zu 20 Medien, einzeln nacheinander · max. 4 GiB je Datei. ZIP max. 50 MiB.</p>
   <label>Bilddauer (Sekunden)<input type="number" name="duration" min="5" max="3600" value="15" required></label>
   <p class="bulk-selected" data-bulk-selected role="status" aria-live="polite"></p>
   <button type="submit" class="primary">In Vorlage importieren →</button>

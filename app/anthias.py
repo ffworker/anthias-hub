@@ -106,7 +106,7 @@ class Anthias:
         except (OSError, ValueError, AttributeError) as exc:
             raise PlayerError('Upload-Datei ist nicht lesbar') from exc
         if not 0 < length <= MAX_MEDIA_BYTES:
-            raise PlayerError('Medium ist leer oder größer als 1 GiB')
+            raise PlayerError('Medium ist leer oder größer als 4 GiB')
         with _upload_lock:
             try:
                 status = capacity(self.info())
@@ -130,7 +130,7 @@ class Anthias:
                 response = self.http.request(
                     'POST', self.url + '/api/v2/file_asset',
                     data=encoder, headers={'Content-Type': encoder.content_type},
-                    timeout=(8, 900))
+                    timeout=(8, 7200))
                 if not 200 <= response.status_code < 300:
                     raise PlayerError('Anthias antwortete mit HTTP ' + str(response.status_code))
                 if len(response.content) > 2_000_000:

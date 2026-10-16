@@ -119,7 +119,7 @@ class Library:
                         break
                     amount += len(block)
                     if amount > max_bytes:
-                        raise LibraryError('Datei zu groß (max. 1 GiB)')
+                        raise LibraryError('Datei zu groß (max. 4 GiB)')
                     if len(head) < 16:
                         head += block[:16 - len(head)]
                     digest.update(block)
@@ -233,7 +233,7 @@ class Library:
                  for filename in {item['file'] for item in collection['items']
                                   if item['kind'] == 'media'}}
         if manifest_bytes + sum(path.stat().st_size for path in paths.values()) > MAX_ARCHIVE:
-            raise LibraryError('Vorlage überschreitet die Backup-Grenze von 2 GiB. '
+            raise LibraryError('Vorlage überschreitet die Backup-Grenze von ca. 4 GiB. '
                                'Vorlage vor Export aufteilen; dieses Backup wäre nicht importierbar.')
         output = GuardedTemporaryFile()
         try:

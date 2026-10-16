@@ -10,8 +10,8 @@ from decimal import Decimal, InvalidOperation
 
 GIB = 1024 ** 3
 MIB = 1024 ** 2
-MAX_MEDIA_BYTES = GIB                 # per media file
-MAX_REQUEST_BYTES = 2 * GIB + 2 * MIB # up to 2 GiB template ZIP + form
+MAX_MEDIA_BYTES = 4 * GIB             # max per individual media file (Pi-3 pilot)
+MAX_REQUEST_BYTES = MAX_MEDIA_BYTES + 16 * MIB  # multipart / ZIP64 overhead
 MIN_PI_RESERVE = 2 * GIB              # absolute free-space floor
 PI_RESERVE_FRACTION = Decimal('0.20') # keep a further 20% of reported free
 _SPACE = re.compile(r'^\s*(\d+(?:[.,]\d+)?)\s*(BYTE[S]?|B|[KMGTPE]I?B|[KMGTPE])\s*$', re.I)

@@ -74,7 +74,7 @@
         active = xhr;
         xhr.open('POST', form.action);
         xhr.setRequestHeader('Accept', 'application/json');
-        xhr.timeout = 2400000;
+        xhr.timeout = 7200000;
         xhr.upload.addEventListener('progress', (e) => {
           const percent = e.lengthComputable ? Math.min(100, Math.round(e.loaded / e.total * 100)) : 0;
           bar.style.width = Math.round((index + percent / 100) / total * 100) + '%';
@@ -120,12 +120,12 @@
       if (!files.length || files.length > 20 ||
           (archives.length && files.length !== 1) ||
           files.some(file => !allowed.test(file.name)) ||
-          files.some(file => file.size > (archives.length ? 50 : 1024) * MiB)) {
+          files.some(file => file.size > (archives.length ? 50 : 4096) * MiB)) {
         report.replaceChildren();
         report.hidden = false;
         report.dataset.state = 'error';
         const error = document.createElement('p');
-        error.textContent = 'Max. 20 Medien, je 1 GiB (einzeln übertragen); ZIP allein max. 50 MiB.';
+        error.textContent = 'Max. 20 Medien, je 4 GiB (einzeln übertragen); ZIP allein max. 50 MiB.';
         report.appendChild(error);
         return;
       }

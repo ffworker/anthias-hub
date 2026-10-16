@@ -267,7 +267,7 @@
             <button type="button" class="storage-refresh" data-storage-refresh aria-label="Speicherplatz aktualisieren" title="Speicherplatz erneut prüfen">↻</button>
             <details class="upload-storage-more">
               <summary aria-label="Details zu Upload-Grenzen">i</summary>
-              <p>Max. 1 GiB je Video. {{ storage.reserve_gib ~ ' GiB' if storage else 'Mindestens 2 GiB' }} Sicherheitsreserve bleiben frei; temporär werden zwei Dateikopien berücksichtigt. Bei unbekanntem Speicher kann die Prüfung nach eigener Kontrolle ausdrücklich ignoriert werden. Bei nachgewiesenem Platzmangel bleibt der Upload gesperrt.</p>
+              <p>Max. 4 GiB je Video. {{ storage.reserve_gib ~ ' GiB' if storage else 'Mindestens 2 GiB' }} Sicherheitsreserve bleiben frei; temporär werden zwei Dateikopien berücksichtigt. Bei unbekanntem Speicher kann die Prüfung nach eigener Kontrolle ausdrücklich ignoriert werden. Bei nachgewiesenem Platzmangel bleibt der Upload gesperrt.</p>
             </details>
           </div>
           <form method="post" enctype="multipart/form-data" data-upload-form="player" data-player-available="{{ storage.usable_bytes if storage else 0 }}" action="{{ url_for('upload', device_id=device.id) }}">
@@ -277,7 +277,7 @@
               <span>Speicherprüfung ignorieren <small>Nur wenn du den freien Platz am Pi selbst geprüft hast. Bei vollem Speicher kann der Upload fehlschlagen.</small></span>
             </label>
             <label>Datei auswählen<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label>
-            <p class="muted input-support">PNG · JPG · WebP · MP4 · max. 1 GiB je Video</p><p class="upload-selected" role="status" aria-live="polite"></p>
+            <p class="muted input-support">PNG · JPG · WebP · MP4 · max. 4 GiB je Video</p><p class="upload-selected" role="status" aria-live="polite"></p>
             <label>Titel <span class="label-note">optional</span><input name="name" maxlength="100" placeholder="z. B. Herbstaktion"></label>
             <label>Bilddauer <span class="label-note">Sekunden; Videos automatisch</span><input name="duration" type="number" min="5" max="3600" value="15"></label>
             <button type="submit" class="primary full-width">Datei zur Playlist hinzufügen <span aria-hidden="true">→</span></button>
@@ -296,7 +296,7 @@
   <label>Dateien oder ZIP auswählen
     <input type="file" name="media" accept=".zip,.png,.jpg,.jpeg,.webp,.mp4" multiple required>
   </label>
-  <p class="muted input-support">Bis zu 20 Medien, einzeln nacheinander · max. 1 GiB je Datei. ZIP max. 50 MiB.</p>
+  <p class="muted input-support">Bis zu 20 Medien, einzeln nacheinander · max. 4 GiB je Datei. ZIP max. 50 MiB.</p>
   <label>Bilddauer (Sekunden)<input type="number" name="duration" min="5" max="3600" value="15" required></label>
   <p class="bulk-selected" data-bulk-selected role="status" aria-live="polite"></p>
   <button type="submit" class="primary">Medien importieren →</button>

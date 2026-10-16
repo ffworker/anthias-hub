@@ -21,7 +21,7 @@ Playlist-Einträge haben für Marketing jetzt **Titel direkt im Eintrag** und be
 
 **Direkt zum Player:** `Bildschirme → gewünschten Bildschirm öffnen → Inhalt hinzufügen → Bild / Video → Mehrere Medien auf einmal`. Die Inhalte werden einzeln an die **bestehende** Playlist angehängt; es wird nichts gelöscht, zurückgesetzt oder umsortiert. Die Reihenfolge orientiert sich an der Dateireihenfolge im ZIP bzw. im Auswahlfeld.
 
-Für beide Ziele funktioniert alternativ die Browser-Mehrfachauswahl von PNG/JPG/WebP/MP4 ohne ZIP. Der Browser sendet jede Datei **in einem eigenen Request** (auch fünf 500-MB-Videos), prüft vor jedem Pi-Upload den freien Speicher neu und stoppt bei Fehler oder Abbruch. Server-seitig bleiben max. 1 GiB pro Datei sowie beim Formular ohne JavaScript 1 GiB insgesamt; ZIP-Dateien bleiben auf 50 MiB begrenzt. Die Videodauer wird automatisch gesetzt; `Bilddauer` gilt für sämtliche Bilder des Imports. Der Titel stammt aus dem Dateinamen (ohne Dateiendung).
+Für beide Ziele funktioniert alternativ die Browser-Mehrfachauswahl von PNG/JPG/WebP/MP4 ohne ZIP. Der Browser sendet jede Datei **in einem eigenen Request** (auch fünf 500-MB-Videos), prüft vor jedem Pi-Upload den freien Speicher neu und stoppt bei Fehler oder Abbruch. Server-seitig bleiben max. 4 GiB pro Datei sowie beim Formular ohne JavaScript 1 GiB insgesamt; ZIP-Dateien bleiben auf 50 MiB begrenzt. Die Videodauer wird automatisch gesetzt; `Bilddauer` gilt für sämtliche Bilder des Imports. Der Titel stammt aus dem Dateinamen (ohne Dateiendung).
 
 ### Grenzen und Schutzmechanismen
 
@@ -29,9 +29,9 @@ Für beide Ziele funktioniert alternativ die Browser-Mehrfachauswahl von PNG/JPG
 | --- | --- |
 | Dateien pro Vorgang | maximal 20 |
 | Ein ZIP **oder** mehrere Mediendateien | ZIP nie zusammen mit anderen Dateien |
-| Einzelvideo | maximal 1 GiB (1024 MiB) |
-| HTTP-Anfrage an Hub | maximal 2 GiB plus Formular-Overhead (für Vorlagenbackups) |
-| Browser-Mehrfachauswahl (ohne ZIP) | bis zu 20 Dateien, je max. 1 GiB, nacheinander übertragen |
+| Einzelvideo | maximal 4 GiB (4096 MiB) |
+| HTTP-Anfrage an Hub | maximal 4 GiB plus 16 MiB Formular-/ZIP64-Overhead (für Vorlagenbackups) |
+| Browser-Mehrfachauswahl (ohne ZIP) | bis zu 20 Dateien, je max. 4 GiB, nacheinander übertragen |
 | Normale Medien-ZIP | maximal 50 MiB Archiv; nach Entpackung max. 150 MiB |
 | Entpackte ZIP-Dateien insgesamt | maximal 150 MiB |
 | Einzelne entpackte ZIP-Datei | maximal 50 MiB |
@@ -51,7 +51,7 @@ Ohne JavaScript funktioniert ein regulärer Formular-POST mit einer verkürzten 
 
 ### IT / Deployment
 
-Das Feature verändert weder gespeicherte Bibliotheksmedien noch die ursprüngliche Playlist-ZIP-Import/Exportfunktion. Die neue Batch-Route nutzt dieselben Marketing-Rollen und CSRF-Prüfungen wie die bisherigen Uploads. Gunicorn lässt bei großen Uploads bis zu 2400 Sekunden zu; zusätzlich hat der Browser einen Timeout von 40 Minuten. Eine langsame Pi-Übertragung kann dennoch abbrechen. Für den Pilot zuerst auf einem **Testbildschirm** prüfen.
+Das Feature verändert weder gespeicherte Bibliotheksmedien noch die ursprüngliche Playlist-ZIP-Import/Exportfunktion. Die neue Batch-Route nutzt dieselben Marketing-Rollen und CSRF-Prüfungen wie die bisherigen Uploads. Gunicorn lässt bei großen Uploads bis zu 7200 Sekunden zu; zusätzlich hat der Browser einen Timeout von 40 Minuten. Eine langsame Pi-Übertragung kann dennoch abbrechen. Für den Pilot zuerst auf einem **Testbildschirm** prüfen.
 
 Die Test-VM verwendet den automatischen `:latest`-Updater mit Healthcheck und Rollback, siehe [Auto-Deploy](auto-deploy.md). Neue Host-Skripte benötigen dennoch einen manuellen `git pull --ff-only`.
 
@@ -74,6 +74,15 @@ Ist die verbleibende Pi-Kapazität zu klein oder meldet Anthias keine zuverläss
 
 Vor jedem Pi-Medienupload wird die Anthias-Info-API auf freie Kapazität geprüft. Der Timeout ist jetzt länger, weil dieser API-Endpunkt auf einigen Geräten blockierend Systeminformationen sammelt. Auch lokalisierte/ältere Speicherangaben werden unterstützt. Im Upload-Bereich und im authentifizierten Speicher-Status-Endpunkt werden Ursachen wie HTTP 404, Zeitüberschreitung oder ein fehlender free_space-Wert angezeigt.
 
-Nur wenn die **Speichermessung nicht verfügbar ist**, erscheint die Checkbox **„Speicherprüfung ignorieren“**. Sie setzt voraus, dass Marketing zuvor die Pi-Playlist und die tatsächliche freie Kapazität geprüft hat. Der Override gilt nur für den jeweiligen Upload, wird in der Audit-Datei als angeforderte Ausnahme vermerkt und nicht gespeichert. **Bei gemessenem Platzmangel wird weiterhin blockiert**, auch mit manuell gesetztem Formularparameter. Die 1-GiB-Einzelgrenze, Rechte, CSRF, Media-Signaturchecks und die übrigen Player-Sicherheitsmaßnahmen bleiben bestehen.
+Nur wenn die **Speichermessung nicht verfügbar ist**, erscheint die Checkbox **„Speicherprüfung ignorieren“**. Sie setzt voraus, dass Marketing zuvor die Pi-Playlist und die tatsächliche freie Kapazität geprüft hat. Der Override gilt nur für den jeweiligen Upload, wird in der Audit-Datei als angeforderte Ausnahme vermerkt und nicht gespeichert. **Bei gemessenem Platzmangel wird weiterhin blockiert**, auch mit manuell gesetztem Formularparameter. Die 4-GiB-Einzelgrenze, Rechte, CSRF, Media-Signaturchecks und die übrigen Player-Sicherheitsmaßnahmen bleiben bestehen.
 
 Die exakte Ursache am betroffenen Pi muss anhand seiner tatsächlichen Info-API-Antwort bestätigt werden. Bereits übertragene Dateien können auch ohne Playlist-Eintrag Speicher belegen. Kein blindes Retry.
+
+
+### 4-GiB-Pilottest (16.10.2026)
+
+Eine **einzelne** Mediendatei darf jetzt höchstens **4 GiB (4.294.967.296 Bytes)** umfassen. Der Browser sendet bis zu 20 Dateien weiterhin **nacheinander**, je als eigenen Multipart-Request; gewöhnliche Medien-ZIPs bleiben sicherheitsbedingt bei 50 MiB. Die Flask-Anfragegrenze ist **4 GiB + 16 MiB** für Multipart-/ZIP64-Overhead. Vorlagenbackups haben eine Gesamtgrenze von rund 4 GiB (plus begrenztem Overhead); größere Vorlagen müssen aufgeteilt werden. Browser- und Server-Timeouts sind für langsame Pi-3-Transfers auf bis zu 120 Minuten angehoben; kein Upload-Resume und kein automatischer Retry.
+
+**Storage-Schutz unverändert:** Die Hub-VM benötigt genug Platz in `/data` für Eingangs-Spooling und gegebenenfalls zusätzliche Bibliotheks-/Backupkopien, zuzüglich **1 GiB Hub-Reserve**. Der Pi kann beim Upload zwei Dateikopien gleichzeitig halten. Für ein 4-GiB-Video sind daher mindestens **ungefähr 10 GiB real freier Platz** auf den relevanten Pi-Dateisystemen nötig (mehr wegen Rundung); getrennte Mounts einzeln überprüfen. Eine nachgewiesene Platzunterschreitung kann nicht ignoriert werden. Bei unbekannter Mount-Zuordnung ist die explizite manuelle Bestätigung weiterhin erforderlich.
+
+**Vor Übergabe an Marketing:** Auf dem frischen Pi 3 erst eine kleine MP4-Datei, danach etwa 600 MB, dann stufenweise größer testen. Die 4-GiB-Grenze ist softwareseitig implementiert, aber **noch nicht mit echtem Pi-3-Datenträger und installierter Anthias-Version erprobt**. FAT32 hat eine maximale Einzeldateigröße von 4 GiB minus 1 Byte und kann daher keine volle 4-GiB-Datei aufnehmen. Prüfe außerdem echte Dateisysteme, Netzwerk/Proxy, Pi-CPU und den Codec bei der TV-Wiedergabe.
