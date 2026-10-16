@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Zeitpläne · {{ device.name }} · Anthias Hub{% endblock %}
 {% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='playlist.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='schedules.css') }}">
 <script defer src="{{ url_for('static', filename='schedules.js') }}"></script>
 {% endblock %}
@@ -11,14 +12,15 @@
     <a href="{{ url_for('playlist', device_id=device.id) }}">{{ device.name }}</a>
     <span aria-hidden="true">›</span><span>Zeitpläne</span>
   </nav>
-  <header class="schedule-hero">
-    <div>
-      <p class="eyebrow">INHALTSPLANUNG · {{ device.location or 'Ohne Standort' }}</p>
-      <h1>Zeitpläne für {{ device.name }}</h1>
-      <p>Bestimme, <strong>wann welche Inhalte</strong> auf diesem Bildschirm laufen. Die Regeln werden direkt auf dem Anthias-Gerät gespeichert.</p>
+  <header class="playlist-hero">
+    <div class="playlist-hero-copy">
+      <p class="eyebrow">DEIN BILDSCHIRM · {{ device.location or 'Ohne Standort' }}</p>
+      <h1>{{ device.name }} <svg class="icon hero-sparkle" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></h1>
+      <p class="muted">Steuere, welche Inhalte an welchen Tagen und Uhrzeiten laufen.</p>
     </div>
-    <a class="button schedule-back" href="{{ url_for('playlist', device_id=device.id) }}">← Zur Playlist</a>
+    <div class="hero-status"><span class="pill {{ 'bad' if problem else 'ok' }}">{{ 'Nicht erreichbar' if problem else 'API erreichbar' }}</span><small>Zeitzone des Pi maßgeblich</small></div>
   </header>
+  {% include '_device_tabs.html' %}
 
   {% if problem %}
     <div class="notice error" role="alert">Anthias-Playlist aktuell nicht abrufbar: {{ problem }}. Vorlagen können verwaltet werden; das Zuweisen ist bis zur Verbindung nicht möglich.</div>
@@ -30,6 +32,24 @@
       <p class="muted">Ein Plan gilt für die ausgewählten Inhalte, nicht pauschal für den gesamten Bildschirm.</p>
     </div>
 
+    <div class="schedule-default-panel card">
+      <div><p class="eyebrow">STANDARD DIESES GERÄTS</p><h3>Was sollen neue Inhalte übernehmen?</h3>
+      <p class="muted">Wirkt auf neue Uploads und Übertragungen. Bereits vorhandene Inhalte bleiben unverändert.</p></div>
+      {% if can_edit %}
+      <form method="post" action="{{ url_for('device_schedule_default', device_id=device.id) }}">
+        <input type="hidden" name="csrf" value="{{ csrf() }}">
+        <label>Geräte-Standard
+          <select name="profile_id">
+            <option value="always" {% if not schedule_default %}selected{% endif %}>Ohne Zeitplan</option>
+            {% for rule in profiles %}<option value="{{ rule.id }}" {% if schedule_default == rule.id %}selected{% endif %}>{{ rule.name }} · {{ rule.start }}–{{ rule.end }}</option>{% endfor %}
+          </select>
+        </label>
+        <button class="button primary" type="submit">Standard speichern</button>
+      </form>
+      {% else %}
+      <strong>{{ (profiles | selectattr('id','equalto',schedule_default) | map(attribute='name') | first) if schedule_default else 'Ohne Zeitplan' }}</strong>
+      {% endif %}
+    </div>
     <div class="schedule-presets">
       {% for rule in profiles %}
         <article class="card schedule-rule">
@@ -54,7 +74,8 @@
                     <label><input type="checkbox" name="days" value="{{ day }}" {% if day in rule.days %}checked{% endif %}>{{ label }}</label>
                   {% endfor %}
                 </fieldset>
-                <p class="schedule-hint">Änderungen an der Vorlage werden erst wirksam, wenn du die betroffenen Inhalte unten erneut zuweist.</p>
+                <p class="schedule-hint">Ohne Übernahme ändern sich bestehende Pi-Inhalte nicht. Extern abweichende Inhalte werden auch bei Übernahme nicht überschrieben.</p>
+                <label class="schedule-sync-check"><input type="checkbox" name="sync_assigned" value="yes"> Bestehende, unveränderte Zuordnungen nach Bestätigung aktualisieren</label>
                 <button class="primary" type="submit">Zeitplan speichern</button>
               </form>
             </details>
@@ -99,6 +120,7 @@
   </section>
 
   <section class="schedule-section" id="schedule-assign">
+    {% if gap_warning %}<div class="notice schedule-gap-warning" role="status"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#alert"></use></svg> {{ gap_warning }} Anthias bleibt für die Ausgabe verantwortlich; es wird kein Fallback erzeugt.</div>{% endif %}
     <div class="schedule-section-heading">
       <div><p class="eyebrow">02 · INHALTE ZUORDNEN</p><h2>Was soll wann laufen?</h2></div>
       <p class="muted">Jeder Inhalt kann genau ein wiederkehrendes Wochen-Zeitfenster haben.</p>

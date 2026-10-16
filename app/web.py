@@ -27,7 +27,8 @@ from .library import Library, LibraryError
 from .storage import MAX_MEDIA_BYTES, MAX_REQUEST_BYTES, upload_capacity
 from .schedules import (
     ScheduleError, profiles_for, add_profile, edit_profile, remove_profile,
-    describe_asset, apply_to_assets,
+    describe_asset, apply_to_assets, default_for, set_default, assignments_for,
+    bind_asset, choice_for, describe_linked_asset, weekday_warning, valid_rule, native_fields,
 )
 
 _audit_lock = threading.Lock()
@@ -120,6 +121,38 @@ def create_app(config=None):
             return None, 'Anthias meldet keinen auswertbaren freien Speicher – Pi prüfen'
         return disk, None
 
+    def chosen_schedule(device_id):
+        return choice_for(
+            app.config['SCHEDULES_FILE'], device_id,
+            request.form.get('schedule_choice', 'default'),
+            request.form.getlist('schedule_days'),
+            request.form.get('schedule_from'),
+            request.form.get('schedule_to'),
+        )
+
+    def create_scheduled(api, device_id, name, uri, duration, **kwargs):
+        """Resolve before writing. Persist an explicit link after confirmed Pi creation."""
+        rule, profile_id = chosen_schedule(device_id)
+        if rule is not None:
+            result = api.create(name, uri, duration, schedule=rule, **kwargs)
+        else:
+            result = api.create(name, uri, duration, **kwargs)
+        if profile_id and isinstance(result, dict) and result.get('asset_id'):
+            try:
+                bind_asset(app.config['SCHEDULES_FILE'], device_id,
+                           result['asset_id'], profile_id, native_fields(rule))
+            except ScheduleError as exc:
+                raise ScheduleError('Inhalt auf dem Pi erstellt, aber Zuordnung im Hub nicht speicherbar: '
+                                    + str(exc) + '. Nicht blind erneut übertragen.') from exc
+        return result
+
+    def schedule_options(device_id):
+        try:
+            return profiles_for(app.config['SCHEDULES_FILE'], device_id), default_for(
+                app.config['SCHEDULES_FILE'], device_id)
+        except ScheduleError:
+            raise  # Never silently fall back to unscheduled if the store is corrupted.
+
     def requested_storage_override():
         """A conscious per-request acknowledgement, never a persistent bypass."""
         return request.form.get('ignore_storage_check') == 'manual-confirmed'
@@ -177,7 +210,14 @@ def create_app(config=None):
             item = library().get(template_id)
         except LibraryError:
             abort(404)
-        return render_template('library_detail.html', template=item, devices=load(app.config['DEVICES_FILE']))
+        return render_template(
+            'library_detail.html', template=item,
+            devices=load(app.config['DEVICES_FILE']),
+            schedules_by_device={
+                d['id']: {'profiles': profiles_for(app.config['SCHEDULES_FILE'], d['id']),
+                          'default': default_for(app.config['SCHEDULES_FILE'], d['id'])}
+                for d in load(app.config['DEVICES_FILE'])
+            })
 
     @app.get('/library/<template_id>/items/<item_id>/preview')
     @login_required()
@@ -298,6 +338,7 @@ def create_app(config=None):
         destination_url = url_for('playlist', device_id=device_id)
         _, api = player_or_404(device_id)
         try:
+            chosen_schedule(device_id)  # Validate before first bulk media transfer.
             # No automatic overwrite/reorder: every file is appended individually.
             # One user-visible failure might still have reached the Pi.
             api.assets()  # Make sure target is reachable before the first transfer.
@@ -307,8 +348,8 @@ def create_app(config=None):
                                           allow_unknown_space=True)
                 else:
                     uploaded = api.upload(stream, filename, MEDIA[ext])
-                api.create(title, uploaded['uri'], duration,
-                           mimetype=MEDIA[ext], ext=uploaded.get('ext'))
+                create_scheduled(api, device_id, title, uploaded['uri'], duration,
+                                 mimetype=MEDIA[ext], ext=uploaded.get('ext'))
                 audit('asset.bulk-upload', device_id)
             if requested_storage_override():
                 audit('storage.override-request', device_id)
@@ -318,7 +359,7 @@ def create_app(config=None):
             if report['failed']:
                 report['message'] += ' Player-Playlist prüfen; kein automatischer Rollback oder Retry.'
             return finish_bulk(report, destination_url)
-        except (BatchError, PlayerError) as exc:
+        except (BatchError, PlayerError, ScheduleError) as exc:
             return reject_bulk(exc, destination_url)
 
     @app.post('/library/<template_id>/move/<item_id>')
@@ -350,6 +391,7 @@ def create_app(config=None):
             abort(400)
         device, api = player_or_404(device_id)
         try:
+            chosen_schedule(device_id)
             template = library().get(request.form.get('template_id', ''))
             if not template['items']:
                 raise LibraryError('Leere Vorlage wird nicht übertragen')
@@ -362,16 +404,17 @@ def create_app(config=None):
                     raise LibraryError('Player-Playlist ist nicht leer. Nichts übertragen; vorhandene Inhalte bleiben unverändert.')
                 for item in template['items']:
                     if item['kind'] == 'url':
-                        api.create(item['name'], item['url'], item['duration'])
+                        create_scheduled(api, device_id, item['name'], item['url'], item['duration'])
                     else:
                         path = media_paths[item['id']]
                         ext = path.suffix.lower()
                         with path.open('rb') as stream:
                             uploaded = api.upload(stream, path.name, MEDIA[ext])
-                        api.create(item['name'], uploaded['uri'], item['duration'], mimetype=MEDIA[ext], ext=uploaded.get('ext'))
+                        create_scheduled(api, device_id, item['name'], uploaded['uri'], item['duration'],
+                                         mimetype=MEDIA[ext], ext=uploaded.get('ext'))
             audit('library.apply', device_id, template['id'])
             flash('Vorlage übertragen. Playlist und Ausgabe am TV prüfen.', 'success')
-        except (LibraryError, PlayerError, OSError) as exc:
+        except (LibraryError, PlayerError, ScheduleError, OSError) as exc:
             flash(str(exc) + ' Keine automatische Wiederholung: Playlist am Player prüfen (Teilübertragung möglich).', 'error')
         return redirect(url_for('playlist', device_id=device_id))
 
@@ -389,6 +432,7 @@ def create_app(config=None):
         transfer is not atomic; do not retry automatically after partial writes.
         """
         _, api = player_or_404(device_id)
+        chosen_schedule(device_id)
         store = library()
         collection = store.get(template_id)
         items = collection.get('items', [])
@@ -418,15 +462,15 @@ def create_app(config=None):
                         if identity in known_urls:
                             skipped += 1
                             continue
-                        api.create(item['name'], item['url'], item['duration'])
+                        create_scheduled(api, device_id, item['name'], item['url'], item['duration'])
                         known_urls.add(identity)
                     else:
                         path = files[item['id']]
                         ext = path.suffix.lower()
                         with path.open('rb') as stream:
                             uploaded = api.upload(stream, path.name, MEDIA[ext])
-                        api.create(item['name'], uploaded['uri'], item['duration'],
-                                   mimetype=MEDIA[ext], ext=uploaded.get('ext'))
+                        create_scheduled(api, device_id, item['name'], uploaded['uri'], item['duration'],
+                                           mimetype=MEDIA[ext], ext=uploaded.get('ext'))
                     added += 1
                     audit('library.append-item', device_id, item['id'])
                 except (PlayerError, OSError, ValueError) as exc:
@@ -448,7 +492,7 @@ def create_app(config=None):
             added, skipped = append_library_template(device_id, request.form.get('template_id', ''))
             flash(f'{added} Inhalte hinzugefügt, {skipped} bereits vorhandene Webseiten übersprungen. '
                   'Bestehende Playlist wurde nicht gelöscht. Ausgabe am TV prüfen.', 'success')
-        except (LibraryError, PlayerError, OSError) as exc:
+        except (LibraryError, PlayerError, ScheduleError, OSError) as exc:
             flash(str(exc) + ' Keine automatische Wiederholung: Playlist auf dem Player prüfen.', 'error')
         return redirect(url_for('playlist', device_id=device_id))
 
@@ -462,7 +506,7 @@ def create_app(config=None):
             added, skipped = append_library_template(device_id, template_id)
             flash(f'{added} Inhalte aus der Vorlage hinzugefügt, {skipped} vorhandene Webseiten übersprungen. '
                   'Der Bildschirm wurde nicht geleert.', 'success')
-        except (LibraryError, PlayerError, OSError) as exc:
+        except (LibraryError, PlayerError, ScheduleError, OSError) as exc:
             flash(str(exc) + ' Keine automatische Wiederholung: Ziel-Playlist prüfen.', 'error')
         return redirect(url_for('library_detail', template_id=template_id))
 
@@ -474,6 +518,7 @@ def create_app(config=None):
         cannot be rolled back safely by this endpoint.
         """
         _, api = player_or_404(device_id)
+        chosen_schedule(device_id)
         store = library()
         collection = store.get(template_id)
         item = next((entry for entry in collection['items'] if entry.get('id') == item_id), None)
@@ -488,13 +533,13 @@ def create_app(config=None):
                 if any(asset.get('uri') == item['url'] and asset.get('name') == item['name']
                        for asset in current):
                     raise LibraryError('Diese Webseite ist bereits in der Playlist vorhanden')
-                api.create(item['name'], item['url'], item['duration'])
+                create_scheduled(api, device_id, item['name'], item['url'], item['duration'])
             else:
                 ext = path.suffix.lower()
                 with path.open('rb') as stream:
                     uploaded = api.upload(stream, path.name, MEDIA[ext])
-                api.create(item['name'], uploaded['uri'], item['duration'],
-                           mimetype=MEDIA[ext], ext=uploaded.get('ext'))
+                create_scheduled(api, device_id, item['name'], uploaded['uri'], item['duration'],
+                                   mimetype=MEDIA[ext], ext=uploaded.get('ext'))
         audit('library.add-item', device_id, item_id)
 
     @app.post('/devices/<device_id>/add-library-item')
@@ -509,7 +554,7 @@ def create_app(config=None):
         try:
             append_library_item(device_id, template_id, item_id)
             flash('Ein Bibliotheksinhalt hinzugefügt. Bestehende Playlist bleibt erhalten; Ausgabe am TV prüfen.', 'success')
-        except (LibraryError, PlayerError, OSError) as exc:
+        except (LibraryError, PlayerError, ScheduleError, OSError) as exc:
             flash(str(exc) + ' Keine automatische Wiederholung: Playlist prüfen (Teilübertragung möglich).', 'error')
         return redirect(url_for('playlist', device_id=device_id))
 
@@ -522,7 +567,7 @@ def create_app(config=None):
         try:
             append_library_item(device_id, template_id, item_id)
             flash('Ein Inhalt zur ausgewählten Playlist hinzugefügt; bestehende Inhalte bleiben erhalten.', 'success')
-        except (LibraryError, PlayerError, OSError) as exc:
+        except (LibraryError, PlayerError, ScheduleError, OSError) as exc:
             flash(str(exc) + ' Keine automatische Wiederholung: Ziel-Playlist prüfen (Teilübertragung möglich).', 'error')
         return redirect(url_for('library_detail', template_id=template_id))
 
@@ -687,9 +732,27 @@ def create_app(config=None):
                 templates = library().list()
             except LibraryError:
                 flash('Bibliothek konnte nicht geladen werden. Bestehende Playlist bleibt unverändert.', 'error')
+        schedule_profiles, schedule_default = schedule_options(device_id)
+        bindings = assignments_for(app.config['SCHEDULES_FILE'], device_id)
+        for asset in assets:
+            asset['schedule_label'] = describe_linked_asset(asset, schedule_profiles, bindings)
+            matched = next((p['id'] for p in schedule_profiles
+                            if asset['schedule_label'] == p['name']), None)
+            asset['schedule_choice'] = (
+                matched if matched else
+                'always' if asset['schedule_label'] == 'Ohne Zeitplan' else
+                'custom' if asset['schedule_label'] == 'Individuell in Anthias'
+                    and isinstance(asset.get('play_time_from'), str)
+                    and isinstance(asset.get('play_time_to'), str)
+                    and asset['play_time_from'].endswith(':00')
+                    and asset['play_time_to'].endswith(':00') else 'choose'
+            )
         return render_template('playlist.html', device=device, assets=assets,
                                library_templates=templates,
                                library_items_available=any(t.get('items') for t in templates),
+                               schedule_profiles=schedule_profiles,
+                               schedule_default=schedule_default,
+                               can_schedule=current_user()['role'] in ('owner', 'it', 'marketing'),
                                error=error, storage=storage, storage_reason=storage_reason)
 
     @app.get('/devices/<device_id>/schedules')
@@ -706,12 +769,48 @@ def create_app(config=None):
             assets = api.assets()
         except PlayerError as exc:
             problem = str(exc)
+        bindings = assignments_for(app.config['SCHEDULES_FILE'], device_id)
         for asset in assets:
-            asset['schedule_label'] = describe_asset(asset, profiles)
+            asset['schedule_label'] = describe_linked_asset(asset, profiles, bindings)
         return render_template('schedules.html', device=device,
                                profiles=profiles, assets=assets,
+                               schedule_default=default_for(app.config['SCHEDULES_FILE'], device_id),
+                               schedule_bindings=bindings,
+                               gap_warning=weekday_warning(assets) if not problem else '',
                                problem=problem,
                                can_edit=current_user()['role'] in ('owner', 'it', 'marketing'))
+
+    @app.post('/devices/<device_id>/schedules/default')
+    @login_required('it', 'marketing')
+    def device_schedule_default(device_id):
+        player_or_404(device_id)
+        try:
+            selected = request.form.get('profile_id', '')
+            if selected == 'always':
+                selected = None
+            if selected is None or selected:
+                set_default(app.config['SCHEDULES_FILE'], device_id, selected)
+                audit('schedule.default', device_id, selected or 'always')
+                flash('Geräte-Standard gespeichert. Bestehende Inhalte bleiben unverändert.', 'success')
+            else:
+                raise ScheduleError('Bitte einen Geräte-Standard auswählen.')
+        except ScheduleError as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('device_schedules', device_id=device_id))
+
+    @app.post('/devices/<device_id>/assets/<asset_id>/schedule')
+    @login_required('it', 'marketing')
+    def asset_schedule(device_id, asset_id):
+        _, api = player_or_404(device_id)
+        try:
+            rule, pid = chosen_schedule(device_id)
+            apply_to_assets(api, rule, [asset_id], on_applied=lambda ident, values: bind_asset(
+                app.config['SCHEDULES_FILE'], device_id, ident, pid, values))
+            audit('schedule.asset', device_id, asset_id)
+            flash('Zeitplanung des Inhalts auf Anthias gespeichert.', 'success')
+        except (ScheduleError, PlayerError) as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('playlist', device_id=device_id) + '#asset-' + asset_id)
 
     @app.post('/devices/<device_id>/schedules/add')
     @login_required('it', 'marketing')
@@ -734,15 +833,43 @@ def create_app(config=None):
     def device_schedule_edit(device_id, profile_id):
         player_or_404(device_id)
         try:
+            previous = next((p for p in profiles_for(app.config['SCHEDULES_FILE'], device_id)
+                             if p['id'] == profile_id), None)
             saved = edit_profile(
                 app.config['SCHEDULES_FILE'], device_id, profile_id,
                 request.form.get('name', ''), request.form.getlist('days'),
                 request.form.get('start', ''), request.form.get('end', ''),
             )
             audit('schedule.edit', device_id, saved['id'])
-            flash('Zeitplanvorlage aktualisiert. Bereits zugeordnete Pi-Inhalte behalten ihre '
-                  'bisherigen Zeiten, bis du sie unten erneut zuweist.', 'success')
-        except ScheduleError as exc:
+            if request.form.get('sync_assigned') == 'yes':
+                # Sync only explicitly linked and still-unmodified native values;
+                # an externally edited Pi rule is never overwritten.
+                _, api = player_or_404(device_id)
+                linked = assignments_for(app.config['SCHEDULES_FILE'], device_id)
+                originals = {x['asset_id']: x for x in api.assets()}
+                to_sync = []
+                for ident, record in linked.items():
+                    if record.get('profile_id') != profile_id or ident not in originals:
+                        continue
+                    try:
+                        from .schedules import native_key
+                        if previous and native_key(originals[ident]) == native_key(native_fields(previous)):
+                            to_sync.append(ident)
+                    except ScheduleError:
+                        pass
+                if to_sync:
+                    apply_to_assets(
+                        api, saved, to_sync,
+                        on_applied=lambda ident, values: bind_asset(
+                            app.config['SCHEDULES_FILE'], device_id,
+                            ident, profile_id, values))
+                flash(f'Zeitplanvorlage gespeichert und {len(to_sync)} unveränderten '
+                      'zugeordneten Inhalten auf Anthias zugewiesen. '
+                      'Extern angepasste Inhalte wurden ausgespart.', 'success')
+            else:
+                flash('Zeitplanvorlage aktualisiert. Bereits zugeordnete Pi-Inhalte behalten ihre '
+                      'bisherigen Zeiten, bis du sie erneut zuweist.', 'success')
+        except (ScheduleError, PlayerError) as exc:
             flash(str(exc), 'error')
         return redirect(url_for('device_schedules', device_id=device_id))
 
@@ -772,7 +899,11 @@ def create_app(config=None):
                 (p for p in profiles if p['id'] == choice), None)
             if not choice or (choice != 'always' and profile is None):
                 raise ScheduleError('Bitte einen vorhandenen Zeitplan wählen.')
-            count = apply_to_assets(api, profile, request.form.getlist('asset_ids'))
+            count = apply_to_assets(
+                api, profile, request.form.getlist('asset_ids'),
+                on_applied=lambda ident, values: bind_asset(
+                    app.config['SCHEDULES_FILE'], device_id, ident,
+                    profile['id'] if profile else None, values))
             audit('schedule.apply', device_id, choice)
             flash(f'{count} Inhalte auf dem Pi zeitlich aktualisiert. '
                   'Der Pi entscheidet anhand seiner lokalen Zeitzone, wann sie laufen.', 'success')
@@ -915,7 +1046,7 @@ def create_app(config=None):
                 raise ValueError('Bitte einen Titel (max. 100 Zeichen) angeben')
             uri = validate_website_url(request.form.get('url'))
             duration = validate_duration(request.form.get('duration'))
-            api.create(name, uri, duration)
+            create_scheduled(api, device_id, name, uri, duration)
             audit('asset.add-url', device_id)
             flash('Webseite zur Playlist hinzugefügt.', 'success')
         except (ValueError, PlayerError) as exc:
@@ -956,6 +1087,9 @@ def create_app(config=None):
             if len(title) > 100:
                 raise ValueError('Titel zu lang')
             length = 0 if ext == '.mp4' else validate_duration(request.form.get('duration', 15))
+            # Reject a missing/invalid selected schedule BEFORE uploading bytes.
+            # Pi media should not be orphaned by a simple form-selection error.
+            chosen_schedule(device_id)
             # Once the transfer starts, an error may leave a file on Anthias.
             # Never promise that retrying is safe without reviewing the playlist.
             transferred = True
@@ -965,7 +1099,7 @@ def create_app(config=None):
                 result = api.upload(file.stream, filename, MEDIA[ext], allow_unknown_space=True)
             else:
                 result = api.upload(file.stream, filename, MEDIA[ext])
-            api.create(title, result['uri'], length, mimetype=MEDIA[ext], ext=result.get('ext'))
+            create_scheduled(api, device_id, title, result['uri'], length, mimetype=MEDIA[ext], ext=result.get('ext'))
             audit('asset.upload', device_id)
             if request.accept_mimetypes.best == 'application/json':
                 return jsonify(ok=True, message='Medium zur Playlist hinzugefügt.', redirect=destination)

@@ -38,6 +38,14 @@ class Player:
         type(self).patches.append((ident, changes.copy()))
         type(self).records[ident].update(changes)
         return dict(type(self).records[ident])
+    def create(self, name, uri, duration, mimetype='webpage', ext=None, *, schedule=None):
+        ident = 'new' + str(len(type(self).records) + 1)
+        row = asset(ident, name)
+        row.update({'uri':uri, 'duration':duration, 'mimetype':mimetype})
+        if schedule is not None:
+            row.update(native_fields(schedule))
+        type(self).records[ident] = row
+        return {'asset_id':ident}
     valid_id = staticmethod(Anthias.valid_id)
 
 
@@ -137,7 +145,7 @@ def test_schedule_ui_is_per_device_and_has_examples(hub):
     assert 'Individuell in Anthias' in html  # explanation in footer
     assert 'schedules.js' in html
     assert 'Zeitpläne' in client.get('/').get_data(as_text=True)
-    assert 'Zeitpläne' in client.get('/devices/lab').get_data(as_text=True)
+    assert 'Zeitplanung' in client.get('/devices/lab').get_data(as_text=True)
     assert client.get('/devices/unknown/schedules').status_code == 404
 
 
@@ -233,3 +241,174 @@ def test_partial_failure_stops_and_warns_without_auto_retries(hub):
     assert Player.records['a']['play_time_from']=='10:00:00'
     assert Player.records['b']['play_time_from'] is None
     assert [i for i,_ in Player.patches]==['a']
+
+
+
+def test_default_applies_to_new_web_asset_and_explicit_always_overrides(hub):
+    app, client, _ = hub
+    sign_in(client,'marketing')
+    base='/devices/lab/schedules'
+    post(client,base+'/add',{'name':'Werktag_Default','days':['1','2','3','4','5'],
+                            'start':'08:00','end':'18:00'})
+    rule=profiles_for(app.config['SCHEDULES_FILE'],'lab')[0]
+    response=post(client,base+'/default',{'profile_id':rule['id']})
+    assert 'Geräte-Standard gespeichert' in response.get_data(as_text=True)
+    assert 'Werktag_Default' in client.get('/devices/lab').get_data(as_text=True)
+    assert 'schedule-choice.js' in client.get('/devices/lab').get_data(as_text=True)
+    post(client,'/devices/lab/add-url',{'name':'Frühstück','url':'https://example.org/breakfast',
+                                       'duration':'15'})
+    new=next(v for v in Player.records.values() if v['name']=='Frühstück')
+    assert new['play_days']==[1,2,3,4,5]
+    assert new['play_time_from']=='08:00:00'
+    from app.schedules import assignments_for, default_for
+    assert assignments_for(app.config['SCHEDULES_FILE'],'lab')[new['asset_id']]['profile_id']==rule['id']
+    assert default_for(app.config['SCHEDULES_FILE'],'lab')==rule['id']
+    post(client,'/devices/lab/add-url',{'name':'Logo','url':'https://example.org/logo',
+                                       'duration':'15','schedule_choice':'always'})
+    logo=next(v for v in Player.records.values() if v['name']=='Logo')
+    assert logo['play_time_from'] is None
+    assert logo['play_days']==[1,2,3,4,5,6,7]
+    post(client,base+'/default',{'profile_id':'always'})
+    assert default_for(app.config['SCHEDULES_FILE'],'lab') is None
+    assert Player.records[new['asset_id']]['play_time_from']=='08:00:00'
+
+
+def test_library_transfer_chooses_target_schedule_without_modifying_template(hub):
+    app,client,_ = hub
+    sign_in(client,'marketing')
+    from app.library import Library
+    store=Library(app.config['LIBRARY_DIR'])
+    template=store.create('Bistro Werbung')
+    store.add_url(template['id'],'Werbelink','https://example.org/promo',30)
+    initial=store.get(template['id'])
+    base='/devices/lab/schedules'
+    post(client,base+'/add',{'name':'Samstag Event','days':['6'],
+                            'start':'10:00','end':'14:00'})
+    rule=profiles_for(app.config['SCHEDULES_FILE'],'lab')[0]
+    post(client,base+'/default',{'profile_id':rule['id']})
+    view=client.get('/library/'+template['id']).get_data(as_text=True)
+    assert 'data-library-device-schedule' in view
+    assert 'data-library-schedule-map' in view
+    result=post(client,f'/library/{template["id"]}/append-to-device',{
+        'device':'lab','confirm':'append','ack':'yes','schedule_choice':'always'})
+    assert result.status_code == 200
+    advert=next(v for v in Player.records.values() if v['name']=='Werbelink')
+    assert advert['play_time_from'] is None
+    assert store.get(template['id'])==initial
+    assert all('play_days' not in item and 'schedule' not in item
+               for item in store.get(template['id'])['items'])
+
+
+def test_native_schedule_is_confirmed_before_new_asset_ever_enabled():
+    api=Anthias({'url':'http://192.168.1.99'})
+    events=[]
+    rule=valid_rule('Event',[6],'10:00','14:00')
+    def call(method,path,**kwargs):
+        events.append(('create',kwargs['payload']['is_enabled']))
+        return {'asset_id':'created10'}
+    def patch(asset_id, fields):
+        events.append(('patch',dict(fields)))
+        if 'play_days' in fields:
+            return dict(native_fields(rule))
+        return {'asset_id':asset_id,**fields}
+    from unittest.mock import patch as mock_patch
+    with mock_patch.object(api,'call',side_effect=call), mock_patch.object(api,'patch',side_effect=patch):
+        api.create('Event','https://example.org/event',30,schedule=rule)
+    assert events[0]==('create',False)
+    assert events[1][0]=='patch' and events[1][1]['play_days']==[6]
+    assert events[2]==('patch',{'is_enabled':True})
+    events.clear()
+    with mock_patch.object(api,'call',side_effect=call), mock_patch.object(
+            api,'patch',return_value={'play_days':[1,2,3,4,5,6,7],
+                                       'play_time_from':None,'play_time_to':None}):
+        with pytest.raises(PlayerError, match='nicht bestätigt'):
+            api.create('Event','https://example.org/event',30,schedule=rule)
+    assert events==[('create',False)]
+
+
+def test_profile_link_drift_does_not_get_silently_overwritten(hub):
+    app,client,_=hub
+    sign_in(client,'marketing')
+    from app.schedules import assignments_for, describe_linked_asset
+    base='/devices/lab/schedules'
+    post(client,base+'/add',{'name':'Werktag_Default','days':['1','2','3','4','5'],
+                            'start':'08:00','end':'18:00'})
+    rule=profiles_for(app.config['SCHEDULES_FILE'],'lab')[0]
+    post(client,base+'/apply',{'profile_id':rule['id'],'asset_ids':['a']})
+    assert 'a' in assignments_for(app.config['SCHEDULES_FILE'],'lab')
+    assert describe_linked_asset(Player.records['a'],[rule],assignments_for(app.config['SCHEDULES_FILE'],'lab'))=='Werktag_Default'
+    Player.records['a']['play_time_from']='09:00:00' # external Pi UI edit
+    assert 'Abweichend' in describe_linked_asset(
+        Player.records['a'],[rule],assignments_for(app.config['SCHEDULES_FILE'],'lab'))
+    before=len(Player.patches)
+    post(client,base+'/'+rule['id']+'/edit',{'name':'Werktag_Default','days':['1','2','3','4','5'],
+                'start':'07:00','end':'19:00','sync_assigned':'yes'})
+    assert len(Player.patches)==before
+    assert Player.records['a']['play_time_from']=='09:00:00'
+    assert 'Abweichend' in client.get('/devices/lab').get_data(as_text=True)
+
+
+def test_schedule_individual_and_reset_from_existing_playlist_editor(hub):
+    app, client, _=hub
+    sign_in(client,'marketing')
+    page=client.get('/devices/lab').get_data(as_text=True)
+    assert 'device-workspace-tabs' in page
+    assert 'asset-schedule-details' in page
+    assert 'Zeitplanung speichern' in page
+    response=post(client,'/devices/lab/assets/a/schedule',{
+        'schedule_choice':'custom','schedule_days':['6'],'schedule_from':'10:00','schedule_to':'14:00'})
+    assert 'Zeitplanung des Inhalts' in response.get_data(as_text=True)
+    assert Player.records['a']['play_days']==[6]
+    assert Player.records['a']['play_time_from']=='10:00:00'
+    post(client,'/devices/lab/assets/a/schedule',{'schedule_choice':'always'})
+    assert Player.records['a']['play_time_from'] is None
+    assert Player.records['a']['is_enabled'] is True
+
+
+
+def test_default_applies_to_library_append_when_no_explicit_choice(hub):
+    app,client,_=hub
+    sign_in(client,'marketing')
+    from app.library import Library
+    store=Library(app.config['LIBRARY_DIR'])
+    template=store.create('Bistro Wochenmenü')
+    store.add_url(template['id'],'Wochenangebot','https://example.org/weekly',30)
+    base='/devices/lab/schedules'
+    post(client,base+'/add',{'name':'Werktag_Default','days':['1','2','3','4','5'],
+                            'start':'08:00','end':'18:00'})
+    rule=profiles_for(app.config['SCHEDULES_FILE'],'lab')[0]
+    post(client,base+'/default',{'profile_id':rule['id']})
+    before=store.get(template['id'])
+    result=post(client,f'/library/{template["id"]}/append-to-device', {
+        'device':'lab','confirm':'append','ack':'yes'})
+    assert 'Inhalte aus der Vorlage hinzugefügt' in result.get_data(as_text=True)
+    item=next(v for v in Player.records.values() if v['name']=='Wochenangebot')
+    assert item['play_days']==[1,2,3,4,5]
+    assert item['play_time_from']=='08:00:00'
+    assert store.get(template['id'])==before
+
+
+def test_default_is_per_device_and_preset_delete_only_clears_local_default(tmp_path):
+    from app.schedules import default_for, set_default, assignments_for
+    file=tmp_path/'schedules.json'
+    morning=add_profile(file,'pi3','Früh',['1','2'],'07:00','13:00')
+    evening=add_profile(file,'pi5','Spät',['6'],'15:00','21:00')
+    set_default(file,'pi3',morning['id'])
+    set_default(file,'pi5',evening['id'])
+    assert default_for(file,'pi3')==morning['id']
+    assert default_for(file,'pi5')==evening['id']
+    with pytest.raises(ScheduleError):
+        set_default(file,'pi3',evening['id'])
+    remove_profile(file,'pi3',morning['id'])
+    assert default_for(file,'pi3') is None
+    assert default_for(file,'pi5')==evening['id']
+    assert profiles_for(file,'pi5')==[evening]
+
+
+def test_schedule_gap_warning_is_only_advisory():
+    from app.schedules import weekday_warning
+    no_schedule=asset('a','Always')
+    assert weekday_warning([no_schedule])==''
+    scheduled=asset('a','Event',[6],'10:00:00','14:00:00')
+    assert 'Mögliche Zeitlücken' in weekday_warning([scheduled])
+    assert weekday_warning([{'name':'unknown','is_enabled':True}])==''

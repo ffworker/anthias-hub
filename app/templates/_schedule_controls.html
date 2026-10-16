@@ -1,0 +1,44 @@
+{# Shared player-side choice: template library stays schedule-free. #}
+{% macro schedule_select(profiles, default_id, mode='default', title='Zeitplanung', custom_days=none, custom_from='08:00', custom_to='18:00') %}
+<fieldset class="schedule-choice" data-schedule-choice>
+  <legend>{{ title }}</legend>
+  <label class="schedule-choice-current">Zeitfenster
+    <select name="schedule_choice" aria-label="Zeitplanung auswählen" required>
+      {% if mode == 'choose' %}<option value="" disabled selected>Bitte Zeitplan ausdrücklich wählen …</option>{% endif %}
+      {% if mode == 'default' %}
+      <option value="default" selected>Geräte-Standard{% if default_id %}: {% for rule in profiles %}{% if rule.id == default_id %}{{ rule.name }}{% endif %}{% endfor %}{% else %}: ohne Zeitplan{% endif %}</option>
+      {% endif %}
+      <option value="always" {% if mode == 'always' %}selected{% endif %}>Ohne Zeitplan · jederzeit</option>
+      {% for rule in profiles %}
+      <option value="{{ rule.id }}" {% if mode == rule.id %}selected{% endif %}>{{ rule.name }} · {{ rule.start }}–{{ rule.end }} Uhr</option>
+      {% endfor %}
+      <option value="custom" {% if mode == 'custom' %}selected{% endif %}>Individuelles Zeitfenster …</option>
+    </select>
+  </label>
+  <div class="schedule-custom" data-schedule-custom hidden>
+    <fieldset class="schedule-day-fieldset"><legend>Wochentage</legend>
+      {% for day, label in [(1,'Mo'),(2,'Di'),(3,'Mi'),(4,'Do'),(5,'Fr'),(6,'Sa'),(7,'So')] %}
+        <label><input type="checkbox" name="schedule_days" value="{{ day }}" {% if day in (custom_days if custom_days is not none else [1,2,3,4,5]) %}checked{% endif %}>{{ label }}</label>
+      {% endfor %}
+    </fieldset>
+    <div class="schedule-time-fields">
+      <label>Von<input type="time" name="schedule_from" value="{{ custom_from }}" disabled></label>
+      <label>Bis<input type="time" name="schedule_to" value="{{ custom_to }}" disabled></label>
+    </div>
+  </div>
+  <p class="schedule-choice-hint">Gilt nur für neu hinzugefügte Inhalte. Bestehende Playlist bleibt unverändert.</p>
+</fieldset>
+{% endmacro %}
+
+{% macro library_schedule_select() %}
+<fieldset class="schedule-choice" data-schedule-choice data-library-device-schedule>
+  <legend>Zeitplanung am Zielbildschirm</legend>
+  <label>Zeitfenster
+    <select name="schedule_choice" aria-label="Zeitplanung auswählen">
+      <option value="default">Geräte-Standard übernehmen</option>
+      <option value="always">Ohne Zeitplan · jederzeit</option>
+    </select>
+  </label>
+  <p class="schedule-choice-hint" data-device-default-label>Bitte zuerst einen Zielbildschirm wählen.</p>
+</fieldset>
+{% endmacro %}

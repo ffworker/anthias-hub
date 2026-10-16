@@ -67,3 +67,67 @@
   color:#a6e9d9;text-decoration:none;font-weight:680}
 .schedule-hero-link:hover{color:#e6fff5}
 .schedule-hero-link .icon{width:15px;height:15px}
+
+/* Two equal views within one device workspace. */
+.device-workspace-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+  margin:0 0 26px;padding:5px;background:#10202c;border:1px solid #344b59;border-radius:13px}
+.device-workspace-tabs a{display:flex;align-items:center;justify-content:center;gap:9px;
+  min-height:44px;border-radius:9px;color:#a9c5cf;text-decoration:none;font-size:13px;font-weight:760;
+  transition:background .12s,color .12s}
+.device-workspace-tabs a:hover{background:#1a3840;color:#e8fbf5}
+.device-workspace-tabs a[aria-current="page"]{background:#254b4d;color:#d7fff2;box-shadow:0 1px 5px #0004}
+.device-workspace-tabs .icon{width:16px;height:16px}
+.asset-schedule-summary{display:inline-flex;align-items:center;gap:5px;font-size:11px;
+  font-weight:640;color:#99dccc;margin-top:3px}
+.asset-schedule-summary .icon{width:12px;height:12px}
+.asset-schedule-details{border-top:1px solid #294952;padding:10px 0;margin:4px 0}
+.asset-schedule-details>summary{display:flex;align-items:center;gap:7px;cursor:pointer;
+  color:#b9eee0;font-size:12px;font-weight:720}
+.asset-schedule-details>summary .icon{width:15px;height:15px}
+.asset-schedule-details>form{display:grid;gap:11px;margin-top:11px}
+.schedule-choice{display:grid;gap:8px;margin:11px 0;padding:12px;border-radius:10px;
+  border:1px solid #355765;background:#102834;min-width:0}
+.schedule-choice legend{font-size:11px;color:#b0eddf;font-weight:780;padding:0 5px}
+.schedule-choice label{display:grid;gap:6px;color:#c2e3e2;font-size:11px}
+.schedule-choice select{display:block;width:100%;min-width:0;min-height:40px;
+  border:1px solid #3e6872;border-radius:8px;background:#102330;color:#e8f6f9;padding:8px;font-size:12px}
+.schedule-custom[hidden]{display:none!important}
+.schedule-custom .schedule-day-fieldset{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0}
+.schedule-custom .schedule-day-fieldset label{display:flex;align-items:center;gap:4px;padding:5px 7px;
+  border:1px solid #426a6b;background:#1d3f40;border-radius:7px}
+.schedule-custom .schedule-day-fieldset input{width:15px;height:15px;min-height:15px;margin:0}
+.schedule-custom .schedule-time-fields{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.schedule-custom input[type="time"]{min-width:0;width:100%;padding:7px}
+.schedule-choice-hint{font-size:10px;color:#9fbcc4;line-height:1.45;margin:0}
+.schedule-default-panel{display:flex;justify-content:space-between;gap:18px;align-items:center;
+  flex-wrap:wrap;padding:18px 21px;margin-bottom:17px;background:#142f37}
+.schedule-default-panel h3{font-size:16px;margin:0 0 4px}
+.schedule-default-panel .muted{font-size:11px;max-width:380px;margin:0}
+.schedule-default-panel form{display:flex;align-items:flex-end;gap:9px;flex-wrap:wrap;min-width:min(100%,360px)}
+.schedule-default-panel form label{flex:1;min-width:210px}
+.schedule-default-panel form select{width:100%;min-height:41px}
+.schedule-gap-warning{display:flex;gap:9px;align-items:flex-start;margin-bottom:16px;font-size:12px}
+.schedule-gap-warning .icon{width:17px;height:17px;flex:none}
+@media(max-width:640px){.device-workspace-tabs{gap:4px}.schedule-default-panel form{min-width:0;width:100%}}
+
+/* Playlist editor stays in the established two-column grid. Scheduling is a
+   full-width secondary row, never an implicit third column squeezed next to
+   Save/Pause (especially important on narrow kiosk/IT screens). */
+.playlist-workspace .asset-toolbar>.asset-inline-edit{grid-column:1;grid-row:1}
+.playlist-workspace .asset-toolbar>.asset-toolbar-actions{grid-column:2;grid-row:1}
+.playlist-workspace .asset-toolbar>.asset-schedule-details{
+  grid-column:1 / -1;grid-row:2;min-width:0;width:100%;box-sizing:border-box
+}
+.playlist-workspace .asset-schedule-details>form{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px
+}
+.playlist-workspace .asset-schedule-details .schedule-choice{margin:0}
+.playlist-workspace .asset-schedule-details>form>.primary{min-height:41px}
+.playlist-workspace .asset-schedule-details[open]{padding-top:13px;margin-top:1px}
+@media(max-width:720px){
+  .playlist-workspace .asset-toolbar>.asset-inline-edit{grid-row:1;grid-column:1}
+  .playlist-workspace .asset-toolbar>.asset-schedule-details{grid-row:2;grid-column:1}
+  .playlist-workspace .asset-toolbar>.asset-toolbar-actions{grid-row:3;grid-column:1}
+  .playlist-workspace .asset-schedule-details>form{grid-template-columns:minmax(0,1fr)}
+  .playlist-workspace .asset-schedule-details>form>.primary{width:100%}
+}

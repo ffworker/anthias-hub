@@ -1,38 +1,39 @@
-# Zeitplanung auf Anthias-Geräten (Marketing + IT)
+# Scheduling 2.0 – Playlist und Zeitplanung
 
-**Stand:** 16. Oktober 2026. Anthias Hub nutzt die native **v2 Asset-Scheduling-API** von Anthias: `play_days` (ISO-Wochentag 1=Montag bis 7=Sonntag), `play_time_from` und `play_time_to`. Das **Zeitplan-Studio** ist auf der Bildschirmübersicht sowie in der jeweiligen Playlist unter **Zeitpläne** erreichbar.
+**Stand:** 16. Oktober 2026 · Pro Anthias-Gerät · Deutsch.
 
-## Beispielszenario
+## Navigation und Arbeit
 
-1. Öffne **Bildschirme → [Pi] → Zeitpläne**. Dort bleiben andere Pis unverändert.
-2. Erstelle den benannten Zeitplan **Werktag_Default** für **Mo–Fr, 08:00–18:00 Uhr** (Beispielschaltfläche vorhanden).
-3. Erstelle **Event** für **Samstag, 10:00–14:00 Uhr**.
-4. Wähle unten den Plan und **markiere die Inhalte**, die zu diesen Zeiten sichtbar sein sollen. Drücke **Auf ausgewählte Inhalte anwenden**. Die Zuordnung erfolgt direkt auf dem Anthias-Pi.
-5. Wähle **Ohne Zeitplan** und markiere Inhalte, um nur deren Wochen-/Uhrzeitfilter zurückzusetzen. Die bestehende Datumsspanne (`start_date`/`end_date`), `is_enabled`, Reihenfolge und Anzeigedauer bleiben erhalten.
+Unter **Bildschirme → Playlist** teilen sich **Playlist** und **Zeitplanung** denselben Header und sind gleichwertige Ansichten desselben Pis. Die Playlist ist der Standard-Tab. Jeder Playlist-Inhalt zeigt seinen Zeitplan direkt an; im aufgeklappten Editor kann Marketing die Zeitplanung ändern, einschließlich „Ohne Zeitplan“, benannter Vorlage oder individueller Wochentage/Uhrzeiten.
 
-**Wichtig:** Ein Anthias-Inhalt hat **genau einen** wiederkehrenden Wochentags-/Uhrzeitfilter. Mehrere benannte Zeitpläne auf demselben Pi gelten also für **verschiedene Inhalte**, nicht als mehrere unabhängige Zeitfenster für dieselbe Datei. Neue Inhalte erhalten nicht automatisch einen der Hub-Zeitpläne; weise sie nach dem Import gezielt zu.
+Auf der **Zeitplanung**-Ansicht können Marketing und IT benannte Wochenfenster erstellen, z. B. Werktag_Default (Mo–Fr, 08–18 Uhr) oder Event (Sa, 10–14 Uhr), und mehreren Inhalten zuweisen. Die Wochentage und Uhrzeiten werden direkt in Anthias gespeichert; **jeder Inhalt besitzt genau ein natives wiederkehrendes Zeitfenster**.
 
-Ein Zeitfenster mit `22:00 → 06:00` reicht bis in den nächsten Tag; die ausgewählten Wochentage meinen den **Starttag**. Die Endzeit ist exklusiv. Die **lokale Zeitzone auf dem Raspberry Pi** bestimmt die Ausführung; der Hub muss zur Wiedergabe nicht online sein. Anthias aktualisiert den Viewer beim Fensterwechsel.
+## Geräte-Standard und neue Inhalte
 
-## Wie Hub und Anthias zusammenarbeiten
+Jeder Pi hat optional **einen Geräte-Standard**, der bei neuen Inhalten vorgeschlagen wird. Ohne Standard werden neue Inhalte zeitlich nicht eingeschränkt. Für jeden direkten Website-, Einzelmedien-, Mehrfach- und ZIP-Upload sowie für das Übertragen einer Bibliotheksvorlage oder eines einzelnen Bibliotheksinhalts kann Marketing den Geräte-Standard übernehmen, einen anderen benannten Zeitplan wählen oder ausdrücklich **Ohne Zeitplan** wählen. Bei direkten Pi-Uploads gibt es zusätzlich eine Auswahl für individuelle Wochenzeiten.
 
-- Die **Namen** der Zeitplanvorlagen stehen in der persistenten Hub-Datei `/data/schedules.json` (Container-Volume). Anthias selbst hat **keine benannten Zeitplan-Objekte**.
-- Die tatsächlichen Wiedergabebeschränkungen bleiben **nativ am Pi** in den einzelnen Assets. Eine direkte Änderung im originalen Anthias-UI wird angezeigt, auch wenn der Zeitplanname im Hub nicht mehr passt. Solche Änderungen erscheinen als **„Individuell in Anthias“**.
-- **Zeitplanvorlage bearbeiten:** Nur die gespeicherte Hub-Vorlage ändern; bereits mit dem alten Zeitfenster konfigurierte Inhalte bleiben sicherheitshalber unverändert. Damit die neuen Zeiten wirksam werden, wähle die Inhalte unten **erneut** aus und wende den geänderten Plan an.
-- **Zeitplanvorlage entfernen:** Löscht **nur** die benannte Hub-Vorlage. Die zeitlichen Einstellungen am Pi werden nicht stillschweigend verändert. Um sie zu entfernen, wähle **Ohne Zeitplan** und die betreffenden Inhalte.
-- Der Hub sendet ausschließlich `PATCH /api/v2/assets/{asset_id}` mit `play_days`, `play_time_from`, `play_time_to`. Vor einem Batch werden alle ausgewählten Einträge validiert. Nach jedem PATCH wird die Antwort auf die tatsächliche Übernahme des Plans geprüft.
-- Wenn Anthias die Scheduling-Felder noch nicht liefert, wird dies abgelehnt, statt einen erfolgreichen Speichervorgang vorzutäuschen. **Es muss eine kompatible Anthias-Version installiert sein.**
-- Eine Massenänderung kann bei API-Fehlern **teilweise** angewendet worden sein. Dann zeigt der Hub die bestätigte Anzahl an und fordert zur Kontrolle direkt am Player auf. **Kein automatischer Retry und keine automatische Änderung anderer Inhalte.**
+Bei Sammeluploads gilt eine Auswahl für die gesamte Aktion; einzelne Inhalte können später abweichen. Bereits vorhandene Pi-Inhalte werden durch einen neuen Standard **nicht** verändert. Beim Übertragen einer Vorlage werden übersprungene schon vorhandene Webseiten nicht umgeplant.
 
-## Rechte, Sicherheit und Betrieb
+**Bibliotheksvorlagen bleiben zeitplanunabhängig.** Ihre Dateien und Metadaten enthalten keine Pi-spezifischen Scheduling-Einstellungen. Die Zeitplanung wird erst am Ziel-Pi gewählt; die Auswahlliste passt sich an den Zielbildschirm an.
 
-**Marketing, IT und Owner:** Zeitplanvorlagen anlegen, bearbeiten, löschen und auf Assets anwenden. **Viewer:** Zeitfenster und Zuordnungen nur ansehen. Alle Schreibaktionen sind CSRF-geschützt, registrierten Pis vorbehalten und protokolliert. Zeitplan-Namen, Wochentage und Uhrzeiten werden serverseitig validiert; es werden maximal 20 Vorlagen je Gerät und höchstens 100 Assets pro einmaliger Zuweisung akzeptiert.
+## Native Anthias-Semantik
 
-Die Vorlagen-Datei liegt auf dem bestehenden /data-Volume und muss zusammen mit `devices.json` und Bibliothek gesichert werden. Die echten Laufzeiten liegen auf den Pis und überleben einen Neustart des Hubs.
+Anthias ist die alleinige Wiedergabe-Engine: API v2 Asset-Felder play_days (1=Mo bis 7=So), play_time_from und play_time_to, interpretiert in der **lokalen Zeitzone des Pi**. Der Hub führt keine Hintergrund-Schedule aus.
 
-**Abgrenzung:** Die Anthias-Geräteeinstellung für **Bildschirm an/aus** (`display_power_schedule_enabled`) ist **separat** von der Inhalts-Zeitplanung. Dieses Hub-Studio steuert, **welcher Inhalt wann sichtbar ist**, nicht die HDMI-Stromversorgung. Sollen Inhalte bei geschlossenem Geschäft überhaupt nicht angezeigt werden, kann die Playlist außerhalb der Zeitfenster leer wirken; das bedeutet nicht, dass der Fernseher abgeschaltet wird.
+Neue Inhalte mit einem Zeitplan werden **deaktiviert angelegt**, erst nach bestätigtem Schreiben der Wochenregel aktiviert. Bei einem API-Fehler bleibt ein teilweise angelegter Eintrag deaktiviert und muss überprüft werden. Die Reihenfolge und der Pause-Status bestehender Medien werden nicht verändert.
 
-## Offizieller Bezug
+Benannte Regeln, Geräte-Standards und explizite Inhalt-zu-Regel-Zuordnungen werden im persistenten Hub-Volume unter **/data/schedules.json** gespeichert, kompatibel zu früheren Versionen. Die tatsächlichen Zeiten bleiben in Anthias. Bei externen Änderungen zeigt der Hub **Abweichend in Anthias** statt den eigenen Stand ungefragt wiederherzustellen.
 
-- [Anthias Asset Scheduling](https://anthias.screenly.io/docs/asset-scheduling/)
-- [Anthias v2 API Reference](https://anthias.screenly.io/api/)
+## Änderung, Löschung und Teilfehler
+
+Das Bearbeiten einer benannten Vorlage verändert die bisherigen Pi-Inhalte zunächst **nicht**. Eine explizite Checkbox bietet an, bestätigte, noch unverändert zugeordnete Assets beim Speichern ebenfalls zu aktualisieren. Direkt in Anthias veränderte Elemente werden dabei ausgespart. Das Entfernen eines Presets verändert den Pi überhaupt nicht; die geplanten Zeiten bleiben erhalten, bis Marketing sie bewusst per „Ohne Zeitplan“ zurücksetzt. Dabei bleiben Datumslimits und Pause-Status unverändert.
+
+Bei teilweise erfolgten API-Aktionen zeigt Hub die bestätigte Anzahl an und fordert zur Prüfung der Pi-Playlist auf. **Kein automatischer Retry und kein automatischer Rollback.**
+
+## Zeitlücken, Berechtigungen, Betrieb
+
+Zeitplanung zeigt nur **Hinweise auf mögliche Lücken**, wenn nicht an allen Tagen ein dauerhaft verfügbares Medium aktiv ist. Es werden **keine Fallback-Playlists** erzeugt, keine Inhalte automatisch aktiviert und keine HDMI-/Bildschirmstromzeiten geändert. Zeitgesteuertes An-/Ausschalten des Fernsehers ist eine separate Anthias-Funktion und gehört nicht zu diesem Feature.
+
+**Marketing, IT und Owner:** Zeitpläne verwalten, Geräte-Standard festlegen, Inhalte schedulen. Nur Marketing/Owner dürfen neue Inhalte hochladen und die Bibliothek bearbeiten. **Viewer:** nur lesen. Sämtliche Schreibaktionen erfordern Anmeldung und CSRF-Schutz und gelten ausschließlich für registrierte Geräte.
+
+**Realgeräte-Abnahme:** Auf Pi 3 und Pi 5 im originalen Anthias-UI prüfen, ob Wochentage und Uhrzeiten korrekt ankommen und ob Playback beim Fensterwechsel erwartungsgemäß reagiert. Automatisierte API-Tests ersetzen diesen Praxistest nicht.
