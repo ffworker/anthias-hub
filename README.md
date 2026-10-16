@@ -43,6 +43,24 @@ Open **http://127.0.0.1:8765** locally, log in and register your Anthias player'
 
 For a colleague or another LAN machine, see the optional [network access guide](docs/network-access.md): isolated direct LAN HTTP for limited tests or **HTTPS via a reverse proxy** for regular users. **No company CA or public certificate?** The [optional Caddy + own internal HTTPS CA guide](docs/network-access.md#d-optional-caddy--your-own-internal-https-ca-no-external-ca-required) covers Debian host installation, trusted-root distribution to Windows, secure cookies, safely retiring HTTP and keeping the test-VM auto-updater intact. No proxy container is installed by default.
 
+## HTTPS staging deployment status (operator report, 16 October 2026)
+
+On the current **disposable test VM**, the operator confirmed a working
+HTTPS login behind host-installed Caddy and the separate Anthias Hub
+`ghcr.io/ffworker/anthias-hub:latest` container. The active setup uses
+`COOKIE_SECURE=1`, `TRUSTED_PROXY_COUNT=1`, and only the loopback
+`127.0.0.1:8765` Hub publish; the formerly direct LAN port-80 publish
+was removed from the existing external Compose override. The Hub's test
+auto-deploy and separately hosted RSS2Slideshow were to remain untouched.
+**Windows client trust of Caddy's self-managed internal CA is not yet
+confirmed**; browser TLS warnings may persist until the verified public
+root certificate has been imported. This is a test-VM report, not evidence
+of production certification or a completed off-host CA backup.
+
+For the exact optional setup, Windows trust steps, secure CA backup, and
+correct `compose.cd.yaml` manual restart/recreate commands, see
+[Network access: Caddy private CA](docs/network-access.md#d-optional-caddy--your-own-internal-https-ca-no-external-ca-required).
+
 ## Roles
 
 | Capability | Owner | IT | Marketing | Viewer |
