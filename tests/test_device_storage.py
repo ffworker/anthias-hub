@@ -193,4 +193,5 @@ def test_exact_4_gib_synthetic_stream_stays_streaming_and_can_be_accepted():
         result = api.upload(VirtualFourGiB(), 'test.mp4', 'video/mp4')
     assert result['uri'] == '/media/test.mp4'
     encoder = api.http.request.call_args.kwargs['data']
-    assert len(encoder) > 4 * GIB
+    # requests-toolbelt exposes .len; it is not a Python sized collection.
+    assert encoder.len > 4 * GIB
