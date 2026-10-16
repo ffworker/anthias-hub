@@ -462,6 +462,43 @@ def test_legacy_profiles_migrate_without_losing_defaults_or_bindings(tmp_path):
     assert saved['defaults']['brand-new-pi']==weekday['id']
 
 
+
+def test_global_edit_shows_pending_without_false_external_drift(tmp_path):
+    from app.schedules import bind_asset, assignments_for, describe_linked_asset
+    store=tmp_path/'schedules.json'
+    old=add_profile(store,'pi3','Werktag_Default',[1,2,3,4,5],'08:00','18:00')
+    player=asset('a','Signage',[1,2,3,4,5],'08:00:00','18:00:00')
+    bind_asset(store,'pi5','a',old['id'],native_fields(old))
+    edit_profile(store,'pi3',old['id'],'Werktag_Default',[1,2,3,4,5],'09:00','19:00')
+    rules=profiles_for(store,'pi5')
+    binds=assignments_for(store,'pi5')
+    assert 'Aktualisierung ausstehend' in describe_linked_asset(player,rules,binds)
+    player['play_time_from']='10:00:00'
+    assert 'Abweichend in Anthias' in describe_linked_asset(player,rules,binds)
+
+
+def test_sync_global_rule_on_another_pi_uses_last_confirmed_player_times(hub):
+    app,client,_=hub
+    sign_in(client,'marketing')
+    base='/devices/lab/schedules'
+    post(client,base+'/add',{'name':'Werktag_Default','days':['1','2','3','4','5'],
+                            'start':'08:00','end':'18:00'})
+    original=profiles_for(app.config['SCHEDULES_FILE'],'lab')[0]
+    post(client,base+'/apply',{'profile_id':original['id'],'asset_ids':['a']})
+    # Simulate a different device editing the common rule first (no Pi changes).
+    from app.schedules import edit_profile
+    edit_profile(app.config['SCHEDULES_FILE'],'another-pi',original['id'],
+                 'Werktag_Default',[1,2,3,4,5],'09:00','19:00')
+    assert 'Aktualisierung ausstehend' in client.get(base).get_data(as_text=True)
+    count=len(Player.patches)
+    post(client,base+'/'+original['id']+'/edit',{'name':'Werktag_Default',
+         'days':['1','2','3','4','5'],'start':'09:00','end':'19:00',
+         'sync_assigned':'yes'})
+    assert len(Player.patches)==count+1
+    assert Player.records['a']['play_time_from']=='09:00:00'
+    assert 'Aktualisierung ausstehend' not in client.get(base).get_data(as_text=True)
+
+
 def test_global_schedule_shared_via_two_device_routes(hub):
     app,client,tmp_path=hub
     sign_in(client,'marketing')

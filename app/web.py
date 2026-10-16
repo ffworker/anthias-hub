@@ -28,7 +28,8 @@ from .storage import MAX_MEDIA_BYTES, MAX_REQUEST_BYTES, upload_capacity
 from .schedules import (
     ScheduleError, profiles_for, add_profile, edit_profile, remove_profile,
     describe_asset, apply_to_assets, default_for, set_default, assignments_for,
-    bind_asset, choice_for, describe_linked_asset, weekday_warning, valid_rule, native_fields,
+    bind_asset, choice_for, describe_linked_asset, linked_native_key, native_key,
+    weekday_warning, valid_rule, native_fields,
 )
 
 _audit_lock = threading.Lock()
@@ -833,8 +834,6 @@ def create_app(config=None):
     def device_schedule_edit(device_id, profile_id):
         player_or_404(device_id)
         try:
-            previous = next((p for p in profiles_for(app.config['SCHEDULES_FILE'], device_id)
-                             if p['id'] == profile_id), None)
             saved = edit_profile(
                 app.config['SCHEDULES_FILE'], device_id, profile_id,
                 request.form.get('name', ''), request.form.getlist('days'),
@@ -852,8 +851,10 @@ def create_app(config=None):
                     if record.get('profile_id') != profile_id or ident not in originals:
                         continue
                     try:
-                        from .schedules import native_key
-                        if previous and native_key(originals[ident]) == native_key(native_fields(previous)):
+                        # Compare with the LAST Pi-acknowledged assignment,
+                        # not the current hub-wide template. This still works
+                        # if another device edited the global rule meanwhile.
+                        if native_key(originals[ident]) == linked_native_key(record):
                             to_sync.append(ident)
                     except ScheduleError:
                         pass
@@ -863,9 +864,10 @@ def create_app(config=None):
                         on_applied=lambda ident, values: bind_asset(
                             app.config['SCHEDULES_FILE'], device_id,
                             ident, profile_id, values))
-                flash(f'Zeitplanvorlage gespeichert und {len(to_sync)} unveränderten '
-                      'zugeordneten Inhalten auf Anthias zugewiesen. '
-                      'Extern angepasste Inhalte wurden ausgespart.', 'success')
+                flash(f'Gemeinsame Vorlage gespeichert. {len(to_sync)} bestätigte Inhalte auf '
+                      f'{device_id} aktualisiert. Andere Geräte behalten ihre '
+                      'bisherigen Pi-Zeitfenster bis zur ausdrücklichen Übernahme; '
+                      'extern angepasste Inhalte wurden ausgespart.', 'success')
             else:
                 flash('Gemeinsame Vorlage aktualisiert. Vorhandene Pi-Zeitfenster bleiben '
                       'unverändert, bis sie auf dem jeweiligen Gerät erneut zugewiesen werden.', 'success')

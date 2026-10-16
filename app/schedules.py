@@ -326,22 +326,30 @@ def choice_for(path, device_id, choice, days=None, start=None, end=None):
     return profile, profile['id']
 
 
-def describe_linked_asset(asset, profiles, bindings):
-    """Stored identity wins over accidental identical-time matches.
+def linked_native_key(record):
+    """Last rules actually confirmed by the Pi, not today's global template."""
+    snapshot = record.get('native_key')
+    if not (isinstance(snapshot, list) and len(snapshot) == 3 and
+            isinstance(snapshot[0], list)):
+        return None
+    return (tuple(snapshot[0]), snapshot[1], snapshot[2])
 
-    If the Pi is modified outside Hub, show drift instead of falsely claiming
-    the preset still applies.
-    """
+
+def describe_linked_asset(asset, profiles, bindings):
+    """Keep shared template updates distinct from external Pi changes."""
     record = bindings.get(str(asset.get('asset_id')))
     if record:
         profile = next((p for p in profiles if p['id'] == record.get('profile_id')), None)
         if profile:
             try:
-                if native_key(asset) != native_key(native_fields(profile)):
-                    return profile['name'] + ' · Abweichend in Anthias'
+                actual = native_key(asset)
+                if actual == native_key(native_fields(profile)):
+                    return profile['name']
+                if actual == linked_native_key(record):
+                    return profile['name'] + ' · Aktualisierung ausstehend'
+                return profile['name'] + ' · Abweichend in Anthias'
             except ScheduleError:
                 return 'Zeitplan auf Anthias nicht verfügbar'
-            return profile['name']
     return describe_asset(asset, profiles)
 
 
