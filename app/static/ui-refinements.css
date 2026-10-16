@@ -131,3 +131,35 @@
   .playlist-workspace .asset-schedule-details>form{grid-template-columns:minmax(0,1fr)}
   .playlist-workspace .asset-schedule-details>form>.primary{width:100%}
 }
+
+/* Scheduling selectors follow the Playlist Studio rather than browser-default
+   square inputs. Consistent on direct upload, in-asset editor and library. */
+.playlist-workspace .schedule-choice select,
+[data-library-device-schedule] select{
+ appearance:none;-webkit-appearance:none;display:block;width:100%;max-width:100%;
+ min-height:43px;border:1px solid #456777;border-radius:11px;
+ padding:10px 40px 10px 13px;color:#ecf6f8;background-color:#122a38;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%2399d9c9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 7 5 5 5-5'/%3E%3C/svg%3E");
+ background-size:18px;background-position:right 13px center;background-repeat:no-repeat;
+ font:500 12px/1.4 'Avenir Next','Segoe UI',system-ui,sans-serif;
+ transition:border-color .14s,box-shadow .14s
+}
+.playlist-workspace .schedule-choice select:hover,
+[data-library-device-schedule] select:hover{border-color:#68a89b}
+.playlist-workspace .schedule-choice select:focus-visible,
+[data-library-device-schedule] select:focus-visible{
+ outline:2px solid #8af2d448;outline-offset:1px;border-color:#85e2d0
+}
+.playlist-workspace .schedule-choice,.library-publish-form .schedule-choice{
+ border-radius:13px;background:#142b38;border-color:#365765;
+}
+.playlist-workspace .schedule-custom .schedule-day-fieldset label{
+ border-radius:9px;transition:background .12s,border-color .12s
+}
+.playlist-workspace .schedule-custom .schedule-day-fieldset label:has(input:checked){
+ background:#25574f;border-color:#69b6a2;color:#effff7
+}
+.playlist-workspace .schedule-custom input[type="time"]{
+ color-scheme:dark;border-radius:10px;background:#102435;color:#eef8fa;
+ border:1px solid #416677;min-height:42px
+}

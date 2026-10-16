@@ -114,21 +114,23 @@ def test_weekday_validation_and_native_fields_match_anthias():
             valid_rule('Test',days,start,end)
 
 
-def test_presets_persist_per_device_and_deleting_preset_never_touches_pi(tmp_path):
+def test_global_schedule_library_shared_between_all_devices(tmp_path):
     store = tmp_path/'schedules.json'
     weekday = add_profile(store,'pi3','Werktag_Default',['1','2','3','4','5'],'08:00','18:00')
     event = add_profile(store,'pi5','Event',['6'],'10:00','14:00')
-    assert [p['name'] for p in profiles_for(store,'pi3')] == ['Werktag_Default']
-    assert profiles_for(store,'pi5') == [event]
+    assert profiles_for(store,'pi3') == [weekday, event]
+    assert profiles_for(store,'pi5') == [weekday, event]
+    assert profiles_for(store,'new-future-device') == [weekday, event]
     assert store.stat().st_mode & 0o777 == 0o600
     with pytest.raises(ScheduleError,match='bereits'):
-        add_profile(store,'pi3','WERKTAG_DEFAULT',['1'],'08:00','18:00')
-    newer = edit_profile(store,'pi3',weekday['id'],'Werktag neu',['1'],'09:00','17:00')
+        add_profile(store,'pi5','WERKTAG_DEFAULT',['1'],'08:00','18:00')
+    newer = edit_profile(store,'pi5',weekday['id'],'Werktag neu',['1'],'09:00','17:00')
     assert newer['id'] == weekday['id']
     assert profiles_for(store,'pi3')[0]['start'] == '09:00'
     remove_profile(store,'pi3',weekday['id'])
-    assert profiles_for(store,'pi3') == []
+    assert profiles_for(store,'pi3') == [event]
     assert profiles_for(store,'pi5') == [event]
+
 
 
 def test_schedule_ui_is_per_device_and_has_examples(hub):
@@ -197,7 +199,7 @@ def test_it_can_edit_and_apply_but_viewer_cannot_write(hub):
                     'days':['6'],'start':'11:00','end':'15:00'})
     assert profiles_for(app.config['SCHEDULES_FILE'],'lab')[0]['name']=='Event 2026'
     assert Player.records['a']['play_time_from']=='10:00:00'
-    post(client,base+'/'+rule['id']+'/delete',{'confirm':rule['id']})
+    post(client,base+'/'+rule['id']+'/delete',{'confirm':rule['id'], 'confirm_global':'yes'})
     assert profiles_for(app.config['SCHEDULES_FILE'],'lab')==[]
     assert Player.records['a']['play_time_from']=='10:00:00'
     post(client,base+'/apply',{'profile_id':'always','asset_ids':['a']})
@@ -388,21 +390,27 @@ def test_default_applies_to_library_append_when_no_explicit_choice(hub):
     assert store.get(template['id'])==before
 
 
-def test_default_is_per_device_and_preset_delete_only_clears_local_default(tmp_path):
-    from app.schedules import default_for, set_default, assignments_for
+def test_defaults_are_per_device_but_rules_are_shared_and_global_delete_cleans_all(tmp_path):
+    from app.schedules import default_for, set_default, bind_asset, assignments_for, native_fields
     file=tmp_path/'schedules.json'
     morning=add_profile(file,'pi3','Früh',['1','2'],'07:00','13:00')
     evening=add_profile(file,'pi5','Spät',['6'],'15:00','21:00')
+    assert profiles_for(file,'future-pi')==[morning,evening]
     set_default(file,'pi3',morning['id'])
-    set_default(file,'pi5',evening['id'])
+    set_default(file,'pi5',morning['id'])  # same global default is valid on any Pi
+    set_default(file,'future-pi',evening['id'])
+    bind_asset(file,'pi3','asset-a',morning['id'],native_fields(morning))
+    bind_asset(file,'pi5','asset-z',morning['id'],native_fields(morning))
     assert default_for(file,'pi3')==morning['id']
-    assert default_for(file,'pi5')==evening['id']
-    with pytest.raises(ScheduleError):
-        set_default(file,'pi3',evening['id'])
+    assert default_for(file,'pi5')==morning['id']
     remove_profile(file,'pi3',morning['id'])
     assert default_for(file,'pi3') is None
-    assert default_for(file,'pi5')==evening['id']
+    assert default_for(file,'pi5') is None
+    assert default_for(file,'future-pi') == evening['id']
+    assert assignments_for(file,'pi3') == {}
+    assert assignments_for(file,'pi5') == {}
     assert profiles_for(file,'pi5')==[evening]
+
 
 
 def test_schedule_gap_warning_is_only_advisory():
@@ -412,3 +420,126 @@ def test_schedule_gap_warning_is_only_advisory():
     scheduled=asset('a','Event',[6],'10:00:00','14:00:00')
     assert 'Mögliche Zeitlücken' in weekday_warning([scheduled])
     assert weekday_warning([{'name':'unknown','is_enabled':True}])==''
+
+
+def test_legacy_profiles_migrate_without_losing_defaults_or_bindings(tmp_path):
+    from app.schedules import default_for, assignments_for, set_default, native_fields
+    file=tmp_path/'schedules.json'
+    original={'devices': {
+        'pi3': [
+            {'id':'aa','name':'Werktag_Default','days':[1,2,3,4,5],'start':'08:00','end':'18:00'},
+            {'id':'bb','name':'Event','days':[6],'start':'10:00','end':'14:00'}
+        ],
+        'pi5': [
+            {'id':'cc','name':'Werktag_Default','days':[1,2,3,4,5],'start':'08:00','end':'18:00'},
+            {'id':'dd','name':'Event','days':[6],'start':'11:00','end':'15:00'},
+        ]
+    }, 'defaults': {'pi3':'aa','pi5':'cc'}, 'assignments': {
+        'pi3': {'media-a': {'profile_id':'aa','native_key': [[1,2,3,4,5],'08:00:00','18:00:00']}},
+        'pi5': {'media-b': {'profile_id':'cc','native_key': [[1,2,3,4,5],'08:00:00','18:00:00']},
+                'media-c': {'profile_id':'dd','native_key': [[6],'11:00:00','15:00:00']}}
+    }}
+    file.write_text(json.dumps(original),encoding='utf-8')
+    shared=profiles_for(file,'pi3')
+    assert profiles_for(file,'pi5')==shared
+    assert profiles_for(file,'brand-new-pi')==shared
+    assert len(shared)==3
+    weekday=next(p for p in shared if p['name']=='Werktag_Default')
+    assert len([p for p in shared if p['name'].startswith('Event')])==2
+    assert any('pi5' in p['name'] for p in shared)
+    assert default_for(file,'pi3')==weekday['id']
+    assert default_for(file,'pi5')==weekday['id']
+    assert assignments_for(file,'pi3')['media-a']['profile_id']==weekday['id']
+    assert assignments_for(file,'pi5')['media-b']['profile_id']==weekday['id']
+    assert assignments_for(file,'pi5')['media-c']['profile_id']!=weekday['id']
+    # Reading must not mutate the original; the first write migrates atomically.
+    assert json.loads(file.read_text(encoding='utf-8'))==original
+    set_default(file,'brand-new-pi',weekday['id'])
+    saved=json.loads(file.read_text(encoding='utf-8'))
+    assert saved['global_profiles']==shared
+    assert saved['devices']==original['devices']  # legacy backup retained
+    assert saved['assignments']['pi5']['media-c']['profile_id']!=weekday['id']
+    assert saved['defaults']['brand-new-pi']==weekday['id']
+
+
+
+def test_global_edit_shows_pending_without_false_external_drift(tmp_path):
+    from app.schedules import bind_asset, assignments_for, describe_linked_asset
+    store=tmp_path/'schedules.json'
+    old=add_profile(store,'pi3','Werktag_Default',[1,2,3,4,5],'08:00','18:00')
+    player=asset('a','Signage',[1,2,3,4,5],'08:00:00','18:00:00')
+    bind_asset(store,'pi5','a',old['id'],native_fields(old))
+    edit_profile(store,'pi3',old['id'],'Werktag_Default',[1,2,3,4,5],'09:00','19:00')
+    rules=profiles_for(store,'pi5')
+    binds=assignments_for(store,'pi5')
+    assert 'Aktualisierung ausstehend' in describe_linked_asset(player,rules,binds)
+    player['play_time_from']='10:00:00'
+    assert 'Abweichend in Anthias' in describe_linked_asset(player,rules,binds)
+
+
+def test_sync_global_rule_on_another_pi_uses_last_confirmed_player_times(hub):
+    app,client,_=hub
+    sign_in(client,'marketing')
+    base='/devices/lab/schedules'
+    post(client,base+'/add',{'name':'Werktag_Default','days':['1','2','3','4','5'],
+                            'start':'08:00','end':'18:00'})
+    original=profiles_for(app.config['SCHEDULES_FILE'],'lab')[0]
+    post(client,base+'/apply',{'profile_id':original['id'],'asset_ids':['a']})
+    # Simulate a different device editing the common rule first (no Pi changes).
+    from app.schedules import edit_profile
+    edit_profile(app.config['SCHEDULES_FILE'],'another-pi',original['id'],
+                 'Werktag_Default',[1,2,3,4,5],'09:00','19:00')
+    assert 'Aktualisierung ausstehend' in client.get(base).get_data(as_text=True)
+    count=len(Player.patches)
+    post(client,base+'/'+original['id']+'/edit',{'name':'Werktag_Default',
+         'days':['1','2','3','4','5'],'start':'09:00','end':'19:00',
+         'sync_assigned':'yes'})
+    assert len(Player.patches)==count+1
+    assert Player.records['a']['play_time_from']=='09:00:00'
+    assert 'Aktualisierung ausstehend' not in client.get(base).get_data(as_text=True)
+
+
+def test_global_schedule_shared_via_two_device_routes(hub):
+    app,client,tmp_path=hub
+    sign_in(client,'marketing')
+    from app.schedules import default_for
+    devices=json.loads(Path(app.config['DEVICES_FILE']).read_text(encoding='utf-8'))
+    devices['devices'].append({'id':'lab-two','name':'Pi 2','url':'http://192.168.1.88','location':'Event'})
+    Path(app.config['DEVICES_FILE']).write_text(json.dumps(devices),encoding='utf-8')
+    post(client,'/devices/lab/schedules/add',{
+        'name':'Werktag_Default','days':['1','2','3','4','5'],
+        'start':'08:00','end':'18:00'
+    })
+    rule=profiles_for(app.config['SCHEDULES_FILE'],'lab')[0]
+    page=client.get('/devices/lab-two/schedules').get_data(as_text=True)
+    playlist=client.get('/devices/lab-two').get_data(as_text=True)
+    assert 'Werktag_Default' in page
+    assert 'Werktag_Default' in playlist
+    assert 'Hubweite Zeitplan-Sammlung' in page
+    post(client,'/devices/lab-two/schedules/default', {'profile_id':rule['id']})
+    assert default_for(app.config['SCHEDULES_FILE'],'lab-two')==rule['id']
+    assert default_for(app.config['SCHEDULES_FILE'],'lab') is None
+    # Actual native settings can be applied on the second Pi, with no change to first device default.
+    response=post(client,'/devices/lab-two/schedules/apply',
+                  {'profile_id':rule['id'],'asset_ids':['a']})
+    assert '1 Inhalte auf dem Pi' in response.get_data(as_text=True)
+    assert Player.records['a']['play_time_from']=='08:00:00'
+
+
+def test_shared_schedule_global_delete_requires_confirmation(hub):
+    app,client,_=hub
+    sign_in(client,'marketing')
+    base='/devices/lab/schedules'
+    post(client,base+'/add',{
+        'name':'Event','days':['6'],'start':'10:00','end':'14:00'
+    })
+    rule=profiles_for(app.config['SCHEDULES_FILE'],'lab')[0]
+    with client.session_transaction() as state:
+        csrf=state['csrf']
+    response=client.post(base+'/'+rule['id']+'/delete',
+        data={'csrf':csrf,'confirm':rule['id']})
+    assert response.status_code==400
+    assert profiles_for(app.config['SCHEDULES_FILE'],'lab')==[rule]
+    post(client,base+'/'+rule['id']+'/delete',
+         {'confirm':rule['id'],'confirm_global':'yes'})
+    assert profiles_for(app.config['SCHEDULES_FILE'],'lab')==[]

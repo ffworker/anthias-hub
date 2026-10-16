@@ -28,13 +28,14 @@
 
   <section class="schedule-section">
     <div class="schedule-section-heading">
-      <div><p class="eyebrow">01 · ZEITFENSTER</p><h2>Deine Zeitpläne <span class="count">{{ profiles|length }}</span></h2></div>
-      <p class="muted">Ein Plan gilt für die ausgewählten Inhalte, nicht pauschal für den gesamten Bildschirm.</p>
+      <div><p class="eyebrow">01 · GEMEINSAME SAMMLUNG</p><h2>Zeitpläne <span class="count">{{ profiles|length }}</span></h2></div>
+      <p class="muted schedule-collection-intro">Einmal erstellen, auf allen Bildschirmen nutzen. Dieser Katalog gilt für den gesamten Anthias Hub.</p>
     </div>
 
+    <div class="schedule-collection-note"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg><span><strong>Hubweite Zeitplan-Sammlung</strong> · Neu erstellte Regeln stehen sofort auf jedem Pi zur Auswahl. Der Geräte-Standard und die zugeordneten Inhalte bleiben je Bildschirm individuell.</span></div>
     <div class="schedule-default-panel card">
       <div><p class="eyebrow">STANDARD DIESES GERÄTS</p><h3>Was sollen neue Inhalte übernehmen?</h3>
-      <p class="muted">Wirkt auf neue Uploads und Übertragungen. Bereits vorhandene Inhalte bleiben unverändert.</p></div>
+      <p class="muted">Wähle aus der gemeinsamen Sammlung. Gilt nur für neue Uploads auf {{ device.name }}; vorhandene Inhalte bleiben unverändert.</p></div>
       {% if can_edit %}
       <form method="post" action="{{ url_for('device_schedule_default', device_id=device.id) }}">
         <input type="hidden" name="csrf" value="{{ csrf() }}">
@@ -74,28 +75,33 @@
                     <label><input type="checkbox" name="days" value="{{ day }}" {% if day in rule.days %}checked{% endif %}>{{ label }}</label>
                   {% endfor %}
                 </fieldset>
-                <p class="schedule-hint">Ohne Übernahme ändern sich bestehende Pi-Inhalte nicht. Extern abweichende Inhalte werden auch bei Übernahme nicht überschrieben.</p>
-                <label class="schedule-sync-check"><input type="checkbox" name="sync_assigned" value="yes"> Bestehende, unveränderte Zuordnungen nach Bestätigung aktualisieren</label>
+                <p class="schedule-hint">Diese Vorlage ist hubweit verfügbar. Änderungen an Wochentagen und Zeiten erscheinen auf allen Geräten. Bestehende Pi-Inhalte werden nicht automatisch geändert.</p>
+                <label class="schedule-sync-check"><input type="checkbox" name="sync_assigned" value="yes"> Bereits zugeordnete Inhalte auf <strong>{{ device.name }}</strong> aktualisieren (andere Pis bleiben unverändert)</label>
                 <button class="primary" type="submit">Zeitplan speichern</button>
               </form>
             </details>
             <form class="schedule-remove-form" method="post" action="{{ url_for('device_schedule_delete', device_id=device.id, profile_id=rule.id) }}">
               <input type="hidden" name="csrf" value="{{ csrf() }}">
               <input type="hidden" name="confirm" value="{{ rule.id }}">
-              <button class="schedule-remove" type="submit" title="Nur benannte Vorlage entfernen, nicht die Playlist">Vorlage entfernen</button>
+              <details class="schedule-global-delete">
+                <summary>Vorlage entfernen</summary>
+                <p>Entfernt diesen Zeitplan hubweit, auch aus den Geräte-Standards. Die bisherigen Zeitfenster auf den Pis bleiben erhalten.</p>
+                <label class="schedule-global-confirm"><input type="checkbox" name="confirm_global" value="yes" required> Hubweit entfernen bestätigen</label>
+                <button class="schedule-remove" type="submit">Endgültig aus Sammlung entfernen</button>
+              </details>
             </form>
           {% endif %}
         </article>
       {% else %}
         <div class="card schedule-empty">
-          <p>Noch keine benannten Zeitpläne. Ohne zeitliche Einschränkung laufen aktive Inhalte wie bisher.</p>
+          <p>Noch keine gemeinsamen Zeitpläne vorhanden. Erstelle hier einen Plan – er ist anschließend auf jedem Gerät verfügbar.</p>
         </div>
       {% endfor %}
     </div>
 
     {% if can_edit %}
       <details class="card schedule-new" {% if not profiles %}open{% endif %}>
-        <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Neuen Zeitplan erstellen</summary>
+        <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Gemeinsamen Zeitplan erstellen</summary>
         <form method="post" action="{{ url_for('device_schedule_add', device_id=device.id) }}" data-schedule-form>
           <input type="hidden" name="csrf" value="{{ csrf() }}">
           <div class="schedule-quick">
@@ -123,7 +129,7 @@
     {% if gap_warning %}<div class="notice schedule-gap-warning" role="status"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#alert"></use></svg> {{ gap_warning }} Anthias bleibt für die Ausgabe verantwortlich; es wird kein Fallback erzeugt.</div>{% endif %}
     <div class="schedule-section-heading">
       <div><p class="eyebrow">02 · INHALTE ZUORDNEN</p><h2>Was soll wann laufen?</h2></div>
-      <p class="muted">Jeder Inhalt kann genau ein wiederkehrendes Wochen-Zeitfenster haben.</p>
+      <p class="muted">Wähle einen gemeinsamen Zeitplan und ordne ihn den Inhalten dieses Geräts zu. Andere Bildschirme bleiben unverändert.</p>
     </div>
     {% if assets %}
       {% if can_edit %}

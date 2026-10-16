@@ -80,3 +80,79 @@
   .schedule-submit-row button{width:100%}
   .schedule-assigned{max-width:43%}
 }
+
+/* Shared library is visually integrated into the original rounded studio,
+   without a new global navigation item or sharp browser-default selects. */
+.schedule-collection-intro{max-width:430px}
+.schedule-collection-note{display:flex;align-items:flex-start;gap:10px;margin:0 0 16px;
+ padding:12px 16px;background:#18353b;border:1px solid #345c61;border-radius:13px;
+ font-size:12px;color:#b7d9db;line-height:1.6}
+.schedule-collection-note .icon{width:17px;height:17px;flex:none;color:#92e6cf;margin-top:2px}
+.schedule-collection-note strong{color:#e0fff2}
+.schedule-workspace .schedule-rule,.schedule-workspace .schedule-default-panel,
+.schedule-workspace .schedule-assign,.schedule-workspace .schedule-new{
+ border-radius:16px;box-shadow:0 8px 25px #0002,inset 0 1px #ffffff08;
+ background:#152638;border-color:#385365
+}
+.schedule-workspace .schedule-rule:hover{border-color:#4a797a}
+.schedule-workspace .schedule-rule-edit>summary,
+.schedule-workspace .schedule-new>summary,
+.schedule-workspace .schedule-global-delete>summary{
+ list-style:none;border-radius:9px;transition:background-color .15s,color .15s
+}
+.schedule-workspace .schedule-rule-edit>summary::-webkit-details-marker,
+.schedule-workspace .schedule-new>summary::-webkit-details-marker,
+.schedule-workspace .schedule-global-delete>summary::-webkit-details-marker{display:none}
+.schedule-workspace .schedule-rule-edit>summary:hover,
+.schedule-workspace .schedule-global-delete>summary:hover{
+ background:#254246;color:#d8fff3
+}
+.schedule-workspace select,.schedule-workspace input:not([type="checkbox"]),
+.schedule-workspace input[type="time"]{
+ box-sizing:border-box;min-width:0;min-height:43px;width:100%;
+ border:1px solid #456778;border-radius:11px;background-color:#102334;
+ color:#edf8f9;padding:10px 13px;font:500 13px/1.4 'Avenir Next','Segoe UI',system-ui,sans-serif;
+ transition:border-color .15s,box-shadow .15s
+}
+.schedule-workspace select{
+ appearance:none;-webkit-appearance:none;padding-right:40px;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%2399d9c9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 7 5 5 5-5'/%3E%3C/svg%3E");
+ background-repeat:no-repeat;background-position:right 13px center;background-size:18px
+}
+.schedule-workspace select:focus-visible,.schedule-workspace input:not([type="checkbox"]):focus-visible{
+ border-color:#86e9cf;outline:2px solid #86e9cf35;outline-offset:1px;
+ box-shadow:0 0 0 2px #72e9cd19
+}
+.schedule-workspace select:hover,.schedule-workspace input:not([type="checkbox"]):hover{
+ border-color:#5b8d90
+}
+.schedule-workspace input[type="time"]{color-scheme:dark}
+.schedule-workspace .schedule-day-fieldset label{
+ border-radius:10px;background:#172d3d;border-color:#38566c;
+ transition:background-color .12s,border-color .12s,color .12s
+}
+.schedule-workspace .schedule-day-fieldset label:has(input:checked){
+ background:#24574f;color:#eafff8;border-color:#61b6a2
+}
+.schedule-workspace .schedule-day-fieldset label:hover{border-color:#7ad7c1}
+.schedule-workspace .schedule-day-fieldset input{appearance:auto;accent-color:#91e9d0}
+.schedule-workspace .schedule-quick button,.schedule-workspace .schedule-select-tools button{
+ border-radius:9px;min-height:33px
+}
+.schedule-global-delete{margin:8px 0 0;border:0;border-top:1px solid #34515b;padding-top:8px}
+.schedule-global-delete>summary{font-size:11px;color:#bfaeae;padding:6px 8px;cursor:pointer}
+.schedule-global-delete p{font-size:11px;line-height:1.5;color:#d4b8b8;margin:10px 0 8px}
+.schedule-global-confirm,.schedule-sync-check{
+ display:flex!important;align-items:flex-start;gap:8px;margin:8px 0;font-size:11px;
+ line-height:1.5;color:#c1d2d9!important
+}
+.schedule-global-confirm input,.schedule-sync-check input{
+ width:17px;min-width:17px;height:17px;min-height:17px;margin:0;accent-color:#89e8cd
+}
+.schedule-global-delete .schedule-remove{font-size:11px;color:#ffc6cd;
+ padding:7px 11px;min-height:33px;border:1px solid #895368;border-radius:9px;
+ background:#482935
+}
+.schedule-global-delete .schedule-remove:hover{background:#603342;color:white}
+@media(max-width:690px){.schedule-collection-note{padding:11px 13px}
+ .schedule-default-panel{gap:14px}.schedule-section-heading .muted{max-width:none}}
