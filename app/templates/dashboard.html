@@ -4,10 +4,10 @@
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='storage-ui.css') }}">
 <script defer src="{{ url_for('static', filename='storage-ui.js') }}"></script>
+<script defer src="{{ url_for('static', filename='fleet-status.js') }}"></script>
 {% endblock %}
 {% block content %}
 {% if logged_user.role in ('owner', 'it', 'marketing') %}<script defer src="{{ url_for('static', filename='fleet-popovers.js') }}"></script>{% endif %}
-{% set online_count = statuses.values()|selectattr('ok')|list|length %}
 <div class="fleet-workspace">
   <section class="fleet-hero" aria-labelledby="fleet-title">
     <div class="fleet-hero-copy">
@@ -26,8 +26,8 @@
 
   <div class="fleet-summary" aria-label="Geräteübersicht">
     <div class="fleet-stat"><span class="fleet-stat-icon" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></span><span class="fleet-stat-value">{{ devices|length }}</span><span class="fleet-stat-label">Bildschirme</span></div>
-    <div class="fleet-stat"><span class="fleet-stat-icon online" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#check"></use></svg></span><span class="fleet-stat-value">{{ online_count }}</span><span class="fleet-stat-label">API erreichbar</span></div>
-    <div class="fleet-stat"><span class="fleet-stat-icon offline" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#alert"></use></svg></span><span class="fleet-stat-value">{{ (devices|length) - online_count }}</span><span class="fleet-stat-label">Nicht erreichbar</span></div>
+    <div class="fleet-stat"><span class="fleet-stat-icon online" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#check"></use></svg></span><span class="fleet-stat-value" data-fleet-online>–</span><span class="fleet-stat-label">API erreichbar</span></div>
+    <div class="fleet-stat"><span class="fleet-stat-icon offline" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#alert"></use></svg></span><span class="fleet-stat-value" data-fleet-offline>–</span><span class="fleet-stat-label">Nicht erreichbar</span></div>
     <p class="fleet-summary-hint">Verbindung ≠ Livebild am TV</p>
   </div>
 
@@ -38,16 +38,15 @@
 
   <div class="fleet-grid">
     {% for device in devices %}
-      {% set online = statuses[device.id].ok %}
-      <article id="device-{{ device.id }}" class="fleet-device card {{ 'fleet-device-offline' if not online else '' }}">
+      <article id="device-{{ device.id }}" class="fleet-device card" data-overview-url="{{ url_for('device_overview', device_id=device.id) }}" data-overview-state="pending">
         <div class="fleet-device-top">
           <div class="fleet-device-icon" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></div>
-          <span class="pill {{ 'ok' if online else 'bad' }}">{{ 'API erreichbar' if online else 'Nicht erreichbar' }}</span>
+          <span class="pill off" data-device-state role="status">Wird geprüft …</span>
         </div>
         <p class="eyebrow fleet-location">{{ device.location or 'OHNE STANDORT' }}</p>
         <h3>{{ device.name }}</h3>
         <div class="fleet-device-line"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg>
-          <strong>{{ statuses[device.id].count if online else '–' }}</strong>
+          <strong data-device-count>–</strong>
           <span>Playlist-Inhalte</span>
         </div>
         <a class="button primary fleet-open" href="{{ url_for('playlist', device_id=device.id) }}">{{ 'Playlist bearbeiten' if logged_user.role in ('owner', 'marketing') else 'Playlist ansehen' }} <span aria-hidden="true">→</span></a>
@@ -84,27 +83,19 @@
           </details>
         {% endif %}
         {% if logged_user.role in ('owner', 'it', 'marketing') %}
-          {% set disk = statuses[device.id].storage %}
-          <details class="fleet-storage-menu {{ 'storage-unavailable' if not disk else 'storage-low' if disk.usable_bytes == 0 else '' }}">
-            <summary aria-label="Gerätespeicher von {{ device.name }} anzeigen"
-                     title="Gerätespeicher anzeigen">
+          <details class="fleet-storage-menu" data-storage-url="{{ url_for('device_storage', device_id=device.id) }}">
+            <summary aria-label="Gerätespeicher von {{ device.name }} anzeigen" title="Gerätespeicher anzeigen">
               <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#storage"></use></svg>
-              {% if not disk or disk.usable_bytes == 0 %}<span class="storage-warning-dot" aria-hidden="true"></span>{% endif %}
+              <span class="storage-warning-dot" data-storage-warning hidden aria-hidden="true"></span>
             </summary>
             <div class="fleet-storage-panel">
               <p class="storage-panel-title">Gerätespeicher</p>
-              {% if disk %}
-                <dl>
-                  <div><dt>Anthias meldet frei</dt><dd>{{ disk.reported }}</dd></div>
-                  <div><dt>Für Uploads</dt><dd>{{ disk.usable_gib }} GiB</dd></div>
-                  <div><dt>Sicherheitsreserve</dt><dd>{{ disk.reserve_gib }} GiB</dd></div>
-                </dl>
-                {% if disk.usable_bytes == 0 %}
-                  <p class="storage-panel-warning">Zu wenig Platz: Pi-Speicher prüfen und nicht mehr benötigte Inhalte gezielt entfernen.</p>
-                {% endif %}
-              {% else %}
-                <p class="storage-panel-warning">{{ statuses[device.id].storage_reason or 'Anthias-Speicherwert nicht verfügbar.' }} Nach eigener Prüfung des Pi-Speichers ist eine bewusste Ausnahme möglich.</p>
-              {% endif %}
+              <dl data-storage-values hidden>
+                <div><dt>Anthias meldet frei</dt><dd data-storage-reported>–</dd></div>
+                <div><dt>Für Uploads</dt><dd data-storage-budget>–</dd></div>
+                <div><dt>Sicherheitsreserve</dt><dd data-storage-reserve>–</dd></div>
+              </dl>
+              <p class="storage-panel-warning" data-storage-message role="status">Wird beim Öffnen abgefragt …</p>
               <p class="storage-panel-note">Videos bis 4 GiB je Datei · Platzbedarf wird pro Upload anhand der Anthias-API geprüft.</p>
             </div>
           </details>

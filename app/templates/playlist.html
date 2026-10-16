@@ -259,10 +259,10 @@
 
         <div class="composer-pane" data-add-pane="media">
           <p class="composer-explainer">Ein Bild oder Video zur Playlist hinzufügen.</p>
-          <div class="upload-storage-strip" data-storage-status data-storage-known="{{ '1' if storage else '0' }}" data-storage-url="{{ url_for('device_storage', device_id=device.id) }}">
+          <div class="upload-storage-strip" data-storage-status data-storage-known="{{ '1' if storage else '0' }}" data-storage-loading="{{ '1' if storage_reason == 'Speicher wird geprüft …' else '0' }}" data-storage-url="{{ url_for('device_storage', device_id=device.id) }}">
             <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#storage"></use></svg>
             <span data-storage-label role="status" aria-live="polite">
-              {% if storage %}{{ storage.usable_gib }} GiB für Uploads verfügbar{% else %}Speicherwert nicht verfügbar{% if storage_reason %} · {{ storage_reason }}{% endif %}{% endif %}
+              {% if storage %}{{ storage.usable_gib }} GiB für Uploads verfügbar{% else %}Speicher wird geprüft …{% if storage_reason and storage_reason != 'Speicher wird geprüft …' %} · {{ storage_reason }}{% endif %}{% endif %}
             </span>
             <button type="button" class="storage-refresh" data-storage-refresh aria-label="Speicherplatz aktualisieren" title="Speicherplatz erneut prüfen">↻</button>
             <details class="upload-storage-more">
@@ -345,7 +345,7 @@
           <details class="library-template-append">
             <summary>Gesamte Vorlage hinzufügen</summary>
             <p class="muted">Alle Inhalte der gewählten Vorlage werden in ihrer gespeicherten Reihenfolge angehängt. Bereits vorhandene Webseiten mit identischem Titel und Link werden übersprungen. Medien werden nicht automatisch auf Duplikate geprüft.</p>
-            <form method="post" action="{{ url_for('append_library_from_player', device_id=device.id) }}">
+            <form method="post" data-template-transfer data-transfer-device-id="{{ device.id }}" data-transfer-overview-path="{{ url_for('device_overview', device_id='__DEVICE__') }}" action="{{ url_for('append_library_from_player', device_id=device.id) }}">
               <input type="hidden" name="csrf" value="{{ csrf() }}">
               <input type="hidden" name="confirm" value="append">
               <label>Bibliotheksvorlage
@@ -362,6 +362,7 @@
                 Alle Inhalte jetzt auf diesem Bildschirm anhängen
               </label>
               <button type="submit" class="primary full-width">Alle Inhalte zur Playlist hinzufügen →</button>
+              <div class="template-transfer-feedback" data-transfer-feedback role="status" aria-live="polite" hidden><span class="template-transfer-spinner" aria-hidden="true"></span><strong data-transfer-message>Übertragung läuft …</strong><small data-transfer-live>Bestehende Playlist bleibt erhalten. Bitte nicht erneut klicken.</small></div>
             </form>
           </details>
           {% else %}
@@ -381,5 +382,6 @@
 <script defer src="{{ url_for('static', filename='bulk-upload.js') }}"></script>
 {% if logged_user.role in ('marketing', 'owner') and not error %}<script defer src="{{ url_for('static', filename='playlist.js') }}"></script>
 <script defer src="{{ url_for('static', filename='playlist-studio.js') }}"></script>
-<script defer src="{{ url_for('static', filename='playlist-bulk.js') }}"></script>{% endif %}
+<script defer src="{{ url_for('static', filename='playlist-bulk.js') }}"></script>
+<script defer src="{{ url_for('static', filename='template-transfer.js') }}"></script>{% endif %}
 {% endblock %}
