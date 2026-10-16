@@ -43,8 +43,8 @@ server {
     ssl_certificate /etc/ssl/private/hub-cert.pem;
     ssl_certificate_key /etc/ssl/private/hub-key.pem;
     location / {
-        # Hub backup request limit: 2 GiB + 2 MiB, including multipart body.
-        client_max_body_size 2050m;
+        # Hub upload request limit: 4 GiB + 16 MiB, including multipart overhead.
+        client_max_body_size 4112m;
         client_body_timeout 2400s;
         proxy_read_timeout 2400s;
         proxy_send_timeout 2400s;
