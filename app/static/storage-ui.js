@@ -44,7 +44,7 @@
   const markUnknown = (message) => {
     if (playerForm) playerForm.dataset.playerAvailable = '0';
     strip.dataset.state = 'unknown';
-    label.textContent = 'Speicherprüfung fehlgeschlagen · ' + message;
+    label.textContent = 'Uploadkapazität nicht bestätigt · ' + message;
     setOverrideVisible(true);
     if (window.AnthiasStorage) window.AnthiasStorage.lastUnknown = true;
   };

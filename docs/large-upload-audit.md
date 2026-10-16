@@ -165,3 +165,10 @@ It explicitly sets its temporary directory to its disk working directory; no
 remote player address is used. With disk-backed temp storage, the local run took
 11.17 seconds and peaked at 75.60 MiB RSS (same peak before and after transfer).
 This is intentionally outside the fast CI suite.
+
+
+## Speicheranzeige: gültiger API-Wert, aber keine Uploadfreigabe
+
+Wenn beide Geräte als „Speicher nicht verfügbar“ erscheinen, liegt das häufig **nicht** an der Anthias-API: `/api/v2/info.free_space` meldet den **System-Root** (`statvfs('/')`). Hub zeigt mit der aktualisierten Diagnose diesen Systemwert an, erkennt ihn aber **nicht automatisch** als Medienkapazität an. Ohne eine IT-bestätigte Dateisystem-Zuordnung `ANTHIAS_VERIFIED_STORAGE_URLS` bleibt `usable_bytes=0` und die automatische Upload-Freigabe aus. Die Anzeige trennt nun „Root gemessen, Medien-Mount nicht bestätigt“ von „API nicht erreichbar/kein free_space“. Die echte Upload-Sperre und der explizite Unknown-Only-Override bleiben unverändert.
+
+**Je Pi einmalig vor IT-Freigabe:** auf dem tatsächlichen Anthias-Host bzw. im Container prüfen, dass das Dateisystem von `/`, dem über Anthias konfigurierten `assetdir` und dem Django-Upload-Temporärverzeichnis identisch ist. Tatsächliche Pfade ermitteln, nicht raten, und `df -B1`, `findmnt -T`, `stat -c '%d'` für alle drei ausführen. Bei unterschiedlichen Dateisystemen **nicht** attestieren; die Root-Messung beweist keinen Medien-Freiraum. Sind alle drei identisch, die exakt im Hub registrierten Geräte-URLs kommagetrennt in der privaten Hub-`.env` als `ANTHIAS_VERIFIED_STORAGE_URLS` eintragen und den bestehenden Compose-Stack mit seinem LAN-Override kontrolliert neu erstellen. **Ein systemd-Timerlauf mit unveränderter Image-ID lädt geänderte .env nicht neu.** Bei unbekanntem Speicher kann Marketing nach separater Kontrolle weiterhin die vorhandene manuelle Bestätigung für einzelne Uploads verwenden; nachgewiesener Platzmangel bleibt gesperrt.
