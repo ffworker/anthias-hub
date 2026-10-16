@@ -33,8 +33,9 @@
 .library-media-import-panel .bulk-media-panel{margin:0;padding:0;border:0}
 
 
-/* Show the important publish action before the template's long media list.
- * It is a real form, not a jump link to a buried sidebar control. */
+/* Library publication: one coherent row of equally sized target/schedule
+ * controls, followed by a confirmation/action row. Keep long device labels
+ * and schedule selections inside the column at every breakpoint. */
 .library-template-intro .library-backup-export{
   display:inline-flex;
   margin-top:13px;
@@ -43,10 +44,11 @@
 }
 .library-publish-hero{
   display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(320px,420px);
-  column-gap:24px;
-  row-gap:9px;
+  grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr);
+  column-gap:25px;
+  row-gap:12px;
   align-items:center;
+  min-width:0;
   margin:22px 0 6px;
   padding:20px 23px;
   border-radius:16px;
@@ -56,10 +58,11 @@
 }
 .library-publish-copy{
   display:flex;
-  align-items:start;
+  align-items:flex-start;
   gap:13px;
   min-width:0;
 }
+.library-publish-copy>div{min-width:0}
 .library-publish-symbol{
   display:grid;
   place-items:center;
@@ -92,53 +95,96 @@
 }
 .library-publish-form{
   display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  gap:9px 10px;
-  align-items:end;
+  grid-template-columns:minmax(0,1fr);
+  gap:12px;
+  align-content:center;
   min-width:0;
+  width:100%;
   margin:0;
 }
-.library-publish-form .library-publish-target{
+.library-publish-fields{
   display:grid;
-  gap:5px;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  align-items:stretch;
+  min-width:0;
+}
+.library-publish-fields>.schedule-choice{
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  margin:0;
+  padding:12px;
+  grid-template-rows:auto 1fr;
+}
+.library-publish-fields>.schedule-choice legend{
+  max-width:100%;
+  font-size:11px;
+  line-height:1.5;
+}
+.library-publish-form .library-publish-target label{
+  display:grid;
+  gap:6px;
   min-width:0;
   margin:0;
-  color:#d9e9eb;
+  color:#c2e3e2;
   font-size:11px;
 }
 .library-publish-target select{
+  display:block;
   box-sizing:border-box;
-  min-width:0;
   width:100%;
-  min-height:40px;
-  padding:7px 9px;
-  border-radius:9px;
-  border:1px solid #598580;
-  background:#0a2530;
-  color:#eff8f6;
-  font:inherit;
+  min-width:0;
+  max-width:100%;
+  min-height:43px;
+  padding:10px 40px 10px 13px;
+  border:1px solid #456777;
+  border-radius:11px;
+  background-color:#122a38;
+  color:#ecf6f8;
+  font:500 12px/1.4 'Avenir Next','Segoe UI',system-ui,sans-serif;
+}
+.library-publish-fields .schedule-choice-hint{
+  margin:0;
+  align-self:end;
+  overflow-wrap:anywhere;
+}
+.library-publish-actions{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px 16px;
+  flex-wrap:wrap;
+  min-width:0;
 }
 .library-publish-form .library-publish-button{
-  min-height:40px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  min-height:43px;
   margin:0;
-  padding:8px 12px;
+  padding:9px 13px;
   font-size:12px;
-  white-space:nowrap;
-  border-radius:9px;
+  white-space:normal;
+  border-radius:10px;
   background:#86eed5;
   color:#092c30;
   font-weight:750;
+  flex:none;
 }
 .library-publish-button:hover:not(:disabled){background:#b5fae8}
 .library-publish-form .library-publish-confirm{
-  grid-column:1/-1;
   display:flex;
   align-items:center;
   gap:8px;
+  flex:1 1 225px;
+  min-width:0;
   margin:0;
   color:#deeeed;
   font-size:11px;
-  line-height:1.4;
+  line-height:1.45;
   cursor:pointer;
 }
 .library-publish-confirm input{
@@ -149,23 +195,28 @@
   margin:0;
   accent-color:#86eed5;
 }
+.library-publish-form>.template-transfer-feedback{min-width:0;overflow-wrap:anywhere}
 .library-publish-hint{
   grid-column:1/-1;
+  min-width:0;
   margin:1px 0 0!important;
   color:#bad4d4!important;
   font-size:11px!important;
 }
-@media(max-width:980px){
-  .library-publish-hero{grid-template-columns:1fr;row-gap:18px}
+@media(max-width:1050px){
+  .library-publish-hero{grid-template-columns:minmax(0,1fr);row-gap:17px;align-items:start}
+  .library-publish-copy p:not(.eyebrow){max-width:none}
+}
+@media(max-width:640px){
+  .library-publish-fields{grid-template-columns:minmax(0,1fr)}
+  .library-publish-actions{align-items:stretch}
+  .library-publish-confirm{flex-basis:100%}
+  .library-publish-form .library-publish-button{width:100%}
 }
 @media(max-width:540px){
   .library-publish-hero{padding:17px 14px}
-  .library-publish-form{grid-template-columns:1fr}
-  .library-publish-form .library-publish-button{grid-column:1;grid-row:2;width:100%;white-space:normal}
-  .library-publish-form .library-publish-confirm{grid-row:3}
   .library-publish-symbol{width:35px;height:35px}
 }
-
 
 /* Media is the primary Marketing path; URLs are an opt-in utility. */
 .library-website-secondary{
