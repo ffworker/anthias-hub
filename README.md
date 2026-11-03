@@ -8,7 +8,7 @@
 
 Manage screens, playlists, local media and reusable content in one web UI. Each Raspberry Pi runs its own **Anthias** player; the Hub talks to its REST API. No cloud account, database or central player service is required.
 
-**Status (November 2026): Feature-complete, pilot-validated, maintenance only.** The operator reports several weeks of stable real-device operation, including playlist/image/website changes verified on connected displays, schedules, and screen/Pi power controls. This is an **operator-confirmed pilot result**, not an independently audited or formally production-certified release. Further feature work is paused; changes should focus on confirmed bugs, security, compatibility and minor usability corrections. Before a fleet-wide rollout, complete the outstanding backup/restore, device onboarding and access-boundary checks in the [acceptance checklist](docs/pilot-acceptance.md). Do not expose the Hub or players' management APIs to the public internet.
+**Status (November 2026): Feature-complete · operator-validated pilot · maintenance only.** Weeks of real-device operation, playlist updates, schedules and screen/Pi controls have been confirmed by the operator. **Not yet formally production-certified**: finish the [backup/restore and fleet rollout checks](docs/pilot-acceptance.md). No new features planned; only confirmed bugs, security/compatibility updates and small UI refinements.
 
 ## Features
 
@@ -18,6 +18,12 @@ Manage screens, playlists, local media and reusable content in one web UI. Each 
 - **Media:** PNG/JPEG/WebP/MP4, sequential batch uploads (up to 20 files) and ZIP import. Up to **4 GiB per file**, and **4 GiB total extracted media per ZIP**, subject to disk capacity and proxy limits. See [media import](docs/marketing-bulk-import.md).
 - **Accounts:** Owner (IT + Marketing), IT, Marketing and Viewer. Marketing can edit content across **all** registered screens. Optional confirmed reboot/shutdown and experimental HDMI-CEC where supported.
 - **Single-theme UI:** Nordlicht design, desktop/mobile layouts, no additional frontend framework.
+
+## Everyday workflow
+
+- **Marketing:** [Short German user guide](docs/marketing-quickstart.md) — select a screen, edit its playlist, add media/websites and manage schedules.
+- **IT / rollout:** [Raspberry Pi onboarding checklist](docs/player-onboarding.md) — install, register, test on a real screen, document and hand over.
+- **Fallback:** Anthias plays each Pi's existing playlist and local schedule independently of the Hub. The Pi's native admin UI remains an **IT-only fallback**; direct client access may bypass Hub permissions. External websites (such as RSS2Slideshow) still require their own server.
 
 ## Quick start
 
@@ -71,7 +77,7 @@ certification. See [network access](docs/network-access.md) for TLS setup.
 
 | Guide | When to use it |
 | --- | --- |
-| [Network / Caddy HTTPS](docs/network-access.md) | LAN access, client CA trust, CSRF and TLS |
+| [Marketing – quick start (DE)](docs/marketing-quickstart.md) | Day-to-day playlists, library, RSS websites, schedules |\n| [New Pi / trainee checklist (DE)](docs/player-onboarding.md) | Standardize installations and hand over new screens |\n| [Network / Caddy HTTPS](docs/network-access.md) | LAN access, client CA trust, CSRF and TLS |
 | [Test-VM auto-deploy](docs/auto-deploy.md) | GHCR `:latest`, timer, rollback and manual Compose |
 | [New host and controlled releases](docs/reproducible-production.md) | Reproducible install, backups and approved images |
 | [IT administration](docs/IT_ADMIN_GUIDE.md) | Accounts, maintenance, Pi routes and recovery |
@@ -79,7 +85,7 @@ certification. See [network access](docs/network-access.md) for TLS setup.
 | [Shared schedules](docs/scheduling.md) | Device defaults, assignments and Anthias semantics |
 | [Media / ZIP import](docs/marketing-bulk-import.md) | Limits, storage checks and partial transfers |
 | [Acceptance checklist](docs/pilot-acceptance.md) | Real Pi testing and release readiness |
-| [Co-hosted staging](docs/cohosted-staging.md) | Optional separate RSS2Slideshow VM workflow |
+| [Co-hosted staging](docs/cohosted-staging.md) | Optional two-app test VM; independent RSS2Slideshow service |
 
 Also see [Security](SECURITY.md), [License](LICENSE) and [Changelog](CHANGELOG.md). The UI is in German; documentation is a mix of German and English.
 
