@@ -4,6 +4,14 @@ Use a spare Anthias Pi and a real connected monitor. Do not run destructive test
 
 **First-time Marketing usability test:** Print the [one-page Marketing practice checklist (PDF)](marketing-praxistest.pdf) for a colleague using a separate test Pi. Let the tester tick **Klappt** or **Unklar** for each task and jot down questions or requests without coaching. Collect the sheet alongside the technical acceptance evidence below. Use repeated stumbling points as input for later onboarding/crash courses; the sheet is not a substitute for this IT/production release gate.
 
+## 3 November 2026 — Operator-confirmed field operation
+
+The operator confirms that the running pilot has worked continuously for **several weeks**, with scheduled playback, physical display on/off and Raspberry Pi controls operating as expected. Playlist, image and website edits have been made repeatedly through the Hub and verified on actual connected screens. These are **observed operational pilot results**, not an independent audit; they do not automatically satisfy every edge-case test in the detailed checklist below.
+
+**Decision:** Functional pilot accepted / feature freeze. Existing features remain in maintenance mode while additional Pis are introduced incrementally. The Hub is a convenience/control layer; already deployed Anthias playlists and local schedules must continue working without it, with the individual Pi's native Anthias UI as the fallback. External websites such as RSS2Slideshow still require their own server to remain reachable.
+
+**Still open for formal production sign-off:** backup and restore exercises for both Hub and Pi content, workstation-to-Hub and Pi API network isolation checks, pinned deployment and rollback evidence, and controlled onboarding of the remaining Raspberry Pis. Keep the unchecked items below as explicit verification work; do not mark them done solely on the basis of these field observations.
+
 ## Colleague pilot handoff (not production approval)
 
 Keep this step outside the repository deployment: verify the colleague's **client → Hub** route and the **Hub/container → Anthias Pi API** route. Normally the browser should **not** need direct access to the Pi API/management UI; block that client-to-Pi path unless there is a separately authorized reason. The basic Compose pilot publishes Hub only on `127.0.0.1:8765`, so remote colleagues need an explicitly approved VPN/HTTPS reverse proxy or authorized tunnel rather than assuming a firewall rule alone makes it reachable. No firewall, SSH tunnel or reverse proxy is configured by this repo change.
