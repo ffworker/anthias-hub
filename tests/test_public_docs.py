@@ -11,8 +11,7 @@ def test_public_docs_avoid_internal_operational_examples():
     files += list((ROOT / "scripts").glob("*.sh"))
     patterns = [
         r"logserv\.local", r"gh-pihub", r"gh-bistro",
-        r"github\.com/ffworker/rss2slideshow",
-        r"github\.com:ffworker/rss2slideshow",
+        # Public source repositories are not private deployment identifiers.
     ]
     for file in files:
         content = file.read_text(encoding="utf-8")

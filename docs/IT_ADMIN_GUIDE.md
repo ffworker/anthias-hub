@@ -102,6 +102,8 @@ project and must not be restarted while servicing the Hub. See
 
 ## Players, schedules and troubleshooting
 
+For a new player or an apprentice-led replacement, follow the [step-by-step Pi onboarding checklist](player-onboarding.md) and sign off the physical display before disconnecting the old device. The direct Anthias management interface is reserved for trusted IT recovery; regular Marketing users should use the Hub because direct Pi access can bypass its role restrictions.
+
 - Register only permitted private player URLs; narrow
   `ANTHIAS_ALLOWED_CIDRS` to actual authorized device networks.
 - A removed device registration does not erase native Pi assets.
