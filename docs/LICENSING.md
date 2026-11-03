@@ -29,7 +29,7 @@ Anthias Hub is a separately authored project released under MIT; preserve the co
 - [ ] Retain third-party notices for redistributed libraries/images and comply with their actual versions' terms.
 - [ ] Distinguish the upstream Anthias player (GPLv2/commercial) from the independent REST client (MIT).
 - [ ] No official Anthias/Screenly logo, trademark implication or misleading endorsement.
-- [ ] Disclose that the app is a limited **self-hosted internal pilot**, not a vendor-supported SaaS.
+- [ ] Disclose the actual status: **feature-complete, operator-validated self-hosted pilot, not formally production-certified**; it is not a vendor-supported SaaS.
 - [ ] If the scope changes to distribution of modified player binaries, get a specific license review.
 
 The project is technically separable from any particular website or news kiosk. It needs only reachable Anthias-compatible players. A third-party website (newsfeed, menu, dashboard) can be placed in Anthias as a normal URL; no application-specific integration is required.
