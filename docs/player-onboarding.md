@@ -11,7 +11,7 @@
 
 ## 2. Anthias aufsetzen
 
-**Empfohlener Standard:** Raspberry Pi OS Lite **64-Bit** auf dafür unterstützter Hardware installieren und Anthias über das [offizielle Installationsverfahren](https://anthias.screenly.io/docs/install/) einrichten. Für ein reines Anthias-Gerät ist alternativ das fertige Anthias-Image über Raspberry Pi Imager möglich. **Die Methoden nicht mischen**: fertige Images und Installationen auf Raspberry Pi OS Lite haben unterschiedliche Updatewege.
+**Empfohlener Standard:** Raspberry Pi OS Lite **64-Bit** auf dafür unterstützter Hardware installieren und Anthias über das [offizielle Installationsverfahren](https://anthias.screenly.io/docs/install/) einrichten. **Pi 4/5 bevorzugen**; Pi 3 B/B+ ist mit 64-Bit unterstützt, aber bei anspruchsvollen Videos eingeschränkter. Für ältere Pi-Modelle die [offiziell passende Image-/Architekturvariante](https://anthias.screenly.io/get-started/) prüfen, statt pauschal 64-Bit zu installieren. Für ein reines Anthias-Gerät ist das fertige Anthias-Image über Raspberry Pi Imager eine Alternative. **Die Methoden nicht mischen**: fertige Images und Installationen auf Raspberry Pi OS Lite haben unterschiedliche Updatewege.
 
 Für die bewusst gewählte Lite-/Skript-Variante:
 
