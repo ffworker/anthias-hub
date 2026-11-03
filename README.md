@@ -8,7 +8,7 @@
 
 Manage screens, playlists, local media and reusable content in one web UI. Each Raspberry Pi runs its own **Anthias** player; the Hub talks to its REST API. No cloud account, database or central player service is required.
 
-**Status:** Actively developed, **not production-certified**. Automated tests do not replace testing uploads, schedules and playback on real Pi hardware. Do not expose the Hub or the players' management APIs to the public internet.
+**Status (November 2026): Feature-complete, pilot-validated, maintenance only.** The operator reports several weeks of stable real-device operation, including playlist/image/website changes verified on connected displays, schedules, and screen/Pi power controls. This is an **operator-confirmed pilot result**, not an independently audited or formally production-certified release. Further feature work is paused; changes should focus on confirmed bugs, security, compatibility and minor usability corrections. Before a fleet-wide rollout, complete the outstanding backup/restore, device onboarding and access-boundary checks in the [acceptance checklist](docs/pilot-acceptance.md). Do not expose the Hub or players' management APIs to the public internet.
 
 ## Features
 
