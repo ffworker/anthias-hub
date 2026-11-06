@@ -101,6 +101,7 @@
 <section class="card library-panel">
   <details>
     <summary>Netzwerkordner als Medienquelle (IT)</summary>
+    <p><a href="{{ url_for('media_sources_page') }}" class="button">Medienquellen und SMB-Pfade verwalten</a></p>
     <p class="muted">Nur die Kennung eines vom Administrator unter /sources eingebundenen Ordners eingeben. Neue Dateien erscheinen automatisch in dieser Hub-Vorlage, nicht sofort auf dem Pi.</p>
     <form method="post" action="{{ url_for('library_folder_source', template_id=template.id) }}">
       <input type="hidden" name="csrf" value="{{ csrf() }}">

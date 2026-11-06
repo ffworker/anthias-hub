@@ -19,6 +19,7 @@
     <nav class="site-nav" aria-label="Hauptnavigation">
       <a class="site-nav-link {{ 'is-active' if request.path == '/' or request.path.startswith('/devices/') else '' }}" {% if request.path == '/' or request.path.startswith('/devices/') %}aria-current="page"{% endif %} href="{{ url_for('dashboard') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg> Bildschirme</a>
       <a class="site-nav-link {{ 'is-active' if request.path.startswith('/library') else '' }}" {% if request.path.startswith('/library') %}aria-current="page"{% endif %} href="{{ url_for('library_index') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Bibliothek</a>
+      {% if logged_user.role in ('it', 'owner') %}<a class="site-nav-link {{ 'is-active' if request.path.startswith('/media-sources') else '' }}" {% if request.path.startswith('/media-sources') %}aria-current="page"{% endif %} href="{{ url_for('media_sources_page') }}">Medienquellen</a>{% endif %}
     </nav>
     <div class="user site-user">
       <span class="user-avatar" aria-hidden="true">{{ logged_user.username[0]|upper }}</span>

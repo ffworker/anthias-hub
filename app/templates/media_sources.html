@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Medienquellen · IT · Anthias Hub{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">{% endblock %}
+{% block content %}
+<nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('library_index') }}">Bibliothek</a><span aria-hidden="true">›</span><span>Medienquellen (IT)</span></nav>
+<section class="library-intro">
+  <p class="eyebrow">IT-ADMINISTRATION · NETZWERKMEDIEN</p>
+  <h1>SMB-Medienquellen</h1>
+  <p class="muted">Hier verwaltest du, welcher <strong>SMB-Pfad</strong> hinter einem Ordneralias steckt. Jede Quelle kann danach in der Bibliothek einer Playlist und einem oder mehreren Pis zugeordnet werden.</p>
+  <p class="muted"><strong>Sicherheit:</strong> Das UI speichert ausschließlich Pfade, keine SMB-Passwörter. Der separate Host-Mountdienst darf nur vorher von IT freigegebene Server/Freigaben verwenden und mountet schreibgeschützt. Eine geänderte aktive Freigabe wird niemals automatisch ausgehängt.</p>
+</section>
+<section class="card library-panel media-sources-admin">
+  <h2>Neue Medienquelle hinzufügen</h2>
+  <form method="post" action="{{ url_for('media_sources_save') }}" class="media-source-form">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <label>Ordnerkennung (für die Playlist)<input name="alias" pattern="[a-z0-9][a-z0-9_-]{0,39}" maxlength="40" placeholder="z. B. empfang" required></label>
+    <label>SMB-Pfad<input name="unc" maxlength="650" placeholder="//192.168.1.10/marketing/Bildschirme/Empfang" required></label>
+    <button type="submit" class="primary">Quelle speichern</button>
+  </form>
+  <p class="muted">Die Ordnerkennung ist dauerhaft. Der SMB-Pfad kann jederzeit bearbeitet werden. Ein neuer Server oder eine neue Freigabe benötigt zuerst die Freigabe im geschützten Host-Allowlist-Dokument.</p>
+</section>
+<section class="media-source-overview" aria-labelledby="sources-title">
+  <h2 id="sources-title">Konfigurierte Quellen <span class="count">{{ sources|length }}</span></h2>
+  {% for source in sources %}
+  <article class="card media-source-card">
+    <div class="media-source-top">
+      <h3>{{ source.alias }}</h3>
+      <span class="pill {{ 'ok' if source.status in ('mounted', 'already-mounted') else 'off' }}">
+        {% if source.status in ('mounted','already-mounted') %}Mount vom Host bestätigt
+        {% elif source.status == 'conflict' %}Anderer Pfad bereits gemountet
+        {% elif source.status == 'blocked' %}Server/Freigabe nicht freigegeben
+        {% elif source.status == 'error' %}Mount fehlgeschlagen
+        {% else %}Host-Mount noch ausstehend{% endif %}
+      </span>
+    </div>
+    <form method="post" action="{{ url_for('media_sources_save') }}" class="media-source-form">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <input type="hidden" name="alias" value="{{ source.alias }}">
+      <label>Gespeicherter SMB-Pfad<input name="unc" value="{{ source.unc }}" maxlength="650" required></label>
+      <button type="submit">Änderung speichern</button>
+    </form>
+    <p class="muted">Auf dem Pi bleibt alles unverändert, bis der Abgleich erfolgreich ist. Bei geändertem aktivem Mount bitte den kontrollierten Host-Wechsel durchführen.</p>
+  </article>
+  {% else %}
+  <p class="card library-empty">Noch keine SMB-Quellen direkt über das UI konfiguriert.</p>
+  {% endfor %}
+</section>
+{% if unmanaged %}
+<section class="media-source-overview" aria-labelledby="unmanaged-title">
+  <h2 id="unmanaged-title">Bereits am Host eingebundene Ordner</h2>
+  <p class="muted">Diese Aliase sind verfügbar, wurden aber noch nicht über die neue Verwaltung erfasst. Du kannst ihren vollständigen Pfad oben mit derselben Ordnerkennung registrieren.</p>
+  {% for source in unmanaged %}
+  <article class="card media-source-card">
+    <h3>{{ source.alias }}</h3>
+    <p class="muted">Erkannte CIFS-Quelle: <code>{{ source.observed if source.observed else 'Nicht eindeutig aus dem Container auslesbar' }}</code></p>
+    <p class="muted">Der angezeigte CIFS-Wert kann nur den Freigabestamm statt des vollständigen Unterordners enthalten. Für die genaue Zuordnung auf dem Host <code>findmnt -M /srv/anthias-sources/{{ source.alias }} -o SOURCE,FSTYPE</code> prüfen.</p>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

@@ -48,6 +48,8 @@ def create_app(config=None):
         AUDIT_FILE=os.environ.get('AUDIT_FILE', '/data/audit.jsonl'),
         LIBRARY_DIR=os.environ.get('LIBRARY_DIR', '/data/library'),
         SCHEDULES_FILE=os.environ.get('SCHEDULES_FILE', '/data/schedules.json'),
+        MEDIA_SOURCES_FILE=os.environ.get('MEDIA_SOURCES_FILE', '/data/media-sources.json'),
+        MEDIA_MOUNT_STATUS_FILE=os.environ.get('MEDIA_MOUNT_STATUS_FILE', '/sources/.mount-status.json'),
         SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax',
         SESSION_COOKIE_SECURE=os.environ.get('COOKIE_SECURE', '1') == '1',
         PERMANENT_SESSION_LIFETIME=60 * 60 * 8,
@@ -171,6 +173,42 @@ def create_app(config=None):
         """A conscious per-request acknowledgement, never a persistent bypass."""
         return request.form.get('ignore_storage_check') == 'manual-confirmed'
 
+
+    @app.get('/media-sources')
+    @login_required('it')
+    def media_sources_page():
+        from .folder_sync import available_sources
+        from .media_sources import SourceError, load_sources, mount_statuses, observed_mount_source
+        try:
+            registered = load_sources(app.config['MEDIA_SOURCES_FILE'])
+            states = mount_statuses(app.config['MEDIA_MOUNT_STATUS_FILE'], app.config['MEDIA_SOURCES_FILE'])
+            aliases = available_sources()
+            for source in registered:
+                source['status'] = states.get(source['alias'], 'pending')
+            unmanaged = [{'alias': alias, 'observed': observed_mount_source(alias)}
+                         for alias in sorted(set(aliases) - {entry['alias'] for entry in registered})]
+            return render_template('media_sources.html', sources=registered,
+                                   unmanaged=unmanaged)
+        except SourceError as exc:
+            flash(str(exc), 'error')
+            return render_template('media_sources.html', sources=[], unmanaged=[])
+
+    @app.post('/media-sources')
+    @login_required('it')
+    def media_sources_save():
+        from .media_sources import SourceError, save_source
+        try:
+            alias = request.form.get('alias', '')
+            unc = request.form.get('unc', '')
+            result = save_source(alias, unc, path=app.config['MEDIA_SOURCES_FILE'])
+            audit('media-source.' + result, asset_id=alias.strip().lower())
+            flash('SMB-Quelle gespeichert. Der Root-Mountdienst prüft die Freigabe '
+                  'und bindet neue Ordner automatisch ein; bei einem geänderten '
+                  'bereits eingebundenen Pfad ist ein kontrollierter Host-Wechsel nötig.',
+                  'success')
+        except (SourceError, OSError) as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('media_sources_page'))
 
     @app.get('/library')
     @login_required()

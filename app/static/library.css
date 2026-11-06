@@ -478,3 +478,19 @@
 
 .folder-workflow-status{border-top:1px solid var(--border);margin-top:12px;padding-top:10px;display:flex;gap:9px 15px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .folder-workflow-status strong{color:var(--ink);font-weight:700}
+
+/* IT-only SMB source administration. */
+.media-sources-admin{margin-bottom:22px}
+.media-source-overview{margin:25px 0;display:grid;gap:12px}
+.media-source-overview h2{margin:0}
+.media-source-card{padding:18px;display:grid;gap:12px}
+.media-source-card h3{margin:0;font-size:17px}
+.media-source-card .muted{margin:0}
+.media-source-card code{overflow-wrap:anywhere}
+.media-source-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.media-source-form{display:grid;gap:12px;grid-template-columns:minmax(180px,1fr) minmax(260px,2fr) auto;align-items:end}
+.media-source-card .media-source-form{grid-template-columns:minmax(260px,1fr) auto}
+.media-source-form label{display:grid;gap:6px;font-size:12px;font-weight:650}
+.media-source-form input{min-width:0;width:100%;min-height:41px;border:1px solid var(--border);border-radius:9px;background:var(--field);padding:9px;color:var(--ink)}
+.media-source-form button{min-height:41px}
+@media(max-width:820px){.media-source-form,.media-source-card .media-source-form{grid-template-columns:1fr}}

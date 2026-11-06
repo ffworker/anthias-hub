@@ -12,6 +12,7 @@
   <p class="eyebrow">DEIN STUDIO · GESPEICHERTE INHALTE</p>
   <h1>Playlist-Bibliothek</h1>
   <p class="muted">Für Netzwerk-Playlists legt Marketing Bilder und Videos weiterhin im gewohnten Ordner ab. Hier werden Anzeigedauer und Inhalte verwaltet. IT verbindet Ordner und Bildschirme.</p>
+  {% if logged_user.role in ('owner', 'it') %}<a href="{{ url_for('media_sources_page') }}" class="button">Netzwerkordner / SMB-Pfade verwalten</a>{% endif %}
 </section>
 <div class="library-grid">
   <section aria-labelledby="library-list-title">
