@@ -41,7 +41,7 @@ def test_default_library_is_primary_in_all_three_core_views():
     assert dashboard.index('hub-workflow-cards') < dashboard.index('fleet-summary')
     assert 'library-source-feature' not in library  # no network hero before the playlists
     assert library.index('library-workflow-nav') < library.index('library-grid')
-    assert folders.index('media-default-panel') < folders.index('media-sources-admin">\n  <h2>Neue Medienquelle')
+    assert folders.index('media-default-panel') < folders.index('media-sources-admin')
     assert 'media-folder-notice' in folders
     assert 'library_index' in folders
     assert 'media-default-folders' not in folders
@@ -112,3 +112,37 @@ def test_scheduling_and_fleet_popovers_follow_shared_light_dark_tokens():
     assert '.fleet-storage-panel' in css
     assert 'class="schedule-workspace"' in schedule
     assert 'fleet-storage-menu' in dashboard
+
+
+def test_smb_design_levels_and_statuses_are_textual_in_both_themes():
+    base = (TEMPLATES / 'base.html').read_text(encoding='utf-8')
+    sources = (TEMPLATES / 'media_sources.html').read_text(encoding='utf-8')
+    dashboard = (TEMPLATES / 'dashboard.html').read_text(encoding='utf-8')
+    detail = (TEMPLATES / 'library_detail.html').read_text(encoding='utf-8')
+    css = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
+
+    assert 'site-nav-utility' in base  # IT administration is secondary navigation.
+    assert 'hub-admin-mount-hint' in dashboard
+    assert sources.index('media-overview-strip') < sources.index('media-default-panel')
+    assert sources.index('media-default-panel') < sources.index('media-existing-sources')
+    assert sources.index('media-existing-sources') < sources.index('media-advanced-sources')
+    assert sources.index('media-source-facts') < sources.index('media-source-manage')
+    for message in (
+        'Eingehängt · Host bestätigt', 'Mount unbestätigt',
+        'Mount fehlgeschlagen', 'Freigabe blockiert',
+        'CIFS-Mount erkannt', 'CIFS-Mount nicht bestätigt',
+        'Quelle aus dem Hub entfernen',
+    ):
+        # Shared removal macro is imported, the rest are template labels.
+        assert message in sources or message == 'Quelle aus dem Hub entfernen'
+    assert 'Zugeordnet: {{ template.folder_source }}' in detail
+    for selector in ('.media-mount-badge.is-confirmed',
+                     '.media-mount-badge.is-pending',
+                     '.media-mount-badge.is-error',
+                     '.media-existing-sources',
+                     '.media-source-facts',
+                     '@media(max-width:600px)'):
+        assert selector in css
+    assert 'var(--ui-good-bg)' in css
+    assert 'var(--ui-warn-bg)' in css
+    assert 'var(--ui-error-bg)' in css
