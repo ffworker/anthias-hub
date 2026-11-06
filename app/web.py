@@ -177,7 +177,7 @@ def create_app(config=None):
     @app.get('/media-sources')
     @login_required('it')
     def media_sources_page():
-        from .folder_sync import available_sources
+        from .folder_sync import available_sources, default_library_folders
         from .media_sources import SourceError, load_sources, mount_statuses, observed_mount_source
         try:
             registered = load_sources(app.config['MEDIA_SOURCES_FILE'])
@@ -187,11 +187,21 @@ def create_app(config=None):
                 source['status'] = states.get(source['alias'], 'pending')
             unmanaged = [{'alias': alias, 'observed': observed_mount_source(alias)}
                          for alias in sorted(set(aliases) - {entry['alias'] for entry in registered})]
+            assigned = {t.get('folder_source'): t for t in library().list()
+                        if t.get('folder_source')}
+            default_folders = [
+                {'name': name, 'source': 'default/' + name,
+                 'template': assigned.get('default/' + name)}
+                for name in default_library_folders()
+            ]
+            default_source = next((entry for entry in registered if entry['alias'] == 'default'), None)
             return render_template('media_sources.html', sources=registered,
-                                   unmanaged=unmanaged)
+                                   unmanaged=unmanaged, default_folders=default_folders,
+                                   default_source=default_source)
         except SourceError as exc:
             flash(str(exc), 'error')
-            return render_template('media_sources.html', sources=[], unmanaged=[])
+            return render_template('media_sources.html', sources=[], unmanaged=[],
+                                   default_folders=[], default_source=None)
 
     @app.post('/media-sources')
     @login_required('it')
@@ -209,6 +219,30 @@ def create_app(config=None):
         except (SourceError, OSError) as exc:
             flash(str(exc), 'error')
         return redirect(url_for('media_sources_page'))
+
+    @app.post('/media-sources/folders/use')
+    @login_required('it')
+    def media_sources_use_folder():
+        """Make one real child of the default SMB root its own Hub playlist."""
+        from .folder_sync import default_library_folders
+        name = request.form.get('folder', '')
+        if name not in default_library_folders():
+            flash('Unterordner fehlt oder ist nicht freigegeben.', 'error')
+            return redirect(url_for('media_sources_page'))
+        selected = 'default/' + name
+        store = library()
+        for template in store.list():
+            if template.get('folder_source') == selected:
+                return redirect(url_for('library_detail', template_id=template['id']))
+        try:
+            template = store.create(name[:100])
+            store.set_folder_source(template['id'], selected)
+            audit('library.default-folder-created', asset_id=template['id'])
+            flash('Playlist für diesen Netzwerkordner angelegt. Jetzt die Ziel-Pis wählen.', 'success')
+            return redirect(url_for('library_detail', template_id=template['id']))
+        except LibraryError as exc:
+            flash(str(exc), 'error')
+            return redirect(url_for('media_sources_page'))
 
     @app.get('/library')
     @login_required()
