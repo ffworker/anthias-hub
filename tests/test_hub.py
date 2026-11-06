@@ -147,7 +147,7 @@ def test_nordlicht_navigation_and_playlist_forms(env):
     login(client, 'marketing')
     page = client.get('/devices/lab').data.decode('utf-8')
     assert page.count('data-theme-choice=') == 0
-    assert 'class="site-nav-link is-active"' in page
+    assert 'class="site-nav-link site-nav-primary is-active"' in page
     assert 'aria-current="page"' in page
     assert 'data-library-template' not in page
     assert 'data-add-mode="website"' in page and 'data-add-mode="media"' in page
@@ -933,7 +933,7 @@ def test_library_publish_action_is_above_media_list_and_not_hidden_in_sidebar(en
     page = client.get(f"/library/{template['id']}").data.decode('utf-8')
     assert 'library-publish-hero' in page
     assert 'id="library-publish-heading"' in page
-    assert page.index('id="library-publish-heading"') < page.index('id="items-title"')
+    assert page.index('id="items-title"') < page.index('id="library-publish-heading"')
     assert page.index('Inhalte und Wiedergabereihenfolge') < page.index('Vorlage zur Playlist hinzufügen')
     assert page.count(f'/library/{template["id"]}/append-to-device') == 1
     assert 'name="device" required' in page
@@ -2050,7 +2050,7 @@ def test_folder_backed_marketing_view_is_duration_first_and_it_has_setup(env, mo
 
     login(client, 'it')
     it = client.get(f'/library/{ident}').get_data(as_text=True)
-    assert 'RSS2Slideshow / Webseite zur Playlist hinzufügen' in it
+    assert 'Webseite / RSS hinzufügen' in it
     assert 'name="folder_source"' in it
     assert 'value="bistro" selected' in it
     assert 'value="empfang"' in it
