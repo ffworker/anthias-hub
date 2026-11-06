@@ -386,10 +386,10 @@ html.fleet-popovers-ready .fleet-device-actions>details>.fleet-settings-content 
 .media-lightbox-dialog,[role="dialog"].media-preview-modal{
   color:var(--ui-fg)
 }
-:where(.playlist-workspace,.library-grid,.fleet-workspace,.schedule-workspace) *{min-width:0}
+:where(.playlist-workspace,.library-grid,.fleet-workspace,.schedule-workspace) :is(article,section,aside,.card){min-width:0}
 :where(.playlist-workspace,.library-grid,.fleet-workspace,.schedule-workspace) input[type="checkbox"]{min-width:17px}
 @media(max-width:990px){
-  .wrap{width:min(100% - 40px,1320px)}
+  .wrap{width:min(calc(100% - 40px),1320px)}
   .site-header{gap:12px}
   .site-nav{order:3;width:100%;flex-basis:100%;justify-content:flex-start;border-top:1px solid #45463f;gap:3px}
   .site-user{margin-left:auto}
