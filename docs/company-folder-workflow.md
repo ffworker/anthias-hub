@@ -24,8 +24,10 @@ change devices, network shares or auto-publication targets. Viewer is read-only.
    `/srv/anthias-sources/` (e.g. `bistro`, `reception`).
 2. IT ensures both the Hub web container and the optional importer see that
    directory at `/sources` (read-only).
-3. IT opens a Hub template, selects an available folder alias (dropdown), and
-   maps one or more registered test Pis.
+3. IT chooses an available network folder while creating a playlist in the
+   library and assigns the target Pis. Alternatively, for one screen, use
+   **Screen → Playlist → Add Content → Network Folder** to bind an existing
+   share without uploading media. This does not enable automatic publishing.
 4. Marketing continues saving images and videos in the share. The importer
    scans every 300 seconds by default and shows a heartbeat in the template.
 5. Marketing opens the **same template**, edits each image's duration, and
