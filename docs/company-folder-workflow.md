@@ -20,8 +20,11 @@ change devices, network shares or auto-publication targets. Viewer is read-only.
 
 ## User journey
 
-1. IT mounts each SMB share read-only on the Hub host, under an alias in
-   `/srv/anthias-sources/` (e.g. `bistro`, `reception`).
+1. **Preferred:** IT mounts one approved parent SMB directory read-only at
+   `/srv/anthias-sources/default`; its direct subfolders become independent
+   sources such as `default/Screen-A`. Multiple individual CIFS mounts are
+   optional legacy compatibility, not necessary for this workflow. See the
+   [single-root setup](single-root-smb-setup.md).
 2. IT ensures both the Hub web container and the optional importer see that
    directory at `/sources` (read-only).
 3. IT chooses an available network folder while creating a playlist in the
@@ -70,8 +73,11 @@ Do not duplicate the RSS service inside Anthias Hub.
 
 ## Prototype acceptance checklist
 
-- [ ] Verify Mount credentials and root directory on Hub host, read-only.
-- [ ] Hub web dropdown lists only valid mounted aliases.
+- [ ] Verify the single SMB parent at `/srv/anthias-sources/default` is a real
+      read-only mount, **not only a directory**. Credentials and allowlist
+      remain host-private.
+- [ ] Hub web dropdown lists the expected direct `default/<subfolder>` sources.
+      A registered UNC is not proof of a verified mounted source.
 - [ ] Import worker runs and reports recent heartbeat.
 - [ ] Existing SMB media appears in Hub template; no changes on the Bistro Pi.
 - [ ] Marketing image timing survives two replacements of the SMB source.
@@ -92,5 +98,6 @@ Do not duplicate the RSS service inside Anthias Hub.
 3. Per-screen observability and operator retry controls after partial writes.
 4. Real Pi acceptance and repeatable rollout instructions for additional screens.
 
-Keep the existing Binary Emotions SD card running until all acceptance items
-are complete. Never apply the feature to production just because main passed CI.
+For any replacement screen, retain its previous boot media as a rollback path
+until the Anthias display is accepted. Never apply new folder publishing to a
+production screen just because CI passed.
