@@ -2125,3 +2125,60 @@ def test_only_it_or_owner_can_change_smb_sources(env):
     assert client.post('/media-sources', data={
         'csrf': token(client), 'alias': 'screen',
         'unc': '//10.11.0.5/files$/Screen'}).status_code == 302
+
+
+def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monkeypatch):
+    app, client, tmp = env
+    from app.library import Library
+    root = Path(tmp) / 'sources'
+    bistro = root / 'default' / 'GH-Wie4-BistroConnect'
+    bistro.mkdir(parents=True)
+    (bistro / 'banner.png').write_bytes(b'\x89PNG\r\n\x1a\n' + b'pic')
+    (root / 'oldbistro').mkdir()
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    app.config['MEDIA_SOURCES_FILE'] = str(Path(tmp) / 'media-sources.json')
+    app.config['MEDIA_MOUNT_STATUS_FILE'] = str(Path(tmp) / 'status.json')
+
+    login(client, 'it')
+    dash = client.get('/').get_data(as_text=True)
+    assert 'Netzwerkordner &amp; Playlists zuweisen' in dash
+    assert 'Ordner &amp; Quellen' in dash
+    assert 'product-ui.css' in dash
+    assert 'data-product-theme-toggle' in dash
+    page = client.get('/media-sources')
+    assert page.status_code == 200
+    html = page.get_data(as_text=True)
+    assert 'Ein Netzwerkordner. Alle Bildschirme.' in html
+    assert 'GH-Wie4-BistroConnect' in html
+    assert 'Als Playlist verwenden' in html
+    assert 'name="alias" value="default"' in html
+    assert 'Stammverzeichnis speichern' in html
+
+    target = '/media-sources/folders/use'
+    bad = client.post(target, data={'csrf': token(client), 'folder': '../escape'})
+    assert bad.status_code == 302
+    assert Library(app.config['LIBRARY_DIR']).list() == []
+
+    result = client.post(target, data={'csrf': token(client),
+                                       'folder': 'GH-Wie4-BistroConnect'})
+    assert result.status_code == 302
+    store = Library(app.config['LIBRARY_DIR'])
+    templates = store.list()
+    assert len(templates) == 1
+    assert templates[0]['folder_source'] == 'default/GH-Wie4-BistroConnect'
+    assert result.location.endswith('/library/' + templates[0]['id'])
+
+    same = client.post(target, data={'csrf': token(client),
+                                     'folder': 'GH-Wie4-BistroConnect'})
+    assert same.status_code == 302
+    assert len(store.list()) == 1
+    html = client.get(result.location).get_data(as_text=True)
+    assert 'Standardbibliothek' in html
+    assert 'GH-Wie4-BistroConnect' in html
+
+    login(client, 'marketing')
+    assert client.post(target, data={'csrf': token(client),
+                                     'folder': 'GH-Wie4-BistroConnect'}).status_code == 403
+    assert 'Ordner &amp; Quellen' not in client.get('/').get_data(as_text=True)
+    assert 'Playlist-Bibliothek öffnen' in client.get('/').get_data(as_text=True)
