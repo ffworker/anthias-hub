@@ -92,8 +92,15 @@ class Library:
         with _lock:
             collection = self.get(ident)
             if alias:
+                previous_alias = collection.get('folder_source') or collection.get('last_folder_source')
+                has_imports = any(i.get('source_file') for i in collection['items'])
+                if has_imports and previous_alias != alias:
+                    raise LibraryError('Quelle enthält bereits importierte Medien. Für einen anderen Ordner bitte eine neue Vorlage erstellen.')
                 collection['folder_source'] = alias
+                collection['last_folder_source'] = alias
             else:
+                if collection.get('folder_source'):
+                    collection['last_folder_source'] = collection['folder_source']
                 collection.pop('folder_source', None)
                 collection['auto_devices'] = []  # explicit re-enablement required
             self._save(collection)
