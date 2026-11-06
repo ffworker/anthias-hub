@@ -2376,3 +2376,49 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
         assert 'data-product-theme-toggle' in text, path
         assert 'class="site-main"' not in text or 'id="hauptinhalt"' in text
     assert client.get('/static/ui-system.css').status_code == 200
+
+
+def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env):
+    app, client, tmp = env
+    from app.library import Library
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    tpl = Library(app.config['LIBRARY_DIR']).create('Testvorlage')
+
+    first = client.get('/login')
+    assert first.status_code == 200
+    logged = client.post('/login', data={
+        'csrf': token(client), 'username': 'it', 'password': 'safe-password-123'
+    })
+    assert logged.status_code == 302
+    assert logged.location == '/'  # dashboard/screens, never SMB admin
+
+    page = client.get('/').get_data(as_text=True)
+    assert page.index('Bildschirme</a>') < page.index('Playlists</a>') < page.index('Ordner &amp; Quellen</a>')
+    assert page.index('01 / BILDSCHIRME') < page.index('02 / PLAYLISTS') < page.index('03 / IT')
+    assert 'Zu meinen Bildschirmen' in page
+    assert 'href="#fleet-devices"' in page
+
+    libpage = client.get('/library').get_data(as_text=True)
+    assert libpage.index('01 · Vorlagen ansehen') < libpage.index('02 · Neue Playlist') < libpage.index('03 · ZIP-Backup')
+    assert libpage.count('library-action-disclosure') >= 2
+    assert 'id="new-playlist" open' in libpage
+    assert 'id="backup-zip" open' not in libpage
+
+    detail = client.get('/library/' + tpl['id']).get_data(as_text=True)
+    order = ['id="items-title"', 'Netzwerkquelle &amp; Zielbildschirme',
+             'Einzeldatei hinzufügen', 'ZIP / mehrere Dateien importieren',
+             'Webseite / RSS hinzufügen', 'id="playlist-anwenden"']
+    indices = [detail.index(x) for x in order]
+    assert indices == sorted(indices)
+    assert 'Keine Netzwerkquelle · optional mit Ordner verbinden (IT)' in detail
+    assert 'class="library-action-chevron"' in detail
+    assert 'id="network-settings" open' not in detail
+    assert FakeAnthias.changes == []
+
+    client.post('/logout', data={'csrf': token(client)})
+    login(client, 'marketing')
+    marketing = client.get('/library/' + tpl['id']).get_data(as_text=True)
+    assert 'id="network-settings"' not in marketing
+    assert 'Einzeldatei hinzufügen' in marketing
+    assert 'ZIP / mehrere Dateien importieren' in marketing
+    assert 'Vorlage zur Playlist hinzufügen' in marketing
