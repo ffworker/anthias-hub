@@ -787,7 +787,7 @@ def create_app(config=None):
         storage = None
         storage_reason = 'Speicher wird geprüft …' if not error else None
         templates = []
-        if not error and current_user()['role'] in ('marketing', 'owner'):
+        if not error and current_user()['role'] in ('marketing', 'owner', 'it'):
             try:
                 templates = library().list()
             except LibraryError:
@@ -808,6 +808,8 @@ def create_app(config=None):
                     and asset['play_time_to'].endswith(':00') else 'choose'
             )
         return render_template('playlist.html', device=device, assets=assets,
+                               folder_templates=[t for t in templates if t.get('folder_source')
+                                                 and device_id in t.get('auto_devices', [])],
                                library_templates=templates,
                                library_items_available=any(t.get('items') for t in templates),
                                schedule_profiles=schedule_profiles,
