@@ -1,5 +1,6 @@
 """IT-editable SMB source registry. No passwords or mount privileges in Flask."""
 import ipaddress
+import hashlib
 import json
 import os
 import re
@@ -129,7 +130,17 @@ def mount_statuses(path=None):
         statuses = doc.get('sources')
         if not isinstance(statuses, dict):
             return {}
-        return {str(k): str(v) for k, v in statuses.items()
-                if ALIAS.fullmatch(str(k)) and v in ('mounted', 'already-mounted', 'blocked', 'pending', 'conflict', 'error')}
+        sources = {row['alias']: row['unc'] for row in load_sources()}
+        result = {}
+        for key, value in statuses.items():
+            if not ALIAS.fullmatch(str(key)) or key not in sources or not isinstance(value, dict):
+                continue
+            expected = hashlib.sha256(sources[key].encode('utf-8')).hexdigest()
+            state = value.get('state', 'pending')
+            if value.get('fingerprint') != expected:
+                state = 'pending'
+            if state in ('mounted', 'already-mounted', 'blocked', 'pending', 'conflict', 'error'):
+                result[key] = state
+        return result
     except (OSError, ValueError, TypeError, AttributeError):
         return {}
