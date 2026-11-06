@@ -250,13 +250,23 @@ def create_app(config=None):
     @app.get('/library')
     @login_required()
     def library_index():
-        return render_template('library.html', templates=library().list())
+        from .folder_sync import available_sources
+        return render_template('library.html', templates=library().list(),
+                               folder_sources=available_sources())
 
     @app.post('/library')
     @login_required('marketing')
     def library_create():
         try:
+            source = request.form.get('folder_source', '').strip()
+            if source:
+                if current_user()['role'] not in ('it', 'owner'):
+                    abort(403)
+                from .folder_sync import source_directory
+                source_directory(source)  # Validate before the new template is created.
             item = library().create(request.form.get('name', ''))
+            if source:
+                library().set_folder_source(item['id'], source)
             audit('library.create', asset_id=item['id'])
             return redirect(url_for('library_detail', template_id=item['id']))
         except LibraryError as exc:
@@ -884,9 +894,11 @@ def create_app(config=None):
                     and asset['play_time_from'].endswith(':00')
                     and asset['play_time_to'].endswith(':00') else 'choose'
             )
+        folder_templates = [t for t in templates if t.get('folder_source')
+                            and device_id in t.get('auto_devices', [])]
         return render_template('playlist.html', device=device, assets=assets,
-                               folder_templates=[t for t in templates if t.get('folder_source')
-                                                 and device_id in t.get('auto_devices', [])],
+                               folder_templates=folder_templates,
+                               folder_managed=bool(folder_templates),
                                library_templates=templates,
                                library_items_available=any(t.get('items') for t in templates),
                                schedule_profiles=schedule_profiles,
