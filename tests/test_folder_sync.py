@@ -91,3 +91,66 @@ def test_mount_guard_prevents_empty_unmounted_folder_being_seen_as_healthy(tmp_p
         source_directory('bistro')
     monkeypatch.setattr('app.folder_sync.os.path.ismount', lambda path: True)
     assert source_directory('bistro') == root / 'bistro'
+
+
+def test_default_library_discovers_only_safe_direct_children(tmp_path, monkeypatch):
+    from app.folder_sync import available_sources, default_library_folders
+    root = tmp_path / 'sources'
+    default = root / 'default'
+    default.mkdir(parents=True)
+    (default / 'GH-Wie4-BistroConnect').mkdir()
+    (default / 'Empfang Nord').mkdir()
+    (default / '.private').mkdir()
+    (default / 'hidden.txt').write_text('not a directory')
+    outside = tmp_path / 'outside'
+    outside.mkdir()
+    (default / 'linked').symlink_to(outside, target_is_directory=True)
+    (root / 'oldbistro').mkdir()
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+
+    assert default_library_folders() == ['Empfang Nord', 'GH-Wie4-BistroConnect']
+    assert available_sources() == [
+        'oldbistro', 'default/Empfang Nord', 'default/GH-Wie4-BistroConnect'
+    ]
+    assert source_directory('default/Empfang Nord') == default / 'Empfang Nord'
+    for bad in ('default/../outside', 'default/link', 'default/.private',
+                'default/linked', 'default/Empfang Nord/secret',
+                'default/../../etc', 'default//etc', 'default/'):
+        with pytest.raises(LibraryError):
+            source_directory(bad)
+
+
+def test_default_library_parent_mount_check_not_each_child(tmp_path, monkeypatch):
+    root = tmp_path / 'sources'
+    base = root / 'default'
+    (base / 'Bistro').mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    monkeypatch.setenv('FOLDER_REQUIRE_MOUNT', '1')
+    seen = []
+    def ismount(path):
+        seen.append(str(path))
+        return Path(path) == base
+    from pathlib import Path
+    monkeypatch.setattr('app.folder_sync.os.path.ismount', ismount)
+    assert source_directory('default/Bistro') == base / 'Bistro'
+    assert seen == [str(base)]
+
+
+def test_default_library_child_import_and_retain_duration(tmp_path, monkeypatch):
+    root = tmp_path / 'sources'
+    bistro = root / 'default' / 'GH-Wie4-BistroConnect'
+    bistro.mkdir(parents=True)
+    (bistro / 'banner.png').write_bytes(PNG)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    store = Library(tmp_path / 'library')
+    ident = store.create('Bistro')['id']
+    store.set_folder_source(ident, 'default/GH-Wie4-BistroConnect')
+    assert sync_template(store, ident)['added'] == 1
+    item = store.get(ident)['items'][0]
+    store.update_item_duration(ident, item['id'], '38')
+    (bistro / 'banner.png').write_bytes(PNG + b'new')
+    assert sync_template(store, ident)['updated'] == 1
+    modified = store.get(ident)['items'][0]
+    assert modified['id'] == item['id']
+    assert modified['duration'] == 38
+    assert store.get(ident)['folder_source'] == 'default/GH-Wie4-BistroConnect'
