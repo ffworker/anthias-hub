@@ -2346,3 +2346,32 @@ def test_template_composer_offers_append_and_empty_only_apply_after_content_exis
     assert refused.status_code == 200
     assert 'nicht leer' in refused.get_data(as_text=True)
     assert FakeAnthias.changes == []
+
+
+def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env):
+    """All roles and routes share one final, cache-distinct UI skin."""
+    app, client, tmp = env
+    from app.library import Library
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    sample = Library(app.config['LIBRARY_DIR']).create('Smoke UI')
+    pages = ['/login']
+    response = client.get('/login')
+    assert response.status_code == 200
+    text = response.get_data(as_text=True)
+    assert 'content="ui-20261106-03"' in text
+    assert 'ui-system.css' in text
+    assert all(f"filename='{name}'" not in text for name in (
+        'product-ui.css', 'ui-refinements.css', 'workflow-ui.css'))
+
+    login(client, 'it')
+    pages = ['/', '/library', f"/library/{sample['id']}",
+             '/devices/lab', '/devices/lab/schedules', '/media-sources']
+    for path in pages:
+        result = client.get(path)
+        assert result.status_code == 200, path
+        text = result.get_data(as_text=True)
+        assert 'content="ui-20261106-03"' in text, path
+        assert text.count('ui-system.css') == 1, path
+        assert 'data-product-theme-toggle' in text, path
+        assert 'class="site-main"' not in text or 'id="hauptinhalt"' in text
+    assert client.get('/static/ui-system.css').status_code == 200
