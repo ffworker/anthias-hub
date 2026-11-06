@@ -50,6 +50,13 @@ def _base(root):
 
 def source_directory(alias, root=None):
     parent_alias, child = _source_parts(alias)
+    # A retired entry must not remain usable just because CIFS is still mounted.
+    from .media_sources import SourceError, retired_aliases
+    try:
+        if parent_alias in retired_aliases():
+            raise LibraryError('Netzwerkquelle wurde im Hub ausgetragen; Host-Mount separat bereinigen')
+    except SourceError as exc:
+        raise LibraryError(str(exc)) from exc
     base = _base(root)
     mount = base / parent_alias
     if mount.is_symlink() or not mount.is_dir() or mount.resolve().parent != base.resolve():
@@ -96,9 +103,14 @@ def available_sources(root=None):
     base = Path(root or os.environ.get('MEDIA_SOURCE_ROOT', '/sources'))
     if base.is_symlink() or not base.is_dir():
         return []
+    from .media_sources import SourceError, retired_aliases
+    try:
+        retired = set(retired_aliases())
+    except SourceError:
+        return []  # A damaged registry must not expose retired mounts.
     standalone = sorted(
         (entry.name for entry in base.iterdir()
-         if entry.name != DEFAULT_LIBRARY_ALIAS and _ALIAS.fullmatch(entry.name)
+         if entry.name != DEFAULT_LIBRARY_ALIAS and entry.name not in retired and _ALIAS.fullmatch(entry.name)
          and not entry.is_symlink() and entry.is_dir()
          and entry.resolve().parent == base.resolve()),
         key=str.casefold,
