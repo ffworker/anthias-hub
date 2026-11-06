@@ -14,14 +14,44 @@
       <p class="eyebrow">DEIN DIGITAL SIGNAGE STUDIO</p>
       <h1 id="fleet-title">Deine Bildschirme <svg class="icon fleet-sparkle" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></h1>
       <p class="muted">
-        {% if logged_user.role in ('owner', 'it', 'marketing') %}Wähle einen Bildschirm, gestalte die Playlist und zeig, was wichtig ist.
-        {% elif logged_user.role in ('owner', 'it') %}Alle Geräte, Playlists und technischen Einstellungen zentral verwalten.
+        {% if logged_user.role in ('owner', 'it') %}Netzwerkordner verbinden, Playlists zuweisen und alle Bildschirme zentral steuern.
+        {% elif logged_user.role == 'marketing' %}Medien bleiben in den gewohnten Netzwerkordnern. Anzeigedauern und Web-Inhalte verwaltest du in den Playlists.
         {% else %}Ein Überblick über deine Bildschirme und ihre Inhalte.{% endif %}
       </p>
     </div>
     {% if logged_user.role in ('owner', 'it') %}
       <a class="button primary fleet-add-button" href="#device-setup"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Bildschirm verbinden</a>
     {% endif %}
+  </section>
+
+  <section class="hub-workflow-cards" aria-label="Schnelleinstieg">
+    {% if logged_user.role in ('owner', 'it') %}
+    <article class="hub-workflow-card is-leading">
+      <div class="hub-workflow-card-copy">
+        <p class="eyebrow">01 / STANDARD-ARBEITSWEG</p>
+        <h2>Ordner verbinden.</h2>
+        <p>Ein gemeinsames Marketing-SMB-Verzeichnis, viele Bildschirmordner. Hier werden aus Ordnern automatisch Playlists.</p>
+      </div>
+      <a class="button primary" href="{{ url_for('media_sources_page') }}">Netzwerkordner &amp; Playlists zuweisen →</a>
+    </article>
+    {% else %}
+    <article class="hub-workflow-card is-leading">
+      <div class="hub-workflow-card-copy">
+        <p class="eyebrow">01 / MARKETING</p>
+        <h2>Playlists bearbeiten.</h2>
+        <p>Die Dateien bleiben im Netzwerkordner. Hier bearbeitest du die Anzeigedauer deiner Bilder und die Web-Inhalte.</p>
+      </div>
+      <a class="button primary" href="{{ url_for('library_index') }}">Playlist-Bibliothek öffnen →</a>
+    </article>
+    {% endif %}
+    <article class="hub-workflow-card">
+      <div class="hub-workflow-card-copy">
+        <p class="eyebrow">02 / BILDSCHIRME</p>
+        <h2>Wiedergabe kontrollieren.</h2>
+        <p>Gerätestatus, tatsächliche Playlist und Zeitsteuerung bleiben pro Bildschirm erreichbar.</p>
+      </div>
+      <a class="button" href="#fleet-title">Bildschirme ansehen →</a>
+    </article>
   </section>
 
   <div class="fleet-summary" aria-label="Geräteübersicht">

@@ -15,43 +15,96 @@ _ALIAS = re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$')
 _CHUNK = 256 * 1024
 
 
-def source_directory(alias, root=None):
-    if not _ALIAS.fullmatch(str(alias)):
-        raise LibraryError('Ungültiger Ordnername (nur Buchstaben, Zahlen, _ und -)')
+DEFAULT_LIBRARY_ALIAS = 'default'
+# The one approved parent mount contains independent folders for each screen.
+# Names come from the real SMB directory and may include spaces or umlauts.
+_CHILD_MAX = 180
+
+
+def valid_child_name(value):
+    return (isinstance(value, str) and 0 < len(value) <= _CHILD_MAX
+            and value not in ('.', '..') and not value.startswith('.')
+            and '/' not in value and '\\' not in value
+            and not any(ord(ch) < 32 or ord(ch) == 127 for ch in value)
+            and value == value.strip() and value[-1] not in ('.', ' '))
+
+
+def _source_parts(value):
+    if not isinstance(value, str):
+        raise LibraryError('Ungültige Ordnerquelle')
+    parts = value.split('/')
+    if len(parts) == 1 and _ALIAS.fullmatch(parts[0]):
+        return parts[0], None
+    if (len(parts) == 2 and parts[0] == DEFAULT_LIBRARY_ALIAS
+            and valid_child_name(parts[1])):
+        return parts[0], parts[1]
+    raise LibraryError('Ungültige Ordnerquelle; nur ein registrierter Ordner oder ein Unterordner der Standardbibliothek')
+
+
+def _base(root):
     base = Path(root or os.environ.get('MEDIA_SOURCE_ROOT', '/sources'))
-    if not base.is_dir():
+    if base.is_symlink() or not base.is_dir():
         raise LibraryError('Medienquellen sind nicht eingebunden')
-    path = base / alias
-    # Do not follow aliases into arbitrary host paths.
-    if path.is_symlink() or not path.is_dir() or path.resolve().parent != base.resolve():
+    return base
+
+
+def source_directory(alias, root=None):
+    parent_alias, child = _source_parts(alias)
+    base = _base(root)
+    mount = base / parent_alias
+    if mount.is_symlink() or not mount.is_dir() or mount.resolve().parent != base.resolve():
         raise LibraryError('Medienordner fehlt oder ist nicht erlaubt')
-    # In service deployments each alias is a real SMB/NFS mount. Without this
-    # check an unmounted placeholder could look like an empty successful scan.
-    if os.environ.get('FOLDER_REQUIRE_MOUNT', '0') == '1' and not os.path.ismount(path):
+    # The parent is the mountpoint; children beneath the default media library
+    # are deliberately not separate network mounts.
+    if os.environ.get('FOLDER_REQUIRE_MOUNT', '0') == '1' and not os.path.ismount(mount):
         raise LibraryError('Netzwerkquelle nicht eingehängt; vorhandene Medien bleiben erhalten')
     if os.environ.get('FOLDER_REQUIRE_VERIFIED', '0') == '1':
         from .media_sources import SourceError, load_sources, mount_statuses
         try:
             registry = {entry['alias'] for entry in load_sources()}
-            if alias in registry and mount_statuses().get(alias) not in ('mounted', 'already-mounted'):
+            if parent_alias in registry and mount_statuses().get(parent_alias) not in ('mounted', 'already-mounted'):
                 raise LibraryError('SMB-Pfad noch nicht durch den Host bestätigt; Import gestoppt')
         except SourceError as exc:
             raise LibraryError(str(exc)) from exc
+    if child is None:
+        return mount
+    path = mount / child
+    if path.is_symlink() or not path.is_dir() or path.resolve().parent != mount.resolve():
+        raise LibraryError('Unterordner der Standardbibliothek ist nicht erreichbar oder nicht erlaubt')
     return path
 
 
-def available_sources(root=None):
-    """Only return allowed first-level directory aliases; never expose UNC paths."""
-    base = Path(root or os.environ.get('MEDIA_SOURCE_ROOT', '/sources'))
-    if not base.is_dir():
+def default_library_folders(root=None):
+    """Browse only direct child directories of the approved default SMB mount."""
+    try:
+        parent = source_directory(DEFAULT_LIBRARY_ALIAS, root)
+    except LibraryError:
         return []
-    return sorted(
-        (item.name for item in base.iterdir()
-         if _ALIAS.fullmatch(item.name) and not item.is_symlink()
-         and item.is_dir() and item.resolve().parent == base.resolve()),
+    try:
+        return sorted(
+            [entry.name for entry in parent.iterdir()
+             if valid_child_name(entry.name) and not entry.is_symlink()
+             and entry.is_dir() and entry.resolve().parent == parent.resolve()],
+            key=str.casefold,
+        )
+    except OSError:
+        return []
+
+
+def available_sources(root=None):
+    """Only show approved top-level aliases or direct default library folders."""
+    base = Path(root or os.environ.get('MEDIA_SOURCE_ROOT', '/sources'))
+    if base.is_symlink() or not base.is_dir():
+        return []
+    standalone = sorted(
+        (entry.name for entry in base.iterdir()
+         if entry.name != DEFAULT_LIBRARY_ALIAS and _ALIAS.fullmatch(entry.name)
+         and not entry.is_symlink() and entry.is_dir()
+         and entry.resolve().parent == base.resolve()),
         key=str.casefold,
     )
-
+    return standalone + [f'{DEFAULT_LIBRARY_ALIAS}/{folder}'
+                         for folder in default_library_folders(base)]
 
 def sync_template(store, template_id, root=None):
     """Import stable files, never delete on an unavailable or empty share.
