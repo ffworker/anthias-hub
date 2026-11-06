@@ -143,8 +143,8 @@
 </section>
 {% endif %}
 <div class="library-grid">
-<section aria-labelledby="items-title" class="library-queue-panel"><h2 id="items-title">{{ 'Playlist-Reihenfolge & Anzeigedauer' if template.folder_source else 'Inhalte' }} <span class="count">{{ template['items']|length }}</span></h2>
-{% if template.folder_source %}<p class="muted">Die Abspielreihenfolge wird hier von oben nach unten festgelegt. Mit den Pfeilen verschieben; Bild- und Webseiten-Dauer direkt speichern. Auf ausschließlich Hub-verwalteten Pis übernimmt der nächste automatische Abgleich diese Reihenfolge. Andere Pi-Inhalte bleiben unangetastet.</p>{% endif %>
+<section aria-labelledby="items-title" class="library-queue-panel"><h2 id="items-title">Inhalte und Wiedergabereihenfolge <span class="count">{{ template['items']|length }}</span></h2>
+<p class="muted">Von oben nach unten: Bildzeiten einstellen und Inhalte mit den Pfeilen sortieren. Auf ausschließlich vom Hub verwalteten Pis übernimmt der automatische Abgleich die Reihenfolge.</p>
 <ol class="library-items">
 {% for item in template['items'] %}
 <li class="card library-item"><span class="library-item-position" aria-label="Position {{ loop.index }}">{{ '%02d'|format(loop.index) }}</span>
