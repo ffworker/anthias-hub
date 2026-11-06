@@ -45,15 +45,15 @@ test('every CSS file has balanced rule delimiters', () => {
   }
 });
 
-test('Nordlicht refinement sheet is last after optional page CSS', () => {
-  const styles = ['style.css','modern.css','workspace.css','ui-refinements.css'];
+test('single unified UI sheet is last after optional page CSS', () => {
+  const styles = ['style.css','modern.css','workspace.css','ui-system.css'];
   for (const name of styles) {
     assert.ok(template.includes("filename='" + name + "'"), 'missing ' + name);
   }
   const positions = styles.map(name => template.indexOf("filename='" + name + "'"));
   assert.deepEqual([...positions].sort((a,b) => a-b), positions);
   assert.ok(template.indexOf('{% block extra_head %}') < positions[3],
-    'page styles must load before final shared refinements');
+    'page styles must load before unified UI');
 });
 
 test('removed theme switching and obsolete website tab styles stay gone', () => {
@@ -78,7 +78,7 @@ test('device and library actions retain guarded responsive positioning', () => {
 test('template publishing keeps target, schedule and actions together at narrow widths', () => {
   const detail = fs.readFileSync(path.join(__dirname,'../app/templates/library_detail.html'),'utf8');
   const library = fs.readFileSync(path.join(staticDir,'library.css'),'utf8');
-  const refinements = fs.readFileSync(path.join(staticDir,'ui-refinements.css'),'utf8');
+  const refinements = fs.readFileSync(path.join(staticDir,'ui-system.css'),'utf8');
   assert.match(detail, /class="library-publish-fields"/);
   assert.match(detail, /class="library-publish-target schedule-choice"/);
   assert.match(detail, /class="library-publish-actions"/);
@@ -87,4 +87,12 @@ test('template publishing keeps target, schedule and actions together at narrow 
   assert.match(library, /\.library-publish-form\{\s*display:grid;\s*grid-template-columns:minmax\(0,1fr\)/);
   assert.match(refinements, /\.library-publish-target select/);
   assert.doesNotMatch(library, /\.library-publish-form\{\s*display:grid;\s*grid-template-columns:minmax\(0,1fr\) auto/);
+});
+
+test('only canonical UI sheet is loaded; no redundant layered themes', () => {
+  assert.match(template, /filename='ui-system\.css'/);
+  for (const retired of ['ui-refinements.css', 'product-ui.css', 'workflow-ui.css']) {
+    assert.ok(!template.includes("filename='" + retired + "'"), 'still loading ' + retired);
+  }
+  assert.match(template, /name="anthias-hub-ui" content="ui-20261106-03"/);
 });

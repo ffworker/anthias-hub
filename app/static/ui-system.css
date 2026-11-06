@@ -1,0 +1,1420 @@
+/* Anthias Hub — unified UI skin (version: ui-20261106-03).
+   This combines the previously separate refinements, product and workflow
+   layers in one ordered cascade. Do not add new late UI stylesheets. */
+/* -------- app/static/ui-refinements.css: imported into canonical UI system -------- */
+/* Shared UI refinements, loaded last after page CSS to preserve existing cascade.
+ * Nordlicht is the only supported appearance; no theme switcher is used.
+ * Keep the playlist and global icon rules together when making future CSS changes. */
+.icon{display:inline-block;width:19px;height:19px;flex:none;vertical-align:middle;fill:none;color:inherit}
+.brand-symbol .icon{width:25px;height:25px}
+.site-nav-link .icon{width:17px;height:17px}
+.asset-kind .icon,.fleet-device-icon .icon{width:24px;height:24px}
+.add-mode .icon,.edit-panel .icon,.composer-bubble .icon{width:18px;height:18px}
+/* Action hierarchy: move next to the item, edit below, create in the composer. */
+.playlist-workspace .section-title .jump-link{display:inline-flex}
+.playlist-workspace .asset-toolbar{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 14px;align-items:center;padding:10px 15px}
+.playlist-workspace .move-controls{display:flex;align-items:center;gap:5px;float:none;margin:0}
+.playlist-workspace .move-controls::before{content:'REIHENFOLGE';font:700 9px/1.2 ui-monospace,monospace;letter-spacing:.08em;color:var(--subtle);margin-right:5px}
+.playlist-workspace .move-controls button{width:42px;min-height:42px;font-size:18px;border:1px solid var(--border)}
+.playlist-workspace .edit-panel{min-width:0;justify-self:end;width:auto;flex:none}
+.playlist-workspace .edit-panel>summary{min-height:42px;padding:8px 11px;border:1px solid var(--border);border-radius:9px;white-space:nowrap}
+.playlist-workspace .edit-panel[open]{grid-column:1/-1;grid-row:2;justify-self:stretch;width:100%;border-top:1px solid var(--border);padding:13px 0 7px}
+.playlist-workspace .asset-edit{grid-template-columns:minmax(130px,1fr) minmax(90px,.5fr);align-items:end}
+.playlist-workspace .asset-edit .check{grid-column:1;grid-row:2}
+.playlist-workspace .asset-edit button{grid-column:2;grid-row:2;min-height:44px}
+.playlist-workspace .drag-handle{width:42px;min-width:42px;min-height:44px;letter-spacing:0;font-size:23px;border:1px solid transparent;border-radius:9px}
+.playlist-workspace .quick-toggle{min-height:40px;padding:7px 11px}
+.playlist-workspace .composer-head{padding-right:65px}
+.playlist-workspace .composer{scroll-margin-top:20px}
+.playlist-workspace .asset{scroll-margin-top:25px}
+/* The monitor mark replaces the generic star motif throughout the product. */
+.playlist-hero::after,.fleet-hero::after,.auth-story::after{content:none}
+.hero-sparkle,.fleet-sparkle{width:27px;height:27px;vertical-align:-2px;color:var(--studio-aqua)}
+.empty-symbol .icon{width:40px;height:40px}
+.auth-star .icon,.auth-card-icon .icon{width:26px;height:26px}
+.site-foot,.site-foot a{color:var(--muted)}
+.playlist-workspace .asset:has(.edit-panel[open]){overflow:visible}
+
+@media(max-width:680px){.playlist-workspace .asset-toolbar{display:grid;grid-template-columns:1fr;gap:7px}.playlist-workspace .edit-panel{justify-self:stretch;width:100%}.playlist-workspace .edit-panel[open]{grid-column:1;grid-row:auto}.playlist-workspace .edit-panel>summary{width:100%;justify-content:center}.playlist-workspace .asset-edit{grid-template-columns:1fr}.playlist-workspace .asset-edit .check,.playlist-workspace .asset-edit button{grid-column:auto;grid-row:auto}.playlist-workspace .move-controls::before{margin-right:auto}.playlist-workspace .asset-side{margin-top:7px}}
+
+
+/* Per-device statuses don't hold the entire dashboard hostage; avoid false
+   offline indicators while the individual API requests are in flight. */
+.fleet-device[data-overview-state="pending"] [data-device-state]{color:#acbdce}
+.fleet-storage-panel [hidden],.fleet-storage-menu [hidden]{display:none!important}
+
+/* Honest, indeterminate feedback for long native multi-media transfers.
+   No fake byte percentage: Pi playlist count is fetched separately. */
+.template-transfer-feedback[hidden]{display:none!important}
+.template-transfer-feedback{
+  display:grid;grid-template-columns:19px minmax(0,1fr);
+  gap:4px 11px;align-items:center;margin:13px 0 2px;padding:13px;
+  border:1px solid #497d75;border-radius:10px;background:#133333;
+  color:#d6fff2;font-size:12px;line-height:1.45
+}
+.template-transfer-feedback strong{font-size:13px;font-weight:700}
+.template-transfer-feedback small{grid-column:2;display:block;color:#b3d7d1;font-size:11px;line-height:1.45}
+.template-transfer-spinner{
+  display:block;grid-row:1/3;width:18px;height:18px;align-self:center;
+  border:2px solid #527d79;border-top-color:#b3ffdf;border-radius:50%;
+  animation:transfer-spin .8s linear infinite
+}
+@keyframes transfer-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.template-transfer-spinner{animation:none;border-color:#a1ead6}}
+
+/* Quiet device schedules navigation, available from fleet and playlist. */
+.fleet-schedule-link{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;
+  margin:0 0 12px;font-size:11px;color:#9ddacf;text-decoration:none;font-weight:680}
+.fleet-schedule-link:hover{color:#d5fff0}
+.fleet-schedule-link .icon{width:14px;height:14px}
+.schedule-hero-link{display:inline-flex;gap:7px;align-items:center;margin:11px 0 0;font-size:12px;
+  color:#a6e9d9;text-decoration:none;font-weight:680}
+.schedule-hero-link:hover{color:#e6fff5}
+.schedule-hero-link .icon{width:15px;height:15px}
+
+/* Two equal views within one device workspace. */
+.device-workspace-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
+  margin:0 0 26px;padding:5px;background:#10202c;border:1px solid #344b59;border-radius:13px}
+.device-workspace-tabs a{display:flex;align-items:center;justify-content:center;gap:9px;
+  min-height:44px;border-radius:9px;color:#a9c5cf;text-decoration:none;font-size:13px;font-weight:760;
+  transition:background .12s,color .12s}
+.device-workspace-tabs a:hover{background:#1a3840;color:#e8fbf5}
+.device-workspace-tabs a[aria-current="page"]{background:#254b4d;color:#d7fff2;box-shadow:0 1px 5px #0004}
+.device-workspace-tabs .icon{width:16px;height:16px}
+.asset-schedule-summary{display:inline-flex;align-items:center;gap:5px;font-size:11px;
+  font-weight:640;color:#99dccc;margin-top:3px}
+.asset-schedule-summary .icon{width:12px;height:12px}
+.asset-schedule-details{border-top:1px solid #294952;padding:10px 0;margin:4px 0}
+.asset-schedule-details>summary{display:flex;align-items:center;gap:7px;cursor:pointer;
+  color:#b9eee0;font-size:12px;font-weight:720}
+.asset-schedule-details>summary .icon{width:15px;height:15px}
+.asset-schedule-details>form{display:grid;gap:11px;margin-top:11px}
+.schedule-choice{display:grid;gap:8px;margin:11px 0;padding:12px;border-radius:10px;
+  border:1px solid #355765;background:#102834;min-width:0}
+.schedule-choice legend{font-size:11px;color:#b0eddf;font-weight:780;padding:0 5px}
+.schedule-choice label{display:grid;gap:6px;color:#c2e3e2;font-size:11px}
+.schedule-choice select{display:block;width:100%;min-width:0;min-height:40px;
+  border:1px solid #3e6872;border-radius:8px;background:#102330;color:#e8f6f9;padding:8px;font-size:12px}
+.schedule-custom[hidden]{display:none!important}
+.schedule-custom .schedule-day-fieldset{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0}
+.schedule-custom .schedule-day-fieldset label{display:flex;align-items:center;gap:4px;padding:5px 7px;
+  border:1px solid #426a6b;background:#1d3f40;border-radius:7px}
+.schedule-custom .schedule-day-fieldset input{width:15px;height:15px;min-height:15px;margin:0}
+.schedule-custom .schedule-time-fields{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.schedule-custom input[type="time"]{min-width:0;width:100%;padding:7px}
+.schedule-choice-hint{font-size:10px;color:#9fbcc4;line-height:1.45;margin:0}
+.schedule-default-panel{display:flex;justify-content:space-between;gap:18px;align-items:center;
+  flex-wrap:wrap;padding:18px 21px;margin-bottom:17px;background:#142f37}
+.schedule-default-panel h3{font-size:16px;margin:0 0 4px}
+.schedule-default-panel .muted{font-size:11px;max-width:380px;margin:0}
+.schedule-default-panel form{display:flex;align-items:flex-end;gap:9px;flex-wrap:wrap;min-width:min(100%,360px)}
+.schedule-default-panel form label{flex:1;min-width:210px}
+.schedule-default-panel form select{width:100%;min-height:41px}
+.schedule-gap-warning{display:flex;gap:9px;align-items:flex-start;margin-bottom:16px;font-size:12px}
+.schedule-gap-warning .icon{width:17px;height:17px;flex:none}
+@media(max-width:640px){.device-workspace-tabs{gap:4px}.schedule-default-panel form{min-width:0;width:100%}}
+
+/* Playlist editor stays in the established two-column grid. Scheduling is a
+   full-width secondary row, never an implicit third column squeezed next to
+   Save/Pause (especially important on narrow kiosk/IT screens). */
+.playlist-workspace .asset-toolbar>.asset-inline-edit{grid-column:1;grid-row:1}
+.playlist-workspace .asset-toolbar>.asset-toolbar-actions{grid-column:2;grid-row:1}
+.playlist-workspace .asset-toolbar>.asset-schedule-details{
+  grid-column:1 / -1;grid-row:2;min-width:0;width:100%;box-sizing:border-box
+}
+.playlist-workspace .asset-schedule-details>form{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px
+}
+.playlist-workspace .asset-schedule-details .schedule-choice{margin:0}
+.playlist-workspace .asset-schedule-details>form>.primary{min-height:41px}
+.playlist-workspace .asset-schedule-details[open]{padding-top:13px;margin-top:1px}
+@media(max-width:720px){
+  .playlist-workspace .asset-toolbar>.asset-inline-edit{grid-row:1;grid-column:1}
+  .playlist-workspace .asset-toolbar>.asset-schedule-details{grid-row:2;grid-column:1}
+  .playlist-workspace .asset-toolbar>.asset-toolbar-actions{grid-row:3;grid-column:1}
+  .playlist-workspace .asset-schedule-details>form{grid-template-columns:minmax(0,1fr)}
+  .playlist-workspace .asset-schedule-details>form>.primary{width:100%}
+}
+
+/* Scheduling selectors follow the Playlist Studio rather than browser-default
+   square inputs. Consistent on direct upload, in-asset editor and library. */
+.playlist-workspace .schedule-choice select,
+[data-library-device-schedule] select,
+.library-publish-target select{
+ appearance:none;-webkit-appearance:none;display:block;width:100%;max-width:100%;
+ min-height:43px;border:1px solid #456777;border-radius:11px;
+ padding:10px 40px 10px 13px;color:#ecf6f8;background-color:#122a38;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%2399d9c9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 7 5 5 5-5'/%3E%3C/svg%3E");
+ background-size:18px;background-position:right 13px center;background-repeat:no-repeat;
+ font:500 12px/1.4 'Avenir Next','Segoe UI',system-ui,sans-serif;
+ transition:border-color .14s,box-shadow .14s
+}
+.playlist-workspace .schedule-choice select:hover,
+[data-library-device-schedule] select:hover,
+.library-publish-target select:hover{border-color:#68a89b}
+.playlist-workspace .schedule-choice select:focus-visible,
+[data-library-device-schedule] select:focus-visible,
+.library-publish-target select:focus-visible{
+ outline:2px solid #8af2d448;outline-offset:1px;border-color:#85e2d0
+}
+.playlist-workspace .schedule-choice,.library-publish-form .schedule-choice{
+ border-radius:13px;background:#142b38;border-color:#365765;
+}
+.playlist-workspace .schedule-custom .schedule-day-fieldset label{
+ border-radius:9px;transition:background .12s,border-color .12s
+}
+.playlist-workspace .schedule-custom .schedule-day-fieldset label:has(input:checked){
+ background:#25574f;border-color:#69b6a2;color:#effff7
+}
+.playlist-workspace .schedule-custom input[type="time"]{
+ color-scheme:dark;border-radius:10px;background:#102435;color:#eef8fa;
+ border:1px solid #416677;min-height:42px
+}
+
+/* -------- app/static/product-ui.css: imported into canonical UI system -------- */
+/* Anthias Hub — unified product design, adapted from the Signaturee visual
+ * language. Own typography, palette, and interaction treatment; leave the
+ * player controls, app logic, dialogs and previews intact.
+ * Loaded last on every page, after legacy CSS. */
+:root,html[data-theme="light"] {
+  color-scheme:light;
+  --ui-paper:#eeece2;--ui-bg:#eeece2;--ui-surface:#faf9f4;
+  --ui-raised:#fffef9;--ui-subtle:#e7e4d9;--ui-line:#d2cfc2;
+  --ui-line-strong:#8b887b;--ui-ink:#191b1a;--ui-fg:#252722;
+  --ui-muted:#626457;--ui-accent:#ac422d;--ui-accent-hover:#852e1f;
+  --ui-coral:#ff795c;--ui-good:#315e45;--ui-good-bg:#e5ece2;
+  --ui-error:#9c302b;--ui-error-bg:#f5e1dc;--ui-warn:#805516;
+  --ui-warn-bg:#f5ecd6;
+  --ui-serif:Georgia,"Times New Roman",serif;
+  --ui-sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --ui-mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+  --bg:var(--ui-bg);--surface:var(--ui-surface);--raised:var(--ui-raised);
+  --field:var(--ui-raised);--ink:var(--ui-fg);--muted:var(--ui-muted);
+  --subtle:var(--ui-muted);--border:var(--ui-line);
+  --blue:var(--ui-accent);--blue-dark:var(--ui-accent-hover);
+  --green:var(--ui-good);--red:var(--ui-error);
+  --studio-aqua:var(--ui-accent);--studio-peach:var(--ui-coral);
+  --studio-muted:var(--ui-muted);--studio-line:var(--ui-line);
+}
+html[data-theme="dark"] {
+  color-scheme:dark;
+  --ui-bg:#191b1a;--ui-surface:#222521;--ui-raised:#2b2e28;
+  --ui-subtle:#2c3029;--ui-line:#464a40;--ui-line-strong:#828679;
+  --ui-ink:#eeece2;--ui-fg:#eeece2;--ui-muted:#b4b6a9;
+  --ui-accent:#ff957c;--ui-accent-hover:#ffd0c4;--ui-coral:#ff795c;
+  --ui-good:#b1d3b5;--ui-good-bg:#2d3c2f;--ui-error:#ffb3a4;
+  --ui-error-bg:#47302b;--ui-warn:#e9c488;--ui-warn-bg:#423a29;
+  --bg:var(--ui-bg);--surface:var(--ui-surface);--raised:var(--ui-raised);
+  --field:var(--ui-raised);--ink:var(--ui-fg);--muted:var(--ui-muted);
+  --subtle:var(--ui-muted);--border:var(--ui-line);
+  --blue:var(--ui-accent);--blue-dark:var(--ui-accent-hover);
+  --green:var(--ui-good);--red:var(--ui-error);
+  --studio-aqua:var(--ui-accent);--studio-peach:var(--ui-coral);
+  --studio-muted:var(--ui-muted);--studio-line:var(--ui-line);
+}
+[hidden]{display:none!important}
+body {
+  min-height:100vh;background:var(--ui-bg);color:var(--ui-fg);
+  font:15px/1.55 var(--ui-sans);
+  letter-spacing:0;
+}
+.wrap{width:min(1320px,calc(100% - 72px))}
+main.wrap.site-main{padding-top:34px}
+a{color:var(--ui-accent);text-underline-offset:3px}
+a:hover{color:var(--ui-accent-hover)}
+h1,h2,.fleet-hero h1,.playlist-hero h1,.library-intro h1,
+.library-panel h2,.fleet-section-heading h2,.schedule-section-heading h2,
+.section-title h2,.media-default-heading h2,.media-folder-heading h2 {
+  font-family:var(--ui-serif);font-weight:400;letter-spacing:-.03em;line-height:1.14;
+  color:var(--ui-fg);
+}
+h1,.fleet-hero h1,.playlist-hero h1,.library-intro h1 {font-size:clamp(35px,4.4vw,55px)}
+h2,.library-panel h2,.section-title h2,.fleet-section-heading h2,
+.schedule-section-heading h2,.media-default-heading h2,.media-folder-heading h2 {
+  font-size:clamp(23px,2.4vw,29px)
+}
+h3{font-weight:650;letter-spacing:-.015em}
+.eyebrow,.section-index,.fleet-location {
+  color:var(--ui-accent)!important;font:700 11px/1.5 var(--ui-mono);
+  letter-spacing:.085em;text-transform:uppercase;
+}
+.muted,.section-hint,.section-hint *,small,.field-note {color:var(--ui-muted)}
+.code,code{font-family:var(--ui-mono)}
+.card,.library-intro,.playlist-hero,.fleet-hero,.fleet-setup,
+.schedule-section,.auth-card,.auth-story,.media-default-panel {
+  background:var(--ui-surface);color:var(--ui-fg);
+  border:1px solid var(--ui-line);border-radius:4px;
+  box-shadow:none;
+}
+.card:hover{box-shadow:none}
+.fleet-hero,.playlist-hero,.library-intro {
+  background:transparent;box-shadow:none;border:0;border-top:1px solid var(--ui-line);
+  border-radius:0;padding:26px 0 23px;
+}
+.fleet-hero:after,.playlist-hero:after,.auth-story:after{display:none}
+.fleet-hero .muted,.playlist-hero .muted,.auth-story p{color:var(--ui-muted)}
+.fleet-sparkle,.hero-sparkle{display:none}
+.fleet-hero h1,.playlist-hero h1{margin-bottom:12px}
+.site-main .notice,.site-notice,.playlist-workspace .notice {
+  background:var(--ui-subtle);color:var(--ui-fg);
+  border:1px solid var(--ui-line);border-left:3px solid var(--ui-accent);
+  border-radius:3px;box-shadow:none;
+}
+.site-main .notice.success{background:var(--ui-good-bg);border-left-color:var(--ui-good);color:var(--ui-good)}
+.site-main .notice.error{background:var(--ui-error-bg);border-left-color:var(--ui-error);color:var(--ui-error)}
+.notice-symbol{border:0;border-radius:0}
+.site-top{background:#191b1a;border:0;border-bottom:1px solid #45463f;box-shadow:none}
+.site-header{min-height:82px;gap:28px;flex-wrap:wrap}
+.site-brand,.site-brand>span:last-child {
+  font:italic 30px/1.1 var(--ui-serif);color:#eeece2;
+  letter-spacing:-.08em;text-decoration:none;white-space:nowrap;
+}
+.site-brand strong{color:#ff795c;font-weight:400}
+.site-brand .brand-symbol{display:none}
+.site-nav{display:flex;align-items:center;gap:7px;flex:1;margin:0;min-width:0;flex-wrap:wrap}
+.site-nav-link {
+  display:inline-flex;align-items:center;gap:8px;padding:12px 13px;min-height:44px;
+  border:0;border-bottom:2px solid transparent;border-radius:0;box-shadow:none;
+  background:transparent;color:#c7c8bb;font-weight:550;font-size:13px;
+  white-space:nowrap;
+}
+.site-nav-link .icon{width:16px;height:16px}
+.site-nav-link:hover{background:#2e302b;color:#fff}
+.site-nav-link.is-active {
+  background:transparent;color:#fff;border-bottom-color:#ff795c;
+}
+.site-nav-link.site-nav-primary{color:#ffbdac;font-weight:700}
+.site-nav-link.site-nav-primary.is-active{color:#fff}
+.site-user{color:#dcddd1;margin-left:auto;gap:10px}
+.site-user .user-avatar{display:none}
+.site-user .user-name{color:#eeece2}
+.site-user .role{color:#bbbcb0;border:0;background:transparent;padding:0}
+.site-logout,.top .site-logout{
+  color:#d6d6ca!important;background:transparent!important;border:0!important;
+  padding:6px!important;font-size:12px;
+}
+.site-logout:hover{color:#ff795c!important}
+.product-theme-toggle {
+  flex:none;border:1px solid #65685b!important;color:#eeece2!important;
+  background:transparent!important;border-radius:3px!important;
+  padding:6px 12px!important;min-height:36px!important;font-size:12px!important;
+}
+.product-theme-toggle:hover{border-color:#ff795c!important;color:#ffb7a6!important}
+.skip-link {
+  position:fixed;left:12px;top:-100px;z-index:2000;
+  padding:10px 15px;background:#fffef9;color:#191b1a;
+}
+.skip-link:focus{top:12px}
+.site-foot{border-top:1px solid var(--ui-line);color:var(--ui-muted);margin-top:36px}
+.site-foot a{color:var(--ui-accent)}
+.footer-mark{color:var(--ui-accent)}
+/* Clean controls: working surfaces, not marketing buttons. */
+:where(button,.button) {
+  border:1px solid var(--ui-line-strong);border-radius:3px;
+  background:transparent;color:var(--ui-fg);font:600 13px/1.3 var(--ui-sans);
+  box-shadow:none;transform:none;min-height:42px;padding:9px 14px;
+}
+:where(button,.button):hover:not(:disabled) {
+  background:var(--ui-subtle);color:var(--ui-fg);border-color:var(--ui-accent);
+  box-shadow:none;transform:none;
+}
+:where(button,.button).primary,
+button.primary,.button.primary,.fleet-open.primary,.media-folder-card .primary {
+  background:#ff795c;color:#191b1a;border-color:#ff795c;
+  box-shadow:none;transform:none;
+}
+:where(button,.button).primary:hover:not(:disabled),
+button.primary:hover:not(:disabled),.button.primary:hover {
+  background:#ff977e;color:#191b1a;border-color:#ff977e;
+  box-shadow:none;transform:none;
+}
+button:disabled,.button:disabled{cursor:not-allowed;opacity:.55}
+button.danger,.danger-btn{color:var(--ui-error);border-color:var(--ui-error)}
+label{color:var(--ui-fg);font-weight:650}
+:where(input,select,textarea) {
+  background:var(--ui-raised);color:var(--ui-fg);
+  border:1px solid var(--ui-line-strong);border-radius:3px;box-shadow:none;
+}
+:where(input,select,textarea)::placeholder{color:var(--ui-muted);opacity:1}
+:where(input,select,textarea):focus{border-color:var(--ui-accent)}
+input[type="checkbox"],input[type="radio"]{accent-color:var(--ui-accent)}
+:where(button,a,summary,input,select,textarea):focus-visible {
+  outline:2px solid var(--ui-accent)!important;outline-offset:3px;
+}
+.pill,.count,.source-pill,.badge {
+  background:var(--ui-subtle);border:1px solid var(--ui-line);
+  border-radius:2px;color:var(--ui-fg);box-shadow:none;
+}
+.pill::before{box-shadow:none}
+.pill.ok{background:var(--ui-good-bg);color:var(--ui-good);border-color:var(--ui-line)}
+.pill.bad{background:var(--ui-error-bg);color:var(--ui-error);border-color:var(--ui-line)}
+.pill.off{background:var(--ui-subtle);color:var(--ui-muted)}
+.breadcrumbs{color:var(--ui-muted);margin-bottom:20px}
+.breadcrumbs a{color:var(--ui-accent)}
+details summary{color:var(--ui-fg)}
+details summary:hover{color:var(--ui-accent)}
+/* Signaturee-style 'operate first' gateway. Folder sharing takes top billing. */
+.hub-workflow-cards{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin:8px 0 22px}
+.hub-workflow-card,.library-source-feature{
+  display:grid;align-content:space-between;gap:22px;
+  padding:23px 26px;background:var(--ui-surface);
+  border:1px solid var(--ui-line);border-radius:3px;box-shadow:none;
+}
+.hub-workflow-card.is-leading,.library-source-feature{border-top:3px solid var(--ui-accent)}
+.hub-workflow-card h2,.library-source-feature h2{
+  font:400 clamp(22px,2.2vw,30px)/1.15 var(--ui-serif);
+  letter-spacing:-.025em;color:var(--ui-fg);margin:5px 0 10px;
+}
+.hub-workflow-card p,.library-source-feature p{
+  margin:0;max-width:610px;color:var(--ui-muted);line-height:1.6;
+}
+.hub-workflow-card .eyebrow,.library-source-feature .eyebrow{color:var(--ui-accent);margin-bottom:8px}
+.hub-workflow-card>a{justify-self:start}
+.library-source-feature{
+  grid-template-columns:minmax(0,1fr) auto;align-items:center;
+  margin-bottom:22px;
+}
+.library-source-feature .button{min-width:235px}
+@media(max-width:920px){
+  .hub-workflow-cards{grid-template-columns:1fr 1fr}
+  .library-source-feature{grid-template-columns:1fr}
+  .library-source-feature .button{width:max-content;min-width:0}
+}
+@media(max-width:640px){
+  .hub-workflow-cards{grid-template-columns:1fr}
+  .hub-workflow-card,.library-source-feature{padding:20px}
+  .library-source-feature .button,.hub-workflow-card .button{width:100%}
+}
+
+/* Dashboard: a ruled operational table with real status, not glowing cards. */
+.fleet-workspace .fleet-hero{overflow:visible;margin-bottom:18px}
+.fleet-hero .fleet-add-button{white-space:normal}
+.fleet-summary {
+  border:1px solid var(--ui-line);background:var(--ui-surface);
+  border-radius:3px;box-shadow:none;margin:14px 0 35px;
+}
+.fleet-stat{background:transparent;border-color:var(--ui-line)}
+.fleet-stat-icon,.fleet-device-icon{
+  background:var(--ui-subtle);border:1px solid var(--ui-line);
+  border-radius:3px;color:var(--ui-accent);box-shadow:none;
+}
+.fleet-stat-value{color:var(--ui-fg)}
+.fleet-stat-label,.fleet-summary-hint{color:var(--ui-muted)}
+.fleet-section-heading{border-bottom:1px solid var(--ui-line);padding-bottom:18px}
+.fleet-device {
+  background:var(--ui-surface);border:1px solid var(--ui-line);
+  border-radius:3px;box-shadow:none;
+}
+.fleet-device:hover{border-color:var(--ui-line-strong);transform:none;box-shadow:none}
+.fleet-device h3,.media-folder-card h3{color:var(--ui-fg)}
+.fleet-device .fleet-location{color:var(--ui-accent)}
+.fleet-device-line,.fleet-device-line span,.fleet-schedule-link{color:var(--ui-muted)}
+.fleet-device-line strong{color:var(--ui-fg)}
+.fleet-settings-content,.fleet-remote-body,.fleet-storage-panel,
+html.fleet-popovers-ready .fleet-device-actions>details>.fleet-remote-body,
+html.fleet-popovers-ready .fleet-device-actions>details>.fleet-settings-content {
+  background:var(--ui-raised);color:var(--ui-fg);
+  border:1px solid var(--ui-line);border-radius:4px;box-shadow:0 14px 38px #0002;
+}
+.fleet-device-actions>details>summary,
+.fleet-device-actions>.fleet-remote-marketing>summary,
+.fleet-settings>summary,.fleet-storage-menu>summary {
+  background:var(--ui-subtle);color:var(--ui-fg);
+  border:1px solid var(--ui-line);border-radius:3px;
+}
+.fleet-device-actions>details>summary:hover,
+.fleet-device-actions>.fleet-remote-marketing>summary:hover,
+.fleet-panel-close:hover {
+  background:var(--ui-raised);color:var(--ui-accent);border-color:var(--ui-accent);
+}
+.fleet-panel-title,.fleet-panel-title span{color:var(--ui-fg);border-color:var(--ui-line)}
+.fleet-panel-close{background:var(--ui-subtle);border-color:var(--ui-line);color:var(--ui-fg);border-radius:3px}
+.fleet-setup{border-top:1px solid var(--ui-line);box-shadow:none;background:transparent}
+.fleet-setup-intro h2,.fleet-setup-intro p{color:var(--ui-fg)}
+/* Playlist editor and scheduling remain functional; make the working content
+   neutral, readable and consistent across both themes. */
+.playlist-hero{overflow:visible}
+.playlist-workspace .breadcrumbs{margin-bottom:16px}
+.playlist-workspace .asset,.playlist-workspace .asset.is-paused,
+.schedule-workspace .schedule-rule,.schedule-collection-note,
+.schedule-rule,.schedule-section {
+  background:var(--ui-surface);color:var(--ui-fg);
+  border:1px solid var(--ui-line);border-radius:3px;box-shadow:none;
+}
+.playlist-workspace .asset:hover{border-color:var(--ui-line-strong);box-shadow:none}
+.playlist-workspace .drag-handle,
+.playlist-workspace .asset-index,
+.playlist-workspace .asset-body,
+.playlist-workspace .asset-title,.playlist-workspace .asset-meta,
+.playlist-workspace .asset-subtitle{color:var(--ui-fg)}
+.playlist-workspace .drag-handle:hover{color:var(--ui-accent);background:var(--ui-subtle)}
+.playlist-workspace .asset-kind {
+  border:1px solid var(--ui-line);border-radius:3px;
+  background:var(--ui-subtle);color:var(--ui-accent);
+}
+.playlist-overview,.playlist-workspace .asset-toolbar,
+.playlist-workspace .asset-edit,.playlist-workspace .composer,
+.playlist-workspace .composer-body,.playlist-workspace .composer-head,
+.playlist-workspace .add-mode,.playlist-workspace .edit-panel[open],
+.playlist-workspace .move-controls button,
+.schedule-workspace .schedule-times,.schedule-rule-edit {
+  color:var(--ui-fg);background:var(--ui-surface);
+  border-color:var(--ui-line);box-shadow:none;
+}
+.playlist-overview strong,.playlist-workspace .asset-main strong,
+.playlist-workspace .asset-title,.playlist-workspace .composer h2,
+.playlist-workspace .composer label,.schedule-workspace label,
+.schedule-workspace strong,.schedule-workspace h3{color:var(--ui-fg)}
+.playlist-overview,.playlist-workspace .section-hint,
+.playlist-workspace .asset-subtitle,.playlist-workspace .overview-note,
+.hero-status small,.schedule-hint{color:var(--ui-muted)}
+.overview-dot{background:var(--ui-good);box-shadow:none}
+.playlist-workspace .quick-toggle,.playlist-workspace .edit-panel>summary,
+.playlist-workspace .add-mode,.playlist-workspace .studio-add-trigger {
+  border-radius:3px;background:var(--ui-subtle);border-color:var(--ui-line);
+  color:var(--ui-fg);
+}
+.playlist-workspace .quick-toggle:hover,.playlist-workspace .edit-panel>summary:hover{
+  background:var(--ui-raised);color:var(--ui-accent)
+}
+.playlist-workspace .studio-add-trigger{background:#ff795c;color:#191b1a;border-color:#ff795c}
+.live-warning{color:var(--ui-warn)}
+.live-warning span{color:var(--ui-warn)}
+/* Library: the new share-driven workflow should read like a product. */
+.library-intro{padding:27px 0 25px;margin-bottom:22px}
+.library-intro .muted{color:var(--ui-muted)}
+.library-glyph,.library-item-icon {
+  background:var(--ui-subtle);border-color:var(--ui-line);
+  border-radius:3px;color:var(--ui-accent)
+}
+.library-entry,.library-item,.library-entry-shell,
+.library-panel,.library-publish-hero,.folder-workflow,
+.media-source-card,.media-folder-card {
+  color:var(--ui-fg);background:var(--ui-surface);
+  border:1px solid var(--ui-line);border-radius:3px;box-shadow:none;
+}
+.library-entry:hover,.library-entry-shell:hover{border-color:var(--ui-accent)}
+.library-entry strong,.library-item strong{color:var(--ui-fg)}
+.library-entry small,.library-item small{color:var(--ui-muted)}
+.library-panel label,.library-panel h2,.library-panel h3,
+.library-panel p,.library-template-intro .library-detail-title-row h1{color:var(--ui-fg)}
+.library-panel select,.library-panel input,.library-panel textarea,
+.media-source-form input,.media-default-form input,
+.library-duration-input{
+  border:1px solid var(--ui-line-strong);border-radius:3px;
+  background:var(--ui-raised);color:var(--ui-fg);
+}
+.library-duration-input input{background:transparent;border:0}
+.library-duration-form label{color:var(--ui-muted)}
+.library-duration-form button{border-color:var(--ui-accent);color:var(--ui-accent)}
+.folder-workflow{border-left:3px solid var(--ui-accent)}
+.folder-workflow-steps span,.folder-workflow-status{
+  background:var(--ui-subtle);color:var(--ui-fg);
+  border:1px solid var(--ui-line);border-radius:3px;
+}
+.folder-workflow-steps span{font-weight:550}
+.folder-workflow-status{border:0;border-top:1px solid var(--ui-line);background:transparent}
+.library-publish-hero{background:var(--ui-surface)}
+.library-backup-panel,.library-empty,.library-backup-details{background:transparent}
+.library-item-actions details form{background:var(--ui-raised);border-color:var(--ui-line)}
+.media-source-overview h2{color:var(--ui-fg)}
+.media-source-card .muted,.media-default-panel .muted{color:var(--ui-muted)}
+.media-source-top{align-items:center}
+.media-source-form input,.media-default-form input{min-height:46px}
+.media-source-card code{color:var(--ui-accent)}
+/* Primary content: root share and individual playable screen directories. */
+.media-default-panel{border-top:3px solid var(--ui-accent);padding:27px!important}
+.media-default-heading{display:flex;justify-content:space-between;gap:18px;align-items:start}
+.media-default-heading p{max-width:760px;line-height:1.6}
+.media-default-form{display:grid;grid-template-columns:minmax(280px,1fr) auto;gap:12px;align-items:end;margin:22px 0 14px}
+.media-default-form label{display:grid;gap:6px;margin:0}
+.media-default-form button{min-height:46px;white-space:normal}
+.media-default-folders{margin:32px 0}
+.media-folder-heading{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:16px}
+.media-folder-heading h2{margin:0}
+.media-folder-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,310px),1fr));gap:12px}
+.media-folder-card{display:grid;grid-template-columns:44px minmax(0,1fr);gap:13px;align-items:start;padding:19px}
+.media-folder-symbol{display:grid;place-items:center;font:25px/1 var(--ui-serif);width:44px;height:44px;background:var(--ui-subtle);color:var(--ui-accent);border:1px solid var(--ui-line)}
+.media-folder-card .media-folder-info{min-width:0}
+.media-folder-card .eyebrow{font-size:10px}
+.media-folder-card h3{font-size:17px;overflow-wrap:anywhere;margin:0 0 5px}
+.media-folder-card small{display:block;color:var(--ui-muted);overflow-wrap:anywhere;font:11px/1.5 var(--ui-mono)}
+.media-folder-card .button,.media-folder-card form{grid-column:1 / -1;width:100%}
+.media-folder-card button{width:100%}
+.media-folders-empty{grid-column:1/-1;padding:26px}
+.media-advanced-sources{border-top:1px solid var(--ui-line);margin:35px 0;padding:20px 0}
+.media-advanced-sources>summary{display:list-item;font-weight:650;color:var(--ui-muted);font-size:13px}
+.media-advanced-body{display:grid;gap:18px;margin-top:18px}
+.media-sources-admin:not(.media-default-panel){background:var(--ui-surface)}
+/* Login uses the same paper/ink composition. */
+.auth-layout{gap:24px}
+.auth-story,.auth-card{box-shadow:none}
+.auth-story{background:#191b1a;color:#eeece2}
+.auth-story h1,.auth-story .eyebrow{color:#eeece2!important}
+.auth-story p{color:#d5d5c9}
+.auth-card{background:var(--ui-surface)}
+.auth-card h2,.auth-card p{color:var(--ui-fg)}
+.auth-submit{width:100%}
+/* Compatibility for existing modal, status and dialog scripts. */
+[data-media-lightbox],.media-lightbox,
+.media-lightbox-dialog,[role="dialog"].media-preview-modal{
+  color:var(--ui-fg)
+}
+:where(.playlist-workspace,.library-grid,.fleet-workspace,.schedule-workspace) :is(article,section,aside,.card){min-width:0}
+:where(.playlist-workspace,.library-grid,.fleet-workspace,.schedule-workspace) input[type="checkbox"]{min-width:17px}
+@media(max-width:990px){
+  .wrap{width:min(calc(100% - 40px),1320px)}
+  .site-header{gap:12px}
+  .site-nav{order:3;width:100%;flex-basis:100%;justify-content:flex-start;border-top:1px solid #45463f;gap:3px}
+  .site-user{margin-left:auto}
+  .media-default-form{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .wrap{width:calc(100% - 28px)}
+  main.wrap.site-main{padding-top:24px}
+  .site-header{padding-top:10px;min-height:65px}
+  .site-brand,.site-brand>span:last-child{font-size:25px}
+  .site-nav{overflow-x:auto;flex-wrap:nowrap;padding-bottom:3px}
+  .site-nav-link{font-size:12px;padding:10px 9px;flex:none}
+  .site-user{gap:7px}
+  .site-user .user-details{display:none}
+  .product-theme-toggle{padding:6px 9px!important}
+  .fleet-hero,.playlist-hero,.library-intro{padding:23px 0 18px}
+  .fleet-hero{display:grid;gap:15px}
+  .fleet-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .fleet-summary-hint{grid-column:1/-1}
+  .media-default-panel{padding:20px!important}
+  .media-folder-heading,.media-default-heading{display:grid;gap:10px}
+  .media-folder-grid{grid-template-columns:1fr}
+  .media-default-form{grid-template-columns:1fr}
+  .site-foot{display:grid;gap:10px}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto!important}
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+
+/* Final workspace cleanup: one visual grammar across managed playlists, manual
+   player editing and network sources. Existing JS/forms are preserved. */
+.playlist-workspace .editor-layout{display:block;max-width:100%}
+.playlist-workspace .queue{min-width:0;max-width:100%}
+.playlist-workspace .section-title{display:flex;align-items:end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:15px;border-bottom:1px solid var(--ui-line);margin:0 0 14px}
+.playlist-workspace .section-title h2{font:400 clamp(25px,3vw,32px)/1.18 var(--ui-serif);letter-spacing:-.025em;margin:0}
+.playlist-workspace .playlist-overview{background:var(--ui-subtle);padding:10px 14px;border:1px solid var(--ui-line);border-radius:3px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.playlist-workspace .asset{border:1px solid var(--ui-line);border-left:3px solid transparent;background:var(--ui-surface);padding:0;box-shadow:none}
+.playlist-workspace .asset.is-expanded{border-left-color:var(--ui-accent);background:var(--ui-raised)}
+.playlist-workspace .asset-main{gap:12px;padding:12px 15px}
+.playlist-workspace .asset-index{font:600 12px var(--ui-mono);color:var(--ui-muted)}
+.playlist-workspace .asset-kind{border-radius:2px}
+.playlist-workspace .asset-name{font-size:15px;font-weight:650;line-height:1.35}
+.playlist-workspace .asset-subtitle,.playlist-workspace .asset-meta{font-size:12px}
+.playlist-workspace .asset-toolbar{border-top:1px solid var(--ui-line);padding:16px 18px;background:var(--ui-raised)}
+.playlist-workspace .asset-toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.playlist-workspace .asset-toolbar-actions button{border-radius:3px;box-shadow:none}
+.playlist-workspace .asset-schedule-details,.playlist-workspace .delete-panel{border-color:var(--ui-line)}
+.playlist-workspace .asset-schedule-details>summary{background:var(--ui-subtle);color:var(--ui-fg);border-radius:3px}
+.playlist-workspace .asset-bulk-choice{margin:0}
+.playlist-workspace .playlist-bottom-actions{background:transparent;border-top:1px solid var(--ui-line);padding:18px 0}
+.playlist-workspace .playlist-bulk-management{background:transparent;border:1px solid var(--ui-line);border-radius:3px;padding:14px}
+.playlist-workspace .composer{background:var(--ui-surface);color:var(--ui-fg);box-shadow:-15px 0 45px #0003}
+.playlist-workspace .composer-close-row{background:#191b1a;color:#eeece2}
+.playlist-workspace .composer-head{background:var(--ui-surface);color:var(--ui-fg)}
+.playlist-workspace .composer-head h2{color:var(--ui-fg);font-family:var(--ui-serif);font-weight:400}
+.playlist-workspace .composer-pane,.playlist-workspace .composer-pane label{color:var(--ui-fg)}
+.playlist-workspace .add-type-switch{border-color:var(--ui-line)}
+.playlist-workspace .add-mode.selected{background:var(--ui-subtle);color:var(--ui-accent);border-bottom:2px solid var(--ui-accent)}
+.library-template-intro{margin-bottom:15px}
+.library-template-intro .library-detail-title-row{align-items:center;gap:12px}
+.library-grid{align-items:start;gap:18px}
+.library-items{display:grid;gap:9px}
+.library-item{border-left:3px solid transparent;display:flex;align-items:center;gap:12px;padding:12px 14px}
+.library-item:hover{border-left-color:var(--ui-accent)}
+.library-item-position{font:600 12px var(--ui-mono);color:var(--ui-muted);min-width:26px}
+.library-item-copy{min-width:0;flex:1 1 180px}
+.library-item-copy strong{font-size:14px;overflow-wrap:anywhere}
+.library-item-copy small{overflow-wrap:anywhere}
+.library-order-controls{display:flex;gap:5px;align-items:center}
+.library-order-controls button{min-width:34px;min-height:35px;padding:6px;color:var(--ui-fg);border:1px solid var(--ui-line)}
+.library-order-controls button:hover{border-color:var(--ui-accent)}
+.library-duration-form{background:transparent;border:0;box-shadow:none;align-items:end}
+.library-duration-form label{font:600 11px var(--ui-sans);letter-spacing:0}
+.library-duration-input{min-height:35px}
+.library-duration-input input{min-height:33px}
+.library-panel{border-radius:3px}
+.library-panel>details>summary{font-size:13px;font-weight:650}
+.folder-workflow{border-left:3px solid var(--ui-accent);padding:15px 19px}
+.folder-workflow-title strong{font-family:var(--ui-serif);font-weight:400;font-size:21px}
+.media-folder-notice{display:flex;align-items:center;flex-wrap:wrap;gap:12px 22px;margin:25px 0;padding:22px}
+.media-folder-notice h2{font:400 25px/1.2 var(--ui-serif);letter-spacing:-.025em;margin:0}
+.media-folder-notice .muted{flex:1 1 260px;margin:0}
+.media-folder-notice .eyebrow{width:100%;margin:0}
+.media-folder-notice .button{flex:none}
+@media(max-width:780px){
+  .playlist-workspace .asset-main{padding:10px;gap:7px;flex-wrap:wrap}
+  .playlist-workspace .asset-toolbar{padding:12px}
+  .library-item{flex-wrap:wrap}
+  .library-duration-form{width:auto;flex:1 1 150px;justify-content:flex-start}
+  .library-order-controls{margin-left:auto}
+  .media-folder-notice .button{width:100%}
+}
+
+/* -------- app/static/workflow-ui.css: imported into canonical UI system -------- */
+/* Playlist workflow cleanup, November 2026.
+   Small, theme-aware final layer over the retained legacy CSS.
+   No player/playlist behavior is implemented here. */
+:root { --workflow-gap:14px }
+html[data-theme="light"] { --workflow-hover:#f3eee5;--workflow-blue:#284d65 }
+html[data-theme="dark"] { --workflow-hover:#35372f;--workflow-blue:#a9cada }
+
+/* Uniform, legible actions in BOTH modes. High contrast is not optional. */
+.site-main :is(.button,button):not(.primary):not(.danger-btn):not(.drag-handle):not(.asset-open):not(.add-mode):not(.composer-close) {
+  color:var(--ui-fg);
+}
+.library-intro a.button,
+.library-template-intro a.library-backup-export,
+.playlist-workspace .composer-pane a.button,
+.library-panel a.button {
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:42px;padding:9px 15px;text-decoration:none;
+  border:1px solid var(--ui-line-strong);background:var(--ui-surface);
+  color:var(--ui-fg);font-weight:650;border-radius:5px;box-shadow:none;
+}
+.library-intro a.button:hover,
+.library-template-intro a.library-backup-export:hover,
+.playlist-workspace .composer-pane a.button:hover,
+.library-panel a.button:hover {
+  background:var(--workflow-hover);color:var(--ui-accent);
+  border-color:var(--ui-accent);
+}
+.site-main button.primary,.site-main .button.primary,
+.playlist-workspace a.studio-add-trigger,
+.playlist-workspace .composer-pane button.primary {
+  background:#ff795c;color:#191b1a;border:1px solid #ff795c;
+  border-radius:5px;font-weight:750;box-shadow:none;
+}
+.site-main button.primary:hover:not(:disabled),.site-main .button.primary:hover,
+.playlist-workspace a.studio-add-trigger:hover {
+  background:#ff977e;color:#191b1a;border-color:#ff977e;
+}
+.library-duration-form button,
+.library-item-actions button,
+.library-panel button:not(.primary):not(.danger-btn) {
+  background:var(--ui-surface);border-color:var(--ui-line-strong);
+  color:var(--ui-fg);border-radius:5px;
+}
+.library-duration-form button:hover,
+.library-item-actions button:hover,
+.library-panel button:not(.primary):hover {
+  background:var(--workflow-hover);color:var(--ui-accent);
+  border-color:var(--ui-accent);
+}
+.site-main input,.site-main select,.site-main textarea {
+  color:var(--ui-fg);
+}
+.site-main .muted,.site-main small {color:var(--ui-muted)}
+.site-main :is(.card,.notice,details,form,fieldset){min-width:0}
+
+/* Three real jobs: create/pick a source, import/export an archive, apply. */
+.library-workflow-nav {
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;
+  margin:0 0 24px;
+}
+.library-workflow-nav a {
+  display:flex;flex-direction:column;gap:5px;min-width:0;
+  border:1px solid var(--ui-line);border-top:3px solid var(--ui-accent);
+  border-radius:4px;padding:15px 17px;background:var(--ui-surface);
+  text-decoration:none;color:var(--ui-fg);
+}
+.library-workflow-nav a:hover{border-color:var(--ui-accent);background:var(--workflow-hover)}
+.library-workflow-nav strong{font-size:14px;font-weight:750;color:var(--ui-fg)}
+.library-workflow-nav span{font-size:12px;line-height:1.5;color:var(--ui-muted)}
+.library-source-feature{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:18px;padding:20px 23px}
+.library-source-feature h2{font-size:clamp(20px,2.2vw,27px)}
+.library-source-feature p{max-width:780px}
+.library-source-feature .button{min-width:0;white-space:normal;text-align:center}
+.library-entry-type.is-automatic{color:var(--ui-accent);border-color:var(--ui-accent)}
+.library-entry-type.is-manual{color:var(--ui-muted)}
+.library-entry-shell .library-entry{align-items:center}
+.library-entry-shell .library-entry-heading{align-items:baseline;gap:7px 11px}
+.library-panel .library-step{color:var(--ui-accent)}
+.library-backup-panel{background:var(--ui-surface)!important}
+.library-backup-panel>details{border-top:1px solid var(--ui-line)}
+.library-backup-panel summary{font-size:13px;font-weight:700;color:var(--ui-fg)}
+
+/* Do not squeeze file names into 60px columns beside multiple controls.
+   Wide: queue + action rail. Laptop/tablet: full-width queue, tools below. */
+.library-grid{grid-template-columns:minmax(0,1fr) minmax(290px,320px);gap:22px}
+.library-queue-panel {min-width:0}
+.library-queue-panel>h2{margin-bottom:10px}
+.library-item {
+  display:grid!important;
+  grid-template-columns:28px 56px minmax(190px,1fr) minmax(145px,auto) auto;
+  gap:12px!important;align-items:center;
+  padding:15px 16px!important;overflow:visible;
+}
+.library-item-position{grid-column:1;color:var(--ui-muted)}
+.library-item>.library-glyph,.library-item>.library-media-preview{grid-column:2;min-width:56px;width:56px;height:56px}
+.library-item .asset-preview-content{max-width:100%;max-height:100%;object-fit:contain}
+.library-item-copy{
+  display:grid!important;grid-column:3;gap:5px;
+  min-width:0!important;flex:none!important;overflow:visible;
+}
+.library-item-copy strong{
+  display:block;font-size:14px!important;font-weight:750;line-height:1.35;
+  color:var(--ui-fg);word-break:normal;overflow-wrap:anywhere;
+}
+.library-item-copy small{
+  display:block;line-height:1.45;font-size:12px!important;
+  color:var(--ui-muted);word-break:normal;overflow-wrap:anywhere;
+}
+.library-duration-form {
+  grid-column:4;display:flex;flex-direction:column;align-items:stretch;
+  justify-content:center;gap:7px;margin:0!important;min-width:145px;
+}
+.library-duration-form label{font-size:12px!important;color:var(--ui-fg)}
+.library-duration-input{min-height:41px;border-color:var(--ui-line-strong);background:var(--ui-raised)}
+.library-duration-input input{width:75px!important;min-height:39px;font-size:14px;color:var(--ui-fg)}
+.library-duration-input span{font-size:12px;color:var(--ui-muted)}
+.library-duration-form button{min-height:37px;padding:7px 10px;font-size:12px}
+.library-item-actions {grid-column:5;justify-self:end;align-self:center;min-width:0}
+.library-order-controls{display:flex;flex-direction:column;gap:4px}
+.library-item-actions .library-order-controls button{
+  min-width:38px;min-height:36px;border-radius:4px;
+}
+.library-item .library-item-options{margin:0}
+.library-folder-settings>summary,.library-website-details>summary{
+  color:var(--ui-fg);font-weight:750;font-size:13px;
+}
+.library-folder-settings,.library-website-details{padding:10px 0;margin:0}
+.library-template-intro{padding:19px 0 23px;margin-bottom:17px}
+.library-template-intro .library-detail-title-row{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
+}
+.library-template-intro .library-detail-title-row h1{
+  flex:1 1 270px;min-width:0;word-break:normal;overflow-wrap:anywhere;
+}
+.library-template-intro .library-backup-export{flex:none;margin:0;font-size:12px}
+.library-template-intro .template-options{margin:0}
+.library-template-intro .template-options>summary{min-height:42px;border:1px solid var(--ui-line)}
+.library-template-intro .template-options-panel{background:var(--ui-raised);color:var(--ui-fg)}
+.library-template-intro .template-options-panel .muted{color:var(--ui-muted)}
+.folder-workflow{padding:16px 20px;margin-bottom:16px}
+.folder-workflow .pill{max-width:100%;overflow-wrap:anywhere;white-space:normal}
+.library-publish-hero{
+  display:block;margin:22px 0 4px;padding:21px 23px;
+  border:1px solid var(--ui-line);border-left:4px solid var(--ui-accent);
+  border-radius:5px;background:var(--ui-surface);
+  color:var(--ui-fg);box-shadow:none;
+}
+.library-publish-hero :is(h2,p,label,legend,small){color:var(--ui-fg)}
+.library-publish-hero .library-publish-copy{margin-bottom:15px}
+.library-publish-hero .library-publish-copy h2{font:400 24px/1.2 var(--ui-serif);color:var(--ui-fg)}
+.library-publish-hero .library-publish-copy p:not(.eyebrow){color:var(--ui-muted);line-height:1.55}
+.library-publish-form{display:grid;gap:12px}
+.library-publish-hero .library-publish-fields{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;
+}
+.library-publish-form fieldset,.library-publish-hero .schedule-choice{
+  min-width:0;background:var(--ui-raised);color:var(--ui-fg);border:1px solid var(--ui-line);
+  border-radius:5px;
+}
+.library-publish-form :is(input,select){color:var(--ui-fg);background:var(--ui-surface);border-color:var(--ui-line-strong)}
+.library-publish-hero .library-publish-hint{color:var(--ui-muted)!important}
+.library-publish-form .library-publish-confirm{color:var(--ui-fg)}
+.library-publish-form .library-publish-actions{gap:12px}
+.library-panel .library-bulk-compact,.library-panel .library-website-secondary{background:var(--ui-surface)}
+.library-website-secondary{background:var(--ui-surface)!important;border-style:solid!important}
+.library-queue-panel .eyebrow{margin:0 0 8px}
+
+/* Player queue: remove unreplaced dark-Nordlicht colors on light paper. */
+.playlist-workspace .playlist-overview,
+.playlist-workspace .playlist-overview span:not(.overview-dot),
+.playlist-workspace .playlist-overview strong,
+.playlist-workspace .playlist-overview .overview-note {
+  color:var(--ui-fg);
+}
+.playlist-workspace .playlist-overview .overview-dot{
+  background:var(--ui-good);box-shadow:none;
+}
+.playlist-workspace .playlist-overview{background:var(--ui-subtle);border-color:var(--ui-line)}
+.playlist-studio-v2 .asset-body .asset-name{
+  color:var(--ui-fg)!important;font-size:15px;line-height:1.4;
+  white-space:normal;overflow:visible;overflow-wrap:anywhere;text-overflow:clip;
+}
+.playlist-studio-v2 .asset-body .clip{
+  color:var(--ui-muted)!important;font-size:12px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.playlist-studio-v2 .asset-body .asset-meta,
+.playlist-studio-v2 .asset-body .asset-meta .asset-duration,
+.playlist-studio-v2 .asset-body .asset-schedule-summary {
+  color:var(--ui-muted)!important;font-size:12px;
+}
+.playlist-studio-v2 .asset-body .type-label{
+  color:var(--ui-accent)!important;font-weight:750;
+}
+.playlist-studio-v2 button.asset-open{
+  background:transparent!important;color:var(--ui-fg);padding-right:8px;
+}
+.playlist-studio-v2 button.asset-open:hover,
+.playlist-studio-v2 button.asset-open:focus-visible{
+  background:var(--workflow-hover)!important;border-color:var(--ui-line-strong);
+}
+.playlist-studio-v2 .asset-edit-hint{color:var(--ui-accent)}
+.playlist-workspace .asset-kind{background:var(--ui-subtle);color:var(--ui-accent)}
+.playlist-studio-v2 .asset-schedule-summary .icon{color:var(--ui-accent)}
+.playlist-workspace .asset-side .pill.ok{background:var(--ui-good-bg);color:var(--ui-good)}
+.playlist-workspace .queue .asset{background:var(--ui-surface)}
+.playlist-workspace .asset-status{color:var(--ui-good)}
+.playlist-workspace .asset-toolbar{background:var(--ui-raised)}
+
+/* Composer uses one palette regardless of the current system theme. */
+.playlist-workspace .composer{background:var(--ui-surface);color:var(--ui-fg)}
+.playlist-workspace .composer-head{background:var(--ui-surface);color:var(--ui-fg)}
+.playlist-workspace .composer-workflow-note{margin:10px 22px 4px;font-size:12px;color:var(--ui-muted);line-height:1.55}
+.playlist-workspace .composer-workflow-note strong{color:var(--ui-fg)}
+.playlist-workspace .add-type-switch,
+.playlist-workspace .add-type-switch.with-network{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;padding:6px;margin:12px 20px 7px;
+  background:var(--ui-subtle);border-color:var(--ui-line);
+}
+.playlist-workspace .add-type-switch .add-mode{
+  display:flex;align-items:center;justify-content:center;
+  min-width:0;min-height:44px;padding:7px 6px;
+  border:1px solid transparent;border-radius:4px;
+  background:transparent;color:var(--ui-fg);
+  white-space:normal;line-height:1.3;font-size:12px;font-weight:650;
+}
+.playlist-workspace .add-type-switch .add-mode:hover{background:var(--workflow-hover);color:var(--ui-accent)}
+.playlist-workspace .add-type-switch .add-mode.selected{
+  background:var(--ui-surface);color:var(--ui-accent);border:1px solid var(--ui-accent);
+  box-shadow:none;
+}
+.playlist-workspace .composer-pane{background:var(--ui-surface);color:var(--ui-fg);padding:17px 22px}
+.playlist-workspace .composer-pane label{color:var(--ui-fg)}
+.playlist-workspace .composer-pane :is(input:not([type="checkbox"]),select,textarea){
+  background:var(--ui-raised);color:var(--ui-fg);
+  border:1px solid var(--ui-line-strong);border-radius:4px;min-height:42px;
+}
+.playlist-workspace .composer-pane :is(input,select,textarea)::placeholder{color:var(--ui-muted)}
+.playlist-workspace .composer-pane .composer-explainer{color:var(--ui-muted);font-size:13px}
+.playlist-workspace .composer-pane .composer-explainer strong{color:var(--ui-fg)}
+.playlist-workspace .composer-pane :is(.upload-storage-strip,.upload-storage-more,.storage-override){
+  color:var(--ui-fg);border-color:var(--ui-line);background:var(--ui-subtle);
+}
+.playlist-workspace .composer-source-choice {
+  margin:16px 0;padding:18px;border:1px solid var(--ui-line);
+  border-left:3px solid var(--ui-accent);border-radius:5px;
+  background:var(--ui-raised);
+}
+.playlist-workspace .composer-source-choice h3{margin:3px 0 10px;font-size:17px;color:var(--ui-fg)}
+.playlist-workspace .composer-source-choice .muted{color:var(--ui-muted);font-size:12px}
+.playlist-workspace .composer-source-choice>summary{font-size:13px;font-weight:750;line-height:1.5}
+.playlist-workspace .composer-source-auto{border-left-color:var(--ui-line-strong)}
+.playlist-workspace .composer-source-choice form{display:grid;gap:10px;margin-top:12px}
+.playlist-workspace .composer-source-choice .append-confirm{
+  display:flex;align-items:start;gap:9px;font-size:12px;line-height:1.5;
+}
+.playlist-workspace .composer-source-choice .append-confirm input{flex:none;margin-top:3px}
+.playlist-workspace .studio-bulk-details{
+  color:var(--ui-fg);background:var(--ui-raised);
+  border:1px solid var(--ui-line);padding:14px;border-radius:4px;
+}
+.playlist-workspace .studio-bulk-details>summary{color:var(--ui-fg);font-weight:750}
+.playlist-workspace .library-template-append{background:var(--ui-raised);border:1px solid var(--ui-line);border-radius:4px;padding:12px}
+.playlist-workspace .library-template-append>summary{color:var(--ui-fg);font-weight:750}
+.playlist-workspace .library-template-append .muted{color:var(--ui-muted)}
+.playlist-workspace .composer-footnote{background:var(--ui-subtle);color:var(--ui-muted)}
+
+/* Keep actions readable on normal laptops instead of stacking filenames 3 chars wide. */
+@media(max-width:1170px){
+  .library-grid{grid-template-columns:minmax(0,1fr)}
+  .library-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .library-actions>*{min-width:0}
+  .library-apply{grid-column:1/-1}
+}
+@media(max-width:850px){
+  .library-workflow-nav{grid-template-columns:1fr}
+  .library-workflow-nav a{padding:13px 16px}
+  .library-source-feature{grid-template-columns:1fr}
+  .library-source-feature .button{justify-self:start}
+  .library-item{grid-template-columns:26px 54px minmax(0,1fr);gap:10px!important}
+  .library-item>.library-glyph,.library-item>.library-media-preview{grid-column:2}
+  .library-item-copy{grid-column:3}
+  .library-duration-form{grid-column:3;grid-row:auto;display:flex;flex-direction:row;align-items:flex-end;min-width:0;flex-wrap:wrap}
+  .library-duration-form label{flex:1 1 130px}
+  .library-duration-form button{flex:none}
+  .library-item-actions{grid-column:2/-1;grid-row:auto;justify-self:end}
+  .library-order-controls{flex-direction:row}
+  .library-publish-hero .library-publish-fields{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .library-actions{grid-template-columns:1fr}
+  .library-item{padding:12px!important}
+  .library-item-copy{font-size:12px}
+  .library-duration-form{grid-column:1/-1}
+  .library-item-actions{grid-column:1/-1}
+  .library-template-intro .library-backup-export{width:100%}
+  .library-source-feature .button{width:100%}
+  .playlist-workspace .add-type-switch,
+  .playlist-workspace .add-type-switch.with-network{grid-template-columns:repeat(2,minmax(0,1fr));margin:10px 14px}
+  .playlist-workspace .composer-workflow-note{margin:10px 14px 4px}
+  .playlist-workspace .composer-pane{padding:13px 14px}
+  .playlist-workspace .composer-source-choice{padding:13px}
+}
+
+/* Dashboard finish: legacy fleet.css/workspace.css dark-only colors must not
+   leak into the shared light/dark theme or mix blue and coral actions. */
+.fleet-workspace .hub-workflow-card>a.button:not(.primary){
+  display:inline-flex;align-items:center;justify-content:center;min-height:42px;
+  background:var(--ui-raised)!important;color:var(--ui-fg)!important;
+  border:1px solid var(--ui-line-strong)!important;border-radius:5px!important;
+  padding:9px 15px;text-decoration:none;font-weight:700;box-shadow:none!important;
+}
+.fleet-workspace .hub-workflow-card>a.button:not(.primary):hover{
+  background:var(--workflow-hover)!important;
+  border-color:var(--ui-accent)!important;color:var(--ui-accent)!important;
+}
+.fleet-workspace .hub-workflow-card>a.button.primary{
+  color:#191b1a!important;background:#ff795c!important;
+  border:1px solid #ff795c!important;border-radius:5px!important;
+  box-shadow:none!important;text-decoration:none;
+}
+.fleet-workspace .hub-workflow-card>a.button.primary:hover{
+  color:#191b1a!important;background:#ff977e!important;
+  border-color:#ff977e!important;
+}
+.fleet-workspace .fleet-summary .fleet-stat-label,
+.fleet-workspace .fleet-summary .fleet-summary-hint,
+.fleet-workspace .fleet-device .fleet-device-line span,
+.fleet-workspace .fleet-device .fleet-schedule-link{
+  color:var(--ui-muted)!important;
+}
+.fleet-workspace .fleet-summary .fleet-stat-value,
+.fleet-workspace .fleet-device .fleet-device-line strong,
+.fleet-workspace .fleet-device h3{color:var(--ui-fg)!important}
+.fleet-workspace .fleet-device-actions>details>summary{
+  background:var(--ui-raised)!important;color:var(--ui-fg)!important;
+  border-color:var(--ui-line-strong)!important;border-radius:5px!important;
+  font-size:12px!important;min-height:42px;
+}
+.fleet-workspace .fleet-device-actions>details>summary:hover,
+.fleet-workspace .fleet-device-actions>details[open]>summary{
+  background:var(--workflow-hover)!important;color:var(--ui-accent)!important;
+  border-color:var(--ui-accent)!important;
+}
+.fleet-workspace .fleet-storage-menu>summary{
+  background:var(--ui-raised);color:var(--ui-fg);border-color:var(--ui-line-strong);
+}
+.fleet-workspace .fleet-device-actions .fleet-remote-note,
+.fleet-workspace .fleet-device-actions .fleet-remote-note *,
+.fleet-workspace .fleet-device-actions .fleet-device-address {
+  color:var(--ui-muted);
+}
+.fleet-workspace .fleet-device{background:var(--ui-surface);color:var(--ui-fg);box-shadow:none}
+.fleet-workspace .fleet-grid{scroll-margin-top:35px}
+.fleet-workspace .fleet-grid-single{grid-template-columns:minmax(0,min(100%,680px))}
+.fleet-workspace .fleet-grid-single .fleet-device{padding:21px 24px 16px}
+.fleet-workspace .fleet-grid-single .fleet-device-top{margin-bottom:13px}
+.fleet-workspace .fleet-grid-single .fleet-device h3{font-size:22px;margin-bottom:12px}
+.fleet-workspace .fleet-grid-single .fleet-open{max-width:560px;margin:15px 0 12px!important}
+.fleet-workspace .fleet-grid-single .fleet-device-actions{max-width:560px}
+.fleet-workspace .fleet-grid-single .fleet-schedule-link{margin-bottom:12px}
+
+/* Device setup is optional, not a permanently visible admin form. Native
+   details/summary works without JavaScript; the top CTA opens it with JS. */
+.fleet-workspace details.fleet-setup-collapsible{
+  display:block;margin:25px 0 8px;padding:0;min-width:0;
+  background:var(--ui-surface);border:1px solid var(--ui-line);
+  border-radius:5px;box-shadow:none;scroll-margin-top:28px;
+}
+.fleet-workspace .fleet-setup-toggle{
+  display:flex;align-items:center;justify-content:space-between;gap:18px;
+  padding:20px 24px;cursor:pointer;list-style:none;
+  color:var(--ui-fg);background:var(--ui-surface);border-radius:5px;
+}
+.fleet-workspace .fleet-setup-toggle::-webkit-details-marker{display:none}
+.fleet-workspace .fleet-setup-toggle:hover{
+  color:var(--ui-fg);background:var(--workflow-hover);
+}
+.fleet-workspace .fleet-setup-toggle-text{
+  display:grid;gap:4px;min-width:0;
+}
+.fleet-workspace .fleet-setup-toggle-text .eyebrow{margin:0}
+.fleet-workspace .fleet-setup-toggle-text>strong{
+  font:400 23px/1.2 var(--ui-serif);color:var(--ui-fg);
+}
+.fleet-workspace .fleet-setup-toggle-text>span:last-child{
+  color:var(--ui-muted);font-size:13px;
+}
+.fleet-workspace .fleet-setup-toggle-action{
+  display:inline-flex;align-items:center;gap:9px;white-space:nowrap;
+  border:1px solid var(--ui-line-strong);border-radius:5px;
+  background:var(--ui-raised);padding:9px 13px;color:var(--ui-fg);
+  font-size:12px;font-weight:700;
+}
+.fleet-workspace details.fleet-setup-collapsible[open] .fleet-setup-toggle-action span[aria-hidden]{transform:rotate(180deg)}
+.fleet-workspace .fleet-setup-body{
+  display:grid;grid-template-columns:minmax(210px,.75fr) minmax(350px,1.25fr);
+  gap:22px;padding:24px;border-top:1px solid var(--ui-line);
+  background:var(--ui-surface);border-radius:0 0 5px 5px;
+}
+.fleet-workspace .fleet-setup-body .fleet-setup-intro{min-width:0}
+.fleet-workspace .fleet-setup-body .fleet-setup-form{min-width:0;align-self:start}
+.fleet-workspace .fleet-setup-body .fleet-setup-form input{
+  min-width:0;width:100%;box-sizing:border-box;
+  color:var(--ui-fg);background:var(--ui-raised);
+  border-color:var(--ui-line-strong);border-radius:5px;
+}
+.fleet-workspace .fleet-setup-body .field-note{color:var(--ui-muted)}
+.fleet-workspace .fleet-setup-body .fleet-setup-intro .muted{color:var(--ui-muted)}
+@media(max-width:830px){
+  .fleet-workspace .fleet-setup-body{grid-template-columns:1fr}
+}
+@media(max-width:580px){
+  .fleet-workspace .fleet-grid-single{grid-template-columns:minmax(0,1fr)}
+  .fleet-workspace .fleet-grid-single .fleet-device{padding:17px 16px 13px}
+  .fleet-workspace .fleet-setup-toggle{align-items:flex-start;flex-direction:column;padding:17px;gap:12px}
+  .fleet-workspace .fleet-setup-toggle-action{min-height:40px}
+  .fleet-workspace .fleet-setup-body{padding:17px}
+  .fleet-workspace .fleet-setup-body .fleet-setup-form{grid-template-columns:1fr}
+  .fleet-workspace .hub-workflow-card>a.button{width:100%;max-width:100%;text-align:center}
+}
+
+/* =========================================================================
+   CANONICAL SHARED COMPONENTS · all user-facing routes, both themes
+   Source of truth: ui-system.css. No additional late-overriding stylesheet.
+   ========================================================================= */
+:root {
+  --ui-radius:6px;
+  --ui-control-height:44px;
+  --ui-focus:var(--ui-accent);
+  --ui-primary-bg:#ff795c;
+  --ui-primary-hover:#ff967e;
+  --ui-primary-ink:#191b1a;
+  --ui-danger:var(--ui-error);
+}
+html { scroll-behavior:smooth }
+html[data-theme="light"]{--ui-surface-hover:#f0ede4;--ui-panel-overlay:#fffef9;--ui-secondary-text:#44483e}
+html[data-theme="dark"]{--ui-surface-hover:#343830;--ui-panel-overlay:#2b2e28;--ui-secondary-text:#d4d6cb}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--ui-bg);color:var(--ui-fg)}
+.site-main{min-width:0}
+.site-main :is(section,article,aside,div,fieldset){min-width:0}
+.site-main :is(input,select,textarea){max-width:100%;min-width:0;color:var(--ui-fg);background:var(--ui-raised);border:1px solid var(--ui-line-strong);border-radius:var(--ui-radius);font:inherit}
+.site-main :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]){min-height:var(--ui-control-height)}
+.site-main input[type=file]{height:auto;padding:10px}
+.site-main :is(input,select,textarea):focus-visible,
+.site-main :is(button,a,summary):focus-visible{outline:3px solid var(--ui-focus)!important;outline-offset:2px}
+.site-main :is(input,select,textarea):disabled{opacity:.68;cursor:not-allowed}
+.site-main :is(label,legend){color:var(--ui-fg)}
+.site-main .muted,.site-main .field-note{color:var(--ui-muted)}
+.site-main :is(.eyebrow,.section-index){color:var(--ui-accent)!important}
+.site-main :is(.card,.library-panel,.schedule-section,.schedule-rule,.media-source-card,.hub-workflow-card){border-color:var(--ui-line);border-radius:var(--ui-radius);background:var(--ui-surface);color:var(--ui-fg)}
+.site-main :is(.card,.library-panel,.schedule-section) :is(h2,h3,h4){color:var(--ui-fg)}
+.site-main :is(.button,button).primary:not(:disabled),
+.site-main :is(.button,button).fleet-open.primary:not(:disabled){
+  color:var(--ui-primary-ink)!important;background:var(--ui-primary-bg)!important;
+  border:1px solid var(--ui-primary-bg)!important;border-radius:var(--ui-radius);
+  font-weight:750;box-shadow:none;transform:none;text-decoration:none;
+}
+.site-main :is(.button,button).primary:not(:disabled):hover,
+.site-main :is(.button,button).fleet-open.primary:not(:disabled):hover{
+  color:var(--ui-primary-ink)!important;background:var(--ui-primary-hover)!important;
+  border-color:var(--ui-primary-hover)!important;
+}
+.site-main :is(a.button,button):not(.primary):not(.danger-btn):not(.schedule-remove):not(.asset-open):not(.drag-handle):not(.product-theme-toggle):not(.site-logout):not(.quick-toggle):not(.add-mode):not(.composer-close):not(.fleet-panel-close){
+  background:var(--ui-raised);color:var(--ui-fg);
+  border-color:var(--ui-line-strong);border-radius:var(--ui-radius);
+  box-shadow:none;transform:none;
+}
+.site-main :is(a.button,button):not(.primary):not(.danger-btn):not(.schedule-remove):not(.asset-open):not(.drag-handle):not(.quick-toggle):not(.add-mode):not(.composer-close):hover:not(:disabled){
+  background:var(--ui-surface-hover);border-color:var(--ui-accent);color:var(--ui-accent)
+}
+.site-main .danger-btn,.site-main .schedule-remove{
+  color:var(--ui-error);border:1px solid var(--ui-error);background:var(--ui-surface);
+}
+.site-main .danger-btn:hover,.site-main .schedule-remove:hover{
+  color:var(--ui-error);background:var(--ui-error-bg);border-color:var(--ui-error)
+}
+.site-main :is(button,.button):disabled{cursor:not-allowed;opacity:.58}
+.site-main :is(.pill,.count,.badge,.source-pill){
+  font-size:12px;line-height:1.4;font-weight:650;
+  border-color:var(--ui-line);border-radius:4px;
+}
+.site-main .pill.ok{background:var(--ui-good-bg);color:var(--ui-good)}
+.site-main .pill.bad{background:var(--ui-error-bg);color:var(--ui-error)}
+.site-main .pill.off{background:var(--ui-subtle);color:var(--ui-muted)}
+.site-main :is(.notice,.site-notice){color:var(--ui-fg);border-color:var(--ui-line);background:var(--ui-subtle)}
+.site-main .notice.error{color:var(--ui-error);background:var(--ui-error-bg)}
+.site-main .notice.success{color:var(--ui-good);background:var(--ui-good-bg)}
+.site-main details>summary{cursor:pointer}
+.site-main details>summary:hover{color:var(--ui-accent)}
+.site-nav-link:not(.is-active){color:#d4d5cc}
+.site-nav-link.is-active{color:#fff}
+.site-brand{flex:none}
+.site-user{flex:none}
+.site-foot,.site-foot a{font-size:12px}
+.site-foot a{overflow-wrap:anywhere}
+.site-main :is(.auth-layout,.studio-error){max-width:100%}
+.auth-card .auth-help{color:var(--ui-muted)}
+.auth-card :is(input,button){width:100%}
+.studio-error{padding:24px 0 40px}
+.studio-error .notice{max-width:720px;overflow-wrap:anywhere}
+
+/* Dashboard: single devices need breathing room and consistent actions. */
+.fleet-workspace .fleet-grid{align-items:stretch}
+.fleet-workspace .fleet-device{
+  display:flex;flex-direction:column;gap:0;
+  border-color:var(--ui-line);background:var(--ui-surface);
+  box-shadow:none;border-radius:var(--ui-radius);min-width:0;
+}
+.fleet-workspace .fleet-device-top{align-items:center}
+.fleet-workspace .fleet-device h3{color:var(--ui-fg);overflow-wrap:anywhere}
+.fleet-workspace .fleet-device-line,
+.fleet-workspace .fleet-device-line span,
+.fleet-workspace .fleet-schedule-link{color:var(--ui-muted)}
+.fleet-workspace .fleet-device-line strong{color:var(--ui-fg)}
+.fleet-workspace .fleet-device .fleet-open{border-radius:var(--ui-radius)!important}
+.fleet-workspace .fleet-summary{background:var(--ui-surface);border-color:var(--ui-line)}
+.fleet-workspace .fleet-summary-hint{color:var(--ui-muted)}
+.fleet-workspace .fleet-device-actions>details>summary,
+.fleet-workspace .fleet-device-actions>.fleet-remote-marketing>summary,
+.fleet-workspace .fleet-storage-menu>summary{
+  color:var(--ui-fg)!important;border-color:var(--ui-line-strong)!important;
+  border-radius:var(--ui-radius)!important;background:var(--ui-raised)!important;
+}
+.fleet-workspace .fleet-device-actions>details>summary:hover,
+.fleet-workspace .fleet-storage-menu>summary:hover{
+  color:var(--ui-accent)!important;border-color:var(--ui-accent)!important;
+  background:var(--ui-surface-hover)!important;
+}
+html.fleet-popovers-ready .fleet-workspace .fleet-device-actions>details>.fleet-remote-body,
+html.fleet-popovers-ready .fleet-workspace .fleet-device-actions>details>.fleet-settings-content,
+.fleet-workspace .fleet-storage-panel{
+  background:var(--ui-panel-overlay);color:var(--ui-fg);
+  border-color:var(--ui-line-strong);border-radius:var(--ui-radius);
+}
+.fleet-workspace .fleet-panel-title,
+.fleet-workspace .fleet-panel-title span,
+.fleet-workspace .fleet-settings-content :is(label,strong,h3){color:var(--ui-fg)}
+.fleet-workspace .fleet-settings-content .fleet-device-address,
+.fleet-workspace .fleet-storage-panel :is(p,dt,dd,small){color:var(--ui-muted)}
+.fleet-workspace .fleet-setup-body{background:var(--ui-surface)}
+.fleet-workspace .fleet-setup-toggle:hover{background:var(--ui-surface-hover)}
+.fleet-workspace .fleet-setup-form input{background:var(--ui-raised);border-color:var(--ui-line-strong)}
+.fleet-workspace .hub-workflow-card>a{max-width:100%;white-space:normal;text-align:center}
+.fleet-workspace .hub-workflow-card .button:not(.primary){background:var(--ui-raised)!important;color:var(--ui-fg)!important;border-color:var(--ui-line-strong)!important}
+.fleet-workspace .hub-workflow-card .button:not(.primary):hover{background:var(--ui-surface-hover)!important;color:var(--ui-accent)!important;border-color:var(--ui-accent)!important}
+
+/* Library: retain line breaks and readable captions independent of thumbnails. */
+.library-grid{align-items:start}
+.library-queue-panel,.library-items,.library-item{min-width:0}
+.library-item-copy{min-width:0!important}
+.library-item-copy strong{color:var(--ui-fg);overflow-wrap:anywhere;word-break:normal;white-space:normal}
+.library-item-copy small{color:var(--ui-muted);overflow-wrap:anywhere;white-space:normal}
+.library-item .library-media-preview{min-width:56px;width:56px;height:56px;max-width:100%}
+.library-item .library-order-controls button{background:var(--ui-raised);border-color:var(--ui-line);color:var(--ui-fg)}
+.library-item .library-order-controls button:hover{color:var(--ui-accent);border-color:var(--ui-accent)}
+.library-item .library-duration-form{color:var(--ui-fg);background:transparent}
+.library-duration-form label{color:var(--ui-fg)!important}
+.library-duration-form .library-duration-input{background:var(--ui-raised);border-color:var(--ui-line-strong)}
+.library-duration-form .library-duration-input input{background:transparent;color:var(--ui-fg);border:0}
+.library-publish-hero .library-publish-fields{min-width:0}
+.library-publish-hero .library-publish-form{min-width:0}
+.library-publish-hero .library-publish-form label{color:var(--ui-fg)}
+.library-publish-hero :is(.library-publish-hint,.library-publish-copy p:not(.eyebrow)){color:var(--ui-muted)!important}
+.library-source-feature p{color:var(--ui-muted)}
+.library-backup-panel>details>summary{color:var(--ui-fg)}
+
+/* Player: trust the light/dark tokens, never hard-coded old Nordlicht ink. */
+.playlist-workspace .asset .asset-title,
+.playlist-workspace .asset .asset-name,
+.playlist-workspace .asset .asset-body h3{color:var(--ui-fg)!important;overflow-wrap:anywhere}
+.playlist-workspace .asset .asset-meta,
+.playlist-workspace .asset .asset-subtitle,
+.playlist-workspace .asset .clip{color:var(--ui-muted)!important}
+.playlist-workspace .asset-kind{color:var(--ui-accent);background:var(--ui-subtle)}
+.playlist-workspace .asset-body button.asset-open{min-width:0;max-width:100%}
+.playlist-workspace .asset-side .pill{max-width:100%;white-space:normal}
+.playlist-workspace .playlist-overview,
+.playlist-workspace .playlist-overview :is(strong,span:not(.overview-dot)){color:var(--ui-fg)}
+.playlist-workspace .asset-inline-edit label,
+.playlist-workspace .asset-toolbar label{color:var(--ui-fg)}
+.playlist-workspace .composer .composer-pane{color:var(--ui-fg);background:var(--ui-surface)}
+.playlist-workspace .composer-pane .composer-explainer{color:var(--ui-muted)}
+.playlist-workspace .composer-pane a{color:var(--ui-accent)}
+.playlist-workspace .composer-pane :is(.composer-source-choice,.studio-bulk-details,.library-template-append){background:var(--ui-raised);border-color:var(--ui-line)}
+.playlist-workspace .composer-pane :is(.append-confirm,.storage-override){color:var(--ui-fg)}
+.playlist-workspace .composer-pane :is(input,select,textarea){color:var(--ui-fg);background:var(--ui-raised);border-color:var(--ui-line-strong)}
+.playlist-workspace .composer-pane .add-mode{color:var(--ui-fg)}
+.playlist-workspace .composer-pane .add-mode.selected{color:var(--ui-accent)}
+.playlist-workspace .composer-backdrop{background:#0008}
+.playlist-workspace .composer .composer-footnote{color:var(--ui-muted)}
+.playlist-workspace .asset-toolbar,
+.playlist-workspace .asset-toolbar-actions{min-width:0;flex-wrap:wrap}
+
+/* Scheduling: old all-dark scheduling.css had >90 literals; normalize its
+   key reading, choice and action surfaces in BOTH themes. */
+.schedule-workspace{color:var(--ui-fg);width:100%;min-width:0}
+.schedule-workspace .playlist-hero{border-color:var(--ui-line)}
+.schedule-workspace :is(.schedule-section,.schedule-rule,.schedule-new,.schedule-assign,.schedule-asset,.schedule-collection-note,.schedule-presets .card){
+  color:var(--ui-fg);background:var(--ui-surface);border-color:var(--ui-line);
+  border-radius:var(--ui-radius);box-shadow:none;
+}
+.schedule-workspace :is(.schedule-rule-top,.schedule-time-fields,.schedule-assign-controls,.schedule-select-tools,.schedule-rule-edit,.schedule-global-delete){
+  color:var(--ui-fg);background:var(--ui-surface);border-color:var(--ui-line);
+}
+.schedule-workspace :is(.schedule-rule h3,.schedule-rule strong,.schedule-section h2,.schedule-section strong,.schedule-new strong,.schedule-day-fieldset legend){
+  color:var(--ui-fg);
+}
+.schedule-workspace :is(.schedule-section p,.schedule-times,.schedule-rule p,.schedule-hint,.schedule-collection-note span,.schedule-assign-controls p){
+  color:var(--ui-muted);
+}
+.schedule-workspace :is(.schedule-asset-title,.schedule-asset strong,.schedule-asset small){color:var(--ui-fg)}
+.schedule-workspace .schedule-day-fieldset,
+.schedule-workspace .schedule-day-fieldset label,
+.schedule-workspace .schedule-sync-check,
+.schedule-workspace .schedule-quick,
+.schedule-workspace .schedule-day-pill{
+  background:var(--ui-raised);color:var(--ui-fg);border-color:var(--ui-line);
+}
+.schedule-workspace .schedule-day-fieldset label:has(input:checked){
+  background:var(--ui-good-bg);color:var(--ui-good);border-color:var(--ui-good);
+}
+.schedule-workspace :is(.schedule-quick button,.schedule-select-tools button){
+  color:var(--ui-fg);border-color:var(--ui-line-strong);background:var(--ui-raised);
+}
+.schedule-workspace :is(.schedule-quick button,.schedule-select-tools button):hover{
+  background:var(--ui-surface-hover);color:var(--ui-accent);border-color:var(--ui-accent);
+}
+.schedule-workspace :is(.schedule-rule-edit>summary,.schedule-new>summary,.schedule-global-delete>summary){
+  color:var(--ui-fg);border-color:var(--ui-line);
+}
+.schedule-workspace .schedule-global-delete>summary:hover{color:var(--ui-error)}
+.schedule-workspace :is(input,select,textarea){color:var(--ui-fg);background:var(--ui-raised);border-color:var(--ui-line-strong)}
+.schedule-workspace .schedule-assign{padding:18px}
+.schedule-workspace .schedule-asset{overflow-wrap:anywhere}
+.schedule-workspace .schedule-asset input[type=checkbox]{flex:none}
+.schedule-workspace .schedule-day-pill{overflow-wrap:anywhere}
+
+/* Network share admin should retain the already-approved tidy layout. */
+.media-default-panel,.media-sources-admin,.media-source-card{color:var(--ui-fg);background:var(--ui-surface);border-color:var(--ui-line)}
+.media-default-form,.media-source-form{min-width:0}
+.media-default-form :is(input,button),.media-source-form :is(input,button){max-width:100%}
+.media-folder-summary strong{color:var(--ui-fg)}
+.media-folder-summary span,.media-default-panel .muted{color:var(--ui-muted)}
+.media-advanced-sources>summary{color:var(--ui-fg);font-size:14px}
+
+/* Consistent narrow layouts: no off-screen sidebar, modal or form controls. */
+@media(max-width:1200px){
+  .library-grid{grid-template-columns:1fr}
+  .library-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:900px){
+  .hub-workflow-cards{grid-template-columns:1fr 1fr}
+  .site-header{gap:10px}
+  .site-user{margin-left:auto}
+  .schedule-workspace .schedule-assign-controls{min-width:0}
+  .schedule-workspace .schedule-presets{grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr))}
+}
+@media(max-width:760px){
+  .site-nav{order:3;flex-basis:100%;width:100%;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap}
+  .site-nav-link{white-space:nowrap;min-height:42px}
+  .site-header{align-items:center}
+  .user-details{display:none}
+  .library-actions{grid-template-columns:1fr}
+  .library-item{grid-template-columns:25px 52px minmax(0,1fr)}
+  .library-item .library-duration-form{grid-column:2/-1;min-width:0}
+  .library-item .library-item-actions{grid-column:2/-1;justify-self:end}
+  .schedule-workspace .schedule-section-heading{display:block}
+  .schedule-workspace .schedule-section-heading .muted{max-width:none;text-align:left}
+  .schedule-workspace .schedule-assign-controls{display:grid;grid-template-columns:1fr}
+  .schedule-workspace .schedule-asset{min-width:0}
+  .fleet-workspace .fleet-setup-body{grid-template-columns:1fr}
+}
+@media(max-width:540px){
+  .wrap{width:calc(100% - 28px)}
+  .hub-workflow-cards{grid-template-columns:1fr}
+  .fleet-workspace .fleet-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fleet-workspace .fleet-summary-hint{grid-column:1/-1}
+  .library-workflow-nav{grid-template-columns:1fr}
+  .library-grid{grid-template-columns:1fr}
+  .library-item{grid-template-columns:22px 48px minmax(0,1fr);gap:8px}
+  .library-item .library-media-preview{min-width:48px;width:48px;height:48px}
+  .library-item .library-duration-form{grid-column:1/-1}
+  .library-item .library-item-actions{grid-column:1/-1}
+  .playlist-workspace .add-type-switch,.playlist-workspace .add-type-switch.with-network{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .playlist-workspace .composer{max-width:100vw}
+  .playlist-workspace .asset-main{flex-wrap:wrap}
+  .schedule-workspace .schedule-time-fields{grid-template-columns:1fr 1fr}
+  .schedule-workspace .schedule-day-fieldset{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+  .site-foot{gap:8px}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .site-main *, .site-main *::before, .site-main *::after{transition:none!important;animation:none!important}
+}
+
+
+/* Scheduling audit, pass 2: cover the secondary disclosure, assigned labels
+   and delete confirmation that still carried the 2025 dark-only palette. */
+.schedule-workspace :is(.schedule-secondary-panel,.schedule-default-panel,.schedule-collection-note,.schedule-onboarding>.schedule-new){
+  background:var(--ui-surface);color:var(--ui-fg);border-color:var(--ui-line);
+  border-radius:var(--ui-radius);box-shadow:none;
+}
+.schedule-workspace .schedule-secondary-panel>summary{
+  color:var(--ui-fg);background:var(--ui-surface)
+}
+.schedule-workspace .schedule-secondary-panel>summary:hover,
+.schedule-workspace .schedule-secondary-panel[open]>summary,
+.schedule-workspace .schedule-rule-edit>summary:hover,
+.schedule-workspace .schedule-global-delete>summary:hover{
+  color:var(--ui-accent);background:var(--ui-surface-hover)
+}
+.schedule-workspace .schedule-secondary-copy strong{color:var(--ui-fg)}
+.schedule-workspace .schedule-secondary-copy small,
+.schedule-workspace .schedule-secondary-chevron{color:var(--ui-muted)}
+.schedule-workspace .schedule-secondary-icon{
+  background:var(--ui-subtle);color:var(--ui-accent);
+  border:1px solid var(--ui-line);border-radius:var(--ui-radius)
+}
+.schedule-workspace .schedule-secondary-body,
+.schedule-workspace .schedule-submit-row{
+  background:var(--ui-surface);border-color:var(--ui-line)
+}
+.schedule-workspace .schedule-submit-row p,
+.schedule-workspace .schedule-footer-note,
+.schedule-workspace .schedule-footer-note strong,
+.schedule-workspace .schedule-global-delete p{color:var(--ui-muted)}
+.schedule-workspace .schedule-assigned{
+  color:var(--ui-fg);background:var(--ui-subtle);border-color:var(--ui-line)
+}
+.schedule-workspace .schedule-asset:hover{background:var(--ui-surface-hover)}
+.schedule-workspace .schedule-global-confirm,
+.schedule-workspace .schedule-sync-check{color:var(--ui-fg)!important}
+.schedule-workspace .schedule-global-delete>summary{color:var(--ui-error)}
+.schedule-workspace .schedule-global-delete .schedule-remove{
+  color:var(--ui-error);background:var(--ui-error-bg);
+  border:1px solid var(--ui-error);border-radius:var(--ui-radius)
+}
+.schedule-workspace .schedule-global-delete .schedule-remove:hover{
+  color:var(--ui-error);background:var(--ui-surface-hover)
+}
+.schedule-workspace .schedule-new>summary{color:var(--ui-fg)}
+.schedule-workspace .schedule-day-fieldset label:hover{border-color:var(--ui-accent)}
+.schedule-workspace .schedule-collection-note .icon{color:var(--ui-accent)}
+.schedule-workspace .schedule-collection-note strong{color:var(--ui-fg)}
+.schedule-workspace input[type=time]{color-scheme:light}
+html[data-theme="dark"] .schedule-workspace input[type=time]{color-scheme:dark}
+.schedule-workspace :is(select,input:not([type=checkbox])):focus-visible{
+  border-color:var(--ui-focus);outline:3px solid var(--ui-focus)!important;
+  outline-offset:2px;box-shadow:none
+}
+.fleet-workspace .fleet-storage-panel :is(.storage-panel-title,.storage-panel-warning){
+  color:var(--ui-fg)
+}
+.fleet-workspace .fleet-storage-panel :is(.storage-panel-note,.storage-panel-message){
+  color:var(--ui-muted)
+}
