@@ -2131,7 +2131,7 @@ def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monke
     app, client, tmp = env
     from app.library import Library
     root = Path(tmp) / 'sources'
-    bistro = root / 'default' / 'GH-Wie4-BistroConnect'
+    bistro = root / 'default' / 'Demo-Screen-A'
     bistro.mkdir(parents=True)
     (bistro / 'banner.png').write_bytes(b'\x89PNG\r\n\x1a\n' + b'pic')
     (root / 'oldbistro').mkdir()
@@ -2151,10 +2151,10 @@ def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monke
     assert page.status_code == 200
     html = page.get_data(as_text=True)
     assert 'Ein Netzwerkordner. Alle Bildschirme.' in html
-    assert 'GH-Wie4-BistroConnect' not in html  # selection moves to library
+    assert 'Demo-Screen-A' not in html  # selection moves to library
     assert '1 Unterordner im Hub sichtbar' in html
     assert 'Playlist mit Ordner erstellen' in html
-    assert 'value="default/GH-Wie4-BistroConnect"' in client.get('/library').get_data(as_text=True)
+    assert 'value="default/Demo-Screen-A"' in client.get('/library').get_data(as_text=True)
     assert 'Als Playlist verwenden' not in html
     assert 'id="new-playlist"' in client.get('/library').get_data(as_text=True)
     assert 'name="alias" value="default"' in html
@@ -2166,25 +2166,25 @@ def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monke
     assert Library(app.config['LIBRARY_DIR']).list() == []
 
     result = client.post(target, data={'csrf': token(client),
-                                       'folder': 'GH-Wie4-BistroConnect'})
+                                       'folder': 'Demo-Screen-A'})
     assert result.status_code == 302
     store = Library(app.config['LIBRARY_DIR'])
     templates = store.list()
     assert len(templates) == 1
-    assert templates[0]['folder_source'] == 'default/GH-Wie4-BistroConnect'
+    assert templates[0]['folder_source'] == 'default/Demo-Screen-A'
     assert result.location.endswith('/library/' + templates[0]['id'])
 
     same = client.post(target, data={'csrf': token(client),
-                                     'folder': 'GH-Wie4-BistroConnect'})
+                                     'folder': 'Demo-Screen-A'})
     assert same.status_code == 302
     assert len(store.list()) == 1
     html = client.get(result.location).get_data(as_text=True)
     assert 'Standardbibliothek' in html
-    assert 'GH-Wie4-BistroConnect' in html
+    assert 'Demo-Screen-A' in html
 
     login(client, 'marketing')
     assert client.post(target, data={'csrf': token(client),
-                                     'folder': 'GH-Wie4-BistroConnect'}).status_code == 403
+                                     'folder': 'Demo-Screen-A'}).status_code == 403
     assert 'Ordner &amp; Quellen' not in client.get('/').get_data(as_text=True)
     assert 'Playlist-Bibliothek öffnen' in client.get('/').get_data(as_text=True)
 
