@@ -405,6 +405,21 @@ def create_app(config=None):
         except (BatchError, PlayerError, ScheduleError) as exc:
             return reject_bulk(exc, destination_url)
 
+    @app.post('/library/<template_id>/items/<item_id>/duration')
+    @login_required('marketing')
+    def library_item_duration(template_id, item_id):
+        """Simple Marketing control, independent of network folder writes."""
+        try:
+            item = library().update_item_duration(
+                template_id, item_id, request.form.get('duration'))
+            audit('library.duration', asset_id=item_id)
+            flash(f'Anzeigedauer für „{item["name"]}“ gespeichert. '
+                  'Auf zugeordneten Test-Pis übernimmt der automatische Publisher '
+                  'die Änderung beim nächsten Abgleich, sofern aktiviert.', 'success')
+        except LibraryError as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('library_detail', template_id=template_id))
+
     @app.post('/library/<template_id>/move/<item_id>')
     @login_required('marketing')
     def library_move_item(template_id, item_id):
