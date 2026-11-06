@@ -90,7 +90,7 @@
       <a class="button" href="{{ url_for('library_index') }}#new-playlist">Playlist-Bibliothek öffnen →</a>
     {% endif %}
   </div>
-  {% if default_folders %}
+  {% if default_source and default_source.status in ('mounted','already-mounted') and default_folders %}
   <details class="media-folder-peek">
     <summary>Erkannte Unterordner ansehen <span class="media-disclosure-chevron" aria-hidden="true">⌄</span></summary>
     <ul>
