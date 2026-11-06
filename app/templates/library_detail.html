@@ -9,7 +9,7 @@
 {% if template.folder_source %}
 <section class="folder-workflow" aria-label="Ordnergesteuerte Playlist">
   <div class="folder-workflow-title"><strong>Automatisch aus dem Netzwerkordner</strong><span class="pill">Quelle: {{ template.folder_source }}</span></div>
-  <p>Marketing legt Bilder und Videos wie gewohnt im Netzwerkordner ab. Hier werden <strong>Anzeigedauer und Reihenfolge</strong> eingestellt. Videos laufen vollständig.</p>
+  <p>Marketing legt Bilder und Videos wie gewohnt im Netzwerkordner ab. Hier werden <strong>Anzeigedauer</strong> eingestellt. Videos laufen vollständig.</p>
   <div class="folder-workflow-steps" aria-label="Ablauf">
     <span>1 · Datei im Netzwerkordner</span><span>2 · Hub übernimmt Medium</span><span>3 · Anthias zeigt es am Zielbildschirm</span>
   </div>
@@ -158,7 +158,7 @@
   <button type="submit">Speichern</button>
 </form>
 {% endif %}
-{% if logged_user.role in ('marketing', 'owner', 'it') %}<div class="library-item-actions"><form method="post" action="{{ url_for('library_move_item', template_id=template.id, item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button name="direction" value="up" title="Nach oben" aria-label="{{ item.name }} nach oben" {% if loop.first %}disabled{% endif %}><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#arrow-up"></use></svg></button><button name="direction" value="down" title="Nach unten" aria-label="{{ item.name }} nach unten" {% if loop.last %}disabled{% endif %}><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#arrow-down"></use></svg></button></form>{% if not template.folder_source %}<details class="library-item-options">
+{% if logged_user.role in ('marketing', 'owner', 'it') %}<div class="library-item-actions">{% if not template.folder_source %}<form method="post" action="{{ url_for('library_move_item', template_id=template.id, item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button name="direction" value="up" title="Nach oben" aria-label="{{ item.name }} nach oben" {% if loop.first %}disabled{% endif %}><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#arrow-up"></use></svg></button><button name="direction" value="down" title="Nach unten" aria-label="{{ item.name }} nach unten" {% if loop.last %}disabled{% endif %}><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#arrow-down"></use></svg></button></form>{% endif %}{% if not template.folder_source %}<details class="library-item-options">
           <summary aria-label="Optionen für {{ item.name }}" title="Inhaltsoptionen"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#ellipsis"></use></svg></summary>
           <div class="library-item-options-menu">
           <details class="library-add-control">
