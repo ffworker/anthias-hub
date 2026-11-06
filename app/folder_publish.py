@@ -148,6 +148,78 @@ def _confirm_schedule(api, asset_id, fields):
         raise PublishError('Anthias-Zeitplan-API inkompatibel') from exc
 
 
+def _sync_playlist_order(api, template, doc, existing):
+    """Order a fully Hub-owned player, never mix/rearrange manual content.
+
+    The template is the order of active managed slides. Old disabled Hub
+    revisions are moved behind the current entries, never deleted.
+    """
+    records = []
+    for item in template['items']:
+        if item.get('kind') == 'media' and item.get('source_file'):
+            record = doc['assets'].get(item['source_file'])
+        elif item.get('kind') == 'url':
+            record = doc.get('web_assets', {}).get(item['id'])
+        else:
+            # Unmanaged template assets are not published by this worker.
+            return
+        if not isinstance(record, dict) or not ASSET_ID.fullmatch(str(record.get('asset_id', ''))):
+            return
+        records.append(record)
+    if not records:
+        return
+
+    desired = [row['asset_id'] for row in records]
+    if len(desired) != len(set(desired)):
+        raise PublishError('Doppelte Hub-Asset-Verweise; Playlist nicht sortiert')
+    history = doc.get('retired_assets', [])
+    if not isinstance(history, list) or any(
+        not isinstance(row, dict) or
+        not ASSET_ID.fullmatch(str(row.get('asset_id', ''))) or
+        not isinstance(row.get('name'), str) for row in history
+    ):
+        raise PublishError('Synchronisationshistorie ungültig; Playlist nicht sortiert')
+
+    remote = {entry['asset_id']: entry for entry in existing}
+    current = [entry['asset_id'] for entry in existing]
+    history_ids = [row['asset_id'] for row in history]
+    if len(history_ids) != len(set(history_ids)):
+        raise PublishError('Doppelte historische Hub-Asset-Verweise')
+    # Fail closed: never call the global Anthias order API on a player that
+    # contains manual assets, another Hub template or unknown legacy content.
+    if set(current) != set(desired) | set(history_ids):
+        return
+    if any(
+        remote[row['asset_id']].get('name') != row['name'] or
+        remote[row['asset_id']].get('is_enabled') is not False
+        for row in history if row['asset_id'] in remote
+    ):
+        return
+    for row in records:
+        if remote[row['asset_id']].get('name') != row['name']:
+            return
+    target = desired + [ident for ident in current if ident not in set(desired)]
+    if current == target:
+        return
+    api.order(target)
+    confirmation = [asset['asset_id'] for asset in _remote_assets(api)]
+    if confirmation != target:
+        raise PublishError('Anthias hat die Playlist-Reihenfolge nicht bestätigt')
+
+
+def _retire(doc, old, target):
+    """Remember only known obsolete revisions, not arbitrary player assets."""
+    if old is None or old['asset_id'] == target['asset_id']:
+        return
+    if not isinstance(doc.setdefault('retired_assets', []), list):
+        raise PublishError('Synchronisationshistorie ungültig')
+    if not any(row.get('asset_id') == old['asset_id']
+               for row in doc['retired_assets'] if isinstance(row, dict)):
+        doc['retired_assets'].append({
+            'asset_id': old['asset_id'], 'name': old['name'],
+        })
+
+
 def reconcile(store, template_id, device_id, *,
               devices_file='/data/devices.json', state_root='/data/folder-publications',
               schedules_file='/data/schedules.json', api_factory=Anthias):
@@ -239,6 +311,7 @@ def reconcile(store, template_id, device_id, *,
             if prior and prior.get('is_enabled') is not False:
                 raise PublishError('Alte Version blieb aktiv; IT muss Playlist prüfen')
 
+        _retire(doc, old, target)
         doc['assets'][source] = {'asset_id': target['asset_id'], 'name': name,
                                  'revision': revision, 'status': 'active'}
         _save(path, doc)
@@ -306,12 +379,14 @@ def reconcile(store, template_id, device_id, *,
             if prior and prior.get('is_enabled') is not False:
                 raise PublishError('Alte Webseite blieb aktiv; IT muss Playlist prüfen')
 
+        _retire(doc, old, target)
         doc['web_assets'][ident] = {
             'asset_id': target['asset_id'], 'name': desired_name, 'uri': url,
         }
         _save(path, doc)
         stats['updated' if record else 'added'] += 1
         existing = _remote_assets(api)
+    _sync_playlist_order(api, template, doc, existing)
     return stats
 
 
