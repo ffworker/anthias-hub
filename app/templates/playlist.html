@@ -24,7 +24,7 @@
   {% if error %}<div class="notice error" role="alert">Gerät nicht erreichbar: {{ error }}. Die Playlist kann derzeit nicht bearbeitet werden.</div>{% endif %}
   {% if folder_templates %}
   <section class="notice folder-linked-notice" aria-label="Automatisch verwaltete Inhalte">
-    <strong>Netzwerkordner verknüpft · automatische Playlist</strong>
+    <strong>Netzwerkordner zugeordnet · Automatik optional</strong>
     <p class="muted">Diese Quelle ist mit dem Bildschirm verbunden. Bildzeiten und Reihenfolge bitte in der Hub-Vorlage bearbeiten. Die automatische Veröffentlichung erfolgt nur bei serverseitiger Freigabe.</p>
     {% for source in folder_templates %}
       <a href="{{ url_for('library_detail', template_id=source.id) }}">{{ source.name }} ({{ source.folder_source }})</a>{% if not loop.last %} · {% endif %}
