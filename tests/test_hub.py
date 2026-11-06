@@ -2024,7 +2024,7 @@ def test_folder_backed_marketing_view_is_duration_first_and_it_has_setup(env, mo
     source = root / 'bistro'
     source.mkdir(parents=True)
     (root / 'empfang').mkdir()
-    (source / 'banner.png').write_bytes(b'\\x89PNG\\r\\n\\x1a\\n' + b'picture')
+    (source / 'banner.png').write_bytes(b'\x89PNG\r\n\x1a\n' + b'picture')
     monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
     lib = Library(app.config['LIBRARY_DIR'])
     ident = lib.create('Bistro Screens')['id']
