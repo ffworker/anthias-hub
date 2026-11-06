@@ -33,7 +33,7 @@ After=network-online.target remote-fs.target
 Type=oneshot
 User=root
 WorkingDirectory=$checkout
-ExecStart=/usr/bin/python3 -m scripts.sync_media_mounts --registry $checkout/data/media-sources.json --status $checkout/data/media-mount-status.json
+ExecStart=/usr/bin/python3 -m scripts.sync_media_mounts --registry $checkout/data/media-sources.json --status /srv/anthias-sources/.mount-status.json
 TimeoutStartSec=5min
 EOF
 cat > "$timer" <<EOF
