@@ -185,8 +185,11 @@ def create_app(config=None):
             aliases = available_sources()
             for source in registered:
                 source['status'] = states.get(source['alias'], 'pending')
+            # Child folder options are NOT standalone mount aliases. Only
+            # top-level aliases may be passed to mountinfo inspection.
+            standalone_aliases = {alias for alias in aliases if '/' not in alias}
             unmanaged = [{'alias': alias, 'observed': observed_mount_source(alias)}
-                         for alias in sorted(set(aliases) - {entry['alias'] for entry in registered})]
+                         for alias in sorted(standalone_aliases - {entry['alias'] for entry in registered})]
             assigned = {t.get('folder_source'): t for t in library().list()
                         if t.get('folder_source')}
             default_folders = [
