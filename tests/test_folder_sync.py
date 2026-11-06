@@ -80,3 +80,14 @@ def test_sync_all_scopes_only_bound_templates(tmp_path, monkeypatch):
     store.set_folder_source(a['id'], 'bistro')
     assert list(sync_all(library_dir=str(store.root))) == [a['id']]
     assert len(store.get(b['id'])['items']) == 0
+
+
+def test_mount_guard_prevents_empty_unmounted_folder_being_seen_as_healthy(tmp_path, monkeypatch):
+    root = tmp_path / 'sources'
+    (root / 'bistro').mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    monkeypatch.setenv('FOLDER_REQUIRE_MOUNT', '1')
+    with pytest.raises(LibraryError, match='nicht eingehängt'):
+        source_directory('bistro')
+    monkeypatch.setattr('app.folder_sync.os.path.ismount', lambda path: True)
+    assert source_directory('bistro') == root / 'bistro'
