@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='storage-ui.css') }}">
 <script defer src="{{ url_for('static', filename='storage-ui.js') }}"></script>
 <script defer src="{{ url_for('static', filename='fleet-status.js') }}"></script>
+<script defer src="{{ url_for('static', filename='fleet-setup.js') }}"></script>
 {% endblock %}
 {% block content %}
 {% if logged_user.role in ('owner', 'it', 'marketing') %}<script defer src="{{ url_for('static', filename='fleet-popovers.js') }}"></script>{% endif %}
@@ -50,7 +51,7 @@
         <h2>Wiedergabe kontrollieren.</h2>
         <p>Gerätestatus, tatsächliche Playlist und Zeitsteuerung bleiben pro Bildschirm erreichbar.</p>
       </div>
-      <a class="button" href="#fleet-title">Bildschirme ansehen →</a>
+      <a class="button" href="#fleet-devices">Bildschirme ansehen →</a>
     </article>
   </section>
 
@@ -66,7 +67,7 @@
     <p class="muted">Einfach Bildschirm auswählen und loslegen.</p>
   </div>
 
-  <div class="fleet-grid">
+  <div class="fleet-grid{{ ' fleet-grid-single' if devices|length == 1 else '' }}" id="fleet-devices">
     {% for device in devices %}
       <article id="device-{{ device.id }}" class="fleet-device card" data-overview-url="{{ url_for('device_overview', device_id=device.id) }}" data-overview-state="pending">
         <div class="fleet-device-top">
@@ -143,22 +144,32 @@
   </div>
 
   {% if logged_user.role in ('owner', 'it') %}
-    <section id="device-setup" class="fleet-setup" aria-labelledby="setup-title">
-      <div class="fleet-setup-intro">
-        <span class="fleet-setup-symbol" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></span>
-        <p class="eyebrow">GERÄTEVERWALTUNG</p>
-        <h2 id="setup-title">Noch einen Bildschirm verbinden?</h2>
-        <p class="muted">Registriere einen Anthias-Player mit seiner privaten Management-IP. Die vorhandene Playlist bleibt unverändert.</p>
+    <details id="device-setup" class="fleet-setup fleet-setup-collapsible"{% if not devices %} open{% endif %}>
+      <summary class="fleet-setup-toggle">
+        <span class="fleet-setup-toggle-text">
+          <span class="eyebrow">GERÄTEVERWALTUNG</span>
+          <strong>{{ 'Ersten Bildschirm verbinden' if not devices else 'Weiteren Bildschirm verbinden' }}</strong>
+          <span>Anthias-Player mit einer Verwaltungsadresse im Hub registrieren.</span>
+        </span>
+        <span class="fleet-setup-toggle-action"><span data-fleet-setup-action>Formular {{ 'schließen' if not devices else 'öffnen' }}</span> <span aria-hidden="true">⌄</span></span>
+      </summary>
+      <div class="fleet-setup-body">
+        <div class="fleet-setup-intro">
+          <span class="fleet-setup-symbol" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></span>
+          <p class="eyebrow">NEUES GERÄT</p>
+          <h2 id="setup-title">Bildschirm registrieren</h2>
+          <p class="muted">Verbinde einen Anthias-Player über seine private Management-IP. Eine vorhandene Playlist bleibt dabei unverändert.</p>
+        </div>
+        <form method="post" action="{{ url_for('add_device') }}" class="fleet-setup-form">
+          <input type="hidden" name="csrf" value="{{ csrf() }}">
+          <label>Anzeigename<input name="name" placeholder="z. B. Bistro TV" required maxlength="80"></label>
+          <label>Geräte-ID <span class="field-note">eindeutig</span><input name="id" placeholder="bistro" required pattern="[a-z0-9][a-z0-9-]*" maxlength="40"></label>
+          <label>Anthias-Adresse<input name="url" placeholder="http://192.168.1.50" required type="url"></label>
+          <label>Standort <span class="field-note">optional</span><input name="location" placeholder="z. B. Bistro" maxlength="80"></label>
+          <button class="primary fleet-submit"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Bildschirm registrieren</button>
+        </form>
       </div>
-      <form method="post" action="{{ url_for('add_device') }}" class="fleet-setup-form">
-        <input type="hidden" name="csrf" value="{{ csrf() }}">
-        <label>Anzeigename<input name="name" placeholder="z. B. Bistro TV" required maxlength="80"></label>
-        <label>Geräte-ID <span class="field-note">eindeutig</span><input name="id" placeholder="bistro" required pattern="[a-z0-9][a-z0-9-]*" maxlength="40"></label>
-        <label>Anthias-Adresse<input name="url" placeholder="http://192.168.1.50" required type="url"></label>
-        <label>Standort <span class="field-note">optional</span><input name="location" placeholder="z. B. Bistro" maxlength="80"></label>
-        <button class="primary fleet-submit"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Bildschirm registrieren</button>
-      </form>
-    </section>
+    </details>
   {% endif %}
 </div>
 {% endblock %}

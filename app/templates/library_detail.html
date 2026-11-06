@@ -33,28 +33,27 @@
   <p class="eyebrow">{{ 'ORDNER-PLAYLIST' if template.folder_source else 'MANUELLE HUB-VORLAGE' }}</p>
   <div class="library-detail-title-row">
     <h1>{{ template.name }}</h1>
+    <a class="button library-backup-export" href="{{ url_for('library_export', template_id=template.id) }}">Backup-ZIP exportieren ↓</a>
     {% if logged_user.role in ('marketing', 'owner', 'it') %}
       <details class="template-options">
         <summary aria-label="Vorlagenoptionen"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#ellipsis"></use></svg> Vorlagenoptionen</summary>
         <div class="template-options-panel">
-          <a class="button library-backup-export" href="{{ url_for('library_export', template_id=template.id) }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#upload"></use></svg> Backup exportieren</a>
+          <p class="muted">Backup-ZIP exportieren ist neben dem Vorlagentitel erreichbar.</p>
           {{ delete_control(template, true) }}
         </div>
       </details>
-    {% else %}
-      <a class="button library-backup-export" href="{{ url_for('library_export', template_id=template.id) }}">Backup exportieren ↓</a>
     {% endif %}
   </div>
-  <p class="muted">{% if template.folder_source %}{{ template['items']|length }} Medien und Webseiten · Reihenfolge und Dauer hier pflegen · bei aktivem Publisher wird der zugeordnete Pi synchronisiert.{% else %}{{ template['items']|length }} Inhalte. Als gesamte Vorlage oder einzeln auf Bildschirme übertragbar.{% endif %}</p>
+  <p class="muted">{% if template.folder_source %}{{ template['items']|length }} Inhalte aus „{{ template.folder_source }}“. Eine automatische Verbindung ist nur bei freigeschaltetem Publisher aktiv. Du kannst die gespeicherten Inhalte auch einmalig an einen Pi übertragen.{% else %}{{ template['items']|length }} Inhalte. Als gesamte Vorlage oder einzeln auf Bildschirme übertragbar.{% endif %}</p>
 
-  {% if logged_user.role in ('marketing', 'owner', 'it') and not template.folder_source %}
+  {% if logged_user.role in ('marketing', 'owner', 'it') %}
   <section class="library-publish-hero" aria-labelledby="library-publish-heading">
     <div class="library-publish-copy">
       <span class="library-publish-symbol" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></span>
       <div>
-        <p class="eyebrow">AUF BILDSCHIRM ANZEIGEN</p>
+        <p class="eyebrow">03 / PLAYLIST AUF BILDSCHIRM ANWENDEN</p>
         <h2 id="library-publish-heading">Vorlage zur Playlist hinzufügen</h2>
-        <p>{{ template['items']|length }} Inhalte zur Playlist hinzufügen – bestehende Inhalte bleiben erhalten.</p>
+        <p><strong>Einmalige Übertragung.</strong> {{ template['items']|length }} Inhalte werden angehängt, bestehende Einträge bleiben unverändert. {% if template.folder_source %}Das ist kein automatischer Ordnerabgleich.{% endif %}</p>
       </div>
     </div>
     <form class="library-publish-form" method="post" data-template-transfer data-transfer-overview-path="{{ url_for('device_overview', device_id='__DEVICE__') }}" action="{{ url_for('append_library_from_template', template_id=template.id) }}">
@@ -76,7 +75,7 @@
       <div class="library-publish-actions">
         <label class="library-publish-confirm">
           <input type="checkbox" name="ack" value="yes" required>
-          <span>Jetzt zur bestehenden Playlist hinzufügen</span>
+          <span>Jetzt einmalig zur bestehenden Playlist hinzufügen – nichts ersetzen</span>
         </label>
         <button type="submit" class="primary library-publish-button" {% if not devices or not template['items'] %}disabled{% endif %}>
           {{ template['items']|length }} Inhalte hinzufügen <span aria-hidden="true">→</span>
@@ -89,15 +88,15 @@
     {% elif not devices %}
       <p class="library-publish-hint" role="status">Noch kein Bildschirm registriert. Bitte zuerst ein Gerät hinzufügen.</p>
     {% else %}
-      <p class="library-publish-hint">Wird sofort veröffentlicht. Identische Webseiten werden übersprungen; Medien können erneut hinzugefügt werden.</p>
+      <p class="library-publish-hint">Wird manuell sofort übertragen. Identische Webseiten werden übersprungen; Medien können doppelt entstehen. Ein späterer automatischer Ordnerabgleich ist separat zu konfigurieren.</p>
     {% endif %}
   </section>
   {% endif %}
 </section>
 {% if logged_user.role in ('owner', 'it') %}
 <section class="card library-panel">
-  <details {% if template.folder_source %}open{% endif %} class="library-folder-settings">
-    <summary>{{ 'Ordner & Zielbildschirme' if template.folder_source else 'Playlist mit Netzwerkordner verbinden (IT)' }}</summary>
+  <details class="library-folder-settings">
+    <summary>{{ 'Netzwerkquelle / automatische Zielbildschirme verwalten (IT)' if template.folder_source else 'Playlist mit Netzwerkordner verbinden (IT)' }}</summary>
     <p><a href="{{ url_for('media_sources_page') }}" class="button">Medienquellen und SMB-Pfade verwalten</a></p>
     <p class="muted">Ordner aus der zentralen Marketing-Bibliothek wählen. Der Hub übernimmt die Medien automatisch; jeder Unterordner kann eine eigene Playlist sein. Noch keine Veröffentlichung auf den Pi, bis der Publisher freigeschaltet wurde.</p>
     <form method="post" action="{{ url_for('library_folder_source', template_id=template.id) }}">
@@ -143,7 +142,7 @@
 </section>
 {% endif %}
 <div class="library-grid">
-<section aria-labelledby="items-title" class="library-queue-panel"><h2 id="items-title">Inhalte und Wiedergabereihenfolge <span class="count">{{ template['items']|length }}</span></h2>
+<section aria-labelledby="items-title" class="library-queue-panel"><p class="eyebrow">01 / INHALTE &amp; SORTIERUNG</p><h2 id="items-title">Inhalte und Wiedergabereihenfolge <span class="count">{{ template['items']|length }}</span></h2>
 <p class="muted">Von oben nach unten: Bildzeiten einstellen und Inhalte mit den Pfeilen sortieren. Auf ausschließlich vom Hub verwalteten Pis übernimmt der automatische Abgleich die Reihenfolge.</p>
 <ol class="library-items">
 {% for item in template['items'] %}
@@ -164,7 +163,7 @@
             <img class="asset-preview-content" src="{{ url_for('library_item_preview', template_id=template.id, item_id=item.id) }}" alt="" loading="lazy" decoding="async">
           {% endif %}
         {% if item.kind == 'media' %}</button>{% else %}</span>{% endif %}
-        <span class="library-item-copy"><strong>{{ item.name }}</strong><small>{{ item.url if item.kind == 'url' else 'Aus Netzwerkordner' if item.source_file|default(false) else 'In der Bibliothek gespeichert' }} · {{ 'Video vollständig' if item.kind == 'media' and item.file.endswith('.mp4') else (item.duration|string ~ ' Sek.') }}</small></span>
+        <span class="library-item-copy"><strong title="{{ item.name }}">{{ item.name }}</strong><small>{{ item.url if item.kind == 'url' else 'Aus Netzwerkordner' if item.source_file|default(false) else 'In der Bibliothek gespeichert' }} · {{ 'Video vollständig' if item.kind == 'media' and item.file.endswith('.mp4') else (item.duration|string ~ ' Sek.') }}</small></span>
 {% if logged_user.role in ('marketing', 'it', 'owner') and not (item.kind == 'media' and item.file.endswith('.mp4')) %}
 <form class="library-duration-form" method="post" action="{{ url_for('library_item_duration', template_id=template.id, item_id=item.id) }}">
   <input type="hidden" name="csrf" value="{{ csrf() }}">
@@ -196,12 +195,12 @@
 </ol></section>
 {% if logged_user.role in ('marketing', 'owner', 'it') %}<aside class="library-actions">
 {% if not template.folder_source %}
-<section class="card library-panel"><h2>Bild oder Video speichern</h2><p class="muted">PNG · JPG · WebP · MP4 · max. 4 GiB je Datei</p><form method="post" data-upload-form="library" action="{{ url_for('library_add_media', template_id=template.id) }}" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf() }}"><label>Datei<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label><label>Titel (optional)<input name="name" maxlength="100"></label><label>Bilddauer in Sekunden (Video automatisch)<input name="duration" type="number" min="5" max="3600" value="15"></label><p class="upload-selected" role="status" aria-live="polite"></p><button class="primary" type="submit">In Vorlage speichern</button><div class="upload-feedback" hidden role="status" aria-live="polite"><div class="upload-progress" aria-hidden="true"><span data-upload-bar></span></div><small data-upload-text></small></div></form></section>
+<section class="card library-panel" id="template-add"><p class="eyebrow">01 / MANUELL</p><h2>Bild oder Video speichern</h2><p class="muted">PNG · JPG · WebP · MP4 · max. 4 GiB je Datei</p><form method="post" data-upload-form="library" action="{{ url_for('library_add_media', template_id=template.id) }}" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf() }}"><label>Datei<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label><label>Titel (optional)<input name="name" maxlength="100"></label><label>Bilddauer in Sekunden (Video automatisch)<input name="duration" type="number" min="5" max="3600" value="15"></label><p class="upload-selected" role="status" aria-live="polite"></p><button class="primary" type="submit">In Vorlage speichern</button><div class="upload-feedback" hidden role="status" aria-live="polite"><div class="upload-progress" aria-hidden="true"><span data-upload-bar></span></div><small data-upload-text></small></div></form></section>
 <details class="card library-panel library-bulk-compact">
-  <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#upload"></use></svg> Mehrere Dateien oder ZIP hinzufügen</summary>
+  <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#upload"></use></svg> 02 / Medien-ZIP oder mehrere Dateien importieren</summary>
 <div class="bulk-media-panel">
   <h2>Medien-Sammelimport</h2>
-  <p class="muted">Bis zu 20 Bilder/Videos oder eine normale Medien-ZIP. Die Playlist am Bildschirm bleibt unverändert.</p>
+  <p class="muted">Nur Bild-/Videodateien oder eine Medien-ZIP in diese Hub-Vorlage importieren. Das ist <strong>kein</strong> Vorlagenbackup und ändert die laufende Pi-Playlist nicht.</p>
   <form class="bulk-media-form" data-bulk-upload method="post" enctype="multipart/form-data" action="{{ url_for('library_bulk_media', template_id=template.id) }}">
   <input type="hidden" name="csrf" value="{{ csrf() }}">
   <label>Dateien oder ZIP auswählen

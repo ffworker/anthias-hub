@@ -24,7 +24,7 @@
   {% if error %}<div class="notice error" role="alert">Gerät nicht erreichbar: {{ error }}. Die Playlist kann derzeit nicht bearbeitet werden.</div>{% endif %}
   {% if folder_templates %}
   <section class="notice folder-linked-notice" aria-label="Automatisch verwaltete Inhalte">
-    <strong>Netzwerkordner verknüpft · automatische Playlist</strong>
+    <strong>Netzwerkordner zugeordnet · Automatik optional</strong>
     <p class="muted">Diese Quelle ist mit dem Bildschirm verbunden. Bildzeiten und Reihenfolge bitte in der Hub-Vorlage bearbeiten. Die automatische Veröffentlichung erfolgt nur bei serverseitiger Freigabe.</p>
     {% for source in folder_templates %}
       <a href="{{ url_for('library_detail', template_id=source.id) }}">{{ source.name }} ({{ source.folder_source }})</a>{% if not loop.last %} · {% endif %}
@@ -262,13 +262,15 @@
           <p class="muted">Inhalte werden direkt zur Playlist dieses Bildschirms hinzugefügt.</p>
         </div>
 
-        <div class="add-type-switch{{ ' with-network' if logged_user.role in ('owner', 'it') else '' }}" aria-label="Inhaltsart wählen">
-          <button type="button" class="add-mode selected" data-add-mode="media" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#image"></use></svg> Bild / Video</button>
-          <button type="button" class="add-mode" data-add-mode="library" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Bibliothek</button>
-          <button type="button" class="add-mode" data-add-mode="website" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#web"></use></svg> Webseite</button>
+        <p class="composer-workflow-note"><strong>Manuell:</strong> Eine Datei, eine gespeicherte Vorlage oder einen Netzwerkordner auswählen. <strong>ZIP:</strong> Mehrere Dateien gemeinsam importieren.</p>
+        <div class="add-type-switch{{ ' with-network' if logged_user.role in ('owner', 'it') else '' }}" aria-label="Quelle oder Aktion wählen">
+          <button type="button" class="add-mode selected" data-add-mode="media" aria-pressed="true">Datei</button>
+          <button type="button" class="add-mode" data-add-mode="zip" aria-pressed="false">ZIP / Mehrere</button>
+          <button type="button" class="add-mode" data-add-mode="library" aria-pressed="false">Vorlage anwenden</button>
           {% if logged_user.role in ('owner', 'it') %}
-          <button type="button" class="add-mode" data-add-mode="folder" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Netzwerkordner</button>
+          <button type="button" class="add-mode" data-add-mode="folder" aria-pressed="false">Netzwerkordner</button>
           {% endif %}
+          <button type="button" class="add-mode" data-add-mode="website" aria-pressed="false">Webseite</button>
         </div>
 
         <div class="composer-pane" data-add-pane="website">
@@ -284,7 +286,7 @@
         </div>
 
         <div class="composer-pane" data-add-pane="media">
-          <p class="composer-explainer">Ein Bild oder Video zur Playlist hinzufügen.</p>
+          <p class="composer-explainer"><strong>Einmalig auf den Pi hochladen.</strong> Die Datei wird direkt zur bestehenden Player-Playlist hinzugefügt; eine Vorlage oder automatische Quelle entsteht nicht.</p>
           <div class="upload-storage-strip" data-storage-status data-storage-known="{{ '1' if storage else '0' }}" data-storage-loading="{{ '1' if storage_reason == 'Speicher wird geprüft …' else '0' }}" data-storage-url="{{ url_for('device_storage', device_id=device.id) }}">
             <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#storage"></use></svg>
             <span data-storage-label role="status" aria-live="polite">
@@ -310,10 +312,13 @@
             <button type="submit" class="primary full-width">Datei zur Playlist hinzufügen <span aria-hidden="true">→</span></button>
             <div class="upload-feedback" hidden role="status" aria-live="polite"><div class="upload-progress" aria-hidden="true"><span data-upload-bar></span></div><small data-upload-text></small></div>
           </form>
-        <details class="bulk-media-panel studio-bulk-details">
-          <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#upload"></use></svg> Mehrere Dateien oder ZIP hinzufügen</summary>
+        </div>
+        <div class="composer-pane" data-add-pane="zip">
+          <p class="composer-explainer"><strong>Medien-ZIP importieren.</strong> Bilder/Videos werden einmalig zur bestehenden Playlist hinzugefügt, nichts wird ersetzt.</p>
+        <details class="bulk-media-panel studio-bulk-details" open>
+          <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#upload"></use></svg> ZIP / mehrere Dateien manuell importieren</summary>
           <h3>Mehrere Bilder und Videos hinzufügen</h3>
-          <p class="muted">Bis zu 20 Bilder/Videos oder eine normale Medien-ZIP. Vorhandene Playlist bleibt erhalten.</p>
+          <p class="muted">Eine Medien-ZIP oder bis zu 20 Dateien direkt an diesen Pi übertragen. Das ist KEIN Export einer kompletten Hub-Vorlage.</p>
           <form class="bulk-media-form" data-bulk-upload method="post" enctype="multipart/form-data" action="{{ url_for('player_bulk_media', device_id=device.id) }}">
   <input type="hidden" name="csrf" value="{{ csrf() }}">
   <label class="storage-override" data-storage-override {% if storage %}hidden{% endif %}>
@@ -336,9 +341,10 @@
   <div class="bulk-report" data-bulk-report hidden role="region" aria-label="Ergebnis des Medienimports" aria-live="polite"></div>
 </form>
         </details>
+          <p class="muted">ZIP-<strong>Export / Wiederherstellung</strong> einer kompletten Vorlage ist ein anderer Vorgang: in der <a href="{{ url_for('library_index') }}">Playlist-Bibliothek</a> unter „Vorlagen-Backup“.</p>
         </div>
         <div class="composer-pane" data-add-pane="library">
-          <p class="composer-explainer">Gespeicherte Inhalte zur Playlist hinzufügen. Bestehende Playlist-Einträge bleiben erhalten.</p>
+          <p class="composer-explainer"><strong>Vorhandene Vorlage anwenden:</strong> Du kannst einen einzelnen gespeicherten Inhalt oder eine ganze Vorlage übertragen. Eine bestehende Playlist wird dabei nicht gelöscht.</p>
           {% if library_items_available %}
           <form method="post" action="{{ url_for('add_library_item_from_player', device_id=device.id) }}">
             <input type="hidden" name="csrf" value="{{ csrf() }}">
@@ -372,8 +378,8 @@
             <button type="submit" class="primary full-width">Inhalt zur Playlist hinzufügen →</button>
           </form>
           <details class="library-template-append">
-            <summary>Gesamte Vorlage hinzufügen</summary>
-            <p class="muted">Alle Inhalte der gewählten Vorlage werden in ihrer gespeicherten Reihenfolge angehängt. Bereits vorhandene Webseiten mit identischem Titel und Link werden übersprungen. Medien werden nicht automatisch auf Duplikate geprüft.</p>
+            <summary>Bestehende Playlist ergänzen · ganze Vorlage</summary>
+            <p class="muted"><strong>Option A – Ergänzen:</strong> Alle Inhalte werden angehängt, bereits vorhandene Inhalte bleiben bestehen. Identische Webseiten werden übersprungen; identische Medien werden nicht automatisch erkannt.</p>
             <form method="post" data-template-transfer data-transfer-device-id="{{ device.id }}" data-transfer-overview-path="{{ url_for('device_overview', device_id='__DEVICE__') }}" action="{{ url_for('append_library_from_player', device_id=device.id) }}">
               <input type="hidden" name="csrf" value="{{ csrf() }}">
               <input type="hidden" name="confirm" value="append">
@@ -395,6 +401,25 @@
               <div class="template-transfer-feedback" data-transfer-feedback role="status" aria-live="polite" hidden><span class="template-transfer-spinner" aria-hidden="true"></span><strong data-transfer-message>Übertragung läuft …</strong><small data-transfer-live>Bestehende Playlist bleibt erhalten. Bitte nicht erneut klicken.</small></div>
             </form>
           </details>
+          <details class="library-template-append apply-empty-player">
+            <summary>Leere Playlist initialisieren · ganze Vorlage</summary>
+            <p class="muted"><strong>Option B – Nur bei leerem Pi:</strong> Die Übertragung wird vom Server abgelehnt, wenn bereits Inhalte auf dem Bildschirm vorhanden sind. Bestehende Inhalte werden nie ersetzt.</p>
+            <form method="post" data-template-transfer data-transfer-device-id="{{ device.id }}" data-transfer-overview-path="{{ url_for('device_overview', device_id='__DEVICE__') }}" action="{{ url_for('apply_library', device_id=device.id) }}">
+              <input type="hidden" name="csrf" value="{{ csrf() }}">
+              <label>Vorlage auswählen
+                <select name="template_id" required>
+                  <option value="">Vorlage auswählen …</option>
+                  {% for collection in library_templates if collection['items'] %}
+                    <option value="{{ collection.id }}">{{ collection.name }} · {{ collection['items']|length }} Inhalte</option>
+                  {% endfor %}
+                </select>
+              </label>
+              {{ schedule_select(schedule_profiles, schedule_default, title='Zeitplanung der neuen Inhalte') }}
+              <label class="append-confirm"><input type="checkbox" name="confirm" value="yes" required> Ich habe geprüft, dass die Ziel-Playlist leer ist.</label>
+              <button type="submit" class="primary full-width">Leere Playlist initialisieren</button>
+              <div class="template-transfer-feedback" data-transfer-feedback role="status" aria-live="polite" hidden><strong data-transfer-message>Übertragung läuft …</strong><small data-transfer-live>Nicht erneut klicken; Teilübertragungen sind möglich.</small></div>
+            </form>
+          </details>
           {% else %}
           <p class="muted">Noch keine gespeicherten Inhalte vorhanden.</p>
           <a class="button" href="{{ url_for('library_index') }}">Bibliothek öffnen →</a>
@@ -402,26 +427,55 @@
         </div>
         {% if logged_user.role in ('owner', 'it') %}
         <div class="composer-pane" data-add-pane="folder">
-          <p class="composer-explainer">Verfügbaren Netzwerkordner auswählen und mit <strong>{{ device.name }}</strong> verknüpfen. Die Medien bleiben im freigegebenen Share; kein erneuter Upload nötig.</p>
+          <p class="composer-explainer"><strong>IT-Quelle wählen:</strong> Beide Wege verwenden nur freigegebene, schreibgeschützte Netzwerkordner. Entscheide bewusst zwischen einmaliger Kopie und laufender Verbindung.</p>
           {% if available_folder_sources %}
-          <form method="post" action="{{ url_for('attach_folder_playlist_to_device', device_id=device.id) }}">
-            <input type="hidden" name="csrf" value="{{ csrf() }}">
-            <label>Netzwerkordner auswählen
-              <select name="folder_source" required>
-                <option value="">Verfügbaren Ordner wählen …</option>
-                {% for source in available_folder_sources if source.startswith('default/') %}
-                <option value="{{ source }}">Standardbibliothek · {{ source[8:] }}</option>
-                {% endfor %}
-                {% for source in available_folder_sources if not source.startswith('default/') %}
-                <option value="{{ source }}">Einzelquelle · {{ source }}</option>
-                {% endfor %}
-              </select>
-            </label>
-            <p class="muted">IT-Verknüpfung: Bestehende Player-Inhalte werden nicht gelöscht. Der automatische Import und die Veröffentlichung müssen separat vom Server freigegeben werden.</p>
-            <button class="primary full-width" type="submit">Netzwerkordner verknüpfen →</button>
-          </form>
+          <section class="composer-source-choice">
+            <p class="eyebrow">MANUELL · EINMALIG</p>
+            <h3>Ordnerinhalt jetzt auf den Pi kopieren</h3>
+            <p class="muted">Bis zu 20 Bilder/Videos (max. 4 GiB je Medium). Die Dateien werden <strong>jetzt</strong> an die bestehende Playlist angehängt. Keine automatische Synchronisierung.</p>
+            <form method="post" action="{{ url_for('import_network_folder_once', device_id=device.id) }}">
+              <input type="hidden" name="csrf" value="{{ csrf() }}">
+              <input type="hidden" name="confirm" value="once">
+              <label>Freigegebenen Ordner auswählen
+                <select name="folder_source" required>
+                  <option value="">Netzwerkordner wählen …</option>
+                  {% for source in available_folder_sources if source.startswith('default/') %}
+                  <option value="{{ source }}">Standardbibliothek · {{ source[8:] }}</option>
+                  {% endfor %}
+                  {% for source in available_folder_sources if not source.startswith('default/') %}
+                  <option value="{{ source }}">Einzelquelle · {{ source }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <label>Bilddauer (Videos vollständig)
+                <input type="number" name="duration" min="5" max="3600" value="15" required>
+              </label>
+              {{ schedule_select(schedule_profiles, schedule_default, title='Zeitplanung für neue Medien') }}
+              <label class="append-confirm"><input type="checkbox" name="ack" value="yes" required> Jetzt einmalig übertragen; bei Teilfehlern Playlist prüfen und nicht blind wiederholen.</label>
+              <button class="primary full-width" type="submit">Ordnerinhalt einmalig hinzufügen</button>
+            </form>
+          </section>
+          <details class="composer-source-choice composer-source-auto">
+            <summary>Alternative: automatisch mit dem Ordner verbinden (IT)</summary>
+            <p class="muted">Damit wird eine Hub-Vorlage mit diesem Bildschirm verbunden. Der Import und das Veröffentlichen müssen serverseitig gesondert freigeschaltet werden. Es wird <strong>nicht sofort</strong> hochgeladen.</p>
+            <form method="post" action="{{ url_for('attach_folder_playlist_to_device', device_id=device.id) }}">
+              <input type="hidden" name="csrf" value="{{ csrf() }}">
+              <label>Ordner für laufende Verbindung
+                <select name="folder_source" required>
+                  <option value="">Netzwerkordner wählen …</option>
+                  {% for source in available_folder_sources if source.startswith('default/') %}
+                  <option value="{{ source }}">Standardbibliothek · {{ source[8:] }}</option>
+                  {% endfor %}
+                  {% for source in available_folder_sources if not source.startswith('default/') %}
+                  <option value="{{ source }}">Einzelquelle · {{ source }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <button type="submit" class="full-width">Quelle für spätere Automatik verknüpfen</button>
+            </form>
+          </details>
           {% else %}
-          <p class="muted" role="status">Noch kein Netzwerkordner verfügbar. Prüfe den schreibgeschützten Mount der SMB-Quelle. Eine neue Quelle kann IT unter „Ordner &amp; Quellen“ einrichten.</p>
+          <p class="muted" role="status">Noch kein Netzwerkordner verfügbar. Prüfe zuerst die Freigabe und den schreibgeschützten Host-Mount.</p>
           {% endif %}
           <a class="button" href="{{ url_for('media_sources_page') }}">Netzwerkquellen verwalten</a>
         </div>

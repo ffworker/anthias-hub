@@ -173,7 +173,7 @@ def test_ui_refresh_library_and_dashboard_role_safety(env):
     login(client, 'marketing')
     library = client.get('/library').data.decode('utf-8')
     assert 'data-bulk-upload' not in library  # imports happen inside templates
-    assert 'Vorlage erstellen' in library and 'Vorlagenbackup wiederherstellen' in library
+    assert 'Playlist erstellen' in library and 'Vorlagenbackup wiederherstellen' in library
     assert 'aria-current="page"' in library
     detail = client.get(f"/library/{t['id']}").data.decode('utf-8')
     assert 'library-item-options' in detail
@@ -184,7 +184,7 @@ def test_ui_refresh_library_and_dashboard_role_safety(env):
     assert 'data-library-template' in playlist and 'data-library-source' in playlist
     assert 'data-library-source-template' in playlist
     assert 'data-add-mode="website"' in playlist
-    assert playlist.count('data-add-mode=') == 3
+    assert playlist.count('data-add-mode=') == 4  # Datei, ZIP, Vorlage, Webseite
     dashboard = client.get('/').data.decode('utf-8')
     assert 'Hilfe bei Anzeigeproblemen' in dashboard
     assert 'Gerät verwalten' not in dashboard
@@ -834,7 +834,7 @@ def test_whole_template_can_append_to_nonempty_playlist(env):
     lib.add_media(template['id'], 'Bild', io.BytesIO(b'\x89PNG\r\n\x1a\n' + b'test'), 'bild.png', 20)
     login(client, 'marketing')
     page = client.get('/devices/lab').data.decode('utf-8')
-    assert 'Gesamte Vorlage hinzufügen' in page
+    assert 'Bestehende Playlist ergänzen · ganze Vorlage' in page
     assert 'Inhalt hinzufügen' in page
     assert 'Vorlage auswählen' in page or 'Vorlage' in page
     result = client.post('/devices/lab/append-library', data={
@@ -897,7 +897,7 @@ def test_whole_template_can_be_sent_from_library_detail(env):
     page = client.get('/library/' + template['id']).data.decode('utf-8')
     assert 'Vorlage zur Playlist hinzufügen' in page
     assert '/append-to-device' in page
-    assert 'Backup exportieren' in page
+    assert 'Backup-ZIP exportieren' in page
     result = client.post('/library/' + template['id'] + '/append-to-device', data={
         'csrf': token(client), 'confirm': 'append', 'ack': 'yes', 'device': 'lab',
     })
@@ -938,8 +938,8 @@ def test_library_publish_action_is_above_media_list_and_not_hidden_in_sidebar(en
     assert page.count(f'/library/{template["id"]}/append-to-device') == 1
     assert 'name="device" required' in page
     assert 'name="ack" value="yes" required' in page
-    assert 'bestehende Inhalte bleiben erhalten' in page
-    assert 'Backup exportieren' in page
+    assert 'bestehende Einträge bleiben unverändert' in page
+    assert 'Backup-ZIP exportieren' in page
 
 
 def test_library_publish_action_is_disabled_for_empty_templates_or_no_players(env):
@@ -1173,7 +1173,7 @@ def test_playlist_media_and_library_are_prominent_before_optional_website(env):
     assert page.index('data-add-mode="library"') < page.index('data-add-mode="website"')
     assert 'class="add-mode selected" data-add-mode="media" aria-pressed="true"' in page
     assert 'class="add-mode" data-add-mode="website" aria-pressed="false"' in page
-    assert '> Webseite</button>' in page
+    assert '>Webseite</button>' in page
     assert page.index('data-add-pane="website"') < page.index('data-add-pane="media"')  # legacy form remains
     assert 'RSS2Slideshow-Anzeige' in page
     static = Path(__file__).resolve().parents[1] / 'app' / 'static'
@@ -2212,7 +2212,8 @@ def test_it_can_link_network_share_from_screen_composer_without_publishing(env, 
     assert 'data-add-mode="folder"' in it_page
     assert 'data-add-pane="folder"' in it_page
     assert 'value="default/Bistro"' in it_page
-    assert 'Netzwerkordner verknüpfen' in it_page
+    assert 'Ordnerinhalt einmalig hinzufügen' in it_page
+    assert 'automatisch mit dem Ordner verbinden' in it_page
 
     invalid = client.post('/devices/lab/folder-playlist', data={
         'csrf': token(client), 'folder_source': 'default/../not-allowed'
@@ -2237,4 +2238,111 @@ def test_it_can_link_network_share_from_screen_composer_without_publishing(env, 
     assert len(store.list()) == 1
     assert FakeAnthias.changes == []  # Binding cannot mutate a live Pi playlist.
     linked_page = client.get('/devices/lab').get_data(as_text=True)
-    assert 'Netzwerkordner verknüpft · automatische Playlist' in linked_page
+    assert 'Netzwerkordner zugeordnet · Automatik optional' in linked_page
+
+
+def test_manual_network_folder_import_is_guarded_and_append_only(env, monkeypatch):
+    app, client, tmp = env
+    from app.library import Library
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    root = Path(tmp) / 'sources'
+    media = root / 'default' / 'Bistro'
+    media.mkdir(parents=True)
+    (media / 'poster.png').write_bytes(b'\x89PNG\r\n\x1a\n' + b'poster')
+    (media / 'screen.jpg').write_bytes(b'\xff\xd8' + b'photo')
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    url = '/devices/lab/import-network-folder'
+
+    login(client, 'marketing')
+    marketing = client.get('/devices/lab').get_data(as_text=True)
+    assert 'data-add-pane="folder"' not in marketing
+    assert client.post(url, data={
+        'csrf': token(client), 'confirm': 'once', 'ack': 'yes',
+        'folder_source': 'default/Bistro', 'duration': '30'
+    }).status_code == 403
+    assert not FakeAnthias.changes
+    client.post('/logout', data={'csrf': token(client)})
+
+    login(client, 'it')
+    it = client.get('/devices/lab').get_data(as_text=True)
+    assert 'data-add-pane="folder"' in it
+    assert 'name="folder_source"' in it
+    assert '/import-network-folder' in it
+    assert client.post(url, data={
+        'csrf': token(client), 'confirm': 'once', 'folder_source': 'default/Bistro'
+    }).status_code == 400  # explicit acknowledgement required
+
+    assert client.post(url, data={
+        'csrf': token(client), 'confirm': 'once', 'ack': 'yes',
+        'folder_source': 'default/../bad', 'duration': '30'
+    }).status_code == 302
+    assert not FakeAnthias.changes
+
+    response = client.post(url, data={
+        'csrf': token(client), 'confirm': 'once', 'ack': 'yes',
+        'folder_source': 'default/Bistro', 'duration': '30'
+    })
+    assert response.status_code == 302
+    assert [event[0] for event in FakeAnthias.changes] == [
+        'upload', 'create', 'upload', 'create'
+    ]
+    assert Library(app.config['LIBRARY_DIR']).list() == []
+    assert all(event[0] != 'remove' for event in FakeAnthias.changes)
+
+
+def test_manual_network_folder_preflight_rejects_bad_media_and_excess(env, monkeypatch):
+    _, client, tmp = env
+    root = Path(tmp) / 'sources'
+    media = root / 'default' / 'Bistro'
+    media.mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    login(client, 'it')
+    url = '/devices/lab/import-network-folder'
+    payload = {'csrf': token(client), 'confirm': 'once', 'ack': 'yes',
+               'folder_source': 'default/Bistro', 'duration': '15'}
+    (media / 'bad.jpg').write_bytes(b'not a jpeg')
+    response = client.post(url, data=payload, follow_redirects=True)
+    assert response.status_code == 200
+    assert 'Dateiformat' in response.get_data(as_text=True)
+    assert not FakeAnthias.changes
+
+    (media / 'bad.jpg').unlink()
+    for i in range(21):
+        (media / f'{i:02d}.png').write_bytes(b'\x89PNG\r\n\x1a\n' + b'x')
+    response = client.post(url, data=payload, follow_redirects=True)
+    assert 'Mehr als 20 Medien' in response.get_data(as_text=True)
+    assert not FakeAnthias.changes
+
+
+def test_player_composer_workflows_are_explicit_and_marketing_does_not_administer_folders(env):
+    _, client, _ = env
+    login(client, 'marketing')
+    page = client.get('/devices/lab').get_data(as_text=True)
+    for mode in ('media', 'zip', 'library', 'website'):
+        assert f'data-add-mode="{mode}"' in page
+        assert f'data-add-pane="{mode}"' in page
+    assert 'data-add-mode="folder"' not in page
+    assert 'Medien-ZIP importieren' in page
+    assert 'Noch keine gespeicherten Inhalte vorhanden.' in page
+    assert 'Bestehende Playlist' in page or 'bestehende Playlist' in page
+
+
+def test_template_composer_offers_append_and_empty_only_apply_after_content_exists(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    library = Library(app.config['LIBRARY_DIR'])
+    template = library.create('Bistro')
+    library.add_url(template['id'], 'News', 'https://example.org/news', 30)
+    login(client, 'marketing')
+    page = client.get('/devices/lab').get_data(as_text=True)
+    assert 'Bestehende Playlist ergänzen · ganze Vorlage' in page
+    assert 'Leere Playlist initialisieren' in page
+    assert '/devices/lab/append-library' in page
+    assert '/devices/lab/apply-library' in page
+    refused = client.post('/devices/lab/apply-library', data={
+        'csrf': token(client), 'template_id': template['id'], 'confirm': 'yes'
+    }, follow_redirects=True)
+    assert refused.status_code == 200
+    assert 'nicht leer' in refused.get_data(as_text=True)
+    assert FakeAnthias.changes == []
