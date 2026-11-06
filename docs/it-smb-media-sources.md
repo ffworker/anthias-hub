@@ -1,5 +1,35 @@
 # IT: SMB-Medienquellen direkt im Anthias-Hub verwalten
 
+## Empfohlener Standard: ein SMB-Stammordner, viele Playlists
+
+Für Standorte mit einem gemeinsamen Marketing-Verzeichnis **nicht jedes
+Bildschirmverzeichnis als eigene SMB-Quelle anlegen**. Stattdessen unter
+**Medienquellen → Standardbibliothek** nur den gemeinsamen übergeordneten
+UNC-Pfad eintragen (Beispiel: `//10.20.1.4/media$/Marketing/Bildschirme`).
+
+Der Host-Mountdienst hängt diesen **einen** Pfad read-only als
+`/srv/anthias-sources/default` ein. Das Hub-UI erkennt unmittelbar darunter
+gelegene Verzeichnisse wie `Bistro`, `Empfang Nord` oder
+`Lager Bildschirm` und bietet pro Ordner **„Als Playlist verwenden“**.
+Das erzeugt eine Playlist-Vorlage, die den unveränderlichen Ordnerverweis
+`default/<exakter Ordnername>` erhält. Die Playlist kann später
+einem oder mehreren Anthias-Pis zugeordnet werden.
+
+Marketing arbeitet unverändert in den vorhandenen Netzwerkordnern. Im Hub
+bearbeitet Marketing Bild-Anzeigedauern und vorhandene RSS-Web-Slides.
+Unter **Bildschirme** sind die Wiedergabelisten und Zeitpläne sichtbar.
+
+Die automatische Ordnererkennung berücksichtigt nur **direkte Unterordner**
+des freigegebenen Root-Mounts. Symlinks, versteckte Ordner sowie
+Pfad-Traversal werden abgewiesen. **Es gibt kein automatisches Löschen**:
+Entfernte Quelldateien verbleiben bis zum gesondert freigegebenen
+Lösch-Abgleich in der Playlist. Das schützt vor SMB-Ausfällen.
+
+Ein bestehender alter Einzel-Mount wie `bistro` darf als Rückfalloption
+bestehen bleiben; er wird durch die neue Standardbibliothek nicht ersetzt.
+Für den neuen Stammordner ist dieselbe Server/Share-Allowlist und
+Credentials-Datei verwendbar, sofern deren Berechtigungen passen.
+
 ## Bedienkonzept
 
 Im Hub erscheint für **IT und Owner** ein neuer Menüpunkt **Medienquellen**.
