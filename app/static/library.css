@@ -494,3 +494,11 @@
 .media-source-form input{min-width:0;width:100%;min-height:41px;border:1px solid var(--border);border-radius:9px;background:var(--field);padding:9px;color:var(--ink)}
 .media-source-form button{min-height:41px}
 @media(max-width:820px){.media-source-form,.media-source-card .media-source-form{grid-template-columns:1fr}}
+
+/* Distinguish share-backed playlists from manually populated templates. */
+.library-entry-heading{display:flex;gap:7px 12px;align-items:center;flex-wrap:wrap}
+.library-entry-type{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border);border-radius:99px;padding:3px 8px;font-size:10px;font-weight:700;letter-spacing:.01em;white-space:normal}
+.library-entry-type.is-automatic{border-color:var(--blue);color:var(--blue);background:var(--raised)}
+.library-entry-type.is-manual{color:var(--muted);background:var(--raised)}
+.media-folder-summary{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;border-top:1px solid var(--border);margin-top:15px;padding-top:12px;font-size:12px}
+.media-folder-summary span{color:var(--muted)}
