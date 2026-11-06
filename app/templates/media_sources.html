@@ -18,7 +18,7 @@
   <p class="media-overview-caption">Hoststatus wird nur aus einer gültigen Prüfung der letzten 5 Minuten übernommen. Ein gespeicherter Pfad allein ist <strong>kein Mount</strong>.</p>
 </section>
 
-<section class="card library-panel media-default-panel {{ 'is-confirmed' if default_source and default_source.status in ('mounted','already-mounted') else 'is-attention' if default_source else 'is-empty' }}" aria-labelledby="default-library-title">
+<section class="card library-panel media-default-panel {{ 'is-confirmed' if default_source and default_source.status in ('mounted','already-mounted') else 'is-error' if default_source and default_source.status in ('blocked','conflict','error') else 'is-attention' if default_source else 'is-empty' }}" aria-labelledby="default-library-title">
   <p class="eyebrow">01 / STANDARDQUELLE · EMPFOHLEN</p>
   <div class="media-default-heading">
     <div>
@@ -139,7 +139,7 @@
     </div>
   </div>
   {% for source in sources if source.alias != 'default' %}
-  <article class="card media-source-card {{ 'is-confirmed' if source.status in ('mounted','already-mounted') else 'is-attention' }}" aria-label="Einzelquelle {{ source.alias }}">
+  <article class="card media-source-card {{ 'is-confirmed' if source.status in ('mounted','already-mounted') else 'is-error' if source.status in ('blocked','conflict','error') else 'is-attention' }}" aria-label="Einzelquelle {{ source.alias }}">
     <div class="media-source-top">
       <div><p class="eyebrow">REGISTRIERTE EINZELQUELLE</p><h3>{{ source.alias }}</h3></div>
       {% if source.status in ('mounted','already-mounted') %}
