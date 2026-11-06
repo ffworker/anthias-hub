@@ -1,8 +1,7 @@
 # Folder-backed playlist templates (experimental)
 
-This first increment adds **automatic import to Hub library templates**, not yet
-automatic deployment to Anthias players. Existing Pi playlists, schedules and
-manual media are **never changed** by the folder worker.
+The folder importer supports **automatic import to Hub library templates** and
+opt-in publication of folder-managed media to selected Anthias players.\n**Automatic Pi publication is disabled by default** (server-side). Existing manual\nPi assets are never modified.
 
 ## Host setup
 
@@ -65,3 +64,60 @@ and enter only the alias (e.g. `bistro`), *not* the UNC path.
   real-device acceptance tests before enabling them.
 - If the worker reports an error, check its logs and the share mount; the
   current playing playlist is deliberately left alone.
+
+
+## Optional automatic Pi publishing (second phase)
+
+Each folder-backed Hub template can have one or more registered target Pis.
+IT opens the template, enters a source alias, and selects **Zielbildschirme**.
+This mapping is inactive until the worker is launched with
+`FOLDER_AUTO_PUBLISH=1` (default: `0`). Use only a **test Pi** first.
+The folder importer continues to run even while auto publishing is off.
+
+Expected workflow:
+
+1. Mount each SMB/NFS folder read-only on the Hub host. Check permissions
+   for the UID/GID of the Hub container.
+2. Give the Web Hub and worker read-only `/sources` access using the
+   documented Compose override. Preserve the original network and TLS settings.
+3. Create a Hub template, bind `bistro` as folder alias, and select a
+   registered **test Pi** under the IT-only targets.
+4. With `FOLDER_AUTO_PUBLISH=0`, run the worker and verify files appear
+   in Hub library. The Pi must remain untouched.
+5. On a test device only, enable the worker option with
+   `FOLDER_AUTO_PUBLISH=1` and validate playback, schedules and error recovery.
+6. Switch to Bistro only after separate on-screen acceptance.
+
+The worker writes a per-template / per-device journal at
+`/data/folder-publications/<template-id>/<device-id>.json`.
+Keep it with your normal `/data` backups. Losing it can make adoption
+ambiguous: never wipe it while auto publishing is running.
+
+### Reconciliation safety
+
+- Only folder-imported media entries are managed, never manually added
+  Pi content or Hub websites.
+- Per-file deterministic version markers avoid duplicating remote assets
+  after a process crash. No playlist-wide replace, no reorder.
+- New media is created disabled and checked before enabling it.
+- On a file update, the previous asset's Anthias-native schedule is copied
+  and confirmed before the old version is disabled. Current manual enable/
+  disable state is retained across revisions.
+- A remote asset that was renamed outside the Hub is **not overwritten**.
+  IT must resolve the conflict before continuing.
+- Failures stop that file; other source templates/devices continue.
+- No automatic remote deletion. **Removed files are retained** as a deliberate
+  safety restriction until mount-health and removal policy are proven.
+  Do not claim strict mirror semantics yet.
+- The Pi remains able to play its existing files if the Hub, NAS, or worker
+  goes offline.
+
+### Important limitations
+
+The new feature must not be enabled on production devices until it is
+validated with a real Anthias player and recovery tests. Upstream Anthias
+API behavior varies across versions; the automated tests use a simulated
+player, not a live display.
+
+The UI stores the target mapping, but server-side publication activation is
+an IT deployment operation. Never expose SMB credentials in the UI.
