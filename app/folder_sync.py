@@ -29,6 +29,14 @@ def source_directory(alias, root=None):
     # check an unmounted placeholder could look like an empty successful scan.
     if os.environ.get('FOLDER_REQUIRE_MOUNT', '0') == '1' and not os.path.ismount(path):
         raise LibraryError('Netzwerkquelle nicht eingehängt; vorhandene Medien bleiben erhalten')
+    if os.environ.get('FOLDER_REQUIRE_VERIFIED', '0') == '1':
+        from .media_sources import SourceError, load_sources, mount_statuses
+        try:
+            registry = {entry['alias'] for entry in load_sources()}
+            if alias in registry and mount_statuses().get(alias) not in ('mounted', 'already-mounted'):
+                raise LibraryError('SMB-Pfad noch nicht durch den Host bestätigt; Import gestoppt')
+        except SourceError as exc:
+            raise LibraryError(str(exc)) from exc
     return path
 
 
