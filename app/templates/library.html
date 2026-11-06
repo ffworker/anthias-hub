@@ -21,7 +21,7 @@
     <p>Marketing speichert Bilder und Videos weiterhin wie gewohnt im Netzwerk. Die Bibliothek übernimmt die Medien automatisch; hier lassen sich Anzeigedauern und RSS-Webseiten verwalten.</p>
   </div>
   {% if logged_user.role in ('owner', 'it') %}
-    <a class="button primary" href="{{ url_for('media_sources_page') }}">Bildschirmordner auswählen →</a>
+    <a class="button primary" href="#new-playlist">Playlist mit Netzwerkordner erstellen →</a>
   {% else %}
     <a class="button primary" href="#library-list-title">Ordner-Playlists ansehen →</a>
   {% endif %}
@@ -44,7 +44,7 @@
   </section>
   {% if logged_user.role in ('marketing', 'owner', 'it') %}
   <aside class="library-actions">
-    <section class="card library-panel">
+    <section class="card library-panel" id="new-playlist">
       <p class="library-step">NEUE PLAYLIST</p>
       <h2>Playlist erstellen</h2>
       <p class="muted">IT kann einen vorhandenen Netzwerkordner direkt zuordnen. Alternativ eine leere, manuelle Vorlage erstellen.</p>
