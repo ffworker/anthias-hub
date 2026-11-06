@@ -14,12 +14,18 @@ services:
       FOLDER_SYNC_INTERVAL: "${FOLDER_SYNC_INTERVAL:-300}"
       FOLDER_AUTO_PUBLISH: "${FOLDER_AUTO_PUBLISH:-0}"
       FOLDER_REQUIRE_MOUNT: "1"
+      FOLDER_REQUIRE_VERIFIED: "1"
       DEVICES_FILE: /data/devices.json
       SCHEDULES_FILE: /data/schedules.json
       FOLDER_PUBLICATIONS_DIR: /data/folder-publications
     volumes:
       - ./data:/data
-      - ${MEDIA_SOURCE_HOST_PATH:?Set mounted read-only media root}:/sources:ro
+      - type: bind
+        source: ${MEDIA_SOURCE_HOST_PATH:?Set mounted read-only media root}
+        target: /sources
+        read_only: true
+        bind:
+          propagation: rslave
     read_only: true
     tmpfs:
       - /tmp
