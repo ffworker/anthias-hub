@@ -1,6 +1,6 @@
 # Anthias Hub – UI-Designsystem
 
-Stand: November 2026 · UI-Kennung: `ui-20261106-03`
+Stand: November 2026 · UI-Kennung: `ui-20261106-04`
 
 ## Produkt und Arbeitsabläufe
 
@@ -45,7 +45,7 @@ Die früheren Dateien `ui-refinements.css`, `product-ui.css` und `workflow-ui.cs
 Die Seite meldet die aktuelle Designversion direkt im HTML:
 
 ```html
-<meta name="anthias-hub-ui" content="ui-20261106-03">
+<meta name="anthias-hub-ui" content="ui-20261106-04">
 ```
 
 Auf der Hub-VM nach **Merge, erfolgreichem GHCR-Publish und Updater-Ausführung** prüfen:
