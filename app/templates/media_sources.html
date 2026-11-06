@@ -106,6 +106,8 @@
     <h3>{{ source.alias }}</h3>
     <p class="muted">Erkannte CIFS-Quelle: <code>{{ source.observed if source.observed else 'Nicht eindeutig aus dem Container auslesbar' }}</code></p>
     <p class="muted">Der angezeigte CIFS-Wert kann nur den Freigabestamm statt des vollständigen Unterordners enthalten. Für die genaue Zuordnung auf dem Host <code>findmnt -M /srv/anthias-sources/{{ source.alias }} -o SOURCE,FSTYPE</code> prüfen.</p>
+    <p class="muted">Auch einen früher manuell eingebundenen Alias kannst du aus der Hub-Auswahl ausblenden. Das echte Aushängen erfolgt weiterhin getrennt auf dem Host.</p>
+    {{ retire_control(source) }}
   </article>
   {% endfor %}
 </section>
