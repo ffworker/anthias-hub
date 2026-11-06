@@ -2423,3 +2423,94 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert 'Einzeldatei hinzufügen' in marketing
     assert 'ZIP / mehrere Dateien importieren' in marketing
     assert 'Vorlage zur Playlist hinzufügen' in marketing
+
+
+def test_zero_state_discovers_single_smb_parent_without_individual_mounts(env, monkeypatch):
+    """Fresh state: one root mount exposes direct child folders as playlist sources."""
+    app, client, tmp = env
+    from app.folder_sync import available_sources, default_library_folders, sync_template
+    from app.library import Library
+    root = Path(tmp) / 'sources'
+    root.mkdir()
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    monkeypatch.delenv('FOLDER_REQUIRE_MOUNT', raising=False)
+    monkeypatch.delenv('FOLDER_REQUIRE_VERIFIED', raising=False)
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'fresh-library')
+    app.config['MEDIA_SOURCES_FILE'] = str(Path(tmp) / 'fresh-sources.json')
+    app.config['MEDIA_MOUNT_STATUS_FILE'] = str(Path(tmp) / 'fresh-status.json')
+    assert not Path(app.config['MEDIA_SOURCES_FILE']).exists()
+    assert Library(app.config['LIBRARY_DIR']).list() == []
+
+    login(client, 'it')
+    first = client.get('/media-sources').get_data(as_text=True)
+    assert '0 Unterordner im Hub sichtbar' in first
+    assert 'Stammverzeichnis speichern' in first
+    assert client.get('/library').status_code == 200
+    assert client.post('/media-sources', data={
+        'csrf': token(client), 'alias': 'default',
+        'unc': '//10.20.30.40/media$/DigitalSignage'
+    }).status_code == 302
+    # Saving only registers a UNC; the host must still mount it.
+    assert not (root / 'default').exists()
+    assert available_sources() == []
+
+    shared = root / 'default'
+    (shared / 'Entrance').mkdir(parents=True)
+    (shared / 'Bistro').mkdir()
+    (shared / '.hidden').mkdir()
+    (shared / 'Entrance' / 'nested').mkdir()
+    (shared / 'Bistro' / 'image.png').write_bytes(b'\x89PNG\r\n\x1a\n' + b'picture')
+    outside = Path(tmp) / 'outside'
+    outside.mkdir()
+    (shared / 'escaping').symlink_to(outside, target_is_directory=True)
+    assert default_library_folders() == ['Bistro', 'Entrance']
+    assert available_sources() == ['default/Bistro', 'default/Entrance']
+
+    page = client.get('/library').get_data(as_text=True)
+    assert 'value="default/Bistro"' in page
+    assert 'value="default/Entrance"' in page
+    assert 'value="default/.hidden"' not in page
+    created = client.post('/library', data={
+        'csrf': token(client), 'name': 'Demo Signage',
+        'folder_source': 'default/Bistro'
+    })
+    assert created.status_code == 302
+    templates = Library(app.config['LIBRARY_DIR']).list()
+    assert len(templates) == 1
+    assert templates[0]['folder_source'] == 'default/Bistro'
+    assert templates[0].get('auto_devices', []) == []
+    assert FakeAnthias.changes == []
+
+    result = sync_template(Library(app.config['LIBRARY_DIR']), templates[0]['id'])
+    assert result['added'] == 1
+    assert FakeAnthias.changes == []
+
+
+def test_existing_imported_playlist_refuses_unsafe_folder_alias_rebind(env, monkeypatch):
+    """Never silently lose imported durations and IDs when old mounts are removed."""
+    app, _, tmp = env
+    from app.folder_sync import sync_template
+    from app.library import Library, LibraryError
+    root = Path(tmp) / 'sources'
+    old = root / 'legacy'
+    target = root / 'default' / 'Bistro'
+    old.mkdir(parents=True)
+    target.mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    monkeypatch.delenv('FOLDER_REQUIRE_MOUNT', raising=False)
+    monkeypatch.delenv('FOLDER_REQUIRE_VERIFIED', raising=False)
+    media = b'\x89PNG\r\n\x1a\n' + b'picture'
+    (old / 'image.png').write_bytes(media)
+    (target / 'image.png').write_bytes(media)
+    store = Library(str(Path(tmp) / 'library'))
+    ident = store.create('Existing Bistro')['id']
+    store.set_folder_source(ident, 'legacy')
+    assert sync_template(store, ident)['added'] == 1
+    before = store.get(ident)
+    assert before['items'][0]['source_file'] == 'image.png'
+    with pytest.raises(LibraryError, match='bereits importierte Medien'):
+        store.set_folder_source(ident, 'default/Bistro')
+    after = store.get(ident)
+    assert after['folder_source'] == before['folder_source'] == 'legacy'
+    assert after['items'] == before['items']
+    assert FakeAnthias.changes == []
