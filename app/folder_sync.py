@@ -28,6 +28,19 @@ def source_directory(alias, root=None):
     return path
 
 
+def available_sources(root=None):
+    """Only return allowed first-level directory aliases; never expose UNC paths."""
+    base = Path(root or os.environ.get('MEDIA_SOURCE_ROOT', '/sources'))
+    if not base.is_dir():
+        return []
+    return sorted(
+        (item.name for item in base.iterdir()
+         if _ALIAS.fullmatch(item.name) and not item.is_symlink()
+         and item.is_dir() and item.resolve().parent == base.resolve()),
+        key=str.casefold,
+    )
+
+
 def sync_template(store, template_id, root=None):
     """Import stable files, never delete on an unavailable or empty share.
 
