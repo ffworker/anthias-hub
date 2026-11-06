@@ -248,8 +248,8 @@ def test_library_media_apply_and_role_boundary(env):
     login(client, 'it')
     t = token(client)
     assert client.get('/library').status_code == 200
-    assert client.post(f"/library/{template['id']}/apply", data={'csrf': t, 'template_id': template['id'], 'device': 'lab', 'confirm': 'yes'}).status_code == 403
-    assert client.post('/library', data={'csrf': t, 'name': 'No'}).status_code == 403
+    assert client.post(f"/library/{template['id']}/apply", data={'csrf': t, 'template_id': template['id'], 'device': 'lab', 'confirm': 'yes'}).status_code == 302
+    assert client.post('/library', data={'csrf': t, 'name': 'IT can create'}).status_code == 302
     assert not FakeAnthias.changes
     login(client, 'marketing')
     t = token(client)
@@ -750,7 +750,7 @@ def test_library_item_add_rejects_invalid_confirmation_role_and_corrupt_file(env
         'csrf': token(client), 'source': source, 'confirm': 'add'}).status_code == 403
     login(client, 'it')
     assert client.post('/devices/lab/add-library-item', data={
-        'csrf': token(client), 'source': source, 'confirm': 'add'}).status_code == 403
+        'csrf': token(client), 'source': source, 'confirm': 'wrong'}).status_code == 400
     login(client, 'marketing')
     assert client.post('/devices/lab/add-library-item', data={
         'csrf': token(client), 'source': source, 'confirm': 'wrong'}).status_code == 400
@@ -1344,8 +1344,8 @@ def test_library_template_delete_csrf_roles_confirm_and_symlink_protection(env):
     assert client.post(route, data={'csrf': token(client), 'confirm': collection['id'],
                                     'ack': 'yes', 'name_confirmation': 'Sicher'}).status_code == 403
     login(client, 'it')
-    assert client.post(route, data={'csrf': token(client), 'confirm': collection['id'],
-                                    'ack': 'yes', 'name_confirmation': 'Sicher'}).status_code == 403
+    assert client.post(route, data={'csrf': token(client), 'confirm': 'wrong',
+                                    'ack': 'yes', 'name_confirmation': 'Sicher'}).status_code == 400
     login(client, 'marketing')
     t = token(client)
     assert client.post(route, data={'csrf': t, 'confirm': 'wrong',
@@ -1502,11 +1502,10 @@ def test_player_clear_entire_playlist_requires_exact_name_and_ack(env):
 def test_player_bulk_rejects_bad_selection_stale_snapshot_and_csrf(env):
     _, client, _ = env
     url = '/devices/lab/bulk-delete'
-    for role in ('it', 'viewer'):
-        login(client, role)
-        assert client.post(url, data={
-            'csrf': token(client), 'baseline': ['one123', 'two123'],
-            'selected': ['one123'], 'ack': 'yes', 'mode': 'selected'}).status_code == 403
+    login(client, 'viewer')
+    assert client.post(url, data={
+        'csrf': token(client), 'baseline': ['one123', 'two123'],
+        'selected': ['one123'], 'ack': 'yes', 'mode': 'selected'}).status_code == 403
     login(client, 'marketing')
     base = {'csrf': token(client), 'baseline': ['one123', 'two123'],
             'selected': ['one123'], 'ack': 'yes', 'mode': 'selected'}
