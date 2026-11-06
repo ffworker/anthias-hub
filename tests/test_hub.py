@@ -2671,6 +2671,7 @@ def test_smb_ui_reports_verified_mount_only_for_fresh_matching_host_status(env, 
     assert '/srv/anthias-sources/default' in unconfirmed
     assert 'Stammverzeichnis aktualisieren' in unconfirmed
     assert 'Erkannte Unterordner ansehen' not in unconfirmed
+    assert 'Ordner im Container sichtbar, aber der Host-Mount ist nicht bestätigt' in unconfirmed
     assert 'Stammordner: Host-Mount nicht bestätigt' in client.get('/').get_data(as_text=True)
 
     status_file.write_text(json.dumps({'checked_at': time.time(), 'sources': {
