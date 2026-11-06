@@ -9,6 +9,64 @@
   <p class="muted">Hier verwaltest du, welcher <strong>SMB-Pfad</strong> hinter einem Ordneralias steckt. Jede Quelle kann danach in der Bibliothek einer Playlist und einem oder mehreren Pis zugeordnet werden.</p>
   <p class="muted"><strong>Sicherheit:</strong> Das UI speichert ausschließlich Pfade, keine SMB-Passwörter. Der separate Host-Mountdienst darf nur vorher von IT freigegebene Server/Freigaben verwenden und mountet schreibgeschützt. Eine geänderte aktive Freigabe wird niemals automatisch ausgehängt.</p>
 </section>
+<section class="card library-panel media-default-panel" aria-labelledby="default-library-title">
+  <p class="eyebrow">01 / STANDARD-BIBLIOTHEK</p>
+  <div class="media-default-heading">
+    <div>
+      <h2 id="default-library-title">Ein Netzwerkordner. Alle Bildschirme.</h2>
+      <p>Den gemeinsamen Marketing-Stammordner einmal verbinden. Alle direkten Unterordner erscheinen automatisch und werden per Klick zu einer Playlist.</p>
+    </div>
+    {% if default_source %}<span class="pill {{ 'ok' if default_source.status in ('mounted','already-mounted') else 'off' }}">{{ 'Verbunden' if default_source.status in ('mounted','already-mounted') else 'Hostprüfung erforderlich' }}</span>{% endif %}
+  </div>
+  <form method="post" action="{{ url_for('media_sources_save') }}" class="media-default-form">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <input type="hidden" name="alias" value="default">
+    <label>SMB-Stammverzeichnis
+      <input name="unc" maxlength="650" required
+        placeholder="//10.0.0.5/media$/Marketing/Bildschirme"
+        value="{{ default_source.unc if default_source else '' }}">
+    </label>
+    <button type="submit" class="primary">{{ 'Stammverzeichnis aktualisieren' if default_source else 'Stammverzeichnis speichern' }}</button>
+  </form>
+  <p class="muted">Sicherheit: Nur von IT freigegebene SMB-Server und Freigaben werden auf dem Host eingehängt. Das UI kennt keine Passwörter. Die bestehende Quelle wird bei einer Änderung nicht automatisch ausgehängt.</p>
+</section>
+
+<section class="media-default-folders" aria-labelledby="default-folders-title">
+  <div class="media-folder-heading">
+    <div><p class="eyebrow">02 / ORDNER ZUORDNEN</p><h2 id="default-folders-title">Bildschirmordner <span class="count">{{ default_folders|length }}</span></h2></div>
+    <p class="muted">Ordner wird automatisch erkannt · Playlist bleibt zentral bearbeitbar</p>
+  </div>
+  <div class="media-folder-grid">
+    {% for folder in default_folders %}
+    <article class="card media-folder-card">
+      <div class="media-folder-symbol" aria-hidden="true">▤</div>
+      <div class="media-folder-info">
+        <p class="eyebrow">NETZWERKORDNER</p>
+        <h3>{{ folder.name }}</h3>
+        <small>{{ folder.source }}</small>
+      </div>
+      {% if folder.template %}
+        <a class="button primary" href="{{ url_for('library_detail', template_id=folder.template.id) }}">Playlist öffnen →</a>
+      {% else %}
+        <form method="post" action="{{ url_for('media_sources_use_folder') }}">
+          <input type="hidden" name="csrf" value="{{ csrf() }}">
+          <input type="hidden" name="folder" value="{{ folder.name }}">
+          <button type="submit" class="primary">Als Playlist verwenden →</button>
+        </form>
+      {% endif %}
+    </article>
+    {% else %}
+    <div class="card media-folders-empty">
+      <h3>Noch keine Unterordner gefunden</h3>
+      <p>Den Stammordner zuerst oben speichern und vom Host schreibgeschützt einbinden lassen. Danach erscheinen hier automatisch die einzelnen Bildschirmordner.</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<details class="media-advanced-sources">
+<summary>Weitere SMB-Quellen &amp; Experten-Einstellungen</summary>
+<div class="media-advanced-body">
 <section class="card library-panel media-sources-admin">
   <h2>Neue Medienquelle hinzufügen</h2>
   <form method="post" action="{{ url_for('media_sources_save') }}" class="media-source-form">
@@ -58,4 +116,6 @@
   {% endfor %}
 </section>
 {% endif %}
+</div>
+</details>
 {% endblock %}
