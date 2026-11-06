@@ -158,21 +158,6 @@ def reconcile(store, template_id, device_id, *,
         if record is not None and not isinstance(record, dict):
             raise PublishError('Ungültiger Medienstatus; keine Änderungen')
         old = _owned(existing, record)
-        if item.get('source_missing'):
-            # The folder scanner must confirm a missing file on multiple
-            # successful scans before this flag may become true.
-            if record and record.get('status') != 'missing':
-                if old and old.get('is_enabled'):
-                    api.patch(old['asset_id'], {'is_enabled': False})
-                    existing = _remote_assets(api)
-                    again = _owned(existing, record)
-                    if again and again.get('is_enabled') is not False:
-                        raise PublishError('Deaktivierung von Anthias nicht bestätigt')
-                record['status'] = 'missing'
-                _save(path, doc)
-                stats['disabled'] += 1
-            continue
-
         media_path = store.verified_media_path(template_id, item)
         media_type = _MEDIA.get(media_path.suffix.lower())
         if not media_type:
@@ -181,14 +166,8 @@ def reconcile(store, template_id, device_id, *,
         revision = media_path.stem
         target = _matching(existing, name)
 
-        # Existing version: preserve manual toggles/schedules. Resume an
-        # explicitly missing/disabled managed asset when the source returns.
+        # Existing version: preserve manual toggles and schedules.
         if record and record.get('revision') == revision and old and old['asset_id'] == record['asset_id']:
-            if record.get('status') == 'missing':
-                if not old.get('is_enabled'):
-                    api.patch(old['asset_id'], {'is_enabled': True})
-                record['status'] = 'active'
-                _save(path, doc)
             stats['unchanged'] += 1
             continue
 
@@ -198,7 +177,7 @@ def reconcile(store, template_id, device_id, *,
         if target is None:
             with media_path.open('rb') as stream:
                 uploaded = api.upload(stream, media_path.name, media_type)
-            result = api.create(item['name'][:70] if False else name, uploaded['uri'],
+            result = api.create(name, uploaded['uri'],
                                 item['duration'], mimetype=media_type,
                                 ext=uploaded.get('ext'), enabled=False)
             if not isinstance(result, dict) or not ASSET_ID.fullmatch(str(result.get('asset_id', ''))):
@@ -216,8 +195,7 @@ def reconcile(store, template_id, device_id, *,
             if fields:
                 _confirm_schedule(api, target['asset_id'], fields)
 
-        enable = (old is None or bool(old.get('is_enabled')) or
-                  (record is not None and record.get('status') == 'missing'))
+        enable = old is None or bool(old.get('is_enabled'))
         if enable and not target.get('is_enabled'):
             api.patch(target['asset_id'], {'is_enabled': True})
         existing = _remote_assets(api)
