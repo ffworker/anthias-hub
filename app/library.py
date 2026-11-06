@@ -79,6 +79,25 @@ class Library:
             return []
         return sorted((self.get(p.name) for p in self.root.iterdir() if p.is_dir() and _ID.fullmatch(p.name)), key=lambda x: x['name'].casefold())
 
+    def set_folder_source(self, ident, alias):
+        """Bind a template to one pre-mounted, allowlisted folder alias.
+
+        The actual path validation happens in folder_sync.source_directory;
+        never accept an arbitrary filesystem path or a network URL from UI.
+        """
+        from .folder_sync import source_directory
+        alias = str(alias or '').strip()
+        if alias:
+            source_directory(alias)
+        with _lock:
+            collection = self.get(ident)
+            if alias:
+                collection['folder_source'] = alias
+            else:
+                collection.pop('folder_source', None)
+            self._save(collection)
+        return collection
+
     def add_url(self, ident, name, url, duration):
         try:
             address = validate_website_url(url)

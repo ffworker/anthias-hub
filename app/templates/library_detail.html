@@ -71,6 +71,21 @@
   </section>
   {% endif %}
 </section>
+{% if logged_user.role in ('owner', 'it') %}
+<section class="card library-panel">
+  <details>
+    <summary>Netzwerkordner als Medienquelle (IT)</summary>
+    <p class="muted">Nur die Kennung eines vom Administrator unter /sources eingebundenen Ordners eingeben. Neue Dateien erscheinen automatisch in dieser Hub-Vorlage, nicht sofort auf dem Pi.</p>
+    <form method="post" action="{{ url_for('library_folder_source', template_id=template.id) }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <label>Ordnerkennung
+        <input name="folder_source" pattern="[A-Za-z0-9][A-Za-z0-9_-]{0,63}" maxlength="64" value="{{ template.folder_source|default('') }}" placeholder="bistro">
+      </label>
+      <button type="submit">Ordnerquelle speichern</button>
+    </form>
+  </details>
+</section>
+{% endif %}
 <div class="library-grid">
 <section aria-labelledby="items-title"><h2 id="items-title">Inhalte <span class="count">{{ template['items']|length }}</span></h2><ol class="library-items">
 {% for item in template['items'] %}

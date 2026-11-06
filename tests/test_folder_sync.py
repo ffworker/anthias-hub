@@ -1,0 +1,82 @@
+"""Folder-backed template import: safe, additive, independent of Pi playlists."""
+import io
+import pytest
+from app.library import Library, LibraryError
+from app.folder_sync import source_directory, sync_template, sync_all
+
+
+PNG = b'\x89PNG\r\n\x1a\n' + b'valid image bytes'
+
+
+def test_folder_binding_and_incremental_import(tmp_path, monkeypatch):
+    root = tmp_path / 'sources'
+    folder = root / 'bistro'
+    folder.mkdir(parents=True)
+    (folder / 'a.png').write_bytes(PNG)
+    store = Library(tmp_path / 'library')
+    template = store.create('Bistro')
+    store.add_url(template['id'], 'Manual', 'https://example.org', 20)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    store.set_folder_source(template['id'], 'bistro')
+    assert sync_template(store, template['id'])['added'] == 1
+    assert sync_template(store, template['id'])['skipped'] == 1
+    entries = store.get(template['id'])['items']
+    assert len(entries) == 2 and entries[0]['kind'] == 'url'
+    assert store.verified_media_path(template['id'], entries[1]).read_bytes() == PNG
+
+    (folder / 'a.png').write_bytes(PNG + b'new')
+    assert sync_template(store, template['id'])['updated'] == 1
+    items = store.get(template['id'])['items']
+    assert len(items) == 2 and items[0]['name'] == 'Manual'
+    assert store.verified_media_path(template['id'], items[1]).read_bytes() == PNG + b'new'
+
+    (folder / 'a.png').unlink()
+    assert sync_template(store, template['id'])['added'] == 0
+    assert len(store.get(template['id'])['items']) == 2  # no automatic deletion
+
+
+def test_reject_path_traversal_and_symlinks(tmp_path, monkeypatch):
+    root = tmp_path / 'sources'
+    root.mkdir()
+    outside = tmp_path / 'outside'
+    outside.mkdir()
+    (root / 'escape').symlink_to(outside, target_is_directory=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    store = Library(tmp_path / 'library')
+    ident = store.create('Template')['id']
+    for alias in ('../outside', '/etc', 'nested/name', 'escape'):
+        with pytest.raises(LibraryError):
+            store.set_folder_source(ident, alias)
+    assert 'folder_source' not in store.get(ident)
+
+
+def test_invalid_media_and_missing_mount_do_not_remove_existing(tmp_path, monkeypatch):
+    root = tmp_path / 'sources'
+    folder = root / 'bistro'
+    folder.mkdir(parents=True)
+    (folder / 'bad.png').write_bytes(b'not a png')
+    store = Library(tmp_path / 'library')
+    ident = store.create('Template')['id']
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    store.set_folder_source(ident, 'bistro')
+    with pytest.raises(LibraryError):
+        sync_template(store, ident)
+    assert store.get(ident)['items'] == []
+    store.add_media(ident, 'Manual', io.BytesIO(PNG), 'manual.png', 15)
+    folder.rename(root / 'offline')
+    with pytest.raises(LibraryError):
+        sync_template(store, ident)
+    assert len(store.get(ident)['items']) == 1
+
+
+def test_sync_all_scopes_only_bound_templates(tmp_path, monkeypatch):
+    root = tmp_path / 'sources'
+    (root / 'bistro').mkdir(parents=True)
+    (root / 'bistro' / 'banner.png').write_bytes(PNG)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    store = Library(tmp_path / 'library')
+    a = store.create('Bound')
+    b = store.create('Manual')
+    store.set_folder_source(a['id'], 'bistro')
+    assert list(sync_all(library_dir=str(store.root))) == [a['id']]
+    assert len(store.get(b['id'])['items']) == 0

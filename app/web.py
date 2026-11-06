@@ -233,6 +233,20 @@ def create_app(config=None):
                 for d in load(app.config['DEVICES_FILE'])
             })
 
+    @app.post('/library/<template_id>/folder-source')
+    @login_required('it')
+    def library_folder_source(template_id):
+        """IT only: bind to a pre-mounted alias, never arbitrary paths."""
+        try:
+            alias = request.form.get('folder_source', '').strip()
+            library().set_folder_source(template_id, alias)
+            audit('library.folder-source', asset_id=template_id)
+            flash('Ordnerquelle gespeichert. Automatischer Import bei aktivem Importdienst.'
+                  if alias else 'Ordnerquelle entfernt. Medien bleiben erhalten.', 'success')
+        except LibraryError as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('library_detail', template_id=template_id))
+
     @app.get('/library/<template_id>/items/<item_id>/preview')
     @login_required()
     def library_item_preview(template_id, item_id):
