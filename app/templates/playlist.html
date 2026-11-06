@@ -22,6 +22,15 @@
   {% include '_device_tabs.html' %}
 
   {% if error %}<div class="notice error" role="alert">Gerät nicht erreichbar: {{ error }}. Die Playlist kann derzeit nicht bearbeitet werden.</div>{% endif %}
+  {% if folder_templates %}
+  <section class="notice" aria-label="Automatisch verwaltete Inhalte">
+    <strong>Medien aus Netzwerkordnern</strong> – Anzeigedauer der automatisch veröffentlichten Bilder bitte in der jeweiligen Hub-Vorlage einstellen, nicht direkt am Player.
+    {% for source in folder_templates %}
+      <a href="{{ url_for('library_detail', template_id=source.id) }}">{{ source.name }} ({{ source.folder_source }})</a>{% if not loop.last %} · {% endif %}
+    {% endfor %}
+  </section>
+  {% endif %}
+
 
   <div class="editor-layout studio-full-layout">
     <section id="playlist-queue" class="queue" aria-labelledby="queue-title"
