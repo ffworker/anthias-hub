@@ -720,9 +720,9 @@ def create_app(config=None):
                 raise LibraryError('Mehr als 20 Medien im Ordner. Bitte in kleinere freigegebene Unterordner aufteilen; es wurde nichts übertragen.')
             # Validate *every* candidate before making the first Pi-side write.
             signatures = {
-                '.png': lambda h: h.startswith(b'\\x89PNG\\r\\n\\x1a\\n'),
-                '.jpg': lambda h: h.startswith(b'\\xff\\xd8'),
-                '.jpeg': lambda h: h.startswith(b'\\xff\\xd8'),
+                '.png': lambda h: h.startswith(b'\x89PNG\r\n\x1a\n'),
+                '.jpg': lambda h: h.startswith(b'\xff\xd8'),
+                '.jpeg': lambda h: h.startswith(b'\xff\xd8'),
                 '.webp': lambda h: h.startswith(b'RIFF') and h[8:12] == b'WEBP',
                 '.mp4': lambda h: len(h) >= 12 and h[4:8] == b'ftyp',
             }
