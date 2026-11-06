@@ -33,12 +33,12 @@
   <p class="eyebrow">{{ 'ORDNER-PLAYLIST' if template.folder_source else 'MANUELLE HUB-VORLAGE' }}</p>
   <div class="library-detail-title-row">
     <h1>{{ template.name }}</h1>
+    {% if logged_user.role in ('marketing', 'owner', 'it') %}<a class="button primary library-jump-apply" href="#playlist-anwenden">Auf Bildschirm anwenden ↓</a>{% endif %}
     <a class="button library-backup-export" href="{{ url_for('library_export', template_id=template.id) }}">Backup-ZIP exportieren ↓</a>
     {% if logged_user.role in ('marketing', 'owner', 'it') %}
       <details class="template-options">
         <summary aria-label="Vorlagenoptionen"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#ellipsis"></use></svg> Vorlagenoptionen</summary>
         <div class="template-options-panel">
-          <p class="muted">Backup-ZIP exportieren ist neben dem Vorlagentitel erreichbar.</p>
           {{ delete_control(template, true) }}
         </div>
       </details>
@@ -46,101 +46,7 @@
   </div>
   <p class="muted">{% if template.folder_source %}{{ template['items']|length }} Inhalte aus „{{ template.folder_source }}“. Eine automatische Verbindung ist nur bei freigeschaltetem Publisher aktiv. Du kannst die gespeicherten Inhalte auch einmalig an einen Pi übertragen.{% else %}{{ template['items']|length }} Inhalte. Als gesamte Vorlage oder einzeln auf Bildschirme übertragbar.{% endif %}</p>
 
-  {% if logged_user.role in ('marketing', 'owner', 'it') %}
-  <section class="library-publish-hero" aria-labelledby="library-publish-heading">
-    <div class="library-publish-copy">
-      <span class="library-publish-symbol" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></span>
-      <div>
-        <p class="eyebrow">03 / PLAYLIST AUF BILDSCHIRM ANWENDEN</p>
-        <h2 id="library-publish-heading">Vorlage zur Playlist hinzufügen</h2>
-        <p><strong>Einmalige Übertragung.</strong> {{ template['items']|length }} Inhalte werden angehängt, bestehende Einträge bleiben unverändert. {% if template.folder_source %}Das ist kein automatischer Ordnerabgleich.{% endif %}</p>
-      </div>
-    </div>
-    <form class="library-publish-form" method="post" data-template-transfer data-transfer-overview-path="{{ url_for('device_overview', device_id='__DEVICE__') }}" action="{{ url_for('append_library_from_template', template_id=template.id) }}">
-      <input type="hidden" name="csrf" value="{{ csrf() }}">
-      <input type="hidden" name="confirm" value="append">
-      <div class="library-publish-fields">
-        <fieldset class="library-publish-target schedule-choice">
-          <legend>Zielbildschirm</legend>
-          <label>Bildschirm
-            <select name="device" required {% if not devices %}disabled{% endif %}>
-              <option value="">Bildschirm auswählen …</option>
-              {% for device in devices %}<option value="{{ device.id }}">{{ device.name }} · {{ device.location or 'Ohne Standort' }}</option>{% endfor %}
-            </select>
-          </label>
-          <p class="schedule-choice-hint">Wähle den Bildschirm für diese Vorlage.</p>
-        </fieldset>
-        {{ library_schedule_select() }}
-      </div>
-      <div class="library-publish-actions">
-        <label class="library-publish-confirm">
-          <input type="checkbox" name="ack" value="yes" required>
-          <span>Jetzt einmalig zur bestehenden Playlist hinzufügen – nichts ersetzen</span>
-        </label>
-        <button type="submit" class="primary library-publish-button" {% if not devices or not template['items'] %}disabled{% endif %}>
-          {{ template['items']|length }} Inhalte hinzufügen <span aria-hidden="true">→</span>
-        </button>
-      </div>
-      <div class="template-transfer-feedback" data-transfer-feedback role="status" aria-live="polite" hidden><span class="template-transfer-spinner" aria-hidden="true"></span><strong data-transfer-message>Übertragung läuft …</strong><small data-transfer-live>Inhalte werden auf dem Pi hinzugefügt. Bitte nicht erneut klicken.</small></div>
-    </form>
-    {% if not template['items'] %}
-      <p class="library-publish-hint" role="status">Diese Vorlage ist noch leer. Füge zuerst Inhalte hinzu.</p>
-    {% elif not devices %}
-      <p class="library-publish-hint" role="status">Noch kein Bildschirm registriert. Bitte zuerst ein Gerät hinzufügen.</p>
-    {% else %}
-      <p class="library-publish-hint">Wird manuell sofort übertragen. Identische Webseiten werden übersprungen; Medien können doppelt entstehen. Ein späterer automatischer Ordnerabgleich ist separat zu konfigurieren.</p>
-    {% endif %}
-  </section>
-  {% endif %}
 </section>
-{% if logged_user.role in ('owner', 'it') %}
-<section class="card library-panel">
-  <details class="library-folder-settings">
-    <summary>{{ 'Netzwerkquelle / automatische Zielbildschirme verwalten (IT)' if template.folder_source else 'Playlist mit Netzwerkordner verbinden (IT)' }}</summary>
-    <p><a href="{{ url_for('media_sources_page') }}" class="button">Medienquellen und SMB-Pfade verwalten</a></p>
-    <p class="muted">Ordner aus der zentralen Marketing-Bibliothek wählen. Der Hub übernimmt die Medien automatisch; jeder Unterordner kann eine eigene Playlist sein. Noch keine Veröffentlichung auf den Pi, bis der Publisher freigeschaltet wurde.</p>
-    <form method="post" action="{{ url_for('library_folder_source', template_id=template.id) }}">
-      <input type="hidden" name="csrf" value="{{ csrf() }}">
-      <label>Netzwerkordner auswählen
-        <select name="folder_source">
-          <option value="">Keine Quelle / Verbindung entfernen</option>
-          {% for source in folder_sources if source.startswith('default/') %}
-          <option value="{{ source }}" {% if template.folder_source|default('') == source %}selected{% endif %}>Standardbibliothek · {{ source[8:] }}</option>
-          {% endfor %}
-          {% for source in folder_sources if not source.startswith('default/') %}
-          <option value="{{ source }}" {% if template.folder_source|default('') == source %}selected{% endif %}>Einzelquelle · {{ source }}</option>
-          {% endfor %}
-          {% if template.folder_source and template.folder_source not in folder_sources %}
-          <option value="{{ template.folder_source }}" selected>{{ template.folder_source }} (nicht erreichbar)</option>
-          {% endif %}
-        </select>
-      </label>
-      {% if not folder_sources %}<p class="muted" role="status">Keine Ordner im Hub-Container unter /sources sichtbar. Bitte zuerst den schreibgeschützten Docker-Mount einrichten.</p>{% endif %}
-      <button type="submit">Ordnerquelle speichern</button>
-    </form>
-    <hr>
-    <h3>Automatisch auf Bildschirme veröffentlichen</h3>
-    <p class="muted">Nur aktivieren, wenn die Netzwerkquelle und der Test-Pi abgenommen wurden. Nur automatisch importierte Ordner-Medien werden verwaltet; andere Playlist-Inhalte und Zeitpläne bleiben erhalten. Die Hintergrundveröffentlichung ist zusätzlich serverseitig standardmäßig ausgeschaltet.</p>
-    <form method="post" action="{{ url_for('library_auto_devices', template_id=template.id) }}">
-      <input type="hidden" name="csrf" value="{{ csrf() }}">
-      {% for device in devices %}
-      <label class="library-auto-device">
-        <input type="checkbox" name="devices" value="{{ device.id }}"
-               {% if device.id in template.auto_devices|default([]) %}checked{% endif %}
-               {% if not template.folder_source %}disabled{% endif %}>
-        {{ device.name }}{% if device.location %} · {{ device.location }}{% endif %}
-      </label>
-      {% else %}
-      <p class="muted">Zuerst einen Anthias-Bildschirm registrieren.</p>
-      {% endfor %}
-      <button type="submit" {% if not template.folder_source %}disabled{% endif %}>Zielbildschirme speichern</button>
-    </form>
-    {% if template.auto_devices|default([]) %}
-      <p class="muted">Gespeicherte Zielbildschirme: {{ template.auto_devices|length }}. Aktualisierungen bleiben aus, solange der Publisher nicht freigeschaltet ist.</p>
-    {% endif %}
-  </details>
-</section>
-{% endif %}
 <div class="library-grid">
 <section aria-labelledby="items-title" class="library-queue-panel"><p class="eyebrow">01 / INHALTE &amp; SORTIERUNG</p><h2 id="items-title">Inhalte und Wiedergabereihenfolge <span class="count">{{ template['items']|length }}</span></h2>
 <p class="muted">Von oben nach unten: Bildzeiten einstellen und Inhalte mit den Pfeilen sortieren. Auf ausschließlich vom Hub verwalteten Pis übernimmt der automatische Abgleich die Reihenfolge.</p>
@@ -193,11 +99,70 @@
         </details><details><summary>Aus Vorlage entfernen</summary><form method="post" action="{{ url_for('library_remove_item', template_id=template.id, item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="confirm" value="{{ item.id }}"><label class="library-confirm"><input type="checkbox" name="ack" value="yes" required> Aus Vorlage entfernen</label><button class="danger-btn" aria-label="{{ item.name }} entfernen">Endgültig entfernen</button></form></details></div></details>{% endif %}</div>{% endif %}</li>
 {% else %}<li class="card library-empty">Noch keine Inhalte in dieser Vorlage.</li>{% endfor %}
 </ol></section>
-{% if logged_user.role in ('marketing', 'owner', 'it') %}<aside class="library-actions">
+{% if logged_user.role in ('marketing', 'owner', 'it') %}<aside class="library-actions" aria-label="Inhalte und Quellen hinzufügen">
+  <div class="library-actions-header">
+    <p class="eyebrow">02 / WEITERE INHALTE &amp; QUELLEN</p>
+    <h2>Inhalte hinzufügen</h2>
+    <p class="muted">Aktion auswählen und bei Bedarf aufklappen. Gespeichert wird zuerst in dieser Hub-Vorlage, nicht automatisch auf dem Pi.</p>
+  </div>
+{% if logged_user.role in ('owner', 'it') %}
+<details class="card library-panel library-folder-settings library-action-disclosure" id="network-settings">
+    <summary><span class="library-action-label"><strong>Netzwerkquelle &amp; Zielbildschirme</strong><small>{% if template.folder_source %}Verbunden: {{ template.folder_source }} · IT-Einstellungen{% else %}Keine Netzwerkquelle · optional mit Ordner verbinden (IT){% endif %}</small></span><span class="library-action-chevron" aria-hidden="true">⌄</span></summary>
+    <p><a href="{{ url_for('media_sources_page') }}" class="button">Medienquellen und SMB-Pfade verwalten</a></p>
+    <p class="muted">Ordner aus der zentralen Marketing-Bibliothek wählen. Der Hub übernimmt die Medien automatisch; jeder Unterordner kann eine eigene Playlist sein. Noch keine Veröffentlichung auf den Pi, bis der Publisher freigeschaltet wurde.</p>
+    <form method="post" action="{{ url_for('library_folder_source', template_id=template.id) }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <label>Netzwerkordner auswählen
+        <select name="folder_source">
+          <option value="">Keine Quelle / Verbindung entfernen</option>
+          {% for source in folder_sources if source.startswith('default/') %}
+          <option value="{{ source }}" {% if template.folder_source|default('') == source %}selected{% endif %}>Standardbibliothek · {{ source[8:] }}</option>
+          {% endfor %}
+          {% for source in folder_sources if not source.startswith('default/') %}
+          <option value="{{ source }}" {% if template.folder_source|default('') == source %}selected{% endif %}>Einzelquelle · {{ source }}</option>
+          {% endfor %}
+          {% if template.folder_source and template.folder_source not in folder_sources %}
+          <option value="{{ template.folder_source }}" selected>{{ template.folder_source }} (nicht erreichbar)</option>
+          {% endif %}
+        </select>
+      </label>
+      {% if not folder_sources %}<p class="muted" role="status">Keine Ordner im Hub-Container unter /sources sichtbar. Bitte zuerst den schreibgeschützten Docker-Mount einrichten.</p>{% endif %}
+      <button type="submit">Ordnerquelle speichern</button>
+    </form>
+    <hr>
+    <h3>Automatisch auf Bildschirme veröffentlichen</h3>
+    <p class="muted">Nur aktivieren, wenn die Netzwerkquelle und der Test-Pi abgenommen wurden. Nur automatisch importierte Ordner-Medien werden verwaltet; andere Playlist-Inhalte und Zeitpläne bleiben erhalten. Die Hintergrundveröffentlichung ist zusätzlich serverseitig standardmäßig ausgeschaltet.</p>
+    <form method="post" action="{{ url_for('library_auto_devices', template_id=template.id) }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      {% for device in devices %}
+      <label class="library-auto-device">
+        <input type="checkbox" name="devices" value="{{ device.id }}"
+               {% if device.id in template.auto_devices|default([]) %}checked{% endif %}
+               {% if not template.folder_source %}disabled{% endif %}>
+        {{ device.name }}{% if device.location %} · {{ device.location }}{% endif %}
+      </label>
+      {% else %}
+      <p class="muted">Zuerst einen Anthias-Bildschirm registrieren.</p>
+      {% endfor %}
+      <button type="submit" {% if not template.folder_source %}disabled{% endif %}>Zielbildschirme speichern</button>
+    </form>
+    {% if template.auto_devices|default([]) %}
+      <p class="muted">Gespeicherte Zielbildschirme: {{ template.auto_devices|length }}. Aktualisierungen bleiben aus, solange der Publisher nicht freigeschaltet ist.</p>
+    {% endif %}
+  </details>
+{% endif %}
+
+
 {% if not template.folder_source %}
-<section class="card library-panel" id="template-add"><p class="eyebrow">01 / MANUELL</p><h2>Bild oder Video speichern</h2><p class="muted">PNG · JPG · WebP · MP4 · max. 4 GiB je Datei</p><form method="post" data-upload-form="library" action="{{ url_for('library_add_media', template_id=template.id) }}" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf() }}"><label>Datei<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label><label>Titel (optional)<input name="name" maxlength="100"></label><label>Bilddauer in Sekunden (Video automatisch)<input name="duration" type="number" min="5" max="3600" value="15"></label><p class="upload-selected" role="status" aria-live="polite"></p><button class="primary" type="submit">In Vorlage speichern</button><div class="upload-feedback" hidden role="status" aria-live="polite"><div class="upload-progress" aria-hidden="true"><span data-upload-bar></span></div><small data-upload-text></small></div></form></section>
-<details class="card library-panel library-bulk-compact">
-  <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#upload"></use></svg> 02 / Medien-ZIP oder mehrere Dateien importieren</summary>
+<details class="card library-panel library-action-disclosure" id="template-add">
+  <summary><span class="library-action-label"><strong>Einzeldatei hinzufügen</strong><small>Bild oder Video manuell in diese Vorlage hochladen</small></span><span class="library-action-chevron" aria-hidden="true">⌄</span></summary>
+  <div class="library-action-body">
+    <p class="muted">PNG · JPG · WebP · MP4 · max. 4 GiB je Datei</p>
+    <form method="post" data-upload-form="library" action="{{ url_for('library_add_media', template_id=template.id) }}" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{{ csrf() }}"><label>Datei<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label><label>Titel (optional)<input name="name" maxlength="100"></label><label>Bilddauer in Sekunden (Video automatisch)<input name="duration" type="number" min="5" max="3600" value="15"></label><p class="upload-selected" role="status" aria-live="polite"></p><button class="primary" type="submit">In Vorlage speichern</button><div class="upload-feedback" hidden role="status" aria-live="polite"><div class="upload-progress" aria-hidden="true"><span data-upload-bar></span></div><small data-upload-text></small></div></form>
+  </div>
+</details>
+<details class="card library-panel library-bulk-compact library-action-disclosure">
+  <summary><span class="library-action-label"><strong>ZIP / mehrere Dateien importieren</strong><small>Medien gesammelt in die Vorlage übernehmen – kein Vorlagenbackup</small></span><span class="library-action-chevron" aria-hidden="true">⌄</span></summary>
 <div class="bulk-media-panel">
   <h2>Medien-Sammelimport</h2>
   <p class="muted">Nur Bild-/Videodateien oder eine Medien-ZIP in diese Hub-Vorlage importieren. Das ist <strong>kein</strong> Vorlagenbackup und ändert die laufende Pi-Playlist nicht.</p>
@@ -221,16 +186,61 @@
 </details>
 {% endif %}
 {% if not template.folder_source or logged_user.role in ('owner', 'it') %}
-<section class="card library-panel library-website-secondary">
-  <details class="library-website-details" {% if template.folder_source %}open{% endif %}>
-    <summary>{{ 'RSS2Slideshow / Webseite zur Playlist hinzufügen' if template.folder_source else 'Optional: Webseite verlinken' }}</summary>
+<details class="card library-panel library-website-secondary library-website-details library-action-disclosure">
+  <summary><span class="library-action-label"><strong>Webseite / RSS hinzufügen</strong><small>URL in dieser Vorlage als eigenen Slide speichern</small></span><span class="library-action-chevron" aria-hidden="true">⌄</span></summary>
     <p class="muted">{% if template.folder_source %}Bistro: Hier die vom Pi erreichbare URL des RSS2Slideshow-Custom-Design-Feeds eintragen. Der automatische Publisher fügt die Webseite als eigenen Slide hinzu. Anzeigedauer lässt sich anschließend links einstellen. Die Webseite muss auf dem Pi erreichbar sein.{% else %}Für seltene Web-Inhalte wie die RSS2Slideshow-Anzeige oder ein Dashboard. Bilder/Videos bitte oben hochladen.{% endif %}</p><form method="post" action="{{ url_for('library_add_url', template_id=template.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><label>Titel<input name="name" required maxlength="100"></label><label>Webadresse<input name="url" type="url" required placeholder="https://..."></label><label>Dauer in Sekunden<input name="duration" type="number" min="5" max="3600" value="30" required></label><button class="primary">Webseite speichern</button></form>
-  </details>
-</section>
+</details>
 {% endif %}
 {% if not template.folder_source %}
-<details class="library-empty-only"><summary>Erstinstallation: auf eine leere Playlist übertragen</summary><section class="card library-panel library-apply"><h2>Auf leeren Player übertragen</h2><p class="muted">Bestehende Playlists bleiben unangetastet. Falls die Übertragung abbricht, Playlist prüfen und nicht blind erneut starten.</p><form method="post" data-template-transfer data-transfer-overview-path="{{ url_for('device_overview', device_id='__DEVICE__') }}" action="{{ url_for('apply_library_from_template', template_id=template.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="template_id" value="{{ template.id }}"><label>Bildschirm<select name="device" required {% if not devices %}disabled{% endif %}>{% for device in devices %}<option value="{{ device.id }}">{{ device.name }} · {{ device.location or 'Ohne Standort' }}</option>{% endfor %}</select></label>{{ library_schedule_select() }}<label class="library-confirm"><input type="checkbox" name="confirm" value="yes" required> Ich habe geprüft, dass die Ziel-Playlist leer ist.</label><button class="primary" {% if not devices or not template['items'] %}disabled{% endif %}>Vorlage übertragen</button><div class="template-transfer-feedback" data-transfer-feedback role="status" aria-live="polite" hidden><span class="template-transfer-spinner" aria-hidden="true"></span><strong data-transfer-message>Vorlage wird übertragen …</strong><small data-transfer-live>Bitte nicht erneut klicken.</small></div></form></section></details>
+<details class="card library-panel library-empty-only library-action-disclosure"><summary><span class="library-action-label"><strong>Erstinstallation auf leeren Pi</strong><small>Nur möglich, wenn die Ziel-Playlist noch keine Inhalte hat</small></span><span class="library-action-chevron" aria-hidden="true">⌄</span></summary><div class="library-apply library-action-body"><h2>Auf leeren Player übertragen</h2><p class="muted">Bestehende Playlists bleiben unangetastet. Falls die Übertragung abbricht, Playlist prüfen und nicht blind erneut starten.</p><form method="post" data-template-transfer data-transfer-overview-path="{{ url_for('device_overview', device_id='__DEVICE__') }}" action="{{ url_for('apply_library_from_template', template_id=template.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="template_id" value="{{ template.id }}"><label>Bildschirm<select name="device" required {% if not devices %}disabled{% endif %}>{% for device in devices %}<option value="{{ device.id }}">{{ device.name }} · {{ device.location or 'Ohne Standort' }}</option>{% endfor %}</select></label>{{ library_schedule_select() }}<label class="library-confirm"><input type="checkbox" name="confirm" value="yes" required> Ich habe geprüft, dass die Ziel-Playlist leer ist.</label><button class="primary" {% if not devices or not template['items'] %}disabled{% endif %}>Vorlage übertragen</button><div class="template-transfer-feedback" data-transfer-feedback role="status" aria-live="polite" hidden><span class="template-transfer-spinner" aria-hidden="true"></span><strong data-transfer-message>Vorlage wird übertragen …</strong><small data-transfer-live>Bitte nicht erneut klicken.</small></div></form></div></details>
 {% endif %}
 </aside>{% endif %}
 </div>
+  {% if logged_user.role in ('marketing', 'owner', 'it') %}
+  <section class="library-publish-hero" id="playlist-anwenden" aria-labelledby="library-publish-heading">
+    <div class="library-publish-copy">
+      <span class="library-publish-symbol" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></span>
+      <div>
+        <p class="eyebrow">03 / AUF BILDSCHIRM ANWENDEN</p>
+        <h2 id="library-publish-heading">Vorlage zur Playlist hinzufügen</h2>
+        <p><strong>Einmalige Übertragung.</strong> {{ template['items']|length }} Inhalte werden angehängt, bestehende Einträge bleiben unverändert. {% if template.folder_source %}Das ist kein automatischer Ordnerabgleich.{% endif %}</p>
+      </div>
+    </div>
+    <form class="library-publish-form" method="post" data-template-transfer data-transfer-overview-path="{{ url_for('device_overview', device_id='__DEVICE__') }}" action="{{ url_for('append_library_from_template', template_id=template.id) }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <input type="hidden" name="confirm" value="append">
+      <div class="library-publish-fields">
+        <fieldset class="library-publish-target schedule-choice">
+          <legend>Zielbildschirm</legend>
+          <label>Bildschirm
+            <select name="device" required {% if not devices %}disabled{% endif %}>
+              <option value="">Bildschirm auswählen …</option>
+              {% for device in devices %}<option value="{{ device.id }}">{{ device.name }} · {{ device.location or 'Ohne Standort' }}</option>{% endfor %}
+            </select>
+          </label>
+          <p class="schedule-choice-hint">Wähle den Bildschirm für diese Vorlage.</p>
+        </fieldset>
+        {{ library_schedule_select() }}
+      </div>
+      <div class="library-publish-actions">
+        <label class="library-publish-confirm">
+          <input type="checkbox" name="ack" value="yes" required>
+          <span>Jetzt einmalig zur bestehenden Playlist hinzufügen – nichts ersetzen</span>
+        </label>
+        <button type="submit" class="primary library-publish-button" {% if not devices or not template['items'] %}disabled{% endif %}>
+          {{ template['items']|length }} Inhalte hinzufügen <span aria-hidden="true">→</span>
+        </button>
+      </div>
+      <div class="template-transfer-feedback" data-transfer-feedback role="status" aria-live="polite" hidden><span class="template-transfer-spinner" aria-hidden="true"></span><strong data-transfer-message>Übertragung läuft …</strong><small data-transfer-live>Inhalte werden auf dem Pi hinzugefügt. Bitte nicht erneut klicken.</small></div>
+    </form>
+    {% if not template['items'] %}
+      <p class="library-publish-hint" role="status">Diese Vorlage ist noch leer. Füge zuerst Inhalte hinzu.</p>
+    {% elif not devices %}
+      <p class="library-publish-hint" role="status">Noch kein Bildschirm registriert. Bitte zuerst ein Gerät hinzufügen.</p>
+    {% else %}
+      <p class="library-publish-hint">Wird manuell sofort übertragen. Identische Webseiten werden übersprungen; Medien können doppelt entstehen. Ein späterer automatischer Ordnerabgleich ist separat zu konfigurieren.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
 {% endblock %}
