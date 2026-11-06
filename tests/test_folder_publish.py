@@ -211,3 +211,73 @@ def test_switching_imported_source_does_not_mix_old_files(setup, tmp_path, monke
     assert env['store'].get(env['template'])['auto_devices'] == []
     env['store'].set_folder_source(env['template'], 'bistro')
     assert env['store'].get(env['template'])['folder_source'] == 'bistro'
+
+
+def test_marketing_changes_published_image_duration_without_reupload(setup):
+    env = setup
+    from app.folder_sync import sync_template
+    sync_template(env['store'], env['template'])
+    first = env['store'].get(env['template'])['items'][0]
+    env['store'].update_item_duration(env['template'], first['id'], '37')
+    assert perform(env)['added'] == 1
+    assert env['player'].entries['asset1']['duration'] == 37
+    assert perform(env)['unchanged'] == 1
+    env['store'].update_item_duration(env['template'], first['id'], '52')
+    assert perform(env)['updated'] == 1
+    assert env['player'].entries['asset1']['duration'] == 52
+    assert sum(event[0] == 'upload' for event in env['player'].events) == 1
+
+    # Replacing the SMB file must retain the Marketing-selected timing and
+    # stable template item identity; only its media hash changes.
+    (env['folder'] / 'banner.png').write_bytes(PNG + b'updated file')
+    assert sync_template(env['store'], env['template'])['updated'] == 1
+    new_item = env['store'].get(env['template'])['items'][0]
+    assert new_item['id'] == first['id']
+    assert new_item['duration'] == 52
+    assert perform(env)['updated'] == 1
+    assert env['player'].entries['asset2']['duration'] == 52
+
+
+def test_rss_web_feed_auto_publishes_with_folder_and_updates_duration(setup):
+    env = setup
+    from app.folder_sync import sync_template
+    sync_template(env['store'], env['template'])
+    template = env['store'].add_url(env['template'], 'Bistro RSS2Slideshow',
+                                    'http://172.17.1.54/', 30)
+    web = next(item for item in template['items'] if item['kind'] == 'url')
+    assert perform(env)['added'] == 2
+    assert len(env['player'].entries) == 3
+    rss = next(entry for entry in env['player'].entries.values()
+               if entry.get('uri') == 'http://172.17.1.54/')
+    assert rss['mimetype'] == 'webpage'
+    assert rss['duration'] == 30
+    assert '[HubWeb:' in rss['name']
+    assert perform(env)['unchanged'] == 2
+    env['store'].update_item_duration(env['template'], web['id'], '75')
+    assert perform(env)['updated'] == 1
+    rss = next(entry for entry in env['player'].entries.values()
+               if entry.get('uri') == 'http://172.17.1.54/')
+    assert rss['duration'] == 75
+    assert len(env['player'].entries) == 3
+
+
+def test_invalid_duration_never_changes_imported_file(setup):
+    env = setup
+    from app.folder_sync import sync_template
+    sync_template(env['store'], env['template'])
+    item = env['store'].get(env['template'])['items'][0]
+    for seconds in ('0', '3601', 'banana', ''):
+        with pytest.raises(LibraryError):
+            env['store'].update_item_duration(env['template'], item['id'], seconds)
+    assert env['store'].get(env['template'])['items'][0]['duration'] == 15
+
+
+def test_video_duration_remains_automatic(tmp_path):
+    store = Library(tmp_path / 'library')
+    ident = store.create('Clips')['id']
+    store.add_media(ident, 'Clip', io.BytesIO(b'\x00\x00\x00\x18ftyp' + b'video'),
+                    'clip.mp4', 15)
+    item = store.get(ident)['items'][0]
+    assert item['duration'] == 0
+    with pytest.raises(LibraryError, match='voller Länge'):
+        store.update_item_duration(ident, item['id'], '30')
