@@ -29,6 +29,10 @@
     <button type="submit" class="primary">{{ 'Stammverzeichnis aktualisieren' if default_source else 'Stammverzeichnis speichern' }}</button>
   </form>
   <p class="muted">Sicherheit: Nur von IT freigegebene SMB-Server und Freigaben werden auf dem Host eingehängt. Das UI kennt keine Passwörter. Die bestehende Quelle wird bei einer Änderung nicht automatisch ausgehängt.</p>
+  <div class="media-folder-summary" role="status">
+    <strong>{{ default_folders|length }} Unterordner im Hub sichtbar</strong>
+    <span>{% if default_folders %}Die Ordner erscheinen beim Erstellen einer Playlist als Auswahl.{% else %}Noch keine Unterordner sichtbar. Prüfe bei Bedarf den SMB-Mount; die Ordnerauswahl erfolgt später in der Bibliothek.{% endif %}</span>
+  </div>
 </section>
 
 <section class="card media-folder-notice" aria-label="Ordnerzuordnung">
