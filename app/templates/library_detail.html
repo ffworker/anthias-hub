@@ -33,7 +33,7 @@
 {% endif %}
 
 <section class="library-intro library-template-intro">
-  <p class="eyebrow">LOKAL IM HUB GESPEICHERT</p>
+  <p class="eyebrow">{{ 'ORDNER-PLAYLIST' if template.folder_source else 'MANUELLE HUB-VORLAGE' }}</p>
   <div class="library-detail-title-row">
     <h1>{{ template.name }}</h1>
     {% if logged_user.role in ('marketing', 'owner', 'it') %}
@@ -48,7 +48,7 @@
       <a class="button library-backup-export" href="{{ url_for('library_export', template_id=template.id) }}">Backup exportieren ↓</a>
     {% endif %}
   </div>
-  <p class="muted">{{ template['items']|length }} Inhalte. Als gesamte Vorlage oder einzeln auf Bildschirme übertragbar.</p>
+  <p class="muted">{% if template.folder_source %}{{ template['items']|length }} Medien und Webseiten · Reihenfolge und Dauer hier pflegen · bei aktivem Publisher wird der zugeordnete Pi synchronisiert.{% else %}{{ template['items']|length }} Inhalte. Als gesamte Vorlage oder einzeln auf Bildschirme übertragbar.{% endif %}</p>
 
   {% if logged_user.role in ('marketing', 'owner', 'it') and not template.folder_source %}
   <section class="library-publish-hero" aria-labelledby="library-publish-heading">
@@ -99,8 +99,8 @@
 </section>
 {% if logged_user.role in ('owner', 'it') %}
 <section class="card library-panel">
-  <details>
-    <summary>Playlist mit Netzwerkordner verbinden (IT)</summary>
+  <details {% if template.folder_source %}open{% endif %} class="library-folder-settings">
+    <summary>{{ 'Ordner & Zielbildschirme' if template.folder_source else 'Playlist mit Netzwerkordner verbinden (IT)' }}</summary>
     <p><a href="{{ url_for('media_sources_page') }}" class="button">Medienquellen und SMB-Pfade verwalten</a></p>
     <p class="muted">Ordner aus der zentralen Marketing-Bibliothek wählen. Der Hub übernimmt die Medien automatisch; jeder Unterordner kann eine eigene Playlist sein. Noch keine Veröffentlichung auf den Pi, bis der Publisher freigeschaltet wurde.</p>
     <form method="post" action="{{ url_for('library_folder_source', template_id=template.id) }}">
@@ -146,8 +146,8 @@
 </section>
 {% endif %}
 <div class="library-grid">
-<section aria-labelledby="items-title"><h2 id="items-title">{{ 'Bilder, Videos & RSS' if template.folder_source else 'Inhalte' }} <span class="count">{{ template['items']|length }}</span></h2>
-{% if template.folder_source %}<p class="muted">Die Bilder und Videos kommen aus dem Ordner. Anzeigedauer direkt am jeweiligen Bild speichern – kein erneutes Hochladen erforderlich.</p>{% endif %}
+<section aria-labelledby="items-title" class="library-queue-panel"><h2 id="items-title">{{ 'Playlist-Reihenfolge & Anzeigedauer' if template.folder_source else 'Inhalte' }} <span class="count">{{ template['items']|length }}</span></h2>
+{% if template.folder_source %}<p class="muted">Die Abspielreihenfolge wird hier von oben nach unten festgelegt. Mit den Pfeilen verschieben; Bild- und Webseiten-Dauer direkt speichern. Auf ausschließlich Hub-verwalteten Pis übernimmt der nächste automatische Abgleich diese Reihenfolge. Andere Pi-Inhalte bleiben unangetastet.</p>{% endif %>
 <ol class="library-items">
 {% for item in template['items'] %}
 <li class="card library-item"><span class="library-item-position" aria-label="Position {{ loop.index }}">{{ '%02d'|format(loop.index) }}</span>
@@ -177,7 +177,7 @@
   <button type="submit">Speichern</button>
 </form>
 {% endif %}
-{% if logged_user.role in ('marketing', 'owner', 'it') %}<div class="library-item-actions">{% if not template.folder_source %}<form method="post" action="{{ url_for('library_move_item', template_id=template.id, item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button name="direction" value="up" title="Nach oben" aria-label="{{ item.name }} nach oben" {% if loop.first %}disabled{% endif %}><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#arrow-up"></use></svg></button><button name="direction" value="down" title="Nach unten" aria-label="{{ item.name }} nach unten" {% if loop.last %}disabled{% endif %}><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#arrow-down"></use></svg></button></form>{% endif %}{% if not template.folder_source %}<details class="library-item-options">
+{% if logged_user.role in ('marketing', 'owner', 'it') %}<div class="library-item-actions"><form class="library-order-controls" method="post" action="{{ url_for('library_move_item', template_id=template.id, item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button name="direction" value="up" title="Nach oben" aria-label="{{ item.name }} nach oben" {% if loop.first %}disabled{% endif %}><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#arrow-up"></use></svg></button><button name="direction" value="down" title="Nach unten" aria-label="{{ item.name }} nach unten" {% if loop.last %}disabled{% endif %}><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#arrow-down"></use></svg></button></form>{% if not template.folder_source %}<details class="library-item-options">
           <summary aria-label="Optionen für {{ item.name }}" title="Inhaltsoptionen"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#ellipsis"></use></svg></summary>
           <div class="library-item-options-menu">
           <details class="library-add-control">
@@ -226,8 +226,8 @@
 {% endif %}
 {% if not template.folder_source or logged_user.role in ('owner', 'it') %}
 <section class="card library-panel library-website-secondary">
-  <details class="library-website-details">
-    <summary>{{ 'RSS2Slideshow / Web-Feed hinzufügen (IT)' if template.folder_source else 'Optional: Webseite verlinken' }}</summary>
+  <details class="library-website-details" {% if template.folder_source %}open{% endif %}>
+    <summary>{{ 'RSS2Slideshow / Webseite zur Playlist hinzufügen' if template.folder_source else 'Optional: Webseite verlinken' }}</summary>
     <p class="muted">{% if template.folder_source %}Bistro: Hier die vom Pi erreichbare URL des RSS2Slideshow-Custom-Design-Feeds eintragen. Der automatische Publisher fügt die Webseite als eigenen Slide hinzu. Anzeigedauer lässt sich anschließend links einstellen. Die Webseite muss auf dem Pi erreichbar sein.{% else %}Für seltene Web-Inhalte wie die RSS2Slideshow-Anzeige oder ein Dashboard. Bilder/Videos bitte oben hochladen.{% endif %}</p><form method="post" action="{{ url_for('library_add_url', template_id=template.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><label>Titel<input name="name" required maxlength="100"></label><label>Webadresse<input name="url" type="url" required placeholder="https://..."></label><label>Dauer in Sekunden<input name="duration" type="number" min="5" max="3600" value="30" required></label><button class="primary">Webseite speichern</button></form>
   </details>
 </section>
