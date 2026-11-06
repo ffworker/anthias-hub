@@ -1,70 +1,59 @@
-# Anthias Hub – UI design principles
+# Anthias Hub – UI-Designsystem
 
-## Product direction
+Stand: November 2026 · UI-Kennung: `ui-20261106-03`
 
-The Hub follows a calm, compact, **paper + ink** visual language similar to
-the current Signaturee application: useful workflows first, configuration
-second. It is a standalone implementation, with no copied CSS/assets or
-runtime dependencies from another project.
+## Produkt und Arbeitsabläufe
 
-The primary user journey is now:
+Die Oberfläche folgt einer ruhigen **Paper + Ink**-Gestaltung mit Korall-Akzenten. Das Ziel ist eine lesbare, konsistente Bedienung statt immer neuer Stilvarianten.
 
-1. **Ordner & Quellen (IT):** configure one `default` SMB root; direct
-   child directories become usable playlists with one click.
-2. **Playlists:** edit imported-image duration and optional RSS/web slides.
-   Marketing works in the familiar network directories, not an upload UI.
-3. **Bildschirme:** monitor connected players, schedules, native Anthias
-   playlist and actual playback separately.
+- **Ordner & Quellen:** IT verbindet freigegebene, schreibgeschützte Netzwerkquellen und prüft den Mount-Status.
+- **Playlists:** Manuelle Hub-Vorlagen und ordnergebundene Vorlagen haben sichtbar unterschiedliche Herkunft; Bildzeiten und Reihenfolge werden hier bearbeitet.
+- **Bildschirme:** Die tatsächliche Pi-Playlist, Gerätestatus, Zeitplanung und manuelle Uploads sind je Gerät erreichbar.
+- **Drei klar getrennte Funktionen:** Dateien oder Netzwerkordner *einmalig* hochladen, Medien-ZIP vs. Hub-Backup-ZIP importieren/exportieren, gespeicherte Vorlagen kontrolliert anwenden/ergänzen.
 
-Manual uploads and other SMB sources remain available as advanced/optional
-workflows. A Pi may not be written to merely because a source was saved.
-The server-side `FOLDER_AUTO_PUBLISH` flag remains off by default.
+**Speichern ist nicht automatisch Veröffentlichen.** Eine gespeicherte Netzwerkquelle aktiviert niemals selbständig den Hintergrund-Publisher; `FOLDER_AUTO_PUBLISH` bleibt serverseitig standardmäßig deaktiviert.
 
-## Visual language
+## Nur ein finales Theme-Stylesheet
 
-Shared, last-loaded `app/static/product-ui.css` owns the product look.
-`app/static/product-theme.js` stores a light/dark preference locally; it
-does not call external services.
+`app/templates/base.html` lädt zuerst `style.css`, `modern.css`, `workspace.css` und anschließend die page-spezifischen Layoutstyles. **Danach wird genau ein finales Theme geladen:** `app/static/ui-system.css`.
 
-- Light: warm `#eeece2` background, light paper surfaces, soft ruled borders.
-- Ink masthead: `#191b1a` with visible coral highlight `#ff795c`.
-- Typography: Georgia serif for major titles, Helvetica/Arial sans for body,
-  Consolas/monospace for compact metadata and section indices.
-- State colors: restrained green/error for actual statuses only.
-- Buttons: one visible primary action per workflow section, subdued secondary.
-- Navigation: **Ordner & Quellen** is at least as prominent as the other
-  main navigation links for IT/Owner.
-- No visual reliance on color alone for success, unavailable sources,
-  or player statuses.
-- Mobile: readable single-column layouts, horizontal tab scroll where
-  appropriate, at least 42px-high primary controls, reduced motion respected.
+Die früheren Dateien `ui-refinements.css`, `product-ui.css` und `workflow-ui.css` sind in `ui-system.css` zusammengeführt und entfernt. **Keine zusätzlichen globalen Override-Dateien anhängen.** Neue gemeinsame Designregeln in `ui-system.css` bearbeiten; seitenspezifische Funktionalität im vorhandenen Seitencss belassen.
 
-Keep backend role enforcement and all existing form names/CSRF tokens;
-do not replace working player controls with decorative widgets.
+`app/static/product-theme.js` verwaltet die gespeicherte Hell-/Dunkel-Präferenz im Browser, ohne externe Dienste.
 
-## Technical UX guardrails
+### Verbindliche Designregeln
 
-- Retain the existing page-specific CSS for functional placement; common
-  product appearance is an additive CSS layer loaded last.
-- Preview/lightbox rendering and modal focus behavior must remain untouched.
-- Folder names are rendered with Jinja HTML escaping. They can contain
-  umlauts and spaces; do not interpolate them into URLs.
-- A root mount is not enough: show a clear pending/error state until the
-  root-only mount helper has confirmed the requested server/UNC.
-- **Do not automatically unmount or replace** a working SMB source when the
-  operator edits its path.
-- Verify browser rendering at desktop and narrow/mobile widths on the real
-  operator setup; automated HTML/tests are necessary but not a screenshot
-  or genuine display acceptance.
+- Text, Flächen, Rahmen und Fokus über `--ui-*`-Variablen definieren; keine festen dunklen Hintergründe mit hellen Texten im hellen Theme.
+- Primäraktionen: Koralle mit dunkler Schrift. Sekundäraktionen: neutrale Oberfläche und lesbare Schrift. Destruktive Aktionen: rot und bestätigungspflichtig.
+- Status niemals ausschließlich farblich ausdrücken. `API erreichbar` beweist keine tatsächliche Wiedergabe am Fernseher.
+- Buttons, Links, `<summary>`, Formulare und Dateikarten mit Tastatur, Maus und Touch bedienbar halten.
+- Dateinamen mit `overflow-wrap:anywhere` erlauben; keine abgeschnittenen 3-Zeichen-Spalten oder horizontalen Überläufe.
+- Bestehende Flask-Rollenprüfungen und CSRF beibehalten. Versteckte Reiter sind keine Zugriffskontrolle.
+- Medienvorschau und Lightbox nicht ohne eigenen Test verändern. Medien-ZIP niemals mit Hub-Backup-ZIP verwechseln.
+- Keine automatische Löschung, Ersetzung oder Umsortierung fremder Player-Inhalte.
 
-## Acceptance checklist
+## Abnahme vor Merge
 
-- [ ] Login, dashboard, library, source manager, playlist, scheduling and
-  lightweight dialogs readable in both light and dark mode.
-- [ ] Keyboard navigation, focus indication, toggles and reduced motion.
-- [ ] Default root lists the intended child screen folders, no traversal or
-  untrusted symlinks.
-- [ ] IT can create one playlist from each folder, then select an Anthias
-  test player; Marketing can edit image timing only.
-- [ ] Test live RSS2Slideshow webpage playback on a real Anthias test Pi.
-- [ ] Existing Bistro Pi continues with Binary Emotions until verified.
+1. `python -m pytest -q` sowie `node --test tests/css-maintenance.test.cjs`.
+2. Hell- **und** Dunkel-Theme auf Login, Bildschirmübersicht, Ordner & Quellen, Bibliothek, Vorlagendetails, Pi-Playlist, „Inhalt hinzufügen“, Zeitplanung, Status-/Fehlermeldungen und Popovers prüfen.
+3. Desktop, Tablet (ca. 768 px), Smartphone (ca. 390 px): keine abgeschnittenen Formulare, überlappenden Buttons oder unlesbaren Inhalte.
+4. IT-, Marketing- und Viewer-Rollen prüfen. Änderungen am UI nicht mit einem ungeprüften produktiven Pi-Upload verbinden.
+5. Auf echtem Test-Pi prüfen, bevor neue Publish-Funktionalität ausgerollt wird. Ein grüner Test allein ersetzt keine visuelle Abnahme.
+
+## Welche UI-Version ist wirklich installiert?
+
+Die Seite meldet die aktuelle Designversion direkt im HTML:
+
+```html
+<meta name="anthias-hub-ui" content="ui-20261106-03">
+```
+
+Auf der Hub-VM nach **Merge, erfolgreichem GHCR-Publish und Updater-Ausführung** prüfen:
+
+```bash
+curl -fsSL http://127.0.0.1:8765/login | grep 'name="anthias-hub-ui"'
+sudo journalctl -u anthias-hub-cd.service -n 30 --no-pager
+docker ps --filter name=anthias-hub
+```
+
+Fehlt der Marker, ist noch nicht die neue UI-Version installiert. Der `/healthz`-Endpunkt sagt nur etwas über die Server-Erreichbarkeit aus, nicht über die geladene Revision oder das tatsächliche TV-Bild.
