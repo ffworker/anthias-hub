@@ -181,7 +181,7 @@ def create_app(config=None):
         from .media_sources import SourceError, load_sources, mount_statuses, observed_mount_source
         try:
             registered = load_sources(app.config['MEDIA_SOURCES_FILE'])
-            states = mount_statuses(app.config['MEDIA_MOUNT_STATUS_FILE'])
+            states = mount_statuses(app.config['MEDIA_MOUNT_STATUS_FILE'], app.config['MEDIA_SOURCES_FILE'])
             aliases = available_sources()
             for source in registered:
                 source['status'] = states.get(source['alias'], 'pending')
