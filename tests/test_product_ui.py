@@ -36,8 +36,10 @@ def test_default_library_is_primary_in_all_three_core_views():
     assert dashboard.index('hub-workflow-cards') < dashboard.index('fleet-summary')
     assert library.index('library-source-feature') < library.index('library-grid')
     assert folders.index('media-default-panel') < folders.index('media-sources-admin">\n  <h2>Neue Medienquelle')
-    assert 'media-default-folders' in folders
-    assert 'media_sources_use_folder' in folders
+    assert 'media-folder-notice' in folders
+    assert 'library_index' in folders
+    assert 'media-default-folders' not in folders
+    assert 'id="new-playlist"' in library
     assert 'source.startswith(\'default/\')' in detail
 
 
