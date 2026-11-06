@@ -25,6 +25,9 @@ jobs:
       - name: Check Python syntax
         run: python -m compileall -q app scripts wsgi.py
 
+      - name: Audit public tracked files for private artifacts
+        run: python scripts/check_public_repo.py
+
       - name: Check bootstrap shell syntax
         run: bash -n scripts/bootstrap-test-vm.sh scripts/setup-pilot.sh
 
