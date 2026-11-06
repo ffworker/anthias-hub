@@ -1,7 +1,9 @@
 # Folder-backed playlist templates (experimental)
 
 The folder importer supports **automatic import to Hub library templates** and
-opt-in publication of folder-managed media to selected Anthias players.\n**Automatic Pi publication is disabled by default** (server-side). Existing manual\nPi assets are never modified.
+opt-in publication of folder-managed media to selected Anthias players.
+**Automatic Pi publication is disabled by default** (server-side). Existing manual
+Pi assets are never modified.
 
 ## Host setup
 
