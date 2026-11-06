@@ -15,7 +15,17 @@ import sys
 import tempfile
 from pathlib import Path
 
-from app.media_sources import load_sources, split_unc, SourceError
+# Load the pure-stdlib validator without importing app/__init__.py (Flask is
+# intentionally not installed on the privileged host).
+from importlib.util import module_from_spec, spec_from_file_location
+_module_spec = spec_from_file_location(
+    'hub_media_sources', Path(__file__).resolve().parents[1] / 'app/media_sources.py'
+)
+media_sources = module_from_spec(_module_spec)
+_module_spec.loader.exec_module(media_sources)
+load_sources = media_sources.load_sources
+split_unc = media_sources.split_unc
+SourceError = media_sources.SourceError
 
 ROOT = Path('/srv/anthias-sources')
 DEFAULT_ALLOWLIST = Path('/etc/anthias-hub/smb-allowlist.json')
@@ -70,13 +80,17 @@ def ensure_directory(root, alias):
 
 
 def source_at(target):
-    result = run(['findmnt', '-M', str(target), '-rn', '-o', 'SOURCE,FSTYPE'])
+    result = run(['findmnt', '-M', str(target), '-J', '-o', 'SOURCE,FSTYPE'])
     if result.returncode:
         return None
-    value = result.stdout.strip().split()
-    if len(value) != 2:
+    doc = json.loads(result.stdout)
+    found = doc.get('filesystems', [])
+    if not isinstance(found, list) or len(found) != 1:
         raise MountError('Mountpoint konnte nicht eindeutig geprüft werden')
-    return value[0], value[1]
+    item = found[0]
+    if not isinstance(item.get('source'), str) or not isinstance(item.get('fstype'), str):
+        raise MountError('Mountpoint-Format unvollständig')
+    return item['source'], item['fstype']
 
 
 def reconcile_one(source, allowlist, root, *, allow_write=False):
