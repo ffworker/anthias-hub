@@ -2441,7 +2441,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
     response = client.get('/login')
     assert response.status_code == 200
     text = response.get_data(as_text=True)
-    assert 'content="ui-20261106-04"' in text
+    assert 'content="ui-20261106-05"' in text
     assert 'ui-system.css' in text
     assert all(f"filename='{name}'" not in text for name in (
         'product-ui.css', 'ui-refinements.css', 'workflow-ui.css'))
@@ -2453,7 +2453,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
         result = client.get(path)
         assert result.status_code == 200, path
         text = result.get_data(as_text=True)
-        assert 'content="ui-20261106-04"' in text, path
+        assert 'content="ui-20261106-05"' in text, path
         assert text.count('ui-system.css') == 1, path
         assert 'data-product-theme-toggle' in text, path
         assert 'class="site-main"' not in text or 'id="hauptinhalt"' in text
@@ -2479,7 +2479,7 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert page.index('01 / BILDSCHIRME') < page.index('02 / PLAYLISTS') < page.index('03 / IT')
     assert 'Zu meinen Bildschirmen' in page
     assert 'href="#fleet-devices"' in page
-    assert 'ui-system.css?v=ui-20261106-04' in page
+    assert 'ui-system.css?v=ui-20261106-05' in page
 
     libpage = client.get('/library').get_data(as_text=True)
     assert libpage.index('01 · Vorlagen ansehen') < libpage.index('02 · Neue Playlist') < libpage.index('03 · ZIP-Backup')
