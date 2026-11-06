@@ -302,3 +302,121 @@ html[data-theme="dark"] { --workflow-hover:#35372f;--workflow-blue:#a9cada }
   .playlist-workspace .composer-pane{padding:13px 14px}
   .playlist-workspace .composer-source-choice{padding:13px}
 }
+
+/* Dashboard finish: legacy fleet.css/workspace.css dark-only colors must not
+   leak into the shared light/dark theme or mix blue and coral actions. */
+.fleet-workspace .hub-workflow-card>a.button:not(.primary){
+  display:inline-flex;align-items:center;justify-content:center;min-height:42px;
+  background:var(--ui-raised)!important;color:var(--ui-fg)!important;
+  border:1px solid var(--ui-line-strong)!important;border-radius:5px!important;
+  padding:9px 15px;text-decoration:none;font-weight:700;box-shadow:none!important;
+}
+.fleet-workspace .hub-workflow-card>a.button:not(.primary):hover{
+  background:var(--workflow-hover)!important;
+  border-color:var(--ui-accent)!important;color:var(--ui-accent)!important;
+}
+.fleet-workspace .hub-workflow-card>a.button.primary{
+  color:#191b1a!important;background:#ff795c!important;
+  border:1px solid #ff795c!important;border-radius:5px!important;
+  box-shadow:none!important;text-decoration:none;
+}
+.fleet-workspace .hub-workflow-card>a.button.primary:hover{
+  color:#191b1a!important;background:#ff977e!important;
+  border-color:#ff977e!important;
+}
+.fleet-workspace .fleet-summary .fleet-stat-label,
+.fleet-workspace .fleet-summary .fleet-summary-hint,
+.fleet-workspace .fleet-device .fleet-device-line span,
+.fleet-workspace .fleet-device .fleet-schedule-link{
+  color:var(--ui-muted)!important;
+}
+.fleet-workspace .fleet-summary .fleet-stat-value,
+.fleet-workspace .fleet-device .fleet-device-line strong,
+.fleet-workspace .fleet-device h3{color:var(--ui-fg)!important}
+.fleet-workspace .fleet-device-actions>details>summary{
+  background:var(--ui-raised)!important;color:var(--ui-fg)!important;
+  border-color:var(--ui-line-strong)!important;border-radius:5px!important;
+  font-size:12px!important;min-height:42px;
+}
+.fleet-workspace .fleet-device-actions>details>summary:hover,
+.fleet-workspace .fleet-device-actions>details[open]>summary{
+  background:var(--workflow-hover)!important;color:var(--ui-accent)!important;
+  border-color:var(--ui-accent)!important;
+}
+.fleet-workspace .fleet-storage-menu>summary{
+  background:var(--ui-raised);color:var(--ui-fg);border-color:var(--ui-line-strong);
+}
+.fleet-workspace .fleet-device-actions .fleet-remote-note,
+.fleet-workspace .fleet-device-actions .fleet-remote-note *,
+.fleet-workspace .fleet-device-actions .fleet-device-address {
+  color:var(--ui-muted);
+}
+.fleet-workspace .fleet-device{background:var(--ui-surface);color:var(--ui-fg);box-shadow:none}
+.fleet-workspace .fleet-grid{scroll-margin-top:35px}
+.fleet-workspace .fleet-grid-single{grid-template-columns:minmax(0,min(100%,680px))}
+.fleet-workspace .fleet-grid-single .fleet-device{padding:21px 24px 16px}
+.fleet-workspace .fleet-grid-single .fleet-device-top{margin-bottom:13px}
+.fleet-workspace .fleet-grid-single .fleet-device h3{font-size:22px;margin-bottom:12px}
+.fleet-workspace .fleet-grid-single .fleet-open{max-width:560px;margin:15px 0 12px!important}
+.fleet-workspace .fleet-grid-single .fleet-device-actions{max-width:560px}
+.fleet-workspace .fleet-grid-single .fleet-schedule-link{margin-bottom:12px}
+
+/* Device setup is optional, not a permanently visible admin form. Native
+   details/summary works without JavaScript; the top CTA opens it with JS. */
+.fleet-workspace details.fleet-setup-collapsible{
+  display:block;margin:25px 0 8px;padding:0;min-width:0;
+  background:var(--ui-surface);border:1px solid var(--ui-line);
+  border-radius:5px;box-shadow:none;scroll-margin-top:28px;
+}
+.fleet-workspace .fleet-setup-toggle{
+  display:flex;align-items:center;justify-content:space-between;gap:18px;
+  padding:20px 24px;cursor:pointer;list-style:none;
+  color:var(--ui-fg);background:var(--ui-surface);border-radius:5px;
+}
+.fleet-workspace .fleet-setup-toggle::-webkit-details-marker{display:none}
+.fleet-workspace .fleet-setup-toggle:hover{
+  color:var(--ui-fg);background:var(--workflow-hover);
+}
+.fleet-workspace .fleet-setup-toggle-text{
+  display:grid;gap:4px;min-width:0;
+}
+.fleet-workspace .fleet-setup-toggle-text .eyebrow{margin:0}
+.fleet-workspace .fleet-setup-toggle-text>strong{
+  font:400 23px/1.2 var(--ui-serif);color:var(--ui-fg);
+}
+.fleet-workspace .fleet-setup-toggle-text>span:last-child{
+  color:var(--ui-muted);font-size:13px;
+}
+.fleet-workspace .fleet-setup-toggle-action{
+  display:inline-flex;align-items:center;gap:9px;white-space:nowrap;
+  border:1px solid var(--ui-line-strong);border-radius:5px;
+  background:var(--ui-raised);padding:9px 13px;color:var(--ui-fg);
+  font-size:12px;font-weight:700;
+}
+.fleet-workspace details.fleet-setup-collapsible[open] .fleet-setup-toggle-action span[aria-hidden]{transform:rotate(180deg)}
+.fleet-workspace .fleet-setup-body{
+  display:grid;grid-template-columns:minmax(210px,.75fr) minmax(350px,1.25fr);
+  gap:22px;padding:24px;border-top:1px solid var(--ui-line);
+  background:var(--ui-surface);border-radius:0 0 5px 5px;
+}
+.fleet-workspace .fleet-setup-body .fleet-setup-intro{min-width:0}
+.fleet-workspace .fleet-setup-body .fleet-setup-form{min-width:0;align-self:start}
+.fleet-workspace .fleet-setup-body .fleet-setup-form input{
+  min-width:0;width:100%;box-sizing:border-box;
+  color:var(--ui-fg);background:var(--ui-raised);
+  border-color:var(--ui-line-strong);border-radius:5px;
+}
+.fleet-workspace .fleet-setup-body .field-note{color:var(--ui-muted)}
+.fleet-workspace .fleet-setup-body .fleet-setup-intro .muted{color:var(--ui-muted)}
+@media(max-width:830px){
+  .fleet-workspace .fleet-setup-body{grid-template-columns:1fr}
+}
+@media(max-width:580px){
+  .fleet-workspace .fleet-grid-single{grid-template-columns:minmax(0,1fr)}
+  .fleet-workspace .fleet-grid-single .fleet-device{padding:17px 16px 13px}
+  .fleet-workspace .fleet-setup-toggle{align-items:flex-start;flex-direction:column;padding:17px;gap:12px}
+  .fleet-workspace .fleet-setup-toggle-action{min-height:40px}
+  .fleet-workspace .fleet-setup-body{padding:17px}
+  .fleet-workspace .fleet-setup-body .fleet-setup-form{grid-template-columns:1fr}
+  .fleet-workspace .hub-workflow-card>a.button{width:100%;max-width:100%;text-align:center}
+}
