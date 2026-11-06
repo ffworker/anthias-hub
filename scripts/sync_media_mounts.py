@@ -13,6 +13,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 # Load the pure-stdlib validator without importing app/__init__.py (Flask is
@@ -130,7 +131,7 @@ def write_status(path, states):
             encoding='utf-8', delete=False,
         ) as f:
             temporary = Path(f.name)
-            json.dump({'version': 1, 'sources': states}, f)
+            json.dump({'version': 1, 'checked_at': time.time(), 'sources': states}, f)
             f.flush()
             os.fsync(f.fileno())
         os.chmod(temporary, 0o644)  # Non-secret states readable by Hub UID
@@ -143,7 +144,7 @@ def write_status(path, states):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--registry', default='/root/apps/anthias-hub/data/media-sources.json')
-    parser.add_argument('--status', default='/root/apps/anthias-hub/data/media-mount-status.json')
+    parser.add_argument('--status', default='/srv/anthias-sources/.mount-status.json')
     parser.add_argument('--root', default=str(ROOT))
     parser.add_argument('--allowlist', default=str(DEFAULT_ALLOWLIST))
     parser.add_argument('--check', action='store_true', help='Validate only; do not mount')
