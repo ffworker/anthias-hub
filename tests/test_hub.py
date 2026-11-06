@@ -2325,3 +2325,24 @@ def test_player_composer_workflows_are_explicit_and_marketing_does_not_administe
     assert 'Medien-ZIP importieren' in page
     assert 'Noch keine gespeicherten Inhalte vorhanden.' in page
     assert 'Bestehende Playlist' in page or 'bestehende Playlist' in page
+
+
+def test_template_composer_offers_append_and_empty_only_apply_after_content_exists(env):
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    from app.library import Library
+    library = Library(app.config['LIBRARY_DIR'])
+    template = library.create('Bistro')
+    library.add_url(template['id'], 'News', 'https://example.org/news', 30)
+    login(client, 'marketing')
+    page = client.get('/devices/lab').get_data(as_text=True)
+    assert 'Bestehende Playlist ergänzen · ganze Vorlage' in page
+    assert 'Leere Playlist initialisieren' in page
+    assert '/devices/lab/append-library' in page
+    assert '/devices/lab/apply-library' in page
+    refused = client.post('/devices/lab/apply-library', data={
+        'csrf': token(client), 'template_id': template['id'], 'confirm': 'yes'
+    }, follow_redirects=True)
+    assert refused.status_code == 200
+    assert 'nicht leer' in refused.get_data(as_text=True)
+    assert FakeAnthias.changes == []
