@@ -196,3 +196,18 @@ def test_library_rejects_unregistered_device_and_requires_folder(tmp_path, monke
         store.set_auto_devices(ident, ['lab'], [{'id': 'lab'}])
     with pytest.raises(LibraryError):
         store.set_auto_devices(ident, ['missing'], [{'id': 'lab'}])
+
+
+def test_switching_imported_source_does_not_mix_old_files(setup, tmp_path, monkeypatch):
+    env = setup
+    from app.folder_sync import sync_template
+    sync_template(env['store'], env['template'])
+    source_root = env['folder'].parent
+    (source_root / 'empfang').mkdir()
+    with pytest.raises(LibraryError, match='neue Vorlage'):
+        env['store'].set_folder_source(env['template'], 'empfang')
+    assert env['store'].get(env['template'])['folder_source'] == 'bistro'
+    env['store'].set_folder_source(env['template'], '')
+    assert env['store'].get(env['template'])['auto_devices'] == []
+    env['store'].set_folder_source(env['template'], 'bistro')
+    assert env['store'].get(env['template'])['folder_source'] == 'bistro'
