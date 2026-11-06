@@ -1823,6 +1823,7 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
 }
 .site-main .media-default-panel.is-confirmed{border-top-color:var(--ui-good)!important}
 .site-main .media-default-panel.is-attention{border-top-color:var(--ui-warn)!important}
+.site-main .media-default-panel.is-error{border-top-color:var(--ui-error)!important}
 .media-default-panel>.eyebrow{margin:0 0 9px}
 .media-default-heading{gap:12px 22px;align-items:center}
 .media-default-heading h2{margin:0 0 7px}
@@ -1850,6 +1851,9 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
 .media-default-panel.is-confirmed .media-mount-readout{
   border-left-color:var(--ui-good);background:var(--ui-good-bg)
 }
+.media-default-panel.is-error .media-mount-readout{
+  border-left-color:var(--ui-error);background:var(--ui-error-bg)
+}
 .media-mount-readout-icon{
   display:grid;place-items:center;width:38px;height:38px;border-radius:50%;
   border:2px solid var(--ui-warn);color:var(--ui-warn);
@@ -1857,6 +1861,9 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
 }
 .media-default-panel.is-confirmed .media-mount-readout-icon{
   border-color:var(--ui-good);color:var(--ui-good)
+}
+.media-default-panel.is-error .media-mount-readout-icon{
+  border-color:var(--ui-error);color:var(--ui-error)
 }
 .media-mount-readout strong{display:block;font-size:15px;line-height:1.4;color:var(--ui-fg)}
 .media-mount-readout p{margin:5px 0 0;color:var(--ui-fg);font-size:12px;line-height:1.6}
@@ -1968,6 +1975,7 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
 .media-source-card{border-left:4px solid var(--ui-line-strong)!important}
 .media-source-card.is-confirmed{border-left-color:var(--ui-good)!important}
 .media-source-card.is-attention{border-left-color:var(--ui-warn)!important}
+.media-source-card.is-error{border-left-color:var(--ui-error)!important}
 .media-source-card.is-legacy{border-left-color:var(--ui-line-strong)!important}
 .media-source-card .media-source-top{margin:0}
 .media-source-card .media-source-top .eyebrow{font-size:10px;margin:0 0 5px}
