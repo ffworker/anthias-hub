@@ -243,12 +243,12 @@ def test_rss_web_feed_auto_publishes_with_folder_and_updates_duration(setup):
     from app.folder_sync import sync_template
     sync_template(env['store'], env['template'])
     template = env['store'].add_url(env['template'], 'Bistro RSS2Slideshow',
-                                    'http://172.17.1.54/', 30)
+                                    'http://192.0.2.55/feed', 30)
     web = next(item for item in template['items'] if item['kind'] == 'url')
     assert perform(env)['added'] == 2
     assert len(env['player'].entries) == 3
     rss = next(entry for entry in env['player'].entries.values()
-               if entry.get('uri') == 'http://172.17.1.54/')
+               if entry.get('uri') == 'http://192.0.2.55/feed')
     assert rss['mimetype'] == 'webpage'
     assert rss['duration'] == 30
     assert '[HubWeb:' in rss['name']
@@ -256,7 +256,7 @@ def test_rss_web_feed_auto_publishes_with_folder_and_updates_duration(setup):
     env['store'].update_item_duration(env['template'], web['id'], '75')
     assert perform(env)['updated'] == 1
     rss = next(entry for entry in env['player'].entries.values()
-               if entry.get('uri') == 'http://172.17.1.54/')
+               if entry.get('uri') == 'http://192.0.2.55/feed')
     assert rss['duration'] == 75
     assert len(env['player'].entries) == 3
 
