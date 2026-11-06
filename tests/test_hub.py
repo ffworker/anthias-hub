@@ -1983,13 +1983,13 @@ def test_folder_auto_targets_require_it_and_csrf(env, monkeypatch):
     assert marketing_client.post(f'/library/{ident}/auto-devices',
                                  data={'csrf': token(marketing_client),
                                        'devices': 'lab'}).status_code == 403
-    assert 'Netzwerkordner als Medienquelle (IT)' not in (
+    assert 'Playlist mit Netzwerkordner verbinden (IT)' not in (
         marketing_client.get(f'/library/{ident}').get_data(as_text=True))
 
     it_client = app.test_client()
     login(it_client, 'it')
     detail = it_client.get(f'/library/{ident}').get_data(as_text=True)
-    assert 'Netzwerkordner als Medienquelle (IT)' in detail
+    assert 'Playlist mit Netzwerkordner verbinden (IT)' in detail
     assert 'name="devices"' in detail
     assert it_client.post(f'/library/{ident}/folder-source',
                           data={'folder_source': 'bistro'}).status_code == 400
@@ -2081,7 +2081,7 @@ def test_it_can_add_and_edit_smb_sources_without_exposing_passwords(env, monkeyp
     assert 'bistro' in page
     assert 'root@' not in page
     assert 'name="unc"' in page
-    assert 'Medienquellen' in client.get('/library').get_data(as_text=True)
+    assert 'Ordner &amp; Quellen' in client.get('/library').get_data(as_text=True)
 
     response = client.post('/media-sources', data={
         'csrf': token(client), 'alias': 'bistro',
