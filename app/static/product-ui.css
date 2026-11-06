@@ -342,7 +342,7 @@ html.fleet-popovers-ready .fleet-device-actions>details>.fleet-settings-content 
 /* Login uses the same paper/ink composition. */
 .auth-layout{gap:24px}
 .auth-story,.auth-card{box-shadow:none}
-.auth-story{background:var(--ui-ink);color:#eeece2}
+.auth-story{background:#191b1a;color:#eeece2}
 .auth-story h1,.auth-story .eyebrow{color:#eeece2!important}
 .auth-story p{color:#d5d5c9}
 .auth-card{background:var(--ui-surface)}
