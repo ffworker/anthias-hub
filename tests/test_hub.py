@@ -184,7 +184,7 @@ def test_ui_refresh_library_and_dashboard_role_safety(env):
     assert 'data-library-template' in playlist and 'data-library-source' in playlist
     assert 'data-library-source-template' in playlist
     assert 'data-add-mode="website"' in playlist
-    assert playlist.count('data-add-mode=') == 3
+    assert playlist.count('data-add-mode=') == 4  # Datei, ZIP, Vorlage, Webseite
     dashboard = client.get('/').data.decode('utf-8')
     assert 'Hilfe bei Anzeigeproblemen' in dashboard
     assert 'Gerät verwalten' not in dashboard
@@ -834,7 +834,7 @@ def test_whole_template_can_append_to_nonempty_playlist(env):
     lib.add_media(template['id'], 'Bild', io.BytesIO(b'\x89PNG\r\n\x1a\n' + b'test'), 'bild.png', 20)
     login(client, 'marketing')
     page = client.get('/devices/lab').data.decode('utf-8')
-    assert 'Gesamte Vorlage hinzufügen' in page
+    assert 'Bestehende Playlist ergänzen · ganze Vorlage' in page
     assert 'Inhalt hinzufügen' in page
     assert 'Vorlage auswählen' in page or 'Vorlage' in page
     result = client.post('/devices/lab/append-library', data={
@@ -1173,7 +1173,7 @@ def test_playlist_media_and_library_are_prominent_before_optional_website(env):
     assert page.index('data-add-mode="library"') < page.index('data-add-mode="website"')
     assert 'class="add-mode selected" data-add-mode="media" aria-pressed="true"' in page
     assert 'class="add-mode" data-add-mode="website" aria-pressed="false"' in page
-    assert '> Webseite</button>' in page
+    assert '>Webseite</button>' in page
     assert page.index('data-add-pane="website"') < page.index('data-add-pane="media"')  # legacy form remains
     assert 'RSS2Slideshow-Anzeige' in page
     static = Path(__file__).resolve().parents[1] / 'app' / 'static'
@@ -2323,5 +2323,5 @@ def test_player_composer_workflows_are_explicit_and_marketing_does_not_administe
         assert f'data-add-pane="{mode}"' in page
     assert 'data-add-mode="folder"' not in page
     assert 'Medien-ZIP importieren' in page
-    assert 'Leere Playlist initialisieren' in page
+    assert 'Noch keine gespeicherten Inhalte vorhanden.' in page
     assert 'Bestehende Playlist' in page or 'bestehende Playlist' in page
