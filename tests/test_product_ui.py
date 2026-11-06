@@ -96,3 +96,18 @@ def test_dashboard_links_to_actual_screen_list_and_new_device_form_is_optional()
     assert '.hub-workflow-card>a.button:not(.primary)' in css
     assert 'var(--ui-fg)!important' in css
     assert 'fleet-setup-collapsible' in css
+
+
+def test_scheduling_and_fleet_popovers_follow_shared_light_dark_tokens():
+    css = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
+    schedule = (TEMPLATES / 'schedules.html').read_text(encoding='utf-8')
+    dashboard = (TEMPLATES / 'dashboard.html').read_text(encoding='utf-8')
+    assert '.schedule-secondary-panel' in css
+    assert '.schedule-assigned' in css
+    assert '.schedule-global-confirm' in css
+    assert '.schedule-global-delete .schedule-remove' in css
+    assert 'html[data-theme="dark"] .schedule-workspace input[type=time]' in css
+    assert 'var(--ui-error-bg)' in css
+    assert '.fleet-storage-panel' in css
+    assert 'class="schedule-workspace"' in schedule
+    assert 'fleet-storage-menu' in dashboard
