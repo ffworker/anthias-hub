@@ -689,6 +689,40 @@ def create_app(config=None):
                                    mimetype=MEDIA[ext], ext=uploaded.get('ext'))
         audit('library.add-item', device_id, item_id)
 
+    @app.post('/devices/<device_id>/folder-playlist')
+    @login_required('it')
+    def attach_folder_playlist_to_device(device_id):
+        """One-click IT binding, starting from a screen instead of the library."""
+        from .folder_sync import source_directory, available_sources
+        device_ids = {d['id'] for d in load(app.config['DEVICES_FILE'])}
+        if device_id not in device_ids:
+            abort(404)
+        alias = request.form.get('folder_source', '')
+        if alias not in available_sources():
+            flash('Netzwerkordner nicht verfügbar. SMB-Mount im Hub prüfen.', 'error')
+            return redirect(url_for('playlist', device_id=device_id))
+        try:
+            source_directory(alias)  # fail closed on unplugged/out-of-scope sources
+            store = library()
+            template = next((t for t in store.list()
+                             if t.get('folder_source') == alias), None)
+            if template is None:
+                template = store.create(alias.split('/')[-1][:100])
+                store.set_folder_source(template['id'], alias)
+            current = list(template.get('auto_devices', []))
+            if device_id not in current:
+                store.set_auto_devices(template['id'],
+                                       current + [device_id],
+                                       load(app.config['DEVICES_FILE']))
+            audit('library.folder-attach-device', device_id, asset_id=template['id'])
+            flash('Netzwerkordner ist dem Bildschirm zugewiesen. Die Medien '
+                  'erscheinen erst, wenn der Ordnerimport läuft und der '
+                  'automatische Publisher von IT serverseitig freigegeben wird.', 'success')
+            return redirect(url_for('library_detail', template_id=template['id']))
+        except (LibraryError, OSError) as exc:
+            flash(str(exc), 'error')
+            return redirect(url_for('playlist', device_id=device_id))
+
     @app.post('/devices/<device_id>/add-library-item')
     @login_required('marketing')
     def add_library_item_from_player(device_id):
@@ -896,7 +930,9 @@ def create_app(config=None):
             )
         folder_templates = [t for t in templates if t.get('folder_source')
                             and device_id in t.get('auto_devices', [])]
+        from .folder_sync import available_sources
         return render_template('playlist.html', device=device, assets=assets,
+                               available_folder_sources=available_sources() if current_user()['role'] in ('owner', 'it') else [],
                                folder_templates=folder_templates,
                                folder_managed=bool(folder_templates),
                                library_templates=templates,
