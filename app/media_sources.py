@@ -90,11 +90,60 @@ def load_sources(path=None):
         raise SourceError('Gespeicherte Medienquellen beschädigt oder unlesbar') from exc
 
 
+def retired_aliases(path=None):
+    """Explicitly retired aliases stay hidden even while their host mount exists.
+
+    The registry is not a privileged unmount queue. Keeping tombstones prevents
+    a still-present legacy mount from silently reappearing as a selectable source.
+    """
+    target = registry_file(path)
+    if not target.exists():
+        return []
+    try:
+        if target.stat().st_size > 131072:
+            raise ValueError('oversized registry')
+        data = json.loads(target.read_text(encoding='utf-8'))
+        if data.get('version') != 1 or not isinstance(data.get('sources'), list):
+            raise ValueError('invalid registry')
+        values = data.get('retired', [])
+        if not isinstance(values, list) or len(values) > 50:
+            raise ValueError('invalid retired aliases')
+        aliases = [validate_alias(value) for value in values]
+        if len(set(aliases)) != len(aliases):
+            raise ValueError('duplicate retired alias')
+        active = {entry['alias'] for entry in load_sources(target)}
+        if active.intersection(aliases):
+            raise ValueError('active alias is retired')
+        return sorted(aliases)
+    except (OSError, ValueError, TypeError, AttributeError) as exc:
+        raise SourceError('Gespeicherte Medienquellen beschädigt oder unlesbar') from exc
+
+
+def _write_registry(target, entries, retired):
+    """Atomic local registry update; no SMB files or host mounts are touched."""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=target.parent, prefix='.media-sources-',
+                                         mode='w', encoding='utf-8', delete=False) as f:
+            tmp = Path(f.name)
+            json.dump({'version': 1, 'sources': entries, 'retired': sorted(retired)},
+                      f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, target)
+    finally:
+        if tmp is not None:
+            tmp.unlink(missing_ok=True)
+
+
 def save_source(alias, unc, *, path=None):
     alias, unc = validate_alias(alias), validate_unc(unc)
     target = registry_file(path)
     with LOCK:
         entries = load_sources(target)
+        retired = retired_aliases(target)
         old = next((x for x in entries if x['alias'] == alias), None)
         if old and old['unc'] == unc:
             return 'unchanged'
@@ -106,21 +155,28 @@ def save_source(alias, unc, *, path=None):
                 raise SourceError('Maximal 50 Medienquellen')
             entries.append({'alias': alias, 'unc': unc})
             result = 'created'
-        target.parent.mkdir(parents=True, exist_ok=True)
-        tmp = None
-        try:
-            with tempfile.NamedTemporaryFile(dir=target.parent, prefix='.media-sources-',
-                                             mode='w', encoding='utf-8', delete=False) as f:
-                tmp = Path(f.name)
-                json.dump({'version': 1, 'sources': entries}, f, ensure_ascii=False, indent=2)
-                f.flush()
-                os.fsync(f.fileno())
-            os.chmod(tmp, 0o600)
-            os.replace(tmp, target)
-        finally:
-            if tmp is not None:
-                tmp.unlink(missing_ok=True)
+        # A deliberate re-registration un-retires the alias.
+        _write_registry(target, entries, [a for a in retired if a != alias])
     return result
+
+
+def remove_source(alias, *, path=None):
+    """Retire a registry entry; never unmount or remove underlying data.
+
+    Callers must check active playlist dependencies under the library lock.
+    """
+    alias = validate_alias(alias)
+    target = registry_file(path)
+    with LOCK:
+        entries = load_sources(target)
+        retired = retired_aliases(target)
+        if not any(entry['alias'] == alias for entry in entries):
+            raise SourceError('Diese Medienquelle ist nicht (mehr) registriert')
+        if len(retired) >= 50:
+            raise SourceError('Zu viele ausgetragene Quellen; Host-Bereinigung prüfen')
+        _write_registry(target, [entry for entry in entries if entry['alias'] != alias],
+                        retired + [alias])
+    return 'retired'
 
 
 def mount_statuses(path=None, registry_path=None):
