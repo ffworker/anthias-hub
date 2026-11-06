@@ -39,7 +39,7 @@
       <div class="card library-entry-shell">
         <a class="library-entry" href="{{ url_for('library_detail', template_id=template.id) }}">
           <span class="library-glyph" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg></span>
-          <span><span class="library-entry-heading"><strong>{{ template.name }}</strong><span class="library-entry-type {{ 'is-automatic' if template.folder_source|default(false) else 'is-manual' }}">{{ 'Automatisch · Netzwerkordner' if template.folder_source|default(false) else 'Manuelle Vorlage' }}</span></span><small>{% if template.folder_source|default(false) %}Quelle: {{ template.folder_source }} · {% endif %}{{ template['items']|length }} Inhalte{% if template.auto_devices|default([]) %} · {{ template.auto_devices|length }} Zielbildschirm(e){% endif %} · Öffnen und bearbeiten</small></span>
+          <span><span class="library-entry-heading"><strong>{{ template.name }}</strong><span class="library-entry-type {{ 'is-automatic' if template.folder_source|default(false) else 'is-manual' }}">{{ 'Netzwerkordner · Import in Hub' if template.folder_source|default(false) else 'Manuelle Vorlage' }}</span></span><small>{% if template.folder_source|default(false) %}Quelle: {{ template.folder_source }} · {% endif %}{{ template['items']|length }} Inhalte{% if template.auto_devices|default([]) %} · {{ template.auto_devices|length }} Zielbildschirm(e){% endif %} · Öffnen und bearbeiten</small></span>
           <span aria-hidden="true">→</span>
         </a>
         {% if logged_user.role in ('marketing', 'owner', 'it') %}{{ delete_control(template) }}{% endif %}
