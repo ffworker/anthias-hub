@@ -1,117 +1,234 @@
 {% extends 'base.html' %}
 {% from '_media_source_retire.html' import retire_control with context %}
-{% block title %}Medienquellen · IT · Anthias Hub{% endblock %}
+{% block title %}Ordner & Quellen · IT · Anthias Hub{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">{% endblock %}
 {% block content %}
 <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Bildschirme</a><span aria-hidden="true">›</span><span>Ordner &amp; Quellen (IT)</span></nav>
-<section class="library-intro">
-  <p class="eyebrow">IT-ADMINISTRATION · NETZWERKMEDIEN</p>
-  <h1>Ordner &amp; Quellen</h1>
-  <p class="muted">Einen gemeinsamen SMB-Stammordner verbinden und seine Unterordner automatisch als Playlist-Quellen auswählen. Einzelne zusätzliche SMB-Pfade bleiben optional.</p>
-  <p class="muted">Der Hub speichert nur Pfade, keine Passwörter. Mounten und Aushängen bleiben getrennte, kontrollierte Host-Aufgaben.</p>
+
+<section class="library-intro media-page-intro" aria-labelledby="media-page-title">
+  <p class="eyebrow">IT-ADMINISTRATION / NETZWERKMEDIEN</p>
+  <h1 id="media-page-title">Ordner &amp; Quellen</h1>
+  <p class="muted">Hier siehst du, welche SMB-Freigaben <strong>wirklich vom Host bestätigt</strong> wurden, welche nur gespeichert sind und welche zusätzlichen Mounts noch existieren.</p>
 </section>
-<section class="card library-panel media-default-panel" aria-labelledby="default-library-title">
-  <p class="eyebrow">01 / STANDARD-BIBLIOTHEK</p>
+
+<section class="media-overview-strip" aria-label="SMB-Mount-Übersicht">
+  <div class="media-overview-stat is-confirmed"><strong>{{ mounted_count }}</strong><span>Host-bestätigte Quellen</span></div>
+  <div class="media-overview-stat {{ 'is-attention' if attention_count else '' }}"><strong>{{ attention_count }}</strong><span>Prüfung offen / Fehler</span></div>
+  <div class="media-overview-stat"><strong>{{ unmanaged|length }}</strong><span>Alte, nicht registrierte Ordner</span></div>
+  <p class="media-overview-caption">Hoststatus wird nur aus einer gültigen Prüfung der letzten 5 Minuten übernommen. Ein gespeicherter Pfad allein ist <strong>kein Mount</strong>.</p>
+</section>
+
+<section class="card library-panel media-default-panel {{ 'is-confirmed' if default_source and default_source.status in ('mounted','already-mounted') else 'is-attention' if default_source else 'is-empty' }}" aria-labelledby="default-library-title">
+  <p class="eyebrow">01 / STANDARDQUELLE · EMPFOHLEN</p>
   <div class="media-default-heading">
     <div>
       <h2 id="default-library-title">Ein Netzwerkordner. Alle Bildschirme.</h2>
-      <p>Den gemeinsamen Marketing-Stammordner einmal verbinden. Alle direkten Unterordner erscheinen automatisch und werden per Klick zu einer Playlist.</p>
+      <p>Ein gemeinsamer SMB-Stammordner genügt. Seine direkten Unterordner stehen automatisch als Playlist-Quellen bereit.</p>
     </div>
-    {% if default_source %}<span class="pill {{ 'ok' if default_source.status in ('mounted','already-mounted') else 'off' }}">{{ 'Verbunden' if default_source.status in ('mounted','already-mounted') else 'Hostprüfung erforderlich' }}</span>{% endif %}
+    {% if default_source and default_source.status in ('mounted','already-mounted') %}
+    <span class="media-mount-badge is-confirmed"><span aria-hidden="true">✓</span> Eingehängt · Host bestätigt</span>
+    {% elif default_source and default_source.status in ('blocked','error','conflict') %}
+    <span class="media-mount-badge is-error"><span aria-hidden="true">!</span> Mount-Problem</span>
+    {% elif default_source %}
+    <span class="media-mount-badge is-pending"><span aria-hidden="true">!</span> Mount unbestätigt</span>
+    {% else %}
+    <span class="media-mount-badge is-neutral">Noch nicht eingerichtet</span>
+    {% endif %}
+  </div>
+
+  {% if default_source %}
+  <div class="media-mount-readout" role="status">
+    <div class="media-mount-readout-icon" aria-hidden="true">{{ '✓' if default_source.status in ('mounted','already-mounted') else '!' }}</div>
+    <div>
+      {% if default_source.status in ('mounted','already-mounted') %}
+        <strong>SMB-Mount vom Host bestätigt</strong>
+        <p>Die gespeicherte Freigabe wurde vom Mountdienst erfolgreich geprüft. Die Ordnerübersicht unten zeigt, was der Hub aktuell sehen kann.</p>
+      {% elif default_source.status == 'conflict' %}
+        <strong>Anderer Pfad bereits gemountet</strong>
+        <p>Am vorgesehenen Mountpunkt liegt eine andere Freigabe. Vor einer Pfadänderung den Host und die betroffenen Playlists prüfen.</p>
+      {% elif default_source.status == 'blocked' %}
+        <strong>Server oder Freigabe nicht freigegeben</strong>
+        <p>Der Host-Mountdienst verweigert diese Quelle. Die private Allowlist und den gespeicherten Pfad prüfen.</p>
+      {% elif default_source.status == 'error' %}
+        <strong>SMB-Mount fehlgeschlagen</strong>
+        <p>Die letzte gültige Host-Prüfung meldet einen Fehler. Mountdienst, Erreichbarkeit und Host-Logs kontrollieren.</p>
+      {% else %}
+        <strong>Host-Mount noch ausstehend oder nicht bestätigt</strong>
+        <p>Die Freigabe ist gespeichert; es liegt aber keine gültige aktuelle Host-Bestätigung vor. Das kann auch an einem fehlenden oder veralteten Statusbericht liegen.</p>
+      {% endif %}
+    </div>
+  </div>
+  <dl class="media-source-facts">
+    <div><dt>Gespeicherter SMB-Pfad</dt><dd><code>{{ default_source.unc }}</code></dd></div>
+    <div><dt>Mountpunkt auf dem Host</dt><dd><code>/srv/anthias-sources/default</code></dd></div>
+    <div><dt>Im Hub sichtbar</dt><dd><strong>{{ default_folders|length }} Unterordner</strong></dd></div>
+  </dl>
+  {% if default_source.status not in ('mounted','already-mounted') %}
+  <p class="media-source-next-step"><strong>Nächster Schritt:</strong> Den Host-Mount und <code>anthias-hub-smb-mounts.service</code> prüfen. Pfad speichern oder ändern hängt keine bestehende Freigabe automatisch um.</p>
+  {% endif %}
+  {% else %}
+  <div class="media-empty-setup" role="status">
+    <strong>Ersteinrichtung: SMB-Stammordner hinterlegen</strong>
+    <p>Der Hub speichert den Pfad. Der tatsächliche schreibgeschützte CIFS-Mount wird anschließend separat vom Host-Dienst eingerichtet.</p>
   </div>
   <form method="post" action="{{ url_for('media_sources_save') }}" class="media-default-form">
     <input type="hidden" name="csrf" value="{{ csrf() }}">
     <input type="hidden" name="alias" value="default">
     <label>SMB-Stammverzeichnis
-      <input name="unc" maxlength="650" required
-        placeholder="//10.0.0.5/media$/Marketing/Bildschirme"
-        value="{{ default_source.unc if default_source else '' }}">
+      <input name="unc" maxlength="650" required placeholder="//10.0.0.5/media$/Marketing/Bildschirme">
     </label>
-    <button type="submit" class="primary">{{ 'Stammverzeichnis aktualisieren' if default_source else 'Stammverzeichnis speichern' }}</button>
+    <button type="submit" class="primary">Stammverzeichnis speichern</button>
   </form>
-  {% if not default_source %}
-    <p class="muted" role="status"><strong>Neuinstallation:</strong> Noch kein Stammverzeichnis registriert. Zuerst den einen SMB-Pfad eintragen; anschließend den schreibgeschützten Host-Mount und den Importdienst einrichten. Das Formular selbst mountet nichts.</p>
-  {% elif default_source.status not in ('mounted', 'already-mounted') %}
-    <p class="muted" role="status"><strong>Gespeichert, aber noch nicht vom Host bestätigt.</strong> Den realen Mount unter <code>/srv/anthias-sources/default</code> und die Host-Verifikation prüfen. Bis dahin gelten angezeigte Pfade nicht als funktionierender Import.</p>
   {% endif %}
-  <p class="muted">Ein gespeicherter Pfad ist noch kein Mount. Der Host muss die freigegebene Quelle schreibgeschützt einbinden und bestätigen. Bereits aktive Quellen werden beim Ändern nicht automatisch umgehängt.</p>
+
   <div class="media-folder-summary" role="status">
-    <strong>{{ default_folders|length }} Unterordner im Hub sichtbar</strong>
-    <span>{% if default_folders %}Die Ordner erscheinen beim Erstellen einer Playlist als Auswahl.{% else %}Noch keine Unterordner sichtbar. Prüfe bei Bedarf den SMB-Mount; die Ordnerauswahl erfolgt später in der Bibliothek.{% endif %}</span>
+    <div><strong>{{ default_folders|length }} Unterordner im Hub sichtbar</strong>
+      <span>{% if default_folders %}Direkt unter dem Stammordner erkannt; Auswahl in der Playlist-Bibliothek.{% elif default_source and default_source.status in ('mounted','already-mounted') %}Mount bestätigt, aber noch keine direkten Unterordner gefunden.{% else %}Ohne bestätigten Mount sind hier noch keine verwendbaren Bildschirmordner sichtbar.{% endif %}</span></div>
+    {% if default_source and default_source.status in ('mounted','already-mounted') and default_folders %}
+      <a class="button primary" href="{{ url_for('library_index') }}#new-playlist">Playlist mit Netzwerkordner erstellen →</a>
+    {% else %}
+      <a class="button" href="{{ url_for('library_index') }}#new-playlist">Playlist-Bibliothek öffnen →</a>
+    {% endif %}
   </div>
-  {% if default_source %}{{ retire_control(default_source) }}{% endif %}
+  {% if default_folders %}
+  <details class="media-folder-peek">
+    <summary>Erkannte Unterordner ansehen <span class="media-disclosure-chevron" aria-hidden="true">⌄</span></summary>
+    <ul>
+      {% for folder in default_folders[:8] %}
+      <li><span><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#folder"></use></svg> {{ folder.name }}</span>
+        {% if folder.template %}<a href="{{ url_for('library_detail', template_id=folder.template.id) }}">Playlist ansehen</a>{% else %}<small>Noch keiner Playlist zugeordnet</small>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% if default_folders|length > 8 %}<p class="muted">Weitere {{ default_folders|length - 8 }} Unterordner sind in der Playlist-Bibliothek auswählbar.</p>{% endif %}
+  </details>
+  {% endif %}
+
+  {% if default_source %}
+  <details class="media-source-manage">
+    <summary><span><strong>Gespeicherten Pfad bearbeiten &amp; weitere Aktionen</strong><small>Nur IT · Änderungen am Host bewusst separat durchführen</small></span><span class="media-disclosure-chevron" aria-hidden="true">⌄</span></summary>
+    <div class="media-source-manage-body">
+      <form method="post" action="{{ url_for('media_sources_save') }}" class="media-default-form">
+        <input type="hidden" name="csrf" value="{{ csrf() }}">
+        <input type="hidden" name="alias" value="default">
+        <label>SMB-Stammverzeichnis
+          <input name="unc" maxlength="650" required value="{{ default_source.unc }}">
+        </label>
+        <button type="submit">Stammverzeichnis aktualisieren</button>
+      </form>
+      <p class="muted">Ein geänderter Pfad bedeutet nicht, dass ein bereits vorhandener Mount umgehängt wurde. Laufende Importe und Playlists vorher prüfen.</p>
+      {{ retire_control(default_source) }}
+    </div>
+  </details>
+  {% endif %}
 </section>
 
-<section class="card media-folder-notice" aria-label="Ordnerzuordnung">
-  <p class="eyebrow">02 / PLAYLIST-VERKNÜPFUNG</p>
-  <h2>Bildschirmordner beim Erstellen der Playlist auswählen</h2>
-  <p class="muted">Die einzelnen Unterordner verwaltest du in der Playlist-Bibliothek. Dort werden verfügbare Netzwerkordner automatisch zur Auswahl angeboten, sobald die SMB-Quelle am Host eingebunden ist.</p>
-  <a class="button primary" href="{{ url_for('library_index') }}#new-playlist">Playlist mit Ordner erstellen</a>
+<section class="card media-folder-notice" aria-labelledby="media-next-title">
+  <div><p class="eyebrow">02 / WEITERARBEITEN</p>
+    <h2 id="media-next-title">Inhalte in Playlists verwalten</h2>
+    <p class="muted">Die hier erkannten Ordner wählst du in einer Vorlage aus. Hier konfigurierst du nur die Freigaben, nicht die Bildschirm-Playlist selbst.</p>
+  </div>
+  <a class="button" href="{{ url_for('library_index') }}#new-playlist">Zu den Playlists →</a>
+</section>
+
+<section class="media-source-overview media-existing-sources" aria-labelledby="sources-title">
+  <div class="media-section-heading">
+    <div><p class="eyebrow">03 / BESTEHENDE EINZELQUELLEN</p>
+      <h2 id="sources-title">Weitere Quellen <span class="count">{{ sources|length - (1 if default_source else 0) + unmanaged|length }}</span></h2>
+      <p class="muted">Bereits vorhandene Einzelquellen bleiben sichtbar – auch ohne die Experten-Einstellungen zu öffnen. Neue Quellen sind nur bei Bedarf sinnvoll.</p>
+    </div>
+  </div>
+  {% for source in sources if source.alias != 'default' %}
+  <article class="card media-source-card {{ 'is-confirmed' if source.status in ('mounted','already-mounted') else 'is-attention' }}" aria-label="Einzelquelle {{ source.alias }}">
+    <div class="media-source-top">
+      <div><p class="eyebrow">REGISTRIERTE EINZELQUELLE</p><h3>{{ source.alias }}</h3></div>
+      {% if source.status in ('mounted','already-mounted') %}
+        <span class="media-mount-badge is-confirmed"><span aria-hidden="true">✓</span> Eingehängt · Host bestätigt</span>
+      {% elif source.status == 'conflict' %}
+        <span class="media-mount-badge is-error"><span aria-hidden="true">!</span> Anderer Pfad gemountet</span>
+      {% elif source.status == 'blocked' %}
+        <span class="media-mount-badge is-error"><span aria-hidden="true">!</span> Freigabe blockiert</span>
+      {% elif source.status == 'error' %}
+        <span class="media-mount-badge is-error"><span aria-hidden="true">!</span> Mount fehlgeschlagen</span>
+      {% else %}
+        <span class="media-mount-badge is-pending"><span aria-hidden="true">!</span> Host-Mount noch ausstehend</span>
+      {% endif %}
+    </div>
+    <dl class="media-source-facts">
+      <div><dt>Gespeicherter SMB-Pfad</dt><dd><code>{{ source.unc }}</code></dd></div>
+      <div><dt>Mountpunkt auf dem Host</dt><dd><code>/srv/anthias-sources/{{ source.alias }}</code></dd></div>
+      <div><dt>Playlist-Verwendung</dt><dd>{{ source.dependents|length }} Vorlage(n)</dd></div>
+    </dl>
+    <details class="media-source-manage">
+      <summary><span><strong>Quelle verwalten</strong><small>Pfad bearbeiten oder Registrierung entfernen</small></span><span class="media-disclosure-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="media-source-manage-body">
+        <form method="post" action="{{ url_for('media_sources_save') }}" class="media-source-form">
+          <input type="hidden" name="csrf" value="{{ csrf() }}">
+          <input type="hidden" name="alias" value="{{ source.alias }}">
+          <label>Gespeicherter SMB-Pfad<input name="unc" value="{{ source.unc }}" maxlength="650" required></label>
+          <button type="submit">Änderung speichern</button>
+        </form>
+        <p class="muted">Pfadänderungen ersetzen keinen aktiven Mount; der Host muss den Wechsel separat prüfen.</p>
+        {{ retire_control(source) }}
+      </div>
+    </details>
+  </article>
+  {% endfor %}
+
+  {% for source in unmanaged %}
+  <article class="card media-source-card is-legacy" aria-label="Alter Host-Ordner {{ source.alias }}">
+    <div class="media-source-top">
+      <div><p class="eyebrow">ALTER HOST-MOUNT / NICHT REGISTRIERT</p><h3>{{ source.alias }}</h3></div>
+      {% if source.observed %}
+        <span class="media-mount-badge is-confirmed"><span aria-hidden="true">✓</span> CIFS-Mount erkannt</span>
+      {% else %}
+        <span class="media-mount-badge is-pending"><span aria-hidden="true">?</span> CIFS-Mount nicht bestätigt</span>
+      {% endif %}
+    </div>
+    <dl class="media-source-facts">
+      <div><dt>Mountpunkt auf dem Host</dt><dd><code>/srv/anthias-sources/{{ source.alias }}</code></dd></div>
+      <div><dt>Im Container erkennbar</dt><dd><code>{{ source.observed or 'Ordner vorhanden · CIFS-Quelle nicht eindeutig' }}</code></dd></div>
+      <div><dt>Playlist-Verwendung</dt><dd>{{ source.dependents|length }} Vorlage(n)</dd></div>
+    </dl>
+    <details class="media-source-manage">
+      <summary><span><strong>Alten Ordner prüfen &amp; austragen</strong><small>Kein automatisches Aushängen</small></span><span class="media-disclosure-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="media-source-manage-body">
+        <p class="muted">Bereits am Host eingebundene Ordner werden nur zur Bestandsaufnahme angezeigt. Die CIFS-Quelle kann nur den Freigabestamm enthalten. Vor Änderungen am Host mit <code>findmnt -M /srv/anthias-sources/{{ source.alias }} -o SOURCE,FSTYPE</code> prüfen.</p>
+        <p class="muted">Die Umstellung auf <code>default/Unterordner</code> geschieht nicht automatisch.</p>
+        {{ retire_control(source) }}
+      </div>
+    </details>
+  </article>
+  {% endfor %}
+  {% if not unmanaged and sources|length == (1 if default_source else 0) %}
+    <p class="media-source-empty">Keine zusätzlichen Einzelquellen. Dein Standard-Stammordner genügt normalerweise.</p>
+  {% endif %}
 </section>
 
 <details class="media-advanced-sources">
-<summary><span class="library-action-label"><strong>Weitere SMB-Quellen &amp; Experten-Einstellungen</strong><small>{{ sources|length - (1 if default_source else 0) }} zusätzliche Quelle(n) · nur wenn der Standard-Stammordner nicht genügt</small></span><span class="library-action-chevron" aria-hidden="true">⌄</span></summary>
-<div class="media-advanced-body">
-<section class="card library-panel media-sources-admin">
-  <h2>Neue Medienquelle hinzufügen</h2>
-  <form method="post" action="{{ url_for('media_sources_save') }}" class="media-source-form">
-    <input type="hidden" name="csrf" value="{{ csrf() }}">
-    <label>Ordnerkennung (für die Playlist)<input name="alias" pattern="[a-z0-9][a-z0-9_-]{0,39}" maxlength="40" placeholder="z. B. empfang" required></label>
-    <label>SMB-Pfad<input name="unc" maxlength="650" placeholder="//192.168.1.10/marketing/Bildschirme/Empfang" required></label>
-    <button type="submit" class="primary">Quelle speichern</button>
-  </form>
-  <p class="muted">Ein neuer Server oder eine neue Freigabe benötigt eine Freigabe in der geschützten Host-Allowlist. Ein einzelner Alias kann später wieder ausgetragen werden, sobald keine Playlist ihn mehr verwendet.</p>
-</section>
-<section class="media-source-overview" aria-labelledby="sources-title">
-  <h2 id="sources-title">Zusätzliche Einzelquellen <span class="count">{{ sources|length - (1 if default_source else 0) }}</span></h2>
-  {% for source in sources if source.alias != 'default' %}
-  <article class="card media-source-card">
-    <div class="media-source-top">
-      <h3>{{ source.alias }}</h3>
-      <span class="pill {{ 'ok' if source.status in ('mounted', 'already-mounted') else 'off' }}">
-        {% if source.status in ('mounted','already-mounted') %}Mount vom Host bestätigt
-        {% elif source.status == 'conflict' %}Anderer Pfad bereits gemountet
-        {% elif source.status == 'blocked' %}Server/Freigabe nicht freigegeben
-        {% elif source.status == 'error' %}Mount fehlgeschlagen
-        {% else %}Host-Mount noch ausstehend{% endif %}
-      </span>
-    </div>
-    <form method="post" action="{{ url_for('media_sources_save') }}" class="media-source-form">
-      <input type="hidden" name="csrf" value="{{ csrf() }}">
-      <input type="hidden" name="alias" value="{{ source.alias }}">
-      <label>Gespeicherter SMB-Pfad<input name="unc" value="{{ source.unc }}" maxlength="650" required></label>
-      <button type="submit">Änderung speichern</button>
-    </form>
-    <p class="muted">Eine Pfadänderung ersetzt keinen aktiven Mount. Der Host muss den Wechsel separat prüfen; Pi-Inhalte bleiben unverändert.</p>
-    {{ retire_control(source) }}
-  </article>
-  {% else %}
-  <p class="card library-empty">Keine zusätzlichen Einzelquellen. Die Standardbibliothek genügt normalerweise.</p>
-  {% endfor %}
-</section>
-{% if retired %}
-<section class="media-source-overview media-retired-list" aria-labelledby="retired-title">
-  <h2 id="retired-title">Ausgetragene Quellen <span class="count">{{ retired|length }}</span></h2>
-  <p class="muted">Diese Aliase sind im Hub deaktiviert und werden nicht mehr als neue Playlist-Quelle angeboten. <strong>Ein vorhandener CIFS-Mount bleibt auf dem Host bestehen, bis IT ihn separat aushängt.</strong></p>
-  <ul>{% for alias in retired %}<li><code>{{ alias }}</code> · Host prüfen: <code>findmnt -M /srv/anthias-sources/{{ alias }}</code></li>{% endfor %}</ul>
-  <p class="muted">Bei Bedarf lässt sich ein Alias mit dem ursprünglichen Pfad erneut registrieren; zuvor immer den Host-Mount und die tatsächliche Freigabe prüfen.</p>
-</section>
-{% endif %}
-{% if unmanaged %}
-<section class="media-source-overview" aria-labelledby="unmanaged-title">
-  <h2 id="unmanaged-title">Bereits am Host eingebundene Ordner</h2>
-  <p class="muted">Diese Aliase sind bereits am Host vorhanden, aber nicht in der neuen Quellenverwaltung registriert. Sie können von älteren Playlists noch verwendet werden. <strong>Vor dem Entfernen Zuordnungen und importierte Inhalte prüfen</strong> – die Umstellung auf <code>default/Unterordner</code> geschieht nicht automatisch.</p>
-  {% for source in unmanaged %}
-  <article class="card media-source-card">
-    <h3>{{ source.alias }}</h3>
-    <p class="muted">Erkannte CIFS-Quelle: <code>{{ source.observed if source.observed else 'Nicht eindeutig aus dem Container auslesbar' }}</code></p>
-    <p class="muted">Der angezeigte CIFS-Wert kann nur den Freigabestamm statt des vollständigen Unterordners enthalten. Für die genaue Zuordnung auf dem Host <code>findmnt -M /srv/anthias-sources/{{ source.alias }} -o SOURCE,FSTYPE</code> prüfen.</p>
-    <p class="muted">Auch einen früher manuell eingebundenen Alias kannst du aus der Hub-Auswahl ausblenden. Das echte Aushängen erfolgt weiterhin getrennt auf dem Host.</p>
-    {{ retire_control(source) }}
-  </article>
-  {% endfor %}
-</section>
-{% endif %}
-</div>
+  <summary><span class="library-action-label"><strong>Weitere SMB-Quelle hinzufügen</strong><small>Erweitert · nur wenn der gemeinsame Stammordner nicht genügt</small></span><span class="library-action-chevron" aria-hidden="true">⌄</span></summary>
+  <div class="media-advanced-body">
+    <section class="card library-panel media-sources-admin">
+      <h2>Neue Medienquelle hinzufügen</h2>
+      <form method="post" action="{{ url_for('media_sources_save') }}" class="media-source-form">
+        <input type="hidden" name="csrf" value="{{ csrf() }}">
+        <label>Ordnerkennung (Playlist-Alias)<input name="alias" pattern="[a-z0-9][a-z0-9_-]{0,39}" maxlength="40" placeholder="z. B. empfang" required></label>
+        <label>SMB-Pfad<input name="unc" maxlength="650" placeholder="//192.168.1.10/marketing/Bildschirme/Empfang" required></label>
+        <button type="submit">Quelle speichern</button>
+      </form>
+      <p class="muted">Zusätzliche Server und Freigaben brauchen eine Freigabe in der geschützten Host-Allowlist. Speichern allein mountet nicht. Bereits vorhandene Quellen stehen oberhalb.</p>
+    </section>
+  </div>
 </details>
+
+{% if retired %}
+<details class="media-retired-disclosure">
+  <summary><span><strong>Ausgetragene Quellen <span class="count">{{ retired|length }}</span></strong><small>Im Hub nicht mehr wählbar · Host-Mounts gegebenenfalls noch vorhanden</small></span><span class="media-disclosure-chevron" aria-hidden="true">⌄</span></summary>
+  <div class="media-retired-list">
+    <p class="muted">Diese Aliase sind im Hub deaktiviert. <strong>Ein CIFS-Mount bleibt auf dem Host bestehen, bis IT ihn separat aushängt.</strong></p>
+    <ul>{% for alias in retired %}<li><code>{{ alias }}</code> · Host prüfen: <code>findmnt -M /srv/anthias-sources/{{ alias }}</code></li>{% endfor %}</ul>
+    <p class="muted">Bei Bedarf kannst du den Alias mit seinem ursprünglichen SMB-Pfad erneut registrieren. Zuerst den echten Host-Mount kontrollieren.</p>
+  </div>
+</details>
+{% endif %}
 {% endblock %}
