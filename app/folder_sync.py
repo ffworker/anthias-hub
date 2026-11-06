@@ -60,7 +60,7 @@ def sync_template(store, template_id, root=None):
         # Refuse changing files; don't publish half-written media.
         with entry.open('rb') as stream:
             import tempfile
-            with tempfile.TemporaryFile() as stage:
+            with tempfile.TemporaryFile(dir=store._directory(template_id)) as stage:
                 digest = hashlib.sha256()
                 while True:
                     chunk = stream.read(_CHUNK)
