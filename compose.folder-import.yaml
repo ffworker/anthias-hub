@@ -1,0 +1,23 @@
+# Optional read-only folder import worker. Combine with existing production
+# compose.cd.yaml AND the site's existing override; do not replace them.
+# MEDIA_SOURCE_HOST_PATH is a pre-mounted directory with named subfolders
+# such as bistro/, empfang/. Mount SMB/NFS on the Docker host, not in this app.
+services:
+  anthias-folder-import:
+    image: ${ANTHIAS_HUB_IMAGE:-ghcr.io/ffworker/anthias-hub:latest}
+    env_file: .env
+    command: ["python", "-m", "app.folder_sync"]
+    user: "${HUB_UID:-1000}:${HUB_GID:-1000}"
+    environment:
+      LIBRARY_DIR: /data/library
+      MEDIA_SOURCE_ROOT: /sources
+      FOLDER_SYNC_INTERVAL: "${FOLDER_SYNC_INTERVAL:-300}"
+    volumes:
+      - ./data:/data
+      - ${MEDIA_SOURCE_HOST_PATH:?Set mounted read-only media root}:/sources:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
