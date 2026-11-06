@@ -1,6 +1,7 @@
 """IT SMB source registry, security boundaries, mount health contract."""
 import hashlib
 import json
+import time
 
 import pytest
 
@@ -54,7 +55,7 @@ def test_mount_status_must_match_current_saved_path(tmp_path):
     status = tmp_path / 'mounts.json'
     unc = '//10.12.0.4/files$/Current'
     save_source('bistro', unc, path=registry)
-    status.write_text(json.dumps({'sources': {
+    status.write_text(json.dumps({'checked_at': time.time(), 'sources': {
         'bistro': {'state': 'already-mounted',
                    'fingerprint': hashlib.sha256(unc.encode()).hexdigest()}
     }}))
