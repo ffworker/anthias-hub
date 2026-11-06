@@ -144,3 +144,26 @@ def mount_statuses(path=None):
         return result
     except (OSError, ValueError, TypeError, AttributeError):
         return {}
+
+
+def observed_mount_source(alias, *, mountinfo='/proc/self/mountinfo'):
+    """Best-effort display of pre-existing mounts; may expose only the share root.
+
+    Not used for authorization or mounting. Never assume mountinfo includes the
+    complete prefix path when CIFS was mounted with a prefixpath option.
+    """
+    validate_alias(alias)
+    try:
+        for row in Path(mountinfo).read_text(encoding='utf-8').splitlines():
+            left, separator, right = row.partition(' - ')
+            if not separator:
+                continue
+            columns, fs = left.split(), right.split()
+            if len(columns) < 5 or len(fs) < 2:
+                continue
+            mountpoint = columns[4].replace(r'\040', ' ')
+            if mountpoint == '/sources/' + alias and fs[0] == 'cifs':
+                return fs[1].replace(r'\040', ' ')
+    except OSError:
+        pass
+    return None
