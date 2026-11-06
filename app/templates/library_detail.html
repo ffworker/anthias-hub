@@ -10,10 +10,7 @@
 <section class="folder-workflow" aria-label="Ordnergesteuerte Playlist">
   <div class="folder-workflow-title"><strong>Automatisch aus dem Netzwerkordner</strong><span class="pill">Quelle: {{ template.folder_source }}</span></div>
   <p>Marketing legt Bilder und Videos wie gewohnt im Netzwerkordner ab. Hier werden <strong>Anzeigedauer</strong> eingestellt. Videos laufen vollständig.</p>
-  <div class="folder-workflow-steps" aria-label="Ablauf">
-    <span>1 · Datei im Netzwerkordner</span><span>2 · Hub übernimmt Medium</span><span>3 · Anthias zeigt es am Zielbildschirm</span>
-  </div>
-  <p class="muted">Der automatische Geräteabgleich wird separat von IT aktiviert. Änderungen auf dem Pi sind erst nach dessen erfolgreicher Synchronisation sichtbar.</p>
+  <p class="muted">Bildzeiten und Wiedergabereihenfolge hier festlegen. Auf ausschließlich vom Hub verwalteten Pis übernimmt der nächste erfolgreiche Abgleich die Änderungen.</p>
   <div class="folder-workflow-status" role="status">
     {% if folder_sync_status.state == 'ok' %}
     <strong>Letzter Import: erfolgreich</strong>
