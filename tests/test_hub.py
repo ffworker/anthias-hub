@@ -2188,6 +2188,52 @@ def test_it_can_retire_unused_smb_source_but_never_mounted_files(env, monkeypatc
     assert available_sources() == ['default/Bistro']
 
 
+
+def test_legacy_unmanaged_mount_can_be_hidden_without_unmounting(env, monkeypatch):
+    app, client, tmp = env
+    from app.folder_sync import available_sources, source_directory
+    from app.media_sources import retired_aliases, load_sources
+    from app.library import Library, LibraryError
+    root = Path(tmp) / 'sources'
+    folder = root / 'oldscreen'
+    folder.mkdir(parents=True)
+    marker = folder / 'keep.txt'
+    marker.write_text('present')
+    reg = Path(tmp) / 'sources.json'
+    app.config['MEDIA_SOURCES_FILE'] = str(reg)
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    app.config['MEDIA_MOUNT_STATUS_FILE'] = str(Path(tmp) / 'status.json')
+    monkeypatch.setenv('MEDIA_SOURCES_FILE', str(reg))
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    assert available_sources() == ['oldscreen']
+    assert load_sources(reg) == []
+    store = Library(app.config['LIBRARY_DIR'])
+    bound = store.create('Legacy')
+    store.set_folder_source(bound['id'], 'oldscreen')
+    login(client, 'it')
+    page = client.get('/media-sources').get_data(as_text=True)
+    assert 'Bereits am Host eingebundene Ordner' in page
+    assert 'Entfernen gesperrt' in page
+    action = {'csrf': token(client), 'alias': 'oldscreen',
+              'confirm': 'oldscreen', 'ack': 'yes'}
+    client.post('/media-sources/remove', data=action)
+    assert retired_aliases(reg) == []
+
+    store.set_folder_source(bound['id'], '')
+    assert client.post('/media-sources/remove', data=action).status_code == 302
+    assert retired_aliases(reg) == ['oldscreen']
+    assert available_sources() == []
+    with pytest.raises(LibraryError, match='ausgetragen'):
+        source_directory('oldscreen')
+    assert marker.read_text() == 'present'
+
+    # Unknown aliases must not be accepted as arbitrary tombstones.
+    client.post('/media-sources/remove', data={
+        **action, 'alias': 'invisible', 'confirm': 'invisible'})
+    assert retired_aliases(reg) == ['oldscreen']
+
+
+
 def test_only_it_owner_may_retire_source_and_csrf_is_required(env):
     app, client, tmp = env
     from app.media_sources import load_sources, save_source
