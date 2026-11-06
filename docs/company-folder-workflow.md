@@ -25,9 +25,10 @@ change devices, network shares or auto-publication targets. Viewer is read-only.
 2. IT ensures both the Hub web container and the optional importer see that
    directory at `/sources` (read-only).
 3. IT chooses an available network folder while creating a playlist in the
-   library and assigns the target Pis. Alternatively, for one screen, use
-   **Screen → Playlist → Add Content → Network Folder** to bind an existing
-   share without uploading media. This does not enable automatic publishing.
+   library and assigns the target Pis. Alternatively, under **Bildschirm →
+   Playlist → Inhalt hinzufügen → Netzwerkordner**, IT explicitly chooses:
+   **one-time import** (up to 20 files, append-only to Pi) or **automatic
+   binding** (no immediate upload; server-side publisher remains disabled).
 4. Marketing continues saving images and videos in the share. The importer
    scans every 300 seconds by default and shows a heartbeat in the template.
 5. Marketing opens the **same template**, edits each image's duration, and
@@ -57,8 +58,10 @@ Do not duplicate the RSS service inside Anthias Hub.
   **Deleted files are not yet removed automatically**: implement conservative
   missing-file reconciliation only after repeated verified scans and test-pi
   acceptance. Do not mistake this prototype for a strict mirror.
-- Order changes in Hub library are **not** automatically applied to Pi
-  playlists. The folder-focused editor therefore does not promise reorder.
+- Order changes in the Hub library are applied **only** when the target Pi
+  contains exclusively assets tracked by that Hub template. Mixed/manual
+  playlists are never globally reordered because Anthias' API order call
+  affects the whole player playlist.
 - Startup default: `FOLDER_AUTO_PUBLISH=0`. A saved folder-to-device mapping
   alone must not cause Pi writes.
 - Worker heartbeat at `/data/folder-sync-status.json` shows last import health
@@ -79,7 +82,7 @@ Do not duplicate the RSS service inside Anthias Hub.
 - [ ] SMB outage does not wipe active content.
 - [ ] Missing-file handling designed and tested before promoting to production.
 - [ ] Backs up and restores Hub data; rollback to original Bistro boot media tested.
-- [ ] Only then migrate Bistro from Binary Emotions to Anthias.
+- [ ] For each remaining legacy screen, confirm the new Anthias player and playlist before switching devices.
 
 ## Remaining development priorities
 
