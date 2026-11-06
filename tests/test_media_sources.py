@@ -62,7 +62,7 @@ def test_mount_status_must_match_current_saved_path(tmp_path):
     assert mount_statuses(status, registry) == {'bistro': 'already-mounted'}
     save_source('bistro', '//10.12.0.4/files$/Next', path=registry)
     assert mount_statuses(status, registry) == {'bistro': 'pending'}
-    status.write_text(json.dumps({'sources': {
+    status.write_text(json.dumps({'checked_at': time.time(), 'sources': {
         'bistro': {'state': 'already-mounted', 'fingerprint': 'invalid'}
     }}))
     assert mount_statuses(status, registry) == {'bistro': 'pending'}
@@ -82,7 +82,7 @@ def test_folder_guard_denies_edited_but_unverified_smb_path(tmp_path, monkeypatc
     monkeypatch.setenv('FOLDER_REQUIRE_VERIFIED', '1')
     with pytest.raises(LibraryError, match='Host bestätigt'):
         source_directory('bistro')
-    state.write_text(json.dumps({'sources': {
+    state.write_text(json.dumps({'checked_at': time.time(), 'sources': {
         'bistro': {'state': 'mounted',
                    'fingerprint': hashlib.sha256('//10.12.0.4/files$/One'.encode()).hexdigest()}
     }}))
