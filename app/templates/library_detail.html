@@ -14,6 +14,21 @@
     <span>1 · Datei im Netzwerkordner</span><span>2 · Hub übernimmt Medium</span><span>3 · Anthias zeigt es am Zielbildschirm</span>
   </div>
   <p class="muted">Der automatische Geräteabgleich wird separat von IT aktiviert. Änderungen auf dem Pi sind erst nach dessen erfolgreicher Synchronisation sichtbar.</p>
+  <div class="folder-workflow-status" role="status">
+    {% if folder_sync_status.state == 'ok' %}
+    <strong>Letzter Import: erfolgreich</strong>
+    {% elif folder_sync_status.state == 'error' %}
+    <strong>Import prüfen – letzter Abgleich fehlerhaft</strong>
+    {% elif folder_sync_status.state == 'stale' %}
+    <strong>Importdienst hat sich länger nicht gemeldet</strong>
+    {% else %}
+    <strong>Noch kein Importlauf gemeldet</strong>
+    {% endif %}
+    {% if folder_sync_status.checked_at %}<span>Stand: {{ folder_sync_status.checked_at }}</span>{% endif %}
+    {% if logged_user.role in ('owner','it') %}
+      <span>Automatische Pi-Veröffentlichung: {{ 'serverseitig freigeschaltet' if folder_sync_status.auto_publish else 'serverseitig gesperrt' }}</span>
+    {% endif %}
+  </div>
 </section>
 {% endif %}
 
