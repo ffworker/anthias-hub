@@ -13,13 +13,13 @@ def test_product_theme_loads_last_and_controls_are_real():
     assert "filename='product-ui.css'" not in base
     assert "filename='workflow-ui.css'" not in base
     assert "filename='ui-refinements.css'" not in base
-    assert 'name="anthias-hub-ui" content="ui-20261106-03"' in base
+    assert 'name="anthias-hub-ui" content="ui-20261106-04"' in base
     assert base.index('{% block extra_head %}') < base.index("filename='ui-system.css'")
     assert 'product-theme.js' in base
     assert 'data-product-theme-toggle' in base
     assert 'aria-pressed="false"' in base
     assert 'class="skip-link"' in base
-    assert base.index('Ordner &amp; Quellen') < base.index('Playlists') < base.index('Bildschirme</a>')
+    assert base.index('Bildschirme</a>') < base.index('Playlists</a>') < base.index('Ordner &amp; Quellen</a>')
     assert 'logged_user.role in (\'it\', \'owner\')' in base
     sheet = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
     assert 'html[data-theme="dark"]' in sheet
@@ -39,7 +39,8 @@ def test_default_library_is_primary_in_all_three_core_views():
     folders = (TEMPLATES / 'media_sources.html').read_text(encoding='utf-8')
     detail = (TEMPLATES / 'library_detail.html').read_text(encoding='utf-8')
     assert dashboard.index('hub-workflow-cards') < dashboard.index('fleet-summary')
-    assert library.index('library-source-feature') < library.index('library-grid')
+    assert 'library-source-feature' not in library  # no network hero before the playlists
+    assert library.index('library-workflow-nav') < library.index('library-grid')
     assert folders.index('media-default-panel') < folders.index('media-sources-admin">\n  <h2>Neue Medienquelle')
     assert 'media-folder-notice' in folders
     assert 'library_index' in folders
@@ -62,7 +63,7 @@ def test_playlist_workflows_have_explicit_categories_and_theme_aware_contrast():
     sheet = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
 
     assert base.index('{% block extra_head %}') < base.index('ui-system.css')
-    for title in ('Inhalte / Netzwerkordner', 'ZIP-Import &amp; Export', 'Playlist anwenden'):
+    for title in ('Vorlagen ansehen', 'Neue Playlist', 'ZIP-Backup'):
         assert title in library
     assert 'id="backup-zip"' in library
     assert 'Backup-ZIP exportieren' in detail

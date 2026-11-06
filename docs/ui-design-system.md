@@ -1,14 +1,14 @@
 # Anthias Hub – UI-Designsystem
 
-Stand: November 2026 · UI-Kennung: `ui-20261106-03`
+Stand: November 2026 · UI-Kennung: `ui-20261106-04`
 
 ## Produkt und Arbeitsabläufe
 
 Die Oberfläche folgt einer ruhigen **Paper + Ink**-Gestaltung mit Korall-Akzenten. Das Ziel ist eine lesbare, konsistente Bedienung statt immer neuer Stilvarianten.
 
-- **Ordner & Quellen:** IT verbindet freigegebene, schreibgeschützte Netzwerkquellen und prüft den Mount-Status.
-- **Playlists:** Manuelle Hub-Vorlagen und ordnergebundene Vorlagen haben sichtbar unterschiedliche Herkunft; Bildzeiten und Reihenfolge werden hier bearbeitet.
-- **Bildschirme:** Die tatsächliche Pi-Playlist, Gerätestatus, Zeitplanung und manuelle Uploads sind je Gerät erreichbar.
+- **Bildschirme (Standard nach Anmeldung):** Der Login führt nach `/` zur Bildschirmübersicht. Hier wählt man einen Pi, bearbeitet dessen aktuelle Playlist, prüft Zeitplanung oder Status und öffnet die einheitlichen Aktionen „Steuern“ und „Verwalten“.
+- **Playlists:** Die gespeicherten Vorlagen sind eigenständig. Innerhalb einer Vorlage ist die Arbeitsreihenfolge **01 Inhalte & Sortierung → 02 Uploads / Quellen → 03 Auf Bildschirm anwenden**. Datei, ZIP, Webseite, Netzwerkquelle und Erstinstallation nutzen konsistente, deutlich beschriftete Aufklappbereiche.
+- **Ordner & Quellen (nur IT):** Hier werden freigegebene, schreibgeschützte SMB-Quellen administriert. Es ist kein allgemeiner Einstieg und keine Voraussetzung für manuell gepflegte Playlists.
 - **Drei klar getrennte Funktionen:** Dateien oder Netzwerkordner *einmalig* hochladen, Medien-ZIP vs. Hub-Backup-ZIP importieren/exportieren, gespeicherte Vorlagen kontrolliert anwenden/ergänzen.
 
 **Speichern ist nicht automatisch Veröffentlichen.** Eine gespeicherte Netzwerkquelle aktiviert niemals selbständig den Hintergrund-Publisher; `FOLDER_AUTO_PUBLISH` bleibt serverseitig standardmäßig deaktiviert.
@@ -45,7 +45,7 @@ Die früheren Dateien `ui-refinements.css`, `product-ui.css` und `workflow-ui.cs
 Die Seite meldet die aktuelle Designversion direkt im HTML:
 
 ```html
-<meta name="anthias-hub-ui" content="ui-20261106-03">
+<meta name="anthias-hub-ui" content="ui-20261106-04">
 ```
 
 Auf der Hub-VM nach **Merge, erfolgreichem GHCR-Publish und Updater-Ausführung** prüfen:

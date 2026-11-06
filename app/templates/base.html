@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="anthias-hub-ui" content="ui-20261106-03">
+  <meta name="anthias-hub-ui" content="ui-20261106-04">
   <title>{% block title %}Anthias Hub{% endblock %}</title>
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='modern.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='workspace.css') }}">
   {% block extra_head %}{% endblock %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='ui-system.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='ui-system.css', v='ui-20261106-04') }}">
   <script src="{{ url_for('static', filename='product-theme.js') }}"></script>
 </head>
 <body>
@@ -20,11 +20,11 @@
     <a class="brand site-brand" href="{{ url_for('dashboard') }}" aria-label="Anthias Hub – zur Bildschirmübersicht"><span class="brand-symbol" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#mark"></use></svg></span><span>Anthias <strong>Hub</strong></span></a>
     {% if logged_user %}
     <nav class="site-nav" aria-label="Hauptnavigation">
-      {% if logged_user.role in ('it', 'owner') %}
-      <a class="site-nav-link site-nav-primary {{ 'is-active' if request.path.startswith('/media-sources') else '' }}" {% if request.path.startswith('/media-sources') %}aria-current="page"{% endif %} href="{{ url_for('media_sources_page') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#folder"></use></svg> Ordner &amp; Quellen</a>
-      {% endif %}
+      <a class="site-nav-link site-nav-primary {{ 'is-active' if request.path == '/' or request.path.startswith('/devices/') else '' }}" {% if request.path == '/' or request.path.startswith('/devices/') %}aria-current="page"{% endif %} href="{{ url_for('dashboard') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg> Bildschirme</a>
       <a class="site-nav-link {{ 'is-active' if request.path.startswith('/library') else '' }}" {% if request.path.startswith('/library') %}aria-current="page"{% endif %} href="{{ url_for('library_index') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Playlists</a>
-      <a class="site-nav-link {{ 'is-active' if request.path == '/' or request.path.startswith('/devices/') else '' }}" {% if request.path == '/' or request.path.startswith('/devices/') %}aria-current="page"{% endif %} href="{{ url_for('dashboard') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg> Bildschirme</a>
+      {% if logged_user.role in ('it', 'owner') %}
+      <a class="site-nav-link {{ 'is-active' if request.path.startswith('/media-sources') else '' }}" {% if request.path.startswith('/media-sources') %}aria-current="page"{% endif %} href="{{ url_for('media_sources_page') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#folder"></use></svg> Ordner &amp; Quellen</a>
+      {% endif %}
     </nav>
     <div class="user site-user">
       <button type="button" class="product-theme-toggle" data-product-theme-toggle aria-label="Darstellung zwischen hell und dunkel wechseln" aria-pressed="false">Dunkel</button>

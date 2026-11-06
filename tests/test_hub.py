@@ -147,7 +147,7 @@ def test_nordlicht_navigation_and_playlist_forms(env):
     login(client, 'marketing')
     page = client.get('/devices/lab').data.decode('utf-8')
     assert page.count('data-theme-choice=') == 0
-    assert 'class="site-nav-link is-active"' in page
+    assert 'class="site-nav-link site-nav-primary is-active"' in page
     assert 'aria-current="page"' in page
     assert 'data-library-template' not in page
     assert 'data-add-mode="website"' in page and 'data-add-mode="media"' in page
@@ -173,7 +173,7 @@ def test_ui_refresh_library_and_dashboard_role_safety(env):
     login(client, 'marketing')
     library = client.get('/library').data.decode('utf-8')
     assert 'data-bulk-upload' not in library  # imports happen inside templates
-    assert 'Playlist erstellen' in library and 'Vorlagenbackup wiederherstellen' in library
+    assert 'Neue Playlist erstellen' in library and 'Vorlagen-Backup importieren' in library
     assert 'aria-current="page"' in library
     detail = client.get(f"/library/{t['id']}").data.decode('utf-8')
     assert 'library-item-options' in detail
@@ -793,7 +793,7 @@ def test_library_landing_keeps_backup_separate_and_uploads_inside_templates(env)
     page = client.get('/library').data.decode('utf-8')
     assert 'Playlist erstellen' in page
     assert 'manifest.json' in page
-    assert 'Vorlagenbackup wiederherstellen' in page
+    assert 'Vorlagen-Backup importieren' in page
     assert 'data-bulk-upload' not in page
     assert '/library/media-import' not in page
     assert '/library/import' in page
@@ -933,8 +933,8 @@ def test_library_publish_action_is_above_media_list_and_not_hidden_in_sidebar(en
     page = client.get(f"/library/{template['id']}").data.decode('utf-8')
     assert 'library-publish-hero' in page
     assert 'id="library-publish-heading"' in page
-    assert page.index('id="library-publish-heading"') < page.index('id="items-title"')
-    assert page.index('Vorlage zur Playlist hinzufügen') < page.index('Bild oder Video speichern')
+    assert page.index('id="items-title"') < page.index('id="library-publish-heading"')
+    assert page.index('Inhalte und Wiedergabereihenfolge') < page.index('Vorlage zur Playlist hinzufügen')
     assert page.count(f'/library/{template["id"]}/append-to-device') == 1
     assert 'name="device" required' in page
     assert 'name="ack" value="yes" required' in page
@@ -1193,16 +1193,16 @@ def test_library_template_shows_media_first_and_website_only_on_request(env):
     collection = library.create('Bistro-Archiv')
     login(client, 'marketing')
     page = client.get('/library/' + collection['id']).data.decode('utf-8')
-    assert page.index('Bild oder Video speichern') < page.index('Medien-Sammelimport')
-    assert page.index('Medien-Sammelimport') < page.index('Optional: Webseite verlinken')
-    assert re.search(r'<details class="library-website-details"\s*>', page)
-    assert 'library-website-details" open' not in page
+    assert page.index('Einzeldatei hinzufügen') < page.index('ZIP / mehrere Dateien importieren')
+    assert page.index('ZIP / mehrere Dateien importieren') < page.index('Webseite / RSS hinzufügen')
+    assert re.search(r'<details class="card library-panel library-website-secondary library-website-details library-action-disclosure"\s*>', page)
+    assert 'library-website-details library-action-disclosure" open' not in page
     assert 'library_add_url' not in page  # internal endpoint name is not exposed
     assert '/url' in page  # existing URL submission stays available
     assert 'RSS2Slideshow-Anzeige' in page
     assert 'data-upload-form="library"' in page
     assert 'data-bulk-upload' in page
-    assert page.index('Vorlage zur Playlist hinzufügen') < page.index('Bild oder Video speichern')
+    assert page.index('Inhalte und Wiedergabereihenfolge') < page.index('Vorlage zur Playlist hinzufügen')
 
 
 def test_library_optional_website_submission_and_role_guards_are_unchanged(env):
@@ -1983,13 +1983,13 @@ def test_folder_auto_targets_require_it_and_csrf(env, monkeypatch):
     assert marketing_client.post(f'/library/{ident}/auto-devices',
                                  data={'csrf': token(marketing_client),
                                        'devices': 'lab'}).status_code == 403
-    assert 'Playlist mit Netzwerkordner verbinden (IT)' not in (
+    assert 'Netzwerkquelle &amp; Zielbildschirme' not in (
         marketing_client.get(f'/library/{ident}').get_data(as_text=True))
 
     it_client = app.test_client()
     login(it_client, 'it')
     detail = it_client.get(f'/library/{ident}').get_data(as_text=True)
-    assert 'Playlist mit Netzwerkordner verbinden (IT)' in detail
+    assert 'Netzwerkquelle &amp; Zielbildschirme' in detail
     assert 'name="devices"' in detail
     assert it_client.post(f'/library/{ident}/folder-source',
                           data={'folder_source': 'bistro'}).status_code == 400
@@ -2050,7 +2050,7 @@ def test_folder_backed_marketing_view_is_duration_first_and_it_has_setup(env, mo
 
     login(client, 'it')
     it = client.get(f'/library/{ident}').get_data(as_text=True)
-    assert 'RSS2Slideshow / Webseite zur Playlist hinzufügen' in it
+    assert 'Webseite / RSS hinzufügen' in it
     assert 'name="folder_source"' in it
     assert 'value="bistro" selected' in it
     assert 'value="empfang"' in it
@@ -2142,7 +2142,8 @@ def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monke
 
     login(client, 'it')
     dash = client.get('/').get_data(as_text=True)
-    assert 'Netzwerkordner &amp; Playlists zuweisen' in dash
+    assert 'Zu meinen Bildschirmen' in dash
+    assert 'Ordner &amp; Quellen verwalten' in dash
     assert 'Ordner &amp; Quellen' in dash
     assert 'ui-system.css' in dash
     assert 'data-product-theme-toggle' in dash
@@ -2358,7 +2359,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
     response = client.get('/login')
     assert response.status_code == 200
     text = response.get_data(as_text=True)
-    assert 'content="ui-20261106-03"' in text
+    assert 'content="ui-20261106-04"' in text
     assert 'ui-system.css' in text
     assert all(f"filename='{name}'" not in text for name in (
         'product-ui.css', 'ui-refinements.css', 'workflow-ui.css'))
@@ -2370,8 +2371,55 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
         result = client.get(path)
         assert result.status_code == 200, path
         text = result.get_data(as_text=True)
-        assert 'content="ui-20261106-03"' in text, path
+        assert 'content="ui-20261106-04"' in text, path
         assert text.count('ui-system.css') == 1, path
         assert 'data-product-theme-toggle' in text, path
         assert 'class="site-main"' not in text or 'id="hauptinhalt"' in text
     assert client.get('/static/ui-system.css').status_code == 200
+
+
+def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env):
+    app, client, tmp = env
+    from app.library import Library
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    tpl = Library(app.config['LIBRARY_DIR']).create('Testvorlage')
+
+    first = client.get('/login')
+    assert first.status_code == 200
+    logged = client.post('/login', data={
+        'csrf': token(client), 'username': 'it', 'password': 'safe-password-123'
+    })
+    assert logged.status_code == 302
+    assert logged.location == '/'  # dashboard/screens, never SMB admin
+
+    page = client.get('/').get_data(as_text=True)
+    assert page.index('Bildschirme</a>') < page.index('Playlists</a>') < page.index('Ordner &amp; Quellen</a>')
+    assert page.index('01 / BILDSCHIRME') < page.index('02 / PLAYLISTS') < page.index('03 / IT')
+    assert 'Zu meinen Bildschirmen' in page
+    assert 'href="#fleet-devices"' in page
+    assert 'ui-system.css?v=ui-20261106-04' in page
+
+    libpage = client.get('/library').get_data(as_text=True)
+    assert libpage.index('01 · Vorlagen ansehen') < libpage.index('02 · Neue Playlist') < libpage.index('03 · ZIP-Backup')
+    assert libpage.count('library-action-disclosure') >= 2
+    assert 'id="new-playlist" open' in libpage
+    assert 'id="backup-zip" open' not in libpage
+
+    detail = client.get('/library/' + tpl['id']).get_data(as_text=True)
+    order = ['id="items-title"', 'Netzwerkquelle &amp; Zielbildschirme',
+             'Einzeldatei hinzufügen', 'ZIP / mehrere Dateien importieren',
+             'Webseite / RSS hinzufügen', 'id="playlist-anwenden"']
+    indices = [detail.index(x) for x in order]
+    assert indices == sorted(indices)
+    assert 'Keine Netzwerkquelle · optional mit Ordner verbinden (IT)' in detail
+    assert 'class="library-action-chevron"' in detail
+    assert 'id="network-settings" open' not in detail
+    assert FakeAnthias.changes == []
+
+    client.post('/logout', data={'csrf': token(client)})
+    login(client, 'marketing')
+    marketing = client.get('/library/' + tpl['id']).get_data(as_text=True)
+    assert 'id="network-settings"' not in marketing
+    assert 'Einzeldatei hinzufügen' in marketing
+    assert 'ZIP / mehrere Dateien importieren' in marketing
+    assert 'Vorlage zur Playlist hinzufügen' in marketing

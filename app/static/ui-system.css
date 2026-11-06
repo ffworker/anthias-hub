@@ -1,4 +1,4 @@
-/* Anthias Hub — unified UI skin (version: ui-20261106-03).
+/* Anthias Hub — unified UI skin (version: ui-20261106-04).
    This combines the previously separate refinements, product and workflow
    layers in one ordered cascade. Do not add new late UI stylesheets. */
 /* -------- app/static/ui-refinements.css: imported into canonical UI system -------- */
@@ -1417,4 +1417,259 @@ html[data-theme="dark"] .schedule-workspace input[type=time]{color-scheme:dark}
 }
 .fleet-workspace .fleet-storage-panel :is(.storage-panel-note,.storage-panel-message){
   color:var(--ui-muted)
+}
+
+
+/* Screens-first UI: genuine post-login landing, not the IT source setup. */
+.site-nav .site-nav-primary{color:#fff;font-weight:750}
+.fleet-workspace .hub-workflow-screens-first{
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));
+  align-items:stretch;gap:14px;
+}
+.fleet-workspace .hub-workflow-screens-first .hub-workflow-card{
+  min-width:0;display:flex;flex-direction:column;gap:16px;
+  padding:21px 23px;
+}
+.fleet-workspace .hub-workflow-screens-first .hub-workflow-card>a{
+  display:inline-flex;align-items:center;justify-content:center;
+  margin-top:auto;min-height:44px;padding:9px 13px;max-width:100%;
+}
+.fleet-workspace .hub-workflow-screens-first .hub-workflow-admin{
+  border-top:1px solid var(--ui-line);
+}
+.fleet-workspace .fleet-grid{scroll-margin-top:28px}
+.fleet-workspace .fleet-section-heading{scroll-margin-top:30px}
+
+/* One consistent device action toolbar (Steuern / Verwalten / Speicher).
+   Old Nordlicht's different button colors must never bleed through. */
+.fleet-workspace .fleet-device-actions{
+  display:grid;gap:8px;width:100%;min-width:0;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.fleet-workspace .fleet-device-actions:has(>.fleet-storage-menu){
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px;
+}
+.fleet-workspace .fleet-device-actions:has(>.fleet-remote-marketing):has(>.fleet-storage-menu){
+  grid-template-columns:minmax(0,1fr) 44px;
+}
+.fleet-workspace .fleet-device-actions>details{
+  margin:0!important;padding:0;border:0;min-width:0;
+}
+.fleet-workspace .fleet-device-actions>details>summary{
+  display:flex;align-items:center;justify-content:flex-start;
+  gap:8px;min-height:44px;line-height:1.3;
+  border:1px solid var(--ui-line-strong)!important;
+  background:var(--ui-raised)!important;color:var(--ui-fg)!important;
+  border-radius:var(--ui-radius)!important;font-size:12px!important;
+  font-weight:700;padding:9px 11px;box-shadow:none;
+}
+.fleet-workspace .fleet-device-actions>details>summary .icon{
+  width:16px;height:16px;flex:none;color:var(--ui-accent)
+}
+.fleet-workspace .fleet-device-actions>details>summary :is(.fleet-remote-arrow,.settings-chevron){
+  margin-left:auto;width:13px;height:13px;color:var(--ui-muted)
+}
+.fleet-workspace .fleet-device-actions>details>summary:hover,
+.fleet-workspace .fleet-device-actions>details[open]>summary{
+  background:var(--ui-surface-hover)!important;
+  color:var(--ui-fg)!important;border-color:var(--ui-accent)!important;
+}
+.fleet-workspace .fleet-device-actions>.fleet-storage-menu{width:44px;min-width:44px;justify-self:end}
+.fleet-workspace .fleet-device-actions>.fleet-storage-menu>summary{
+  width:44px;min-width:44px;justify-content:center;padding:8px;
+}
+.fleet-workspace .fleet-device-actions>.fleet-storage-menu>summary .icon{margin:0}
+.fleet-workspace :is(.fleet-remote-body,.fleet-settings-content,.fleet-storage-panel){
+  color:var(--ui-fg);background:var(--ui-panel-overlay);
+  border-color:var(--ui-line-strong);border-radius:var(--ui-radius);
+}
+.fleet-workspace .fleet-panel-head{border-bottom:1px solid var(--ui-line)}
+.fleet-workspace .fleet-panel-title{color:var(--ui-fg)!important;font-size:15px}
+.fleet-workspace .fleet-panel-title span{color:var(--ui-muted)!important}
+.fleet-workspace .fleet-panel-close{
+  color:var(--ui-fg);border:1px solid var(--ui-line-strong);
+  background:var(--ui-raised);border-radius:var(--ui-radius);
+  box-shadow:none
+}
+.fleet-workspace .fleet-panel-close:hover{
+  color:var(--ui-accent);border-color:var(--ui-accent);
+  background:var(--ui-surface-hover)
+}
+.fleet-workspace .fleet-panel-close .icon{width:18px;height:18px}
+.fleet-workspace .fleet-remote-form,.fleet-workspace .fleet-settings-content form{min-width:0}
+.fleet-workspace .fleet-remote-form .fleet-remote-ack,
+.fleet-workspace .fleet-settings-content label,
+.fleet-workspace .fleet-remote-shutdown label,
+.fleet-workspace .fleet-remote-shutdown p{
+  color:var(--ui-fg)!important;font-size:12px;line-height:1.55
+}
+.fleet-workspace .fleet-remote-form .fleet-remote-ack strong{color:var(--ui-fg)}
+.fleet-workspace .fleet-remote-note,.fleet-workspace .fleet-native-link{
+  color:var(--ui-muted);font-size:12px;line-height:1.55
+}
+.fleet-workspace .fleet-native-link{color:var(--ui-accent)}
+.fleet-workspace .fleet-remote-buttons button,
+.fleet-workspace .fleet-remote-reboot{
+  min-height:44px;font-size:12px;font-weight:700;border-radius:var(--ui-radius);
+  border:1px solid var(--ui-line-strong);background:var(--ui-raised);
+  color:var(--ui-fg);padding:9px 11px;box-shadow:none
+}
+.fleet-workspace .fleet-remote-buttons button:hover,
+.fleet-workspace .fleet-remote-reboot:hover{
+  color:var(--ui-accent);background:var(--ui-surface-hover);
+  border-color:var(--ui-accent)
+}
+html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="action"][value="reboot"]{
+  grid-column:1/-1;color:var(--ui-fg);background:var(--ui-raised);
+  border-color:var(--ui-line-strong)
+}
+.fleet-workspace .fleet-remote-shutdown{
+  border-top:1px solid var(--ui-line)
+}
+.fleet-workspace .fleet-remote-shutdown>summary{
+  font-size:12px;color:var(--ui-error);font-weight:700
+}
+.fleet-workspace .fleet-remote-shutdown .danger-btn{min-height:44px}
+.fleet-workspace .fleet-danger-zone{border-top:1px solid var(--ui-line)}
+.fleet-workspace .fleet-danger-zone>summary{
+  color:var(--ui-error);font-weight:700;font-size:12px
+}
+@media(max-width:440px){
+  .fleet-workspace .fleet-device-actions>details>summary{
+    padding:8px 7px;font-size:11px!important;gap:5px
+  }
+}
+
+
+/* Playlist actions share one high-visibility disclosure component.
+   The same affordance works for Source, File, ZIP, Website, Backup, and Empty Pi. */
+.library-grid{align-items:start}
+.library-actions{
+  display:flex!important;flex-direction:column;align-items:stretch;
+  gap:12px!important;min-width:0;
+}
+.library-actions>*{min-width:0}
+.library-actions-header{padding:4px 1px 6px}
+.library-actions-header .eyebrow,.library-actions-eyebrow{margin:0 0 6px;color:var(--ui-accent)}
+.library-actions-header h2{
+  margin:0 0 6px;font:400 24px/1.18 var(--ui-serif);
+  color:var(--ui-fg)
+}
+.library-actions-header .muted{font-size:12px;margin:0;line-height:1.5}
+.library-action-disclosure,
+.library-panel.library-action-disclosure,
+.library-actions .library-action-disclosure{
+  display:block;min-width:0;padding:0;margin:0!important;
+  background:var(--ui-surface);border:1px solid var(--ui-line-strong);
+  border-radius:var(--ui-radius);box-shadow:none;overflow:visible;
+}
+.library-action-disclosure>summary{
+  display:flex!important;align-items:center;justify-content:space-between;
+  gap:12px;min-height:74px;list-style:none;cursor:pointer;
+  padding:15px 16px!important;margin:0;
+  border-left:4px solid var(--ui-line-strong);
+  border-radius:var(--ui-radius);background:var(--ui-surface)!important;
+  color:var(--ui-fg)!important;text-align:left;
+}
+.library-action-disclosure>summary::-webkit-details-marker{display:none}
+.library-action-disclosure>summary::marker{content:""}
+.library-action-disclosure>summary:hover,
+.library-action-disclosure[open]>summary{
+  background:var(--ui-surface-hover)!important;
+  border-left-color:var(--ui-accent);color:var(--ui-fg)!important;
+}
+.library-action-disclosure[open]>summary{
+  border-bottom:1px solid var(--ui-line);border-radius:var(--ui-radius) var(--ui-radius) 0 0;
+}
+.library-action-label{display:flex;flex-direction:column;min-width:0;gap:5px}
+.library-action-label strong{
+  display:block;font-size:14px;font-weight:750;
+  letter-spacing:0;line-height:1.3;color:var(--ui-fg)
+}
+.library-action-label small{
+  display:block;font-size:12px;font-weight:450;
+  line-height:1.5;color:var(--ui-muted);overflow-wrap:anywhere
+}
+.library-action-chevron{
+  flex:0 0 32px;display:grid;place-items:center;
+  height:32px;border:1px solid var(--ui-line-strong);
+  background:var(--ui-raised);border-radius:5px;
+  color:var(--ui-fg);font:700 20px/1 var(--ui-sans);
+  transition:transform .14s ease
+}
+.library-action-disclosure[open] .library-action-chevron{
+  transform:rotate(180deg);color:var(--ui-accent);border-color:var(--ui-accent)
+}
+.library-action-disclosure .library-action-body{padding:16px}
+.library-action-disclosure .library-action-body>:first-child{margin-top:0}
+.library-action-disclosure form{min-width:0}
+.library-action-disclosure form :is(label,input,select,textarea,button){max-width:100%}
+.library-action-disclosure form :is(input:not([type=checkbox]),select,textarea){min-height:42px}
+.library-action-disclosure button.primary{min-height:44px}
+.library-action-disclosure .muted{font-size:12px;line-height:1.55;color:var(--ui-muted)}
+.library-action-disclosure.library-folder-settings>p,
+.library-action-disclosure.library-folder-settings>form,
+.library-action-disclosure.library-folder-settings>h3,
+.library-action-disclosure.library-folder-settings>hr{
+  margin-left:16px;margin-right:16px
+}
+.library-action-disclosure.library-folder-settings>p:first-of-type{margin-top:16px}
+.library-action-disclosure.library-folder-settings>form:last-of-type{margin-bottom:18px}
+.library-action-disclosure.library-folder-settings hr{border-color:var(--ui-line);margin-top:20px;margin-bottom:18px}
+.library-action-disclosure.library-folder-settings .library-auto-device{
+  display:flex;align-items:flex-start;gap:9px
+}
+.library-action-disclosure.library-folder-settings .library-auto-device input{
+  flex:none;margin-top:3px
+}
+.library-action-disclosure.library-bulk-compact .bulk-media-panel{
+  margin:0;border:0;padding:17px
+}
+.library-action-disclosure.library-bulk-compact .bulk-media-panel h2{font-size:17px}
+.library-action-disclosure.library-website-details>p,
+.library-action-disclosure.library-website-details>form{
+  margin-left:16px;margin-right:16px
+}
+.library-action-disclosure.library-website-details>p{margin-top:16px}
+.library-action-disclosure.library-website-details>form{margin-bottom:17px}
+.library-action-disclosure.library-empty-only .library-apply{
+  padding:16px;background:var(--ui-surface);border:0;
+  border-radius:0 0 var(--ui-radius) var(--ui-radius);box-shadow:none
+}
+.library-action-disclosure.library-empty-only .library-apply h2{
+  font:400 21px/1.2 var(--ui-serif);margin:0 0 9px
+}
+.library-action-disclosure.library-backup-details .library-action-body{
+  padding:17px
+}
+.library-action-disclosure.library-backup-details .library-action-body>p{margin-top:0}
+.library-action-disclosure :is(input,select,textarea){
+  color:var(--ui-fg);background:var(--ui-raised);
+  border:1px solid var(--ui-line-strong)
+}
+.library-action-disclosure .library-action-body input[type=file]{padding:10px}
+.library-actions-eyebrow{margin-top:2px}
+.library-intro .library-jump-apply{min-height:42px}
+.library-template-intro .library-detail-title-row{gap:10px}
+.library-template-intro .library-jump-apply,
+.library-template-intro .library-backup-export{min-height:42px;font-size:12px}
+.library-publish-hero{
+  width:100%;margin-top:28px;
+  scroll-margin-top:28px
+}
+.library-publish-hero .library-publish-copy .eyebrow{color:var(--ui-accent)!important}
+.library-queue-panel>.eyebrow{margin:0 0 8px}
+.library-workflow-nav{scroll-margin-top:24px}
+.library-workflow-nav a{border-top-color:var(--ui-line-strong)}
+.library-workflow-nav a:first-child{border-top-color:var(--ui-accent)}
+.library-workflow-nav a strong{color:var(--ui-fg)}
+@media(max-width:1180px){
+  .library-actions{display:flex!important;flex-direction:column;grid-template-columns:none!important}
+}
+@media(max-width:680px){
+  .library-action-disclosure>summary{padding:13px 12px!important;min-height:68px}
+  .library-action-disclosure .library-action-body{padding:13px}
+  .library-template-intro .library-jump-apply{width:100%;justify-content:center}
+  .library-template-intro .library-backup-export{width:100%;justify-content:center}
+  .library-publish-hero{margin-top:20px;padding:18px}
 }
