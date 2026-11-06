@@ -74,15 +74,25 @@ def sync_template(store, template_id, root=None):
                     continue
                 stage.seek(0)
                 # add_media performs signature checks, bounded copy and disk guards.
-                new = store.add_media(template_id, entry.stem[:100] or entry.name[:100],
-                                      stage, entry.name, 15)
+                # Existing per-slide timing survives file changes on SMB.
+                duration = previous['duration'] if previous else 15
+                store.add_media(template_id, entry.stem[:100] or entry.name[:100],
+                                stage, entry.name, duration)
         with store_lock(store):
             updated = store.get(template_id)
             created = updated['items'][-1]
             created['source_file'] = entry.name
             created['source_fingerprint'] = fingerprint
             if previous:
-                updated['items'] = [x for x in updated['items'] if x['id'] != previous['id']]
+                # Preserve the item's identity and position for the Marketing
+                # editor, and do not turn every re-import into a slide reorder.
+                created['id'] = previous['id']
+                current_index = next((i for i, item in enumerate(updated['items'][:-1])
+                                      if item['id'] == previous['id']), None)
+                if current_index is None:
+                    raise LibraryError('Vorlage wurde gleichzeitig verändert; Import prüfen')
+                updated['items'].pop()
+                updated['items'][current_index] = created
                 results['updated'] += 1
             else:
                 results['added'] += 1
