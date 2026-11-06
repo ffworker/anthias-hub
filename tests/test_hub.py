@@ -2397,6 +2397,7 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert page.index('01 / BILDSCHIRME') < page.index('02 / PLAYLISTS') < page.index('03 / IT')
     assert 'Zu meinen Bildschirmen' in page
     assert 'href="#fleet-devices"' in page
+    assert 'ui-system.css?v=ui-20261106-04' in page
 
     libpage = client.get('/library').get_data(as_text=True)
     assert libpage.index('01 · Vorlagen ansehen') < libpage.index('02 · Neue Playlist') < libpage.index('03 · ZIP-Backup')
