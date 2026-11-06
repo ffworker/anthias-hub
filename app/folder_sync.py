@@ -25,6 +25,10 @@ def source_directory(alias, root=None):
     # Do not follow aliases into arbitrary host paths.
     if path.is_symlink() or not path.is_dir() or path.resolve().parent != base.resolve():
         raise LibraryError('Medienordner fehlt oder ist nicht erlaubt')
+    # In service deployments each alias is a real SMB/NFS mount. Without this
+    # check an unmounted placeholder could look like an empty successful scan.
+    if os.environ.get('FOLDER_REQUIRE_MOUNT', '0') == '1' and not os.path.ismount(path):
+        raise LibraryError('Netzwerkquelle nicht eingehängt; vorhandene Medien bleiben erhalten')
     return path
 
 
