@@ -350,14 +350,16 @@ def test_marketing_cannot_modify_devices(env):
     assert b'Ger\xc3\xa4t hinzuf\xc3\xbcgen' not in page
 
 
-def test_it_cannot_change_playlist(env):
+def test_it_can_edit_playlists_just_like_marketing(env):
     app,client,_=env
     login(client,'it')
     assert client.get('/devices/lab').status_code==200
     target='/devices/lab/assets/one123/edit'
-    assert client.post(target,data={'csrf':token(client),'name':'Tamper','duration':'20'}).status_code==403
-    assert client.post('/devices/lab/add-url',data={'csrf':token(client),'url':'https://example.org','name':'X','duration':'30'}).status_code==403
-    assert not FakeAnthias.changes
+    assert client.post(target,data={'csrf':token(client),'name':'IT edit','duration':'20'}).status_code==302
+    assert client.post('/devices/lab/add-url',data={'csrf':token(client),'url':'https://example.org','name':'IT RSS','duration':'30'}).status_code==302
+    assert any(event[0] == 'patch' for event in FakeAnthias.changes)
+    assert any(event[0] == 'create' for event in FakeAnthias.changes)
+    assert b'data-can-edit="yes"' in client.get('/devices/lab').data
 
 
 def test_it_can_register_private_device_and_not_public(env):
@@ -1108,7 +1110,8 @@ def test_nonmarketing_does_not_get_drag_or_sort_controls(env):
     assert 'name="direction"' not in page
     login(client, 'it')
     page = client.get('/devices/lab').data.decode('utf-8')
-    assert 'class="drag-handle"' not in page
+    assert 'class="drag-handle"' in page
+    assert 'data-can-edit="yes"' in page
 
 
 def test_drag_reorder_contract_has_rollback_and_touch_keyboard_support():
@@ -1405,7 +1408,7 @@ def test_screen_card_ctas_have_equal_insets_for_marketing_it_and_viewer(env):
     assert '.fleet-settings{border:0;border-top:1px solid #2e4453;margin:0 -23px 0' in style
     assert '.fleet-hero .fleet-add-button{align-self:flex-start}' in style
     for role, label in [('marketing', 'Playlist bearbeiten'),
-                        ('viewer', 'Playlist ansehen'), ('it', 'Playlist ansehen')]:
+                        ('viewer', 'Playlist ansehen'), ('it', 'Playlist bearbeiten')]:
         login(client, role)
         page = client.get('/').get_data(as_text=True)
         assert 'class="button primary fleet-open"' in page
@@ -1433,13 +1436,18 @@ def test_playlist_bottom_add_and_bulk_controls_are_marketing_only(env):
     assert 'name="mode" value="all"' in page
     assert 'name="name_confirmation"' in page
     assert 'playlist-bulk.js' in page
-    for role in ('it', 'viewer'):
-        client.post('/logout', data={'csrf': token(client)})
-        login(client, role)
-        read_only = client.get('/devices/lab').get_data(as_text=True)
-        assert 'Weiteren Inhalt hinzufügen' not in read_only
-        assert 'playlist-bottom-actions' not in read_only
-        assert 'playlist-bulk-form' not in read_only
+    client.post('/logout', data={'csrf': token(client)})
+    login(client, 'it')
+    it_editor = client.get('/devices/lab').get_data(as_text=True)
+    assert 'Weiteren Inhalt hinzufügen' in it_editor
+    assert 'playlist-bottom-actions' in it_editor
+
+    client.post('/logout', data={'csrf': token(client)})
+    login(client, 'viewer')
+    read_only = client.get('/devices/lab').get_data(as_text=True)
+    assert 'Weiteren Inhalt hinzufügen' not in read_only
+    assert 'playlist-bottom-actions' not in read_only
+    assert 'playlist-bulk-form' not in read_only
 
 
 def test_playlist_empty_has_first_add_but_no_bulk_or_bottom_add(env):
@@ -1772,7 +1780,7 @@ def test_owner_has_both_roles_without_expanding_existing_role_grants(env):
         'csrf': token(client), 'action': 'shutdown', 'confirm': 'lab', 'ack': 'yes'
     }).status_code == 403
     login(client, 'it')
-    assert client.post('/library', data={'csrf': token(client), 'name': 'Denied'}).status_code == 403
+    assert client.post('/library', data={'csrf': token(client), 'name': 'IT collection'}).status_code == 302
     login(client, 'viewer')
     assert client.post('/devices/lab/control', data={
         'csrf': token(client), 'action': 'reboot', 'confirm': 'lab', 'ack': 'yes'
