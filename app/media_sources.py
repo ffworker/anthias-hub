@@ -27,7 +27,9 @@ def validate_alias(value):
 
 def validate_unc(value):
     """Require a literal private IPv4 server and a normalized SMB subdirectory."""
-    raw = str(value or '').strip()
+    raw = str(value or '')
+    if raw != raw.strip():
+        raise SourceError('SMB-Pfad darf keine führenden oder nachgestellten Leerzeichen enthalten')
     if len(raw) > 650 or '\x00' in raw:
         raise SourceError('SMB-Pfad zu lang oder ungültig')
     normalized = raw.replace('\\', '/')
