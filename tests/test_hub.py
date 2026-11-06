@@ -2151,7 +2151,9 @@ def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monke
     html = page.get_data(as_text=True)
     assert 'Ein Netzwerkordner. Alle Bildschirme.' in html
     assert 'GH-Wie4-BistroConnect' in html
-    assert 'Als Playlist verwenden' in html
+    assert 'Playlist mit Ordner erstellen' in html
+    assert 'Als Playlist verwenden' not in html
+    assert 'id="new-playlist"' in client.get('/library').get_data(as_text=True)
     assert 'name="alias" value="default"' in html
     assert 'Stammverzeichnis speichern' in html
 
