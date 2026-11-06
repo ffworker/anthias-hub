@@ -225,9 +225,11 @@ def create_app(config=None):
         except LibraryError:
             abort(404)
         from .folder_sync import available_sources
+        from .folder_status import read_status
         return render_template(
             'library_detail.html', template=item,
             folder_sources=available_sources(),
+            folder_sync_status=read_status(template_id),
             devices=load(app.config['DEVICES_FILE']),
             schedules_by_device={
                 d['id']: {'profiles': profiles_for(app.config['SCHEDULES_FILE'], d['id']),
