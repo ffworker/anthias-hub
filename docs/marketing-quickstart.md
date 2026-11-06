@@ -2,6 +2,31 @@
 
 **Zweck:** Inhalte auf bereits von der IT eingerichteten Bildschirmen pflegen. Keine Installation, kein SSH und kein Raspberry-Pi-Zugriff erforderlich.
 
+## Standardablauf: Netzwerkordner-Playlist
+
+**Dateien werden weiterhin im gewohnten Marketing-Netzwerkordner gespeichert.**
+Du brauchst weder einen Raspberry Pi noch eine ZIP-Datei oder einen
+manuellen Upload im Hub.
+
+1. Bilder/Videos im gewohnten Ordner hinzufügen oder ersetzen.
+2. Anthias Hub öffnen → **Bibliothek** → die von IT angelegte Ordner-Playlist
+   (zum Beispiel „Bistro“) öffnen.
+3. Beim gewünschten **Bild** im Feld **Anzeigedauer** Sekunden eintragen und
+   auf **Speichern** klicken (5–3600 Sekunden).
+4. Video-Laufzeiten sind automatisch. Ein RSS-/Webseiten-Slide kann ebenfalls
+   eine eigene Anzeigedauer bekommen.
+5. Oben auf **Letzter Import** achten. Wenn kein Abgleich gemeldet wird, IT
+   informieren statt Dateien mehrfach hochzuladen.
+
+IT verbindet Netzwerkquelle und Zielbildschirm. Änderungen erscheinen auf
+dem Pi **erst wenn die automatische Geräteveröffentlichung von IT aktiviert**
+und erfolgreich durchgeführt wurde. Das bestehende Binary-Emotions-System
+wird bis zur Umstellung weiterhin normal benutzt.
+
+## Alternative: manuell gepflegte Playlists
+
+Für nicht mit Netzwerkordnern verbundene Playlists gilt weiterhin:
+
 ## In zwei Minuten starten
 
 1. Den von der IT freigegebenen **Anthias Hub** im Browser öffnen und mit dem Marketing-Konto anmelden.
@@ -25,7 +50,7 @@
 **RSS2Slideshow** erstellt eine sich selbst aktualisierende Nachrichten-Webseite; **Anthias Hub** plant deren Anzeige wie jede andere Webseite. Die beiden Anwendungen sind unabhängig.
 
 1. In RSS2Slideshow die Nachrichtenquellen und das Design im dafür freigegebenen Editor pflegen.
-2. Im Hub beim gewünschten Bildschirm **Inhalt hinzufügen → Webseite** wählen und die von der IT freigegebene **Kiosk-Adresse** (nicht `/admin`) eintragen.
+2. Bei **ordnergebundenen Playlists** trägt IT die freigegebene Kiosk-Adresse einmalig in der zugeordneten Bibliotheksvorlage unter **RSS2Slideshow / Web-Feed hinzufügen (IT)** ein. Für manuell gepflegte Playlists weiterhin **Inhalt hinzufügen → Webseite** verwenden. Nie die `/admin`-Adresse nutzen.
 3. Die **Anzeigedauer der Webseite im Hub** einstellen: So lange bleibt die Nachrichten-Seite in der Playlist. Der **Artikelwechsel innerhalb der Seite** wird separat in RSS2Slideshow konfiguriert.
 4. Am Bildschirm prüfen, dass Artikel geladen werden und die Webseite zum geplanten Zeitpunkt erscheint.
 

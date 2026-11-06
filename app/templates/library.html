@@ -11,7 +11,7 @@
 <section class="library-intro">
   <p class="eyebrow">DEIN STUDIO · GESPEICHERTE INHALTE</p>
   <h1>Playlist-Bibliothek</h1>
-  <p class="muted">Erstelle Vorlagen und öffne sie, um Bilder, Videos oder Webseiten hinzuzufügen. Inhalte werden nicht automatisch auf Bildschirmen angezeigt.</p>
+  <p class="muted">Für Netzwerk-Playlists legt Marketing Bilder und Videos weiterhin im gewohnten Ordner ab. Hier werden Anzeigedauer und Inhalte verwaltet. IT verbindet Ordner und Bildschirme.</p>
 </section>
 <div class="library-grid">
   <section aria-labelledby="library-list-title">
@@ -21,15 +21,15 @@
       <div class="card library-entry-shell">
         <a class="library-entry" href="{{ url_for('library_detail', template_id=template.id) }}">
           <span class="library-glyph" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg></span>
-          <span><strong>{{ template.name }}</strong><small>{{ template['items']|length }} Inhalte · Öffnen und bearbeiten</small></span>
+          <span><strong>{{ template.name }}</strong><small>{% if template.folder_source|default(false) %}Netzwerkordner: {{ template.folder_source }} · {% endif %}{{ template['items']|length }} Inhalte{% if template.auto_devices|default([]) %} · {{ template.auto_devices|length }} Zielbildschirm(e){% endif %} · Öffnen und bearbeiten</small></span>
           <span aria-hidden="true">→</span>
         </a>
-        {% if logged_user.role in ('marketing', 'owner') %}{{ delete_control(template) }}{% endif %}
+        {% if logged_user.role in ('marketing', 'owner', 'it') %}{{ delete_control(template) }}{% endif %}
       </div>
       {% else %}<div class="card library-empty">Noch keine Vorlage vorhanden. Erstelle rechts deine erste Sammlung.</div>{% endfor %}
     </div>
   </section>
-  {% if logged_user.role in ('marketing', 'owner') %}
+  {% if logged_user.role in ('marketing', 'owner', 'it') %}
   <aside class="library-actions">
     <section class="card library-panel">
       <p class="library-step">01 · SAMMLUNG ANLEGEN</p>

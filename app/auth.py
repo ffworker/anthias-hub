@@ -54,7 +54,13 @@ def login_required(*roles):
             u = current_user()
             if not u:
                 return redirect(url_for('login'))
-            if roles and u['role'] not in roles and not (u['role'] == 'owner' and any(role in ('it', 'marketing') for role in roles)):
+            # IT inherits all Marketing editing rights; Marketing never inherits IT-only administration.
+            granted = {u['role']}
+            if u['role'] == 'it':
+                granted.add('marketing')
+            if u['role'] == 'owner':
+                granted.update(('it', 'marketing'))
+            if roles and not granted.intersection(roles):
                 abort(403)
             g.user = u
             return fn(*args, **kwargs)

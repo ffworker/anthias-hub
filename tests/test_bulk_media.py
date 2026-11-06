@@ -249,10 +249,9 @@ def test_roles_csrf_and_missing_destination_protect_bulk_routes(env):
     route = f"/library/{template['id']}/bulk-media"
     # CSRF is enforced before login checks for all POST requests in this app.
     assert client.post(route, headers=JSON).status_code == 400
-    for role in ('viewer', 'it'):
-        login(client, role)
-        response = submit_zip(client, route, archive([('picture.png', PNG)]))
-        assert response.status_code == 403
+    login(client, 'viewer')
+    response = submit_zip(client, route, archive([('picture.png', PNG)]))
+    assert response.status_code == 403
     login(client, 'marketing')
     assert client.post(route, data={
         'duration': '15', 'media': (io.BytesIO(PNG), 'picture.png')},

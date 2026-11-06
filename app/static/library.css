@@ -454,3 +454,27 @@
   .template-options>summary{width:100%;justify-content:center}
   .template-options-panel{width:100%}
 }
+
+
+/* Folder-backed playlists: familiar SMB workflow, lightweight timing controls. */
+.folder-workflow{border:1px solid var(--border);border-radius:16px;background:var(--surface);padding:17px 20px;margin:0 0 22px}
+.folder-workflow-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.folder-workflow-title strong{font-size:16px}
+.folder-workflow p{margin:6px 0;max-width:780px}
+.folder-workflow-steps{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0}
+.folder-workflow-steps span{background:var(--raised);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:12px;font-weight:600}
+.library-duration-form{display:flex;align-items:end;gap:8px;flex-wrap:wrap;flex:none}
+.library-duration-form label{display:grid;gap:4px;font-size:11px;color:var(--muted);font-weight:600}
+.library-duration-input{display:flex;align-items:center;border:1px solid var(--border);border-radius:8px;background:var(--field);padding-right:8px}
+.library-duration-input input{width:68px;min-height:36px;background:transparent;border:0;color:var(--ink);padding:6px 7px;font-size:14px}
+.library-duration-input span{font-size:11px}
+.library-duration-form button{min-height:38px;padding:6px 12px}
+@media(max-width:720px){
+  .folder-workflow{padding:14px}
+  .library-item{flex-wrap:wrap}
+  .library-item-copy{min-width:150px}
+  .library-duration-form{width:100%;justify-content:flex-end}
+}
+
+.folder-workflow-status{border-top:1px solid var(--border);margin-top:12px;padding-top:10px;display:flex;gap:9px 15px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.folder-workflow-status strong{color:var(--ink);font-weight:700}

@@ -248,8 +248,8 @@ def test_library_media_apply_and_role_boundary(env):
     login(client, 'it')
     t = token(client)
     assert client.get('/library').status_code == 200
-    assert client.post(f"/library/{template['id']}/apply", data={'csrf': t, 'template_id': template['id'], 'device': 'lab', 'confirm': 'yes'}).status_code == 403
-    assert client.post('/library', data={'csrf': t, 'name': 'No'}).status_code == 403
+    assert client.post(f"/library/{template['id']}/apply", data={'csrf': t, 'template_id': template['id'], 'device': 'lab', 'confirm': 'yes'}).status_code == 302
+    assert client.post('/library', data={'csrf': t, 'name': 'IT can create'}).status_code == 302
     assert not FakeAnthias.changes
     login(client, 'marketing')
     t = token(client)
@@ -350,14 +350,16 @@ def test_marketing_cannot_modify_devices(env):
     assert b'Ger\xc3\xa4t hinzuf\xc3\xbcgen' not in page
 
 
-def test_it_cannot_change_playlist(env):
+def test_it_can_edit_playlists_just_like_marketing(env):
     app,client,_=env
     login(client,'it')
     assert client.get('/devices/lab').status_code==200
     target='/devices/lab/assets/one123/edit'
-    assert client.post(target,data={'csrf':token(client),'name':'Tamper','duration':'20'}).status_code==403
-    assert client.post('/devices/lab/add-url',data={'csrf':token(client),'url':'https://example.org','name':'X','duration':'30'}).status_code==403
-    assert not FakeAnthias.changes
+    assert client.post(target,data={'csrf':token(client),'name':'IT edit','duration':'20'}).status_code==302
+    assert client.post('/devices/lab/add-url',data={'csrf':token(client),'url':'https://example.org','name':'IT RSS','duration':'30'}).status_code==302
+    assert any(event[0] == 'patch' for event in FakeAnthias.changes)
+    assert any(event[0] == 'create' for event in FakeAnthias.changes)
+    assert b'data-can-edit="yes"' in client.get('/devices/lab').data
 
 
 def test_it_can_register_private_device_and_not_public(env):
@@ -748,7 +750,7 @@ def test_library_item_add_rejects_invalid_confirmation_role_and_corrupt_file(env
         'csrf': token(client), 'source': source, 'confirm': 'add'}).status_code == 403
     login(client, 'it')
     assert client.post('/devices/lab/add-library-item', data={
-        'csrf': token(client), 'source': source, 'confirm': 'add'}).status_code == 403
+        'csrf': token(client), 'source': source, 'confirm': 'wrong'}).status_code == 400
     login(client, 'marketing')
     assert client.post('/devices/lab/add-library-item', data={
         'csrf': token(client), 'source': source, 'confirm': 'wrong'}).status_code == 400
@@ -1108,7 +1110,8 @@ def test_nonmarketing_does_not_get_drag_or_sort_controls(env):
     assert 'name="direction"' not in page
     login(client, 'it')
     page = client.get('/devices/lab').data.decode('utf-8')
-    assert 'class="drag-handle"' not in page
+    assert 'class="drag-handle"' in page
+    assert 'data-can-edit="yes"' in page
 
 
 def test_drag_reorder_contract_has_rollback_and_touch_keyboard_support():
@@ -1341,8 +1344,8 @@ def test_library_template_delete_csrf_roles_confirm_and_symlink_protection(env):
     assert client.post(route, data={'csrf': token(client), 'confirm': collection['id'],
                                     'ack': 'yes', 'name_confirmation': 'Sicher'}).status_code == 403
     login(client, 'it')
-    assert client.post(route, data={'csrf': token(client), 'confirm': collection['id'],
-                                    'ack': 'yes', 'name_confirmation': 'Sicher'}).status_code == 403
+    assert client.post(route, data={'csrf': token(client), 'confirm': 'wrong',
+                                    'ack': 'yes', 'name_confirmation': 'Sicher'}).status_code == 400
     login(client, 'marketing')
     t = token(client)
     assert client.post(route, data={'csrf': t, 'confirm': 'wrong',
@@ -1405,7 +1408,7 @@ def test_screen_card_ctas_have_equal_insets_for_marketing_it_and_viewer(env):
     assert '.fleet-settings{border:0;border-top:1px solid #2e4453;margin:0 -23px 0' in style
     assert '.fleet-hero .fleet-add-button{align-self:flex-start}' in style
     for role, label in [('marketing', 'Playlist bearbeiten'),
-                        ('viewer', 'Playlist ansehen'), ('it', 'Playlist ansehen')]:
+                        ('viewer', 'Playlist ansehen'), ('it', 'Playlist bearbeiten')]:
         login(client, role)
         page = client.get('/').get_data(as_text=True)
         assert 'class="button primary fleet-open"' in page
@@ -1433,13 +1436,18 @@ def test_playlist_bottom_add_and_bulk_controls_are_marketing_only(env):
     assert 'name="mode" value="all"' in page
     assert 'name="name_confirmation"' in page
     assert 'playlist-bulk.js' in page
-    for role in ('it', 'viewer'):
-        client.post('/logout', data={'csrf': token(client)})
-        login(client, role)
-        read_only = client.get('/devices/lab').get_data(as_text=True)
-        assert 'Weiteren Inhalt hinzufügen' not in read_only
-        assert 'playlist-bottom-actions' not in read_only
-        assert 'playlist-bulk-form' not in read_only
+    client.post('/logout', data={'csrf': token(client)})
+    login(client, 'it')
+    it_editor = client.get('/devices/lab').get_data(as_text=True)
+    assert 'Weiteren Inhalt hinzufügen' in it_editor
+    assert 'playlist-bottom-actions' in it_editor
+
+    client.post('/logout', data={'csrf': token(client)})
+    login(client, 'viewer')
+    read_only = client.get('/devices/lab').get_data(as_text=True)
+    assert 'Weiteren Inhalt hinzufügen' not in read_only
+    assert 'playlist-bottom-actions' not in read_only
+    assert 'playlist-bulk-form' not in read_only
 
 
 def test_playlist_empty_has_first_add_but_no_bulk_or_bottom_add(env):
@@ -1494,11 +1502,10 @@ def test_player_clear_entire_playlist_requires_exact_name_and_ack(env):
 def test_player_bulk_rejects_bad_selection_stale_snapshot_and_csrf(env):
     _, client, _ = env
     url = '/devices/lab/bulk-delete'
-    for role in ('it', 'viewer'):
-        login(client, role)
-        assert client.post(url, data={
-            'csrf': token(client), 'baseline': ['one123', 'two123'],
-            'selected': ['one123'], 'ack': 'yes', 'mode': 'selected'}).status_code == 403
+    login(client, 'viewer')
+    assert client.post(url, data={
+        'csrf': token(client), 'baseline': ['one123', 'two123'],
+        'selected': ['one123'], 'ack': 'yes', 'mode': 'selected'}).status_code == 403
     login(client, 'marketing')
     base = {'csrf': token(client), 'baseline': ['one123', 'two123'],
             'selected': ['one123'], 'ack': 'yes', 'mode': 'selected'}
@@ -1772,7 +1779,7 @@ def test_owner_has_both_roles_without_expanding_existing_role_grants(env):
         'csrf': token(client), 'action': 'shutdown', 'confirm': 'lab', 'ack': 'yes'
     }).status_code == 403
     login(client, 'it')
-    assert client.post('/library', data={'csrf': token(client), 'name': 'Denied'}).status_code == 403
+    assert client.post('/library', data={'csrf': token(client), 'name': 'IT collection'}).status_code == 302
     login(client, 'viewer')
     assert client.post('/devices/lab/control', data={
         'csrf': token(client), 'action': 'reboot', 'confirm': 'lab', 'ack': 'yes'
@@ -2005,3 +2012,55 @@ def test_folder_auto_targets_require_it_and_csrf(env, monkeypatch):
                           data={'csrf': token(it_client),
                                 'folder_source': ''}).status_code == 302
     assert store.get(ident)['auto_devices'] == []
+
+
+def test_folder_backed_marketing_view_is_duration_first_and_it_has_setup(env, monkeypatch):
+    app, client, tmp = env
+    from app.library import Library
+    from app.folder_sync import sync_template
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    root = Path(tmp) / 'sources'
+    source = root / 'bistro'
+    source.mkdir(parents=True)
+    (root / 'empfang').mkdir()
+    (source / 'banner.png').write_bytes(b'\x89PNG\r\n\x1a\n' + b'picture')
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    lib = Library(app.config['LIBRARY_DIR'])
+    ident = lib.create('Bistro Screens')['id']
+    lib.set_folder_source(ident, 'bistro')
+    sync_template(lib, ident)
+    lib.add_url(ident, 'Bistro custom RSS', 'http://192.0.2.55/feed', 30)
+    item = next(x for x in lib.get(ident)['items'] if x.get('source_file'))
+
+    login(client, 'marketing')
+    marketing = client.get(f'/library/{ident}').get_data(as_text=True)
+    assert 'Automatisch aus dem Netzwerkordner' in marketing
+    assert 'name="duration"' in marketing
+    assert 'name="folder_source"' not in marketing
+    assert 'RSS2Slideshow / Web-Feed hinzufügen (IT)' not in marketing
+    assert 'Bild oder Video speichern' not in marketing
+    assert 'name="devices"' not in marketing
+    assert 'Aus Netzwerkordner' in marketing
+    assert client.post(f'/library/{ident}/items/{item["id"]}/duration',
+                       data={'csrf': token(client), 'duration': '44'}).status_code == 302
+    assert lib.get(ident)['items'][0]['duration'] == 44
+    assert client.post(f'/library/{ident}/folder-source',
+                       data={'csrf': token(client), 'folder_source': 'empfang'}).status_code == 403
+    client.post('/logout', data={'csrf': token(client)})
+
+    login(client, 'it')
+    it = client.get(f'/library/{ident}').get_data(as_text=True)
+    assert 'RSS2Slideshow / Web-Feed hinzufügen (IT)' in it
+    assert 'name="folder_source"' in it
+    assert 'value="bistro" selected' in it
+    assert 'value="empfang"' in it
+    assert 'name="devices"' in it
+    assert 'name="duration"' in it
+    assert 'Noch kein Importlauf gemeldet' in it
+    client.post('/logout', data={'csrf': token(client)})
+
+    login(client, 'viewer')
+    viewer = client.get(f'/library/{ident}').get_data(as_text=True)
+    assert 'class="library-duration-form"' not in viewer
+    assert client.post(f'/library/{ident}/items/{item["id"]}/duration',
+                       data={'csrf': token(client), 'duration': '23'}).status_code == 403

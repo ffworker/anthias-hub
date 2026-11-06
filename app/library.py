@@ -140,6 +140,25 @@ class Library:
             self._save(collection)
         return collection
 
+    def update_item_duration(self, ident, item_id, value):
+        """Marketing settings persist across subsequent folder re-imports."""
+        with _lock:
+            collection = self.get(ident)
+            item = next((x for x in collection['items'] if x['id'] == item_id), None)
+            if item is None:
+                raise LibraryError('Inhalt nicht gefunden')
+            if item['kind'] == 'media' and item.get('file', '').endswith('.mp4'):
+                raise LibraryError('Videos werden in voller Länge abgespielt; Anzeigedauer nicht einstellbar')
+            if item['kind'] not in ('url', 'media'):
+                raise LibraryError('Unbekannter Inhaltstyp')
+            try:
+                seconds = validate_duration(value)
+            except ValueError as exc:
+                raise LibraryError(str(exc)) from exc
+            item['duration'] = seconds
+            self._save(collection)
+        return item
+
     def add_media(self, ident, name, stream, filename, duration, max_bytes=MAX_MEDIA):
         ext = Path(str(filename)).suffix.lower()
         if ext not in _MEDIA:

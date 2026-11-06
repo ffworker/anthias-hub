@@ -14,8 +14,8 @@
       <p class="eyebrow">DEIN DIGITAL SIGNAGE STUDIO</p>
       <h1 id="fleet-title">Deine Bildschirme <svg class="icon fleet-sparkle" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></h1>
       <p class="muted">
-        {% if logged_user.role in ('owner', 'marketing') %}Wähle einen Bildschirm, gestalte die Playlist und zeig, was wichtig ist.
-        {% elif logged_user.role in ('owner', 'it') %}Alle Geräte und ihre Verbindungen an einem Ort. Playlists bearbeitet das Content-Team.
+        {% if logged_user.role in ('owner', 'it', 'marketing') %}Wähle einen Bildschirm, gestalte die Playlist und zeig, was wichtig ist.
+        {% elif logged_user.role in ('owner', 'it') %}Alle Geräte, Playlists und technischen Einstellungen zentral verwalten.
         {% else %}Ein Überblick über deine Bildschirme und ihre Inhalte.{% endif %}
       </p>
     </div>
@@ -49,7 +49,7 @@
           <strong data-device-count>–</strong>
           <span>Playlist-Inhalte</span>
         </div>
-        <a class="button primary fleet-open" href="{{ url_for('playlist', device_id=device.id) }}">{{ 'Playlist bearbeiten' if logged_user.role in ('owner', 'marketing') else 'Playlist ansehen' }} <span aria-hidden="true">→</span></a>
+        <a class="button primary fleet-open" href="{{ url_for('playlist', device_id=device.id) }}">{{ 'Playlist bearbeiten' if logged_user.role in ('owner', 'it', 'marketing') else 'Playlist ansehen' }} <span aria-hidden="true">→</span></a>
         <a class="fleet-schedule-link" href="{{ url_for('device_schedules', device_id=device.id) }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg> Zeitpläne verwalten →</a>
         {% if logged_user.role in ('owner', 'it', 'marketing') %}
           <div class="fleet-device-actions">

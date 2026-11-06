@@ -95,6 +95,29 @@ def _matching(existing, name):
     return found[0] if found else None
 
 
+def _confirm_duration(api, asset_id, expected):
+    """PATCH only timing; fetch again to detect upstream silently ignoring it."""
+    result = api.patch(asset_id, {'duration': expected})
+    actual = next((entry for entry in _remote_assets(api)
+                   if entry['asset_id'] == asset_id), None)
+    if not actual or actual.get('duration') != expected:
+        raise PublishError('Anthias hat die Anzeigedauer nicht bestätigt; IT muss prüfen')
+    return result
+
+
+def _url_name(template_id, item):
+    if not TEMPLATE_ID.fullmatch(template_id) or not TEMPLATE_ID.fullmatch(item.get('id', '')):
+        raise PublishError('Ungültige Webseiten-ID')
+    revision = hashlib.sha256(item['url'].encode('utf-8')).hexdigest()[:12]
+    key = item['id'][:12]
+    suffix = f' [HubWeb:{key}-{revision}]'
+    return item['name'][:100-len(suffix)] + suffix
+
+
+def media_path_suffix_is_image(item):
+    return not item.get('file', '').lower().endswith('.mp4')
+
+
 def _schedule_fields(existing_asset, schedules_file, device_id):
     """Carry forward current native per-asset schedule, not a stale Hub preset."""
     if existing_asset is not None:
@@ -165,7 +188,12 @@ def reconcile(store, template_id, device_id, *,
         # Do not hash huge video files every 5 minutes when the managed
         # revision already exists. Fresh/changed imports are fully verified.
         if record and record.get('revision') == revision and old and old['asset_id'] == record['asset_id']:
-            stats['unchanged'] += 1
+            if media_path_suffix_is_image(item) and old.get('duration') != item['duration']:
+                _confirm_duration(api, old['asset_id'], item['duration'])
+                existing = _remote_assets(api)
+                stats['updated'] += 1
+            else:
+                stats['unchanged'] += 1
             continue
         media_path = store.verified_media_path(template_id, item)
         media_type = _MEDIA.get(media_path.suffix.lower())
@@ -213,6 +241,74 @@ def reconcile(store, template_id, device_id, *,
 
         doc['assets'][source] = {'asset_id': target['asset_id'], 'name': name,
                                  'revision': revision, 'status': 'active'}
+        _save(path, doc)
+        stats['updated' if record else 'added'] += 1
+        existing = _remote_assets(api)
+
+    # Web feeds (especially the in-house RSS2Slideshow page) belong to the
+    # same folder-backed playlist. Their URI is rendered by Anthias itself;
+    # this Hub does not proxy or scrape the webpage.
+    doc.setdefault('web_assets', {})
+    for item in template['items']:
+        if item.get('kind') != 'url':
+            continue
+        from .anthias import validate_website_url
+        try:
+            url = validate_website_url(item['url'])
+        except ValueError as exc:
+            raise PublishError('Ungültige gespeicherte Webadresse') from exc
+        ident = item.get('id')
+        desired_name = _url_name(template_id, item)
+        record = doc['web_assets'].get(ident)
+        if record is not None and not isinstance(record, dict):
+            raise PublishError('Gespeicherter Webseitenstatus beschädigt')
+        old = _owned(existing, record)
+        if old and old.get('uri') != record.get('uri'):
+            raise PublishError('Webadresse wurde extern am Pi geändert; kein Überschreiben')
+        target = _matching(existing, desired_name)
+
+        if record and old and old['asset_id'] == record['asset_id'] and old.get('uri') == url:
+            if old.get('duration') != item['duration']:
+                _confirm_duration(api, old['asset_id'], item['duration'])
+                existing = _remote_assets(api)
+                stats['updated'] += 1
+            else:
+                stats['unchanged'] += 1
+            continue
+
+        fields = _schedule_fields(old, schedules_file, device_id)
+        if target is None:
+            new = api.create(desired_name, url, item['duration'], enabled=False)
+            if not isinstance(new, dict) or not ASSET_ID.fullmatch(str(new.get('asset_id', ''))):
+                raise PublishError('Webseiten-Asset nicht bestätigt; IT muss Playlist prüfen')
+            existing = _remote_assets(api)
+            target = _matching(existing, desired_name)
+            if not target or target['asset_id'] != new['asset_id']:
+                raise PublishError('Neues Webseiten-Asset nicht bestätigt')
+            _confirm_schedule(api, target['asset_id'], fields)
+        elif target.get('uri') != url:
+            raise PublishError('Gleichnamiges Webseiten-Asset hat eine andere Adresse')
+        elif fields:
+            _confirm_schedule(api, target['asset_id'], fields)
+
+        should_enable = old is None or bool(old.get('is_enabled'))
+        if should_enable and not target.get('is_enabled'):
+            api.patch(target['asset_id'], {'is_enabled': True})
+        existing = _remote_assets(api)
+        target = _matching(existing, desired_name)
+        if not target or (should_enable and target.get('is_enabled') is not True):
+            raise PublishError('Aktivierung der Webseite nicht bestätigt')
+
+        if old and old['asset_id'] != target['asset_id'] and old.get('is_enabled'):
+            api.patch(old['asset_id'], {'is_enabled': False})
+            existing = _remote_assets(api)
+            prior = _owned(existing, record)
+            if prior and prior.get('is_enabled') is not False:
+                raise PublishError('Alte Webseite blieb aktiv; IT muss Playlist prüfen')
+
+        doc['web_assets'][ident] = {
+            'asset_id': target['asset_id'], 'name': desired_name, 'uri': url,
+        }
         _save(path, doc)
         stats['updated' if record else 'added'] += 1
         existing = _remote_assets(api)

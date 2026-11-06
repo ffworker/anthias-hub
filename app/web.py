@@ -224,8 +224,12 @@ def create_app(config=None):
             item = library().get(template_id)
         except LibraryError:
             abort(404)
+        from .folder_sync import available_sources
+        from .folder_status import read_status
         return render_template(
             'library_detail.html', template=item,
+            folder_sources=available_sources(),
+            folder_sync_status=read_status(template_id),
             devices=load(app.config['DEVICES_FILE']),
             schedules_by_device={
                 d['id']: {'profiles': profiles_for(app.config['SCHEDULES_FILE'], d['id']),
@@ -404,6 +408,21 @@ def create_app(config=None):
             return finish_bulk(report, destination_url)
         except (BatchError, PlayerError, ScheduleError) as exc:
             return reject_bulk(exc, destination_url)
+
+    @app.post('/library/<template_id>/items/<item_id>/duration')
+    @login_required('marketing')
+    def library_item_duration(template_id, item_id):
+        """Simple Marketing control, independent of network folder writes."""
+        try:
+            item = library().update_item_duration(
+                template_id, item_id, request.form.get('duration'))
+            audit('library.duration', asset_id=item_id)
+            flash(f'Anzeigedauer für „{item["name"]}“ gespeichert. '
+                  'Auf zugeordneten Test-Pis übernimmt der automatische Publisher '
+                  'die Änderung beim nächsten Abgleich, sofern aktiviert.', 'success')
+        except LibraryError as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('library_detail', template_id=template_id))
 
     @app.post('/library/<template_id>/move/<item_id>')
     @login_required('marketing')
@@ -770,7 +789,7 @@ def create_app(config=None):
         storage = None
         storage_reason = 'Speicher wird geprüft …' if not error else None
         templates = []
-        if not error and current_user()['role'] in ('marketing', 'owner'):
+        if not error and current_user()['role'] in ('marketing', 'owner', 'it'):
             try:
                 templates = library().list()
             except LibraryError:
@@ -791,6 +810,8 @@ def create_app(config=None):
                     and asset['play_time_to'].endswith(':00') else 'choose'
             )
         return render_template('playlist.html', device=device, assets=assets,
+                               folder_templates=[t for t in templates if t.get('folder_source')
+                                                 and device_id in t.get('auto_devices', [])],
                                library_templates=templates,
                                library_items_available=any(t.get('items') for t in templates),
                                schedule_profiles=schedule_profiles,

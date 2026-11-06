@@ -8,16 +8,16 @@
 
 Manage screens, playlists, local media and reusable content in one web UI. Each Raspberry Pi runs its own **Anthias** player; the Hub talks to its REST API. No cloud account, database or central player service is required.
 
-**Status (November 2026): Feature-complete · operator-validated pilot · maintenance only.** Weeks of real-device operation, playlist updates, schedules and screen/Pi controls have been confirmed by the operator. **Not yet formally production-certified**: finish the [backup/restore and fleet rollout checks](docs/pilot-acceptance.md). No new features planned; only confirmed bugs, security/compatibility updates and small UI refinements.
+**Status (November 2026): operator-validated pilot, folder-first workflow under active development.** Weeks of real-device operation, playlist updates, schedules and screen/Pi controls have been confirmed by the operator. **Not yet production-certified**: complete the [company folder workflow acceptance](docs/company-folder-workflow.md) and [backup/restore and fleet rollout checks](docs/pilot-acceptance.md).
 
 ## Features
 
 - **Screens and playlists:** Register players, view status, add/edit/reorder/pause content and preview stored media.
 - **Local library:** Reusable templates, images, videos and websites. Import ordinary media ZIPs separately from Hub template-backup ZIPs. Append to existing playlists without replacing their contents.
 - **Schedules:** Shared named schedule library across devices, independent device defaults, per-asset assignments and custom time windows. Scheduling runs natively on Anthias. See [scheduling](docs/scheduling.md).
-- **Folder-backed playlists (experimental):** IT can attach a pre-mounted read-only SMB/NFS folder to a Hub template and choose target Pis. A separate worker imports changes and can publish them automatically after an explicit server-side opt-in (`FOLDER_AUTO_PUBLISH=1`). No automatic remote deletions. See [folder-backed playlists](docs/folder-backed-playlists.md).
+- **Folder-backed playlists (experimental):** Marketing keeps saving media to familiar SMB/NFS folders; IT chooses a read-only source alias and target Pis. Marketing sets per-image display time directly in the Hub template; changes persist across file replacements. RSS2Slideshow can be added as a webpage in the same auto-published template. Publishing needs an explicit server-side opt-in (`FOLDER_AUTO_PUBLISH=1`). No automatic remote deletions. See [company workflow](docs/company-folder-workflow.md) and [folder-backed playlists](docs/folder-backed-playlists.md).
 - **Media:** PNG/JPEG/WebP/MP4, sequential batch uploads (up to 20 files) and ZIP import. Up to **4 GiB per file**, and **4 GiB total extracted media per ZIP**, subject to disk capacity and proxy limits. See [media import](docs/marketing-bulk-import.md).
-- **Accounts:** Owner (IT + Marketing), IT, Marketing and Viewer. Marketing can edit content across **all** registered screens. Optional confirmed reboot/shutdown and experimental HDMI-CEC where supported.
+- **Accounts:** Owner (IT + Marketing), IT, Marketing and Viewer. Marketing can edit content across **all** registered screens; **IT inherits the same content-editing rights** in addition to IT-only administration. Optional confirmed reboot/shutdown and experimental HDMI-CEC where supported.
 - **Single-theme UI:** Nordlicht design, desktop/mobile layouts, no additional frontend framework.
 
 ## Everyday workflow
