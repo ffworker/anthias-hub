@@ -1,125 +1,79 @@
-# Folder-backed playlist templates (experimental)
+# Folder-backed templates — read-only import, optional Pi publication
 
-The folder importer supports **automatic import to Hub library templates** and
-opt-in publication of folder-managed media to selected Anthias players.
-**Automatic Pi publication is disabled by default** (server-side). Existing manual
-Pi assets are never modified.
+This feature is **experimental**. Its normal use is one approved parent SMB
+mount with a directory per screen, not a separate SMB mount per playlist.
 
-## Host setup
+For a new VM, follow the [single-root setup and migration runbook](single-root-smb-setup.md)
+first. It distinguishes **registering** a UNC in the UI from mounting it on
+the host and verifying it for the isolated importer.
 
-Mount SMB/NFS shares on the **Docker host**, read-only, in distinct subfolders
-under one root, e.g. `/srv/anthias-sources/bistro` and
-`/srv/anthias-sources/empfang`. Mount with systemd/fstab credentials protected
-outside the repository; **never** store credentials in the Hub UI or Git.
+## Data flow
 
-Example mappings:
-
-| Source alias in Hub | Host directory | Destination |
-| --- | --- | --- |
-| `bistro` | `/srv/anthias-sources/bistro` | Hub template “Bistro” |
-| `empfang` | `/srv/anthias-sources/empfang` | Hub template “Empfang” |
-
-In production use the existing `compose.cd.yaml` and its **existing external
-override**. Add `compose.folder-import.yaml` to the same compose command:
-
-```bash
-export MEDIA_SOURCE_HOST_PATH=/srv/anthias-sources
-export FOLDER_SYNC_INTERVAL=300
-docker compose -f compose.cd.yaml -f "$HUB_COMPOSE_OVERRIDE" \
-  -f compose.folder-import.yaml -p anthias-hub up -d --no-deps anthias-folder-import
+```text
+SMB parent (one host mount)
+  /srv/anthias-sources/default/Screen-A/*.png
+    -> Hub /sources/default/Screen-A
+    -> source alias default/Screen-A
+    -> Hub library playlist template (imported media)
+    -> optional, explicit tracked publication to a selected Pi
 ```
 
-The worker is isolated from the web server, reads host folders from `/sources`
-(read-only), and writes only to the existing Hub library under `/data/library`.
-**Do not recreate the production Hub web container** just to start this worker.
-The existing Hub web container also needs read-only access to `/sources` to
-validate newly entered aliases. Add that binding in the existing site override
-before using the UI:
+- The source picker lists only immediate child directories of
+  `/sources/default`. Directory names may include spaces or umlauts;
+  symlinks, hidden directories and nested directories are not playlist
+  sources. Imported files must be directly inside their child folder.
+- Web and importer containers need **read-only** `/sources` access. Compose
+  examples and worker configuration are in `compose.folder-import.yaml`.
+  Do not overwrite an existing site-specific override. The default web
+  Compose setup does **not** include the network share.
+- A separate root-controlled mount/coordinator may be used, with a protected
+  allowlist and SMB credential file. The Flask process only stores
+  `alias + UNC` in a private registry: **it cannot mount the share itself**.
+- The worker uses `FOLDER_REQUIRE_MOUNT=1` and
+  `FOLDER_REQUIRE_VERIFIED=1`. A running host-coordinator/status process is
+  therefore needed for registered sources; saving a UNC is not enough.
+- The worker imports incrementally every 300 seconds by default. Images keep
+  their stored duration, identity and order when the file is replaced.
+  Manual media and websites in a template remain separate.
+- When a share is unavailable, imports stop; cached Hub media and Pi
+  playlists are **not** deleted.
+- Any existing imported template tied to an old alias cannot simply be
+  rebound to `default/<child>`. That safety check is intentional. Run the
+  [non-destructive migration checklist](single-root-smb-setup.md#existing-hub-read-only-preflight-no-unmounts-yet)
+  before removing old mounts or registry entries.
 
-```yaml
-services:
-  anthias-hub:
-    volumes:
-      - /srv/anthias-sources:/sources:ro
-```
+## Optional Pi publication
 
-Merge this entry into the existing override; preserve all other service settings
-and volume bindings. Do not replace the override with this snippet.
+A folder template may be assigned to selected devices, but assignment alone
+does not publish anything. `FOLDER_AUTO_PUBLISH=0` is the server default.
+Only after real test-Pi acceptance may IT enable `FOLDER_AUTO_PUBLISH=1`
+for the separate importer worker.
 
-Open the template in the library, expand **Netzwerkordner als Medienquelle (IT)**,
-and enter only the alias (e.g. `bistro`), *not* the UNC path.
+Tracked publication uses source/version markers and journals under
+`/data/folder-publications`. It targets only Hub-owned imported media and
+does not replace all Pi playlist content. Changed files can be updated
+without reuploading unrelated manual assets. Reordering is applied only when
+the whole target playlist is known to belong to the same managed template.
+Native schedules and manual enablement must be checked on the actual Pi.
 
-## Safety / scope
+**No strict mirror semantics:** deleting a file on SMB does not
+automatically delete its Pi asset. The feature is intentionally conservative
+until removal-after-repeated-verified-scan behavior is accepted.
 
-- Allowed extensions: PNG, JPG, JPEG, WebP and MP4; existing size/signature
-  checks apply.
-- The importer reads only regular direct children; no symlink traversal.
-- Changes are imported incrementally; existing manually uploaded media and
-  websites are not touched.
-- Missing, empty and unavailable shares **do not delete** previously imported
-  media. Removing a source binding also leaves imported media in place.
-- A completed import updates the **Hub library template only**. Use the
-  existing explicit "Vorlage zur Playlist hinzufügen" action for player delivery.
-  Repeating that action can duplicate media on a Pi.
-- Automatic tracked publish/update/delete, timing, per-device assignment and
-  crash-safe idempotent reconciliation need a separate implementation and
-  real-device acceptance tests before enabling them.
-- If the worker reports an error, check its logs and the share mount; the
-  current playing playlist is deliberately left alone.
+## Operational acceptance
 
+1. Confirm a **real read-only** parent mount and fresh host verification.
+2. Confirm both containers can list the same direct child sources.
+3. Create a template from `default/Screen-A`; run the importer with
+   automatic Pi publication off; verify media/timing in the Hub only.
+4. Verify changing a file retains Hub timing; verify a simulated missing
+   share does not cause media removal.
+5. Assign **one disposable test Pi**, explicitly enable publication, and
+   check physical playback, schedules, retry/idempotency and rollback.
+6. Retain a confidential backup of Hub state, journal and each Pi's own
+   playlist before enabling production publishing. Never delete an old
+   host mount merely to force source rediscovery.
 
-## Optional automatic Pi publishing (second phase)
-
-Each folder-backed Hub template can have one or more registered target Pis.
-IT opens the template, enters a source alias, and selects **Zielbildschirme**.
-This mapping is inactive until the worker is launched with
-`FOLDER_AUTO_PUBLISH=1` (default: `0`). Use only a **test Pi** first.
-The folder importer continues to run even while auto publishing is off.
-
-Expected workflow:
-
-1. Mount each SMB/NFS folder read-only on the Hub host. Check permissions
-   for the UID/GID of the Hub container.
-2. Give the Web Hub and worker read-only `/sources` access using the
-   documented Compose override. Preserve the original network and TLS settings.
-3. Create a Hub template, bind `bistro` as folder alias, and select a
-   registered **test Pi** under the IT-only targets.
-4. With `FOLDER_AUTO_PUBLISH=0`, run the worker and verify files appear
-   in Hub library. The Pi must remain untouched.
-5. On a test device only, enable the worker option with
-   `FOLDER_AUTO_PUBLISH=1` and validate playback, schedules and error recovery.
-6. Switch to Bistro only after separate on-screen acceptance.
-
-The worker writes a per-template / per-device journal at
-`/data/folder-publications/<template-id>/<device-id>.json`.
-Keep it with your normal `/data` backups. Losing it can make adoption
-ambiguous: never wipe it while auto publishing is running.
-
-### Reconciliation safety
-
-- Only folder-imported media entries are managed, never manually added
-  Pi content or Hub websites.
-- Per-file deterministic version markers avoid duplicating remote assets
-  after a process crash. No playlist-wide replace, no reorder.
-- New media is created disabled and checked before enabling it.
-- On a file update, the previous asset's Anthias-native schedule is copied
-  and confirmed before the old version is disabled. Current manual enable/
-  disable state is retained across revisions.
-- A remote asset that was renamed outside the Hub is **not overwritten**.
-  IT must resolve the conflict before continuing.
-- Failures stop that file; other source templates/devices continue.
-- No automatic remote deletion. **Removed files are retained** as a deliberate
-  safety restriction until mount-health and removal policy are proven.
-  Do not claim strict mirror semantics yet.
-- The Pi remains able to play its existing files if the Hub, NAS, or worker
-  goes offline.
-
-### Important limitations
-
-The new feature must not be enabled on production devices until it is
-validated with a real Anthias player and recovery tests. Upstream Anthias
-API behavior varies across versions; the automated tests use a simulated
-player, not a live display.
-
-The UI stores the target mapping, but server-side publication activation is
-an IT deployment operation. Never expose SMB credentials in the UI.
+The repository supports the app and importer, but a totally fresh machine
+still needs OS/Docker, network security, host mount/coordinator, credentials
+and real-device acceptance. This is not an unattended, one-click SMB installer.

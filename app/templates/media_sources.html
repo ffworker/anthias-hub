@@ -28,7 +28,12 @@
     </label>
     <button type="submit" class="primary">{{ 'Stammverzeichnis aktualisieren' if default_source else 'Stammverzeichnis speichern' }}</button>
   </form>
-  <p class="muted">Sicherheit: Nur von IT freigegebene SMB-Server und Freigaben werden auf dem Host eingehängt. Das UI kennt keine Passwörter. Die bestehende Quelle wird bei einer Änderung nicht automatisch ausgehängt.</p>
+  {% if not default_source %}
+    <p class="muted" role="status"><strong>Neuinstallation:</strong> Noch kein Stammverzeichnis registriert. Zuerst den einen SMB-Pfad eintragen; anschließend den schreibgeschützten Host-Mount und den Importdienst einrichten. Das Formular selbst mountet nichts.</p>
+  {% elif default_source.status not in ('mounted', 'already-mounted') %}
+    <p class="muted" role="status"><strong>Gespeichert, aber noch nicht vom Host bestätigt.</strong> Den realen Mount unter <code>/srv/anthias-sources/default</code> und die Host-Verifikation prüfen. Bis dahin gelten angezeigte Pfade nicht als funktionierender Import.</p>
+  {% endif %}
+  <p class="muted">Sicherheit: Der unprivilegierte Hub registriert nur den SMB-Pfad. Ein separater, von IT eingerichteter Host-Mountdienst bindet ausschließlich freigegebene Quellen schreibgeschützt ein. Keine SMB-Passwörter im Browser. Bereits aktive Quellen werden bei Änderungen nicht automatisch ausgehängt.</p>
   <div class="media-folder-summary" role="status">
     <strong>{{ default_folders|length }} Unterordner im Hub sichtbar</strong>
     <span>{% if default_folders %}Die Ordner erscheinen beim Erstellen einer Playlist als Auswahl.{% else %}Noch keine Unterordner sichtbar. Prüfe bei Bedarf den SMB-Mount; die Ordnerauswahl erfolgt später in der Bibliothek.{% endif %}</span>
@@ -84,7 +89,7 @@
 {% if unmanaged %}
 <section class="media-source-overview" aria-labelledby="unmanaged-title">
   <h2 id="unmanaged-title">Bereits am Host eingebundene Ordner</h2>
-  <p class="muted">Diese Aliase sind verfügbar, wurden aber noch nicht über die neue Verwaltung erfasst. Du kannst ihren vollständigen Pfad oben mit derselben Ordnerkennung registrieren.</p>
+  <p class="muted">Diese Aliase sind bereits am Host vorhanden, aber nicht in der neuen Quellenverwaltung registriert. Sie können von älteren Playlists noch verwendet werden. <strong>Vor dem Entfernen Zuordnungen und importierte Inhalte prüfen</strong> – die Umstellung auf <code>default/Unterordner</code> geschieht nicht automatisch.</p>
   {% for source in unmanaged %}
   <article class="card media-source-card">
     <h3>{{ source.alias }}</h3>

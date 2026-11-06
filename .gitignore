@@ -7,3 +7,18 @@ config/
 data/*
 !data/.gitkeep
 *.zip
+
+# Host-specific settings, private keys and operational exports
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*
+secrets/
+backups/
+*.tar.gz
+*.tar.zst
+compose.private*.yaml
+compose.local*.yaml
