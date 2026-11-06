@@ -120,7 +120,7 @@ def save_source(alias, unc, *, path=None):
     return result
 
 
-def mount_statuses(path=None):
+def mount_statuses(path=None, registry_path=None):
     """Host helper writes only non-sensitive per-alias states, never passwords."""
     target = Path(path or os.environ.get('MEDIA_MOUNT_STATUS_FILE', '/data/media-mount-status.json'))
     try:
@@ -130,7 +130,7 @@ def mount_statuses(path=None):
         statuses = doc.get('sources')
         if not isinstance(statuses, dict):
             return {}
-        sources = {row['alias']: row['unc'] for row in load_sources()}
+        sources = {row['alias']: row['unc'] for row in load_sources(registry_path)}
         result = {}
         for key, value in statuses.items():
             if not ALIAS.fullmatch(str(key)) or key not in sources or not isinstance(value, dict):
