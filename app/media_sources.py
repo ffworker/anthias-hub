@@ -6,6 +6,7 @@ import os
 import re
 import tempfile
 import threading
+import time
 from pathlib import Path
 
 LOCK = threading.RLock()
@@ -124,13 +125,18 @@ def save_source(alias, unc, *, path=None):
 
 def mount_statuses(path=None, registry_path=None):
     """Host helper writes only non-sensitive per-alias states, never passwords."""
-    target = Path(path or os.environ.get('MEDIA_MOUNT_STATUS_FILE', '/data/media-mount-status.json'))
+    target = Path(path or os.environ.get('MEDIA_MOUNT_STATUS_FILE', '/sources/.mount-status.json'))
     try:
         if not target.is_file() or target.stat().st_size > 32768:
             return {}
         doc = json.loads(target.read_text(encoding='utf-8'))
         statuses = doc.get('sources')
         if not isinstance(statuses, dict):
+            return {}
+        # Only a recently running root-controlled mount coordinator may
+        # authorize publishing. A stale status is never an approval.
+        checked_at = doc.get('checked_at')
+        if not isinstance(checked_at, (float, int)) or not 0 <= time.time() - checked_at < 300:
             return {}
         sources = {row['alias']: row['unc'] for row in load_sources(registry_path)}
         result = {}
