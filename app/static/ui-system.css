@@ -1356,3 +1356,65 @@ html.fleet-popovers-ready .fleet-workspace .fleet-device-actions>details>.fleet-
   html{scroll-behavior:auto}
   .site-main *, .site-main *::before, .site-main *::after{transition:none!important;animation:none!important}
 }
+
+
+/* Scheduling audit, pass 2: cover the secondary disclosure, assigned labels
+   and delete confirmation that still carried the 2025 dark-only palette. */
+.schedule-workspace :is(.schedule-secondary-panel,.schedule-default-panel,.schedule-collection-note,.schedule-onboarding>.schedule-new){
+  background:var(--ui-surface);color:var(--ui-fg);border-color:var(--ui-line);
+  border-radius:var(--ui-radius);box-shadow:none;
+}
+.schedule-workspace .schedule-secondary-panel>summary{
+  color:var(--ui-fg);background:var(--ui-surface)
+}
+.schedule-workspace .schedule-secondary-panel>summary:hover,
+.schedule-workspace .schedule-secondary-panel[open]>summary,
+.schedule-workspace .schedule-rule-edit>summary:hover,
+.schedule-workspace .schedule-global-delete>summary:hover{
+  color:var(--ui-accent);background:var(--ui-surface-hover)
+}
+.schedule-workspace .schedule-secondary-copy strong{color:var(--ui-fg)}
+.schedule-workspace .schedule-secondary-copy small,
+.schedule-workspace .schedule-secondary-chevron{color:var(--ui-muted)}
+.schedule-workspace .schedule-secondary-icon{
+  background:var(--ui-subtle);color:var(--ui-accent);
+  border:1px solid var(--ui-line);border-radius:var(--ui-radius)
+}
+.schedule-workspace .schedule-secondary-body,
+.schedule-workspace .schedule-submit-row{
+  background:var(--ui-surface);border-color:var(--ui-line)
+}
+.schedule-workspace .schedule-submit-row p,
+.schedule-workspace .schedule-footer-note,
+.schedule-workspace .schedule-footer-note strong,
+.schedule-workspace .schedule-global-delete p{color:var(--ui-muted)}
+.schedule-workspace .schedule-assigned{
+  color:var(--ui-fg);background:var(--ui-subtle);border-color:var(--ui-line)
+}
+.schedule-workspace .schedule-asset:hover{background:var(--ui-surface-hover)}
+.schedule-workspace .schedule-global-confirm,
+.schedule-workspace .schedule-sync-check{color:var(--ui-fg)!important}
+.schedule-workspace .schedule-global-delete>summary{color:var(--ui-error)}
+.schedule-workspace .schedule-global-delete .schedule-remove{
+  color:var(--ui-error);background:var(--ui-error-bg);
+  border:1px solid var(--ui-error);border-radius:var(--ui-radius)
+}
+.schedule-workspace .schedule-global-delete .schedule-remove:hover{
+  color:var(--ui-error);background:var(--ui-surface-hover)
+}
+.schedule-workspace .schedule-new>summary{color:var(--ui-fg)}
+.schedule-workspace .schedule-day-fieldset label:hover{border-color:var(--ui-accent)}
+.schedule-workspace .schedule-collection-note .icon{color:var(--ui-accent)}
+.schedule-workspace .schedule-collection-note strong{color:var(--ui-fg)}
+.schedule-workspace input[type=time]{color-scheme:light}
+html[data-theme="dark"] .schedule-workspace input[type=time]{color-scheme:dark}
+.schedule-workspace :is(select,input:not([type=checkbox])):focus-visible{
+  border-color:var(--ui-focus);outline:3px solid var(--ui-focus)!important;
+  outline-offset:2px;box-shadow:none
+}
+.fleet-workspace .fleet-storage-panel :is(.storage-panel-title,.storage-panel-warning){
+  color:var(--ui-fg)
+}
+.fleet-workspace .fleet-storage-panel :is(.storage-panel-note,.storage-panel-message){
+  color:var(--ui-muted)
+}
