@@ -689,6 +689,85 @@ def create_app(config=None):
                                    mimetype=MEDIA[ext], ext=uploaded.get('ext'))
         audit('library.add-item', device_id, item_id)
 
+    @app.post('/devices/<device_id>/import-network-folder')
+    @login_required('it')
+    def import_network_folder_once(device_id):
+        """One-time, bounded import from an approved read-only share.
+
+        Unlike the folder publisher, this is an explicit append-only operation.
+        It does not bind a template, enable automation, or delete/reorder assets.
+        """
+        from .folder_sync import available_sources, source_directory
+        import stat
+
+        if request.form.get('confirm') != 'once' or request.form.get('ack') != 'yes':
+            abort(400)
+        destination = url_for('playlist', device_id=device_id)
+        added = 0
+        try:
+            alias = request.form.get('folder_source', '')
+            if alias not in available_sources():
+                raise LibraryError('Netzwerkordner nicht verfügbar oder nicht freigegeben.')
+            folder = source_directory(alias)
+            chosen_schedule(device_id)  # Invalid schedules fail before first upload.
+            candidates = sorted(
+                (p for p in folder.iterdir() if p.suffix.lower() in MEDIA
+                 and not p.is_symlink() and p.is_file()),
+                key=lambda p: p.name.casefold())
+            if not candidates:
+                raise LibraryError('Der Ordner enthält keine unterstützten Bilder oder Videos.')
+            if len(candidates) > 20:
+                raise LibraryError('Mehr als 20 Medien im Ordner. Bitte in kleinere freigegebene Unterordner aufteilen; es wurde nichts übertragen.')
+            # Validate *every* candidate before making the first Pi-side write.
+            signatures = {
+                '.png': lambda h: h.startswith(b'\\x89PNG\\r\\n\\x1a\\n'),
+                '.jpg': lambda h: h.startswith(b'\\xff\\xd8'),
+                '.jpeg': lambda h: h.startswith(b'\\xff\\xd8'),
+                '.webp': lambda h: h.startswith(b'RIFF') and h[8:12] == b'WEBP',
+                '.mp4': lambda h: len(h) >= 12 and h[4:8] == b'ftyp',
+            }
+            for p in candidates:
+                if p.resolve().parent != folder.resolve():
+                    raise LibraryError('Nicht freigegebener Medienpfad erkannt.')
+                fd = os.open(p, os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0))
+                with os.fdopen(fd, 'rb') as stream:
+                    info = os.fstat(stream.fileno())
+                    if not stat.S_ISREG(info.st_mode) or not 0 < info.st_size <= MAX_MEDIA_BYTES:
+                        raise LibraryError('Mediengröße unzulässig (0 bis 4 GiB): ' + p.name)
+                    if not signatures[p.suffix.lower()](stream.read(16)):
+                        raise LibraryError('Dateiformat stimmt nicht mit Endung überein: ' + p.name)
+
+            _, api = player_or_404(device_id)
+            duration = validate_duration(request.form.get('duration', 15))
+            with _apply_lock:
+                api.assets()  # Check reachability before the first transfer.
+                for p in candidates:
+                    try:
+                        fd = os.open(p, os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0))
+                        with os.fdopen(fd, 'rb') as stream:
+                            info = os.fstat(stream.fileno())
+                            if not stat.S_ISREG(info.st_mode) or not 0 < info.st_size <= MAX_MEDIA_BYTES:
+                                raise LibraryError('Quelldatei vor Upload verändert: ' + p.name)
+                            head = stream.read(16)
+                            stream.seek(0)
+                            if not signatures[p.suffix.lower()](head):
+                                raise LibraryError('Quelldatei vor Upload verändert: ' + p.name)
+                            uploaded = api.upload(stream, p.name, MEDIA[p.suffix.lower()])
+                        seconds = 0 if p.suffix.lower() == '.mp4' else duration
+                        create_scheduled(api, device_id, p.name[:100], uploaded['uri'], seconds,
+                                         mimetype=MEDIA[p.suffix.lower()], ext=uploaded.get('ext'))
+                        added += 1
+                        audit('folder.manual-append-file', device_id)
+                    except (PlayerError, LibraryError, ScheduleError, OSError) as exc:
+                        raise LibraryError(f'Abbruch nach {added} Medien bei „{p.name}“: {exc}. '
+                                           'Mögliche Teilübertragung; Playlist prüfen, nicht blind wiederholen.') from exc
+            audit('folder.manual-append', device_id)
+            flash(f'{added} Medien aus „{alias}“ einmalig hinzugefügt. '
+                  'Keine automatische Verbindung eingerichtet. Wiedergabe am TV prüfen.', 'success')
+        except (LibraryError, PlayerError, ScheduleError, OSError, ValueError) as exc:
+            flash(str(exc) + ' Vorhandene Playlist wurde nicht absichtlich verändert oder geleert.', 'error')
+        return redirect(destination)
+
     @app.post('/devices/<device_id>/folder-playlist')
     @login_required('it')
     def attach_folder_playlist_to_device(device_id):
