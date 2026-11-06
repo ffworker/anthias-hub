@@ -15,6 +15,7 @@ Manage screens, playlists, local media and reusable content in one web UI. Each 
 - **Screens and playlists:** Register players, view status, add/edit/reorder/pause content and preview stored media.
 - **Local library:** Reusable templates, images, videos and websites. Import ordinary media ZIPs separately from Hub template-backup ZIPs. Append to existing playlists without replacing their contents.
 - **Schedules:** Shared named schedule library across devices, independent device defaults, per-asset assignments and custom time windows. Scheduling runs natively on Anthias. See [scheduling](docs/scheduling.md).
+- **Folder-backed playlists (experimental):** IT can attach a pre-mounted read-only SMB/NFS folder to a Hub template and choose target Pis. A separate worker imports changes and can publish them automatically after an explicit server-side opt-in (`FOLDER_AUTO_PUBLISH=1`). No automatic remote deletions. See [folder-backed playlists](docs/folder-backed-playlists.md).
 - **Media:** PNG/JPEG/WebP/MP4, sequential batch uploads (up to 20 files) and ZIP import. Up to **4 GiB per file**, and **4 GiB total extracted media per ZIP**, subject to disk capacity and proxy limits. See [media import](docs/marketing-bulk-import.md).
 - **Accounts:** Owner (IT + Marketing), IT, Marketing and Viewer. Marketing can edit content across **all** registered screens. Optional confirmed reboot/shutdown and experimental HDMI-CEC where supported.
 - **Single-theme UI:** Nordlicht design, desktop/mobile layouts, no additional frontend framework.
