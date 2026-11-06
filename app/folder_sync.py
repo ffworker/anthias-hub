@@ -171,6 +171,8 @@ def worker():
     while True:
         try:
             reports = run_cycle()
+            from .folder_status import write_status
+            write_status(reports, enabled=os.environ.get('FOLDER_AUTO_PUBLISH', '0') == '1')
             for template_id, report in reports.items():
                 if 'error' in report:
                     print(f'Folder {template_id}: import unavailable: {report["error"]}', flush=True)
