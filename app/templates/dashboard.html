@@ -48,6 +48,15 @@
         <p class="eyebrow">03 / IT · NETZWERKQUELLEN</p>
         <h2>Ordner verbinden.</h2>
         <p>SMB-Freigaben und Bildschirmordner einrichten. Das ist Administration, nicht Voraussetzung für manuelle Playlists.</p>
+        {% if default_mount_state in ('mounted', 'already-mounted') %}
+        <p class="hub-admin-mount-hint is-confirmed"><span class="hub-mount-indicator" aria-hidden="true"></span> Stammordner: Host-Mount bestätigt</p>
+        {% elif default_mount_state == 'unconfigured' %}
+        <p class="hub-admin-mount-hint"><span class="hub-mount-indicator" aria-hidden="true"></span> Stammordner: noch nicht eingerichtet</p>
+        {% elif default_mount_state in ('blocked','conflict','error') %}
+        <p class="hub-admin-mount-hint is-attention"><span class="hub-mount-indicator" aria-hidden="true"></span> Stammordner: Mount-Problem prüfen</p>
+        {% else %}
+        <p class="hub-admin-mount-hint is-attention"><span class="hub-mount-indicator" aria-hidden="true"></span> Stammordner: Host-Mount nicht bestätigt</p>
+        {% endif %}
       </div>
       <a class="button" href="{{ url_for('media_sources_page') }}">Ordner &amp; Quellen verwalten →</a>
     </article>

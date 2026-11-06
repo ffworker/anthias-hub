@@ -2077,7 +2077,7 @@ def test_it_can_add_and_edit_smb_sources_without_exposing_passwords(env, monkeyp
     monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(mountroot))
     login(client, 'it')
     page = client.get('/media-sources').get_data(as_text=True)
-    assert '<h1>Ordner &amp; Quellen</h1>' in page
+    assert '<h1 id="media-page-title">Ordner &amp; Quellen</h1>' in page
     assert 'bistro' in page
     assert 'root@' not in page
     assert 'name="unc"' in page
@@ -2281,7 +2281,7 @@ def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monke
     assert 'Ein Netzwerkordner. Alle Bildschirme.' in html
     assert 'Demo-Screen-A' not in html  # selection moves to library
     assert '1 Unterordner im Hub sichtbar' in html
-    assert 'Playlist mit Ordner erstellen' in html
+    assert 'Playlist-Bibliothek öffnen' in html
     assert 'value="default/Demo-Screen-A"' in client.get('/library').get_data(as_text=True)
     assert 'Als Playlist verwenden' not in html
     assert 'id="new-playlist"' in client.get('/library').get_data(as_text=True)
@@ -2487,7 +2487,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
     response = client.get('/login')
     assert response.status_code == 200
     text = response.get_data(as_text=True)
-    assert 'content="ui-20261106-05"' in text
+    assert 'content="ui-20261106-06"' in text
     assert 'ui-system.css' in text
     assert all(f"filename='{name}'" not in text for name in (
         'product-ui.css', 'ui-refinements.css', 'workflow-ui.css'))
@@ -2499,7 +2499,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
         result = client.get(path)
         assert result.status_code == 200, path
         text = result.get_data(as_text=True)
-        assert 'content="ui-20261106-05"' in text, path
+        assert 'content="ui-20261106-06"' in text, path
         assert text.count('ui-system.css') == 1, path
         assert 'data-product-theme-toggle' in text, path
         assert 'class="site-main"' not in text or 'id="hauptinhalt"' in text
@@ -2525,7 +2525,7 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert page.index('01 / BILDSCHIRME') < page.index('02 / PLAYLISTS') < page.index('03 / IT')
     assert 'Zu meinen Bildschirmen' in page
     assert 'href="#fleet-devices"' in page
-    assert 'ui-system.css?v=ui-20261106-05' in page
+    assert 'ui-system.css?v=ui-20261106-06' in page
 
     libpage = client.get('/library').get_data(as_text=True)
     assert libpage.index('01 · Vorlagen ansehen') < libpage.index('02 · Neue Playlist') < libpage.index('03 · ZIP-Backup')
@@ -2642,3 +2642,90 @@ def test_existing_imported_playlist_refuses_unsafe_folder_alias_rebind(env, monk
     assert after['folder_source'] == before['folder_source'] == 'legacy'
     assert after['items'] == before['items']
     assert FakeAnthias.changes == []
+
+
+def test_smb_ui_reports_verified_mount_only_for_fresh_matching_host_status(env, monkeypatch):
+    """Saving an SMB path is not proof of a mounted share, also on the dashboard."""
+    import hashlib
+    import json
+    import time
+
+    app, client, tmp = env
+    from app.media_sources import save_source
+    reg = Path(tmp) / 'new-ui-media-sources.json'
+    status_file = Path(tmp) / 'new-ui-mount-status.json'
+    root = Path(tmp) / 'sources'
+    (root / 'default' / 'Screen-A').mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    app.config['MEDIA_SOURCES_FILE'] = str(reg)
+    app.config['MEDIA_MOUNT_STATUS_FILE'] = str(status_file)
+    smb = '//10.12.0.4/files$/Marketing'
+    save_source('default', smb, path=reg)
+    login(client, 'it')
+
+    unconfirmed = client.get('/media-sources').get_data(as_text=True)
+    assert 'Mount unbestätigt' in unconfirmed
+    assert 'Host-Mount noch ausstehend' in unconfirmed
+    assert 'Eingehängt · Host bestätigt' not in unconfirmed
+    assert 'Gespeicherter SMB-Pfad' in unconfirmed
+    assert '/srv/anthias-sources/default' in unconfirmed
+    assert 'Stammverzeichnis aktualisieren' in unconfirmed
+    assert 'Erkannte Unterordner ansehen' not in unconfirmed
+    assert 'Ordner im Container sichtbar, aber der Host-Mount ist nicht bestätigt' in unconfirmed
+    assert 'Stammordner: Host-Mount nicht bestätigt' in client.get('/').get_data(as_text=True)
+
+    status_file.write_text(json.dumps({'checked_at': time.time(), 'sources': {
+        'default': {'state': 'mounted',
+                    'fingerprint': hashlib.sha256(smb.encode()).hexdigest()}
+    }}))
+    confirmed = client.get('/media-sources').get_data(as_text=True)
+    assert 'Eingehängt · Host bestätigt' in confirmed
+    assert '1 Unterordner im Hub sichtbar' in confirmed
+    assert 'Erkannte Unterordner ansehen' in confirmed
+    assert 'Screen-A' in confirmed
+    assert 'Playlist mit Netzwerkordner erstellen' in confirmed
+    assert 'Stammordner: Host-Mount bestätigt' in client.get('/').get_data(as_text=True)
+
+    # Staleness cannot impersonate proof of a live/recent host check.
+    status_file.write_text(json.dumps({'checked_at': time.time() - 3600, 'sources': {
+        'default': {'state': 'mounted',
+                    'fingerprint': hashlib.sha256(smb.encode()).hexdigest()}
+    }}))
+    stale = client.get('/media-sources').get_data(as_text=True)
+    assert 'Mount unbestätigt' in stale
+    assert 'Eingehängt · Host bestätigt' not in stale
+
+    # A successful status from the previous UNC is not valid after a path edit.
+    status_file.write_text(json.dumps({'checked_at': time.time(), 'sources': {
+        'default': {'state': 'mounted', 'fingerprint': 'older-unc'}
+    }}))
+    mismatch = client.get('/media-sources').get_data(as_text=True)
+    assert 'Mount unbestätigt' in mismatch
+    assert 'Eingehängt · Host bestätigt' not in mismatch
+
+
+def test_smb_ui_displays_existing_and_legacy_sources_before_extra_setup(env, monkeypatch):
+    from app.media_sources import save_source
+    app, client, tmp = env
+    reg = Path(tmp) / 'ui-source-registry.json'
+    app.config['MEDIA_SOURCES_FILE'] = str(reg)
+    app.config['MEDIA_MOUNT_STATUS_FILE'] = str(Path(tmp) / 'empty-state.json')
+    source_root = Path(tmp) / 'sources'
+    (source_root / 'legacy-pi').mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(source_root))
+    save_source('other', '//10.12.0.4/files$/Reception', path=reg)
+    login(client, 'it')
+    page = client.get('/media-sources').get_data(as_text=True)
+    assert 'Weitere Quellen' in page
+    assert 'legacy-pi' in page
+    assert 'CIFS-Mount nicht bestätigt' in page
+    assert 'Host-Mount noch ausstehend' in page
+    assert page.index('REGISTRIERTE EINZELQUELLE') < page.index('Weitere SMB-Quelle hinzufügen')
+    assert page.index('ALTER HOST-MOUNT / NICHT REGISTRIERT') < page.index('Weitere SMB-Quelle hinzufügen')
+    assert 'Quelle aus dem Hub entfernen' in page
+
+    # The mountinfo inspector, not the mere presence of a folder, upgrades
+    # the legacy badge to "CIFS-Mount erkannt".
+    with patch('app.media_sources.observed_mount_source', return_value='//10.12.0.4/files$'):
+        observed = client.get('/media-sources').get_data(as_text=True)
+    assert 'CIFS-Mount erkannt' in observed

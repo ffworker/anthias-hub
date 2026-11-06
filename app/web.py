@@ -215,13 +215,17 @@ def create_app(config=None):
                 for name in default_library_folders()
             ]
             default_source = next((entry for entry in registered if entry['alias'] == 'default'), None)
+            mounted_count = sum(s['status'] in ('mounted', 'already-mounted') for s in registered)
+            attention_count = len(registered) - mounted_count
             return render_template('media_sources.html', sources=registered,
                                    unmanaged=unmanaged, default_folders=default_folders,
-                                   default_source=default_source, retired=retired)
+                                   default_source=default_source, retired=retired,
+                                   mounted_count=mounted_count, attention_count=attention_count)
         except SourceError as exc:
             flash(str(exc), 'error')
             return render_template('media_sources.html', sources=[], unmanaged=[],
-                                   default_folders=[], default_source=None, retired=[])
+                                   default_folders=[], default_source=None, retired=[],
+                                   mounted_count=0, attention_count=0)
 
     @app.post('/media-sources')
     @login_required('it')
@@ -927,7 +931,23 @@ def create_app(config=None):
     def dashboard():
         # Do not block Hub navigation on serial Pi API calls or slow info.
         devices = load(app.config['DEVICES_FILE'])
-        return render_template('dashboard.html', devices=devices)
+        default_mount_state = None
+        if current_user()['role'] in ('it', 'owner'):
+            # Small, IT-only readiness hint; do not treat an absent/stale host
+            # report as a mounted SMB share or block the screen overview.
+            from .media_sources import SourceError, load_sources, mount_statuses
+            try:
+                registry = load_sources(app.config['MEDIA_SOURCES_FILE'])
+                if any(row['alias'] == 'default' for row in registry):
+                    states = mount_statuses(app.config['MEDIA_MOUNT_STATUS_FILE'],
+                                             app.config['MEDIA_SOURCES_FILE'])
+                    default_mount_state = states.get('default', 'pending')
+                else:
+                    default_mount_state = 'unconfigured'
+            except SourceError:
+                default_mount_state = 'pending'
+        return render_template('dashboard.html', devices=devices,
+                               default_mount_state=default_mount_state)
 
     @app.get('/devices/<device_id>/overview')
     @login_required()
