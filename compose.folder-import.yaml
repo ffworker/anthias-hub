@@ -13,6 +13,7 @@ services:
       MEDIA_SOURCE_ROOT: /sources
       FOLDER_SYNC_INTERVAL: "${FOLDER_SYNC_INTERVAL:-300}"
       FOLDER_AUTO_PUBLISH: "${FOLDER_AUTO_PUBLISH:-0}"
+      FOLDER_REQUIRE_MOUNT: "1"
       DEVICES_FILE: /data/devices.json
       SCHEDULES_FILE: /data/schedules.json
       FOLDER_PUBLICATIONS_DIR: /data/folder-publications
