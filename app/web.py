@@ -247,6 +247,21 @@ def create_app(config=None):
             flash(str(exc), 'error')
         return redirect(url_for('library_detail', template_id=template_id))
 
+    @app.post('/library/<template_id>/auto-devices')
+    @login_required('it')
+    def library_auto_devices(template_id):
+        """Explicit IT opt-in for auto-publishing folder-managed media."""
+        try:
+            selected = request.form.getlist('devices')
+            library().set_auto_devices(template_id, selected,
+                                       load(app.config['DEVICES_FILE']))
+            audit('library.auto-devices', asset_id=template_id)
+            flash('Automatische Bildschirmzuordnung gespeichert. '
+                  'Synchronisation beginnt erst, wenn IT den Publisher aktiviert.', 'success')
+        except LibraryError as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('library_detail', template_id=template_id))
+
     @app.get('/library/<template_id>/items/<item_id>/preview')
     @login_required()
     def library_item_preview(template_id, item_id):
