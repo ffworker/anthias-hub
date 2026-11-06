@@ -791,7 +791,7 @@ def test_library_landing_keeps_backup_separate_and_uploads_inside_templates(env)
     sample = lib.create('Bistro Medien')
     login(client, 'marketing')
     page = client.get('/library').data.decode('utf-8')
-    assert 'Neue Vorlage erstellen' in page
+    assert 'Playlist erstellen' in page
     assert 'manifest.json' in page
     assert 'Vorlagenbackup wiederherstellen' in page
     assert 'data-bulk-upload' not in page
@@ -1195,7 +1195,7 @@ def test_library_template_shows_media_first_and_website_only_on_request(env):
     page = client.get('/library/' + collection['id']).data.decode('utf-8')
     assert page.index('Bild oder Video speichern') < page.index('Medien-Sammelimport')
     assert page.index('Medien-Sammelimport') < page.index('Optional: Webseite verlinken')
-    assert '<details class="library-website-details">' in page
+    assert re.search(r'<details class="library-website-details"\s*>', page)
     assert 'library-website-details" open' not in page
     assert 'library_add_url' not in page  # internal endpoint name is not exposed
     assert '/url' in page  # existing URL submission stays available
@@ -2050,7 +2050,7 @@ def test_folder_backed_marketing_view_is_duration_first_and_it_has_setup(env, mo
 
     login(client, 'it')
     it = client.get(f'/library/{ident}').get_data(as_text=True)
-    assert 'RSS2Slideshow / Web-Feed hinzufügen (IT)' in it
+    assert 'RSS2Slideshow / Webseite zur Playlist hinzufügen' in it
     assert 'name="folder_source"' in it
     assert 'value="bistro" selected' in it
     assert 'value="empfang"' in it
@@ -2150,8 +2150,10 @@ def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monke
     assert page.status_code == 200
     html = page.get_data(as_text=True)
     assert 'Ein Netzwerkordner. Alle Bildschirme.' in html
-    assert 'GH-Wie4-BistroConnect' in html
+    assert 'GH-Wie4-BistroConnect' not in html  # selection moves to library
+    assert '1 Unterordner im Hub sichtbar' in html
     assert 'Playlist mit Ordner erstellen' in html
+    assert 'value="default/GH-Wie4-BistroConnect"' in client.get('/library').get_data(as_text=True)
     assert 'Als Playlist verwenden' not in html
     assert 'id="new-playlist"' in client.get('/library').get_data(as_text=True)
     assert 'name="alias" value="default"' in html
