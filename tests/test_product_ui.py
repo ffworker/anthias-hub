@@ -72,3 +72,22 @@ def test_playlist_workflows_have_explicit_categories_and_theme_aware_contrast():
     assert '@media(max-width:1170px)' in sheet
     assert 'html[data-theme="dark"]' in sheet
     assert 'html[data-theme="light"]' in sheet
+
+
+def test_dashboard_links_to_actual_screen_list_and_new_device_form_is_optional():
+    page = (TEMPLATES / 'dashboard.html').read_text(encoding='utf-8')
+    css = (STATIC / 'workflow-ui.css').read_text(encoding='utf-8')
+    script = (STATIC / 'fleet-setup.js').read_text(encoding='utf-8')
+    assert 'href="#fleet-devices"' in page
+    assert 'id="fleet-devices"' in page
+    assert 'href="#fleet-title">Bildschirme ansehen' not in page
+    assert '<details id="device-setup"' in page
+    assert 'fleet-setup-toggle' in page and 'fleet-setup-body' in page
+    assert '{% if not devices %} open{% endif %}' in page
+    assert 'fleet-setup.js' in page
+    assert "window.location.hash === '#device-setup'" in script
+    assert 'setup.open = true' in script
+    assert '.fleet-grid-single' in css
+    assert '.hub-workflow-card>a.button:not(.primary)' in css
+    assert 'var(--ui-fg)!important' in css
+    assert 'fleet-setup-collapsible' in css
