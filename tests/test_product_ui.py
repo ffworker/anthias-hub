@@ -9,14 +9,19 @@ TEMPLATES = Path(__file__).resolve().parents[1] / 'app' / 'templates'
 
 def test_product_theme_loads_last_and_controls_are_real():
     base = (TEMPLATES / 'base.html').read_text(encoding='utf-8')
-    assert base.index('ui-refinements.css') < base.index('product-ui.css')
+    assert "filename='ui-system.css'" in base
+    assert "filename='product-ui.css'" not in base
+    assert "filename='workflow-ui.css'" not in base
+    assert "filename='ui-refinements.css'" not in base
+    assert 'name="anthias-hub-ui" content="ui-20261106-03"' in base
+    assert base.index('{% block extra_head %}') < base.index("filename='ui-system.css'")
     assert 'product-theme.js' in base
     assert 'data-product-theme-toggle' in base
     assert 'aria-pressed="false"' in base
     assert 'class="skip-link"' in base
     assert base.index('Ordner &amp; Quellen') < base.index('Playlists') < base.index('Bildschirme</a>')
     assert 'logged_user.role in (\'it\', \'owner\')' in base
-    sheet = (STATIC / 'product-ui.css').read_text(encoding='utf-8')
+    sheet = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
     assert 'html[data-theme="dark"]' in sheet
     assert '--ui-bg:#eeece2' in sheet
     assert '#ff795c' in sheet
@@ -54,9 +59,9 @@ def test_playlist_workflows_have_explicit_categories_and_theme_aware_contrast():
     library = (TEMPLATES / 'library.html').read_text(encoding='utf-8')
     detail = (TEMPLATES / 'library_detail.html').read_text(encoding='utf-8')
     player = (TEMPLATES / 'playlist.html').read_text(encoding='utf-8')
-    sheet = (STATIC / 'workflow-ui.css').read_text(encoding='utf-8')
+    sheet = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
 
-    assert base.index('product-ui.css') < base.index('workflow-ui.css')
+    assert base.index('{% block extra_head %}') < base.index('ui-system.css')
     for title in ('Inhalte / Netzwerkordner', 'ZIP-Import &amp; Export', 'Playlist anwenden'):
         assert title in library
     assert 'id="backup-zip"' in library
@@ -76,7 +81,7 @@ def test_playlist_workflows_have_explicit_categories_and_theme_aware_contrast():
 
 def test_dashboard_links_to_actual_screen_list_and_new_device_form_is_optional():
     page = (TEMPLATES / 'dashboard.html').read_text(encoding='utf-8')
-    css = (STATIC / 'workflow-ui.css').read_text(encoding='utf-8')
+    css = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
     script = (STATIC / 'fleet-setup.js').read_text(encoding='utf-8')
     assert 'href="#fleet-devices"' in page
     assert 'id="fleet-devices"' in page
