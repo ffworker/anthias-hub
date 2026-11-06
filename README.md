@@ -15,7 +15,7 @@ Manage screens, playlists, local media and reusable content in one web UI. Each 
 - **Screens and playlists:** Register players, view status, add/edit/reorder/pause content and preview stored media.
 - **Local library:** Reusable templates, images, videos and websites. Import ordinary media ZIPs separately from Hub template-backup ZIPs. Append to existing playlists without replacing their contents.
 - **Schedules:** Shared named schedule library across devices, independent device defaults, per-asset assignments and custom time windows. Scheduling runs natively on Anthias. See [scheduling](docs/scheduling.md).
-- **Folder-backed playlists (experimental):** Marketing keeps saving media to familiar SMB/NFS folders; IT chooses a read-only source alias and target Pis. Marketing sets per-image display time directly in the Hub template; changes persist across file replacements. RSS2Slideshow can be added as a webpage in the same auto-published template. Publishing needs an explicit server-side opt-in (`FOLDER_AUTO_PUBLISH=1`). No automatic remote deletions. See [company workflow](docs/company-folder-workflow.md) and [folder-backed playlists](docs/folder-backed-playlists.md).
+- **Folder-backed playlists (experimental):** IT can mount **one read-only SMB parent** and select its direct child folders as separate sources (`default/Screen-A`). The source registry is not a privileged mount tool; fresh installs also need host-side mount verification and a separate importer. Durations survive file replacements, while automatic Pi publishing remains an explicit opt-in (`FOLDER_AUTO_PUBLISH=1`), with no automatic remote deletion. See [one-root setup / migration](docs/single-root-smb-setup.md), [company workflow](docs/company-folder-workflow.md) and [folder-backed playlists](docs/folder-backed-playlists.md).
 - **Media:** PNG/JPEG/WebP/MP4, sequential batch uploads (up to 20 files) and ZIP import. Up to **4 GiB per file**, and **4 GiB total extracted media per ZIP**, subject to disk capacity and proxy limits. See [media import](docs/marketing-bulk-import.md).
 - **Accounts:** Owner (IT + Marketing), IT, Marketing and Viewer. Marketing can edit content across **all** registered screens; **IT inherits the same content-editing rights** in addition to IT-only administration. Optional confirmed reboot/shutdown and experimental HDMI-CEC where supported.
 - **Unified UI:** one shared [design system](docs/ui-design-system.md) with light/dark themes, desktop/mobile layouts and a checkable deployed UI revision; no additional frontend framework.
@@ -37,7 +37,7 @@ bash scripts/setup-pilot.sh --solo
 curl -fsS http://127.0.0.1:8765/healthz
 ```
 
-For separate IT and Marketing accounts omit `--solo`. Setup creates account hashes and a random session secret; it does not overwrite existing valid state. The default container binds **only** `127.0.0.1:8765`. Connect over an SSH tunnel:
+For separate IT and Marketing accounts omit `--solo`. Setup creates account hashes and a random session secret; it does not overwrite existing valid state. **Manual playlists work immediately without an SMB mount.** Network-folder discovery is an optional second step requiring the [host-side single-root setup](docs/single-root-smb-setup.md); merely saving one UNC in the UI does not mount it. The default container binds **only** `127.0.0.1:8765`. Connect over an SSH tunnel:
 
 ```bash
 ssh -N -L 127.0.0.1:8765:127.0.0.1:8765 ADMIN@SERVER_IP
@@ -88,13 +88,14 @@ certification. See [network access](docs/network-access.md) for TLS setup.
 | [Acceptance checklist](docs/pilot-acceptance.md) | Real Pi testing and release readiness |
 | [Co-hosted staging](docs/cohosted-staging.md) | Optional two-app test VM; independent RSS2Slideshow service |
 
-Also see [Security](SECURITY.md), [License](LICENSE) and [Changelog](CHANGELOG.md). The UI is in German; documentation is a mix of German and English.
+Also see [Security](SECURITY.md), [public-repository hygiene](docs/public-repo-hygiene.md), [License](LICENSE) and [Changelog](CHANGELOG.md). The UI is in German; documentation is a mix of German and English.
 
 ## Development
 
-Backend: Python/Flask, server-rendered templates, plain JavaScript and CSS. `style.css` provides the base, `modern.css` the Nordlicht theme, `workspace.css` shared layout, page-specific styles load through `extra_head`, and `ui-refinements.css` loads **last**. Keep form controls, popovers and grids responsive; do not add a second theme or framework.
+Backend: Python/Flask, server-rendered templates, plain JavaScript and CSS. Base/page-specific rules load first and `ui-system.css` is the **single final design layer**. Keep forms, popovers and grids responsive; do not add a second theme or framework. See [UI design system](docs/ui-design-system.md).
 
 ```bash
+python scripts/check_public_repo.py
 python -m pytest -q
 node --test tests/*.test.cjs
 ```
