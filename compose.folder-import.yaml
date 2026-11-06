@@ -12,6 +12,10 @@ services:
       LIBRARY_DIR: /data/library
       MEDIA_SOURCE_ROOT: /sources
       FOLDER_SYNC_INTERVAL: "${FOLDER_SYNC_INTERVAL:-300}"
+      FOLDER_AUTO_PUBLISH: "${FOLDER_AUTO_PUBLISH:-0}"
+      DEVICES_FILE: /data/devices.json
+      SCHEDULES_FILE: /data/schedules.json
+      FOLDER_PUBLICATIONS_DIR: /data/folder-publications
     volumes:
       - ./data:/data
       - ${MEDIA_SOURCE_HOST_PATH:?Set mounted read-only media root}:/sources:ro
