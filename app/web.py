@@ -178,13 +178,24 @@ def create_app(config=None):
     @login_required('it')
     def media_sources_page():
         from .folder_sync import available_sources, default_library_folders
-        from .media_sources import SourceError, load_sources, mount_statuses, observed_mount_source
+        from .media_sources import (
+            SourceError, load_sources, mount_statuses, observed_mount_source, retired_aliases,
+        )
         try:
             registered = load_sources(app.config['MEDIA_SOURCES_FILE'])
+            retired = retired_aliases(app.config['MEDIA_SOURCES_FILE'])
             states = mount_statuses(app.config['MEDIA_MOUNT_STATUS_FILE'], app.config['MEDIA_SOURCES_FILE'])
             aliases = available_sources()
+            templates = library().list()
             for source in registered:
                 source['status'] = states.get(source['alias'], 'pending')
+                source['dependents'] = [
+                    {'id': t['id'], 'name': t['name']}
+                    for t in templates
+                    if t.get('folder_source') == source['alias']
+                    or (source['alias'] == 'default'
+                        and str(t.get('folder_source') or '').startswith('default/'))
+                ]
             # Child folder options are NOT standalone mount aliases. Only
             # top-level aliases may be passed to mountinfo inspection.
             standalone_aliases = {alias for alias in aliases if '/' not in alias}
@@ -200,11 +211,11 @@ def create_app(config=None):
             default_source = next((entry for entry in registered if entry['alias'] == 'default'), None)
             return render_template('media_sources.html', sources=registered,
                                    unmanaged=unmanaged, default_folders=default_folders,
-                                   default_source=default_source)
+                                   default_source=default_source, retired=retired)
         except SourceError as exc:
             flash(str(exc), 'error')
             return render_template('media_sources.html', sources=[], unmanaged=[],
-                                   default_folders=[], default_source=None)
+                                   default_folders=[], default_source=None, retired=[])
 
     @app.post('/media-sources')
     @login_required('it')
@@ -220,6 +231,40 @@ def create_app(config=None):
                   'bereits eingebundenen Pfad ist ein kontrollierter Host-Wechsel nötig.',
                   'success')
         except (SourceError, OSError) as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('media_sources_page'))
+
+    @app.post('/media-sources/remove')
+    @login_required('it')
+    def media_sources_remove():
+        """Unregister only an unused alias; host mount and Pi files stay intact."""
+        from .media_sources import SourceError, validate_alias, remove_source
+        from .library import _lock as library_lock
+        try:
+            alias = validate_alias(request.form.get('alias', ''))
+            if request.form.get('confirm') != alias or request.form.get('ack') != 'yes':
+                raise SourceError('Entfernen der Quelle ausdrücklich bestätigen')
+            # One critical section with set_folder_source: never retire a source
+            # between checking playlist references and accepting a new binding.
+            with library_lock:
+                dependent = [
+                    t['name'] for t in library().list()
+                    if t.get('folder_source') == alias
+                    or (alias == 'default'
+                        and str(t.get('folder_source') or '').startswith('default/'))
+                ]
+                if dependent:
+                    raise SourceError(
+                        'Quelle wird noch von ' + str(len(dependent)) +
+                        ' Playlist(s) genutzt: ' + ', '.join(dependent[:3]) +
+                        '. Zuerst die Zuordnung in den Playlists lösen.'
+                    )
+                remove_source(alias, path=app.config['MEDIA_SOURCES_FILE'])
+            audit('media-source.retired', asset_id=alias)
+            flash('Quelle „' + alias + '“ im Hub ausgetragen. Kein SMB-Mount wurde '
+                  'ausgehängt und keine Dateien wurden gelöscht. Den alten Host-Mount '
+                  'nach Prüfung separat kontrolliert entfernen.', 'success')
+        except (SourceError, LibraryError, OSError) as exc:
             flash(str(exc), 'error')
         return redirect(url_for('media_sources_page'))
 
