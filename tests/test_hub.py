@@ -2238,7 +2238,7 @@ def test_it_can_link_network_share_from_screen_composer_without_publishing(env, 
     assert len(store.list()) == 1
     assert FakeAnthias.changes == []  # Binding cannot mutate a live Pi playlist.
     linked_page = client.get('/devices/lab').get_data(as_text=True)
-    assert 'Netzwerkordner verknüpft · automatische Playlist' in linked_page
+    assert 'Netzwerkordner zugeordnet · Automatik optional' in linked_page
 
 
 def test_manual_network_folder_import_is_guarded_and_append_only(env, monkeypatch):
