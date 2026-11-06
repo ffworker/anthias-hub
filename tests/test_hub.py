@@ -2013,3 +2013,55 @@ def test_folder_auto_targets_require_it_and_csrf(env, monkeypatch):
                           data={'csrf': token(it_client),
                                 'folder_source': ''}).status_code == 302
     assert store.get(ident)['auto_devices'] == []
+
+
+def test_folder_backed_marketing_view_is_duration_first_and_it_has_setup(env, monkeypatch):
+    app, client, tmp = env
+    from app.library import Library
+    from app.folder_sync import sync_template
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    root = Path(tmp) / 'sources'
+    source = root / 'bistro'
+    source.mkdir(parents=True)
+    (root / 'empfang').mkdir()
+    (source / 'banner.png').write_bytes(b'\\x89PNG\\r\\n\\x1a\\n' + b'picture')
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    lib = Library(app.config['LIBRARY_DIR'])
+    ident = lib.create('Bistro Screens')['id']
+    lib.set_folder_source(ident, 'bistro')
+    sync_template(lib, ident)
+    lib.add_url(ident, 'Bistro custom RSS', 'http://192.0.2.55/feed', 30)
+    item = next(x for x in lib.get(ident)['items'] if x.get('source_file'))
+
+    login(client, 'marketing')
+    marketing = client.get(f'/library/{ident}').get_data(as_text=True)
+    assert 'Automatisch aus dem Netzwerkordner' in marketing
+    assert 'name="duration"' in marketing
+    assert 'name="folder_source"' not in marketing
+    assert 'RSS2Slideshow / Web-Feed hinzufügen (IT)' not in marketing
+    assert 'Bild oder Video speichern' not in marketing
+    assert 'name="devices"' not in marketing
+    assert 'Aus Netzwerkordner' in marketing
+    assert client.post(f'/library/{ident}/items/{item["id"]}/duration',
+                       data={'csrf': token(client), 'duration': '44'}).status_code == 302
+    assert lib.get(ident)['items'][0]['duration'] == 44
+    assert client.post(f'/library/{ident}/folder-source',
+                       data={'csrf': token(client), 'folder_source': 'empfang'}).status_code == 403
+    client.post('/logout', data={'csrf': token(client)})
+
+    login(client, 'it')
+    it = client.get(f'/library/{ident}').get_data(as_text=True)
+    assert 'RSS2Slideshow / Web-Feed hinzufügen (IT)' in it
+    assert 'name="folder_source"' in it
+    assert 'value="bistro" selected' in it
+    assert 'value="empfang"' in it
+    assert 'name="devices"' in it
+    assert 'name="duration"' in it
+    assert 'Noch kein Importlauf gemeldet' in it
+    client.post('/logout', data={'csrf': token(client)})
+
+    login(client, 'viewer')
+    viewer = client.get(f'/library/{ident}').get_data(as_text=True)
+    assert 'class="library-duration-form"' not in viewer
+    assert client.post(f'/library/{ident}/items/{item["id"]}/duration',
+                       data={'csrf': token(client), 'duration': '23'}).status_code == 403
