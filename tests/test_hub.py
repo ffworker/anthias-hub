@@ -2064,3 +2064,64 @@ def test_folder_backed_marketing_view_is_duration_first_and_it_has_setup(env, mo
     assert 'class="library-duration-form"' not in viewer
     assert client.post(f'/library/{ident}/items/{item["id"]}/duration',
                        data={'csrf': token(client), 'duration': '23'}).status_code == 403
+
+
+def test_it_can_add_and_edit_smb_sources_without_exposing_passwords(env, monkeypatch):
+    app, client, tmp = env
+    from app.media_sources import load_sources
+    registry = Path(tmp) / 'media-sources.json'
+    app.config['MEDIA_SOURCES_FILE'] = str(registry)
+    app.config['MEDIA_MOUNT_STATUS_FILE'] = str(Path(tmp) / 'mount-status.json')
+    mountroot = Path(tmp) / 'sources'
+    (mountroot / 'bistro').mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(mountroot))
+    login(client, 'it')
+    page = client.get('/media-sources').get_data(as_text=True)
+    assert 'SMB-Medienquellen' in page
+    assert 'bistro' in page
+    assert 'root@' not in page
+    assert 'name="unc"' in page
+    assert 'Medienquellen' in client.get('/library').get_data(as_text=True)
+
+    response = client.post('/media-sources', data={
+        'csrf': token(client), 'alias': 'bistro',
+        'unc': '//10.11.0.5/files$/Marketing/Bistro'})
+    assert response.status_code == 302
+    assert load_sources(registry)[0]['unc'] == '//10.11.0.5/files$/Marketing/Bistro'
+    page = client.get('/media-sources').get_data(as_text=True)
+    assert 'value="//10.11.0.5/files$/Marketing/Bistro"' in page
+    assert 'Host-Mount noch ausstehend' in page
+    assert 'files$' in page
+
+    response = client.post('/media-sources', data={
+        'csrf': token(client), 'alias': 'bistro',
+        'unc': '//10.11.0.5/files$/Marketing/Updated'})
+    assert response.status_code == 302
+    assert load_sources(registry)[0]['unc'].endswith('/Updated')
+
+    response = client.post('/media-sources', data={
+        'csrf': token(client), 'alias': 'hack',
+        'unc': '//8.8.8.8/public/content'})
+    assert response.status_code == 302
+    assert len(load_sources(registry)) == 1
+    assert client.post('/media-sources',
+                       data={'alias': 'test', 'unc': '//10.11.0.5/test'}).status_code == 400
+
+
+def test_only_it_or_owner_can_change_smb_sources(env):
+    app, client, tmp = env
+    app.config['MEDIA_SOURCES_FILE'] = str(Path(tmp) / 'sources.json')
+    app.config['MEDIA_MOUNT_STATUS_FILE'] = str(Path(tmp) / 'status.json')
+    for role in ('viewer', 'marketing'):
+        login(client, role)
+        assert client.get('/media-sources').status_code == 403
+        assert client.post('/media-sources', data={
+            'csrf': token(client), 'alias': 'screen',
+            'unc': '//10.11.0.5/files$/Screen'}).status_code == 403
+        assert 'href="/media-sources"' not in client.get('/').get_data(as_text=True)
+
+    login(client, 'owner')
+    assert client.get('/media-sources').status_code == 200
+    assert client.post('/media-sources', data={
+        'csrf': token(client), 'alias': 'screen',
+        'unc': '//10.11.0.5/files$/Screen'}).status_code == 302
