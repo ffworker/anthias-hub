@@ -83,7 +83,7 @@
 
   <div class="media-folder-summary" role="status">
     <div><strong>{{ default_folders|length }} Unterordner im Hub sichtbar</strong>
-      <span>{% if default_folders %}Direkt unter dem Stammordner erkannt; Auswahl in der Playlist-Bibliothek.{% elif default_source and default_source.status in ('mounted','already-mounted') %}Mount bestätigt, aber noch keine direkten Unterordner gefunden.{% else %}Ohne bestätigten Mount sind hier noch keine verwendbaren Bildschirmordner sichtbar.{% endif %}</span></div>
+      <span>{% if default_source and default_source.status in ('mounted','already-mounted') and default_folders %}Direkt unter dem bestätigten Mount erkannt; in der Playlist-Bibliothek auswählbar.{% elif default_folders %}Ordner im Container sichtbar, aber der Host-Mount ist nicht bestätigt. Nicht als aktiven SMB-Mount werten.{% elif default_source and default_source.status in ('mounted','already-mounted') %}Mount bestätigt, aber noch keine direkten Unterordner gefunden.{% else %}Ohne bestätigten Mount sind hier noch keine verwendbaren Bildschirmordner sichtbar.{% endif %}</span></div>
     {% if default_source and default_source.status in ('mounted','already-mounted') and default_folders %}
       <a class="button primary" href="{{ url_for('library_index') }}#new-playlist">Playlist mit Netzwerkordner erstellen →</a>
     {% else %}
