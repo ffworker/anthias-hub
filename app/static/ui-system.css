@@ -1,4 +1,4 @@
-/* Anthias Hub — unified UI skin (version: ui-20261106-04).
+/* Anthias Hub — unified UI skin (version: ui-20261106-05).
    This combines the previously separate refinements, product and workflow
    layers in one ordered cascade. Do not add new late UI stylesheets. */
 /* -------- app/static/ui-refinements.css: imported into canonical UI system -------- */
@@ -1672,4 +1672,98 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
   .library-template-intro .library-jump-apply{width:100%;justify-content:center}
   .library-template-intro .library-backup-export{width:100%;justify-content:center}
   .library-publish-hero{margin-top:20px;padding:18px}
+}
+
+
+/* Source administration: same strong disclosures, restrained surfaces and
+   predictable actions as the Signaturee-inspired playlist studio. */
+.media-advanced-sources{
+  margin:24px 0 0;padding:0!important;border:1px solid var(--ui-line-strong);
+  border-radius:var(--ui-radius);background:var(--ui-surface);
+}
+.media-advanced-sources>summary{
+  display:flex!important;align-items:center;justify-content:space-between;
+  gap:15px;min-height:76px;padding:16px 20px!important;list-style:none;
+  cursor:pointer;color:var(--ui-fg)!important;background:var(--ui-surface);
+  border-left:4px solid var(--ui-line-strong);border-radius:var(--ui-radius);
+}
+.media-advanced-sources>summary::-webkit-details-marker{display:none}
+.media-advanced-sources>summary::marker{content:""}
+.media-advanced-sources>summary:hover,
+.media-advanced-sources[open]>summary{
+  background:var(--ui-surface-hover);border-left-color:var(--ui-accent)
+}
+.media-advanced-sources[open]>summary{border-bottom:1px solid var(--ui-line)}
+.media-advanced-sources[open]>summary .library-action-chevron{
+  transform:rotate(180deg);color:var(--ui-accent);border-color:var(--ui-accent)
+}
+.media-advanced-sources>.media-advanced-body{margin:0;padding:20px;gap:20px}
+.media-source-card,.media-sources-admin{min-width:0}
+.media-source-card{padding:19px 20px}
+.media-source-card .media-source-top{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:9px 14px;margin-bottom:13px
+}
+.media-source-card .media-source-top h3{
+  font:400 21px/1.2 var(--ui-serif);margin:0;overflow-wrap:anywhere
+}
+.media-source-card .media-source-form{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end
+}
+.media-source-card .media-source-form label{min-width:0}
+.media-source-card .media-source-form button{min-height:46px}
+.media-default-panel .media-retire-control{margin-top:20px}
+.media-retire-control{
+  border-top:1px solid var(--ui-line);padding-top:13px;margin-top:16px;
+  color:var(--ui-fg)
+}
+.media-retire-control>summary{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  min-height:43px;padding:10px 12px;list-style:none;cursor:pointer;
+  color:var(--ui-error);font-weight:700;font-size:12px;
+  background:var(--ui-subtle);border:1px solid var(--ui-line);
+  border-radius:var(--ui-radius)
+}
+.media-retire-control>summary::-webkit-details-marker{display:none}
+.media-retire-control>summary::marker{content:""}
+.media-retire-control>summary:hover,
+.media-retire-control[open]>summary{
+  border-color:var(--ui-error);background:var(--ui-error-bg)
+}
+.media-retire-chevron{font-size:17px;line-height:1;transition:transform .14s ease}
+.media-retire-control[open] .media-retire-chevron{transform:rotate(180deg)}
+.media-retire-body{
+  padding:13px 12px;line-height:1.6;
+  font-size:12px;color:var(--ui-muted)
+}
+.media-retire-body p{color:var(--ui-muted);margin:0 0 11px}
+.media-retire-body strong{color:var(--ui-fg)}
+.media-dependency-warning{
+  border-left:3px solid var(--ui-error);
+  background:var(--ui-error-bg);padding:10px 12px
+}
+.media-dependency-list{margin:0 0 10px;padding-left:20px}
+.media-dependency-list a{color:var(--ui-accent);overflow-wrap:anywhere}
+.media-retire-form{display:grid;gap:10px;justify-items:start}
+.media-retire-form label{
+  display:flex;align-items:flex-start;gap:9px;cursor:pointer;
+  color:var(--ui-fg);font-size:12px;line-height:1.5
+}
+.media-retire-form input[type=checkbox]{
+  flex:none;width:17px;height:17px;margin-top:1px;accent-color:var(--ui-accent)
+}
+.media-retire-form button{min-height:42px;padding:9px 14px}
+.media-retired-list{
+  border:1px solid var(--ui-line);border-radius:var(--ui-radius);
+  background:var(--ui-subtle);padding:16px 18px
+}
+.media-retired-list ul{padding-left:20px;line-height:1.8;overflow-wrap:anywhere}
+.media-retired-list code{overflow-wrap:anywhere}
+@media(max-width:700px){
+  .media-advanced-sources>summary{padding:13px 12px!important}
+  .media-advanced-sources>.media-advanced-body{padding:12px}
+  .media-source-card{padding:15px}
+  .media-source-card .media-source-form{grid-template-columns:minmax(0,1fr)}
+  .media-default-panel .media-default-form{grid-template-columns:minmax(0,1fr)}
+  .media-default-panel .media-default-form button{width:100%}
 }

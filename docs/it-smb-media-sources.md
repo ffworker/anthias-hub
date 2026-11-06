@@ -44,6 +44,26 @@ Hier werden beliebig viele Aliase (z. B. `bistro`, `empfang`,
   Mount noch aktiv ist, wird **nicht automatisch umgehängt**: IT muss den
   kontrollierten Wechsel am Host vornehmen; der Import bleibt bis dahin
   sicherheitshalber gesperrt.
+- **Austragen (einzeln):** Quelle unter `Ordner & Quellen → Weitere SMB-Quellen`
+  öffnen, `Quelle aus dem Hub entfernen` aufklappen, bestätigen. Für den
+  Standardstammordner befindet sich dieselbe Aktion im Hauptbereich. Der Hub
+  **blockiert die Entfernung**, solange eine aktive Playlist an den Alias
+  gebunden ist (auch `default/<Unterordner>`). Zuerst die betroffenen Vorlagen
+  prüfen und Zuordnungen gezielt lösen bzw. migrieren. Importierte Medien,
+  individuelle Zeiten und Geräte-Playlists werden nicht gelöscht.
+- **Alte, nicht registrierte Einzel-Mounts:** Der Abschnitt
+  `Bereits am Host eingebundene Ordner` bietet dieselbe
+  `Quelle aus dem Hub entfernen`-Aktion für tatsächlich erkannte
+  Alt-Aliase. Das registriert **keinen** neuen UNC-Pfad und führt zu
+  **keinem** Unmount; es sperrt lediglich die erneute Verwendung im Hub.
+  Aktive Playlist-Zuordnungen blockieren auch hier das Austragen.
+- **Nach dem Austragen:** Alias ist für neue Zuordnungen gesperrt, selbst wenn
+  ein altes CIFS-Mount noch vorhanden ist; die Anzeige `Ausgetragene Quellen`
+  erinnert an die nötige Host-Prüfung. Es wird **weder ein SMB-Mount ausgehängt
+  noch ein Mountpoint-Ordner oder eine Datei gelöscht**. Der Root-Mount-Timer
+  mountet ausgetragene Aliase nicht erneut, sofern sie nicht anderweitig
+  konfiguriert sind. Gezielt wieder freigeben: Alias und geprüften UNC-Pfad
+  neu registrieren.
 - **Playlist:** Bibliothek → Vorlage → Netzwerkordner als Medienquelle.
   Hier nur den Alias wählen und Zielbildschirme konfigurieren.
 - **Anzeige:** Neues/ersetztes Medium aus dem Share erscheint automatisch
@@ -165,6 +185,28 @@ neu erstellen. Nie pauschal die Root-Mountpropagation umstellen.
   Pis zuvor Medien-/Playlist-Backup und Wiedergabe abnehmen.
 - Fehlende SMB-Dateien führen weiterhin **nicht** zu automatischen
   Pi-Löschungen. Das ist eine gesonderte Produktionsabnahme.
+
+## Einzel-Mount nach UI-Austragung sicher am Host entfernen
+
+Vorher Sicherung, betroffene Vorlagen, Hostdienst und tatsächlichen
+Mountpunkt prüfen. Den Folder-Import-Worker für den betroffenen Alias vor
+dem Eingriff kontrolliert pausieren; nicht blind einen produktiven Share
+aushängen. Als Root auf dem **Host** (nicht im Webcontainer):
+
+```bash
+alias_name=old-screen   # Beispiel; durch tatsächlich ausgetragenen Alias ersetzen
+findmnt -M "/srv/anthias-sources/$alias_name" -o TARGET,SOURCE,FSTYPE,OPTIONS
+# Nur wenn der richtige, nicht mehr genutzte CIFS-Mount eindeutig bestätigt ist:
+sudo umount "/srv/anthias-sources/$alias_name"
+findmnt -M "/srv/anthias-sources/$alias_name" || true
+```
+
+Vorhandene eigenständige `/etc/fstab`-Einträge bzw. systemd-Mountunits für
+diesen Altpfad ebenfalls prüfen, sonst wird er unter Umständen wieder
+eingehängt. **Keine** rekursiven `rm`-Befehle und kein automatisches
+`umount` aus dem Hub. Den Standardstammordner nicht aushängen, solange
+irgendein `default/...`-Template aktiv ist. Danach den Worker kontrolliert
+wieder starten und Status/Playlists prüfen.
 
 ## Abnahme
 

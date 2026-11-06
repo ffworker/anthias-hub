@@ -1,0 +1,25 @@
+{# Shared IT-only retire action for the default parent and optional single mounts. #}
+{% macro retire_control(source) -%}
+<details class="media-retire-control">
+  <summary>Quelle aus dem Hub entfernen <span class="media-retire-chevron" aria-hidden="true">⌄</span></summary>
+  <div class="media-retire-body">
+    {% if source.dependents %}
+    <p class="media-dependency-warning" role="status"><strong>Entfernen gesperrt:</strong> {{ source.dependents|length }} Playlist(s) verwenden diese Quelle. Zuerst die Zuordnung in den betroffenen Vorlagen entfernen oder die Vorlagen bewusst migrieren.</p>
+    <ul class="media-dependency-list">
+      {% for dep in source.dependents %}
+      <li><a href="{{ url_for('library_detail', template_id=dep.id) }}">{{ dep.name }}</a></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p>Die Registrierung wird entfernt und die Quelle verschwindet aus der Playlist-Auswahl. <strong>Kein SMB-Mount wird automatisch ausgehängt, keine SMB-Datei und kein Pi-Inhalt gelöscht.</strong> Den Host-Mount danach kontrolliert bereinigen.</p>
+    <form method="post" action="{{ url_for('media_sources_remove') }}" class="media-retire-form">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <input type="hidden" name="alias" value="{{ source.alias }}">
+      <input type="hidden" name="confirm" value="{{ source.alias }}">
+      <label><input type="checkbox" name="ack" value="yes" required> Ich habe geprüft, dass diese Quelle nicht mehr benötigt wird.</label>
+      <button type="submit" class="danger-btn">„{{ source.alias }}“ austragen</button>
+    </form>
+    {% endif %}
+  </div>
+</details>
+{%- endmacro %}

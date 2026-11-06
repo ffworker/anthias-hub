@@ -1,13 +1,14 @@
 {% extends 'base.html' %}
+{% from '_media_source_retire.html' import retire_control with context %}
 {% block title %}Medienquellen · IT · Anthias Hub{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">{% endblock %}
 {% block content %}
-<nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('library_index') }}">Bibliothek</a><span aria-hidden="true">›</span><span>Medienquellen (IT)</span></nav>
+<nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Bildschirme</a><span aria-hidden="true">›</span><span>Ordner &amp; Quellen (IT)</span></nav>
 <section class="library-intro">
   <p class="eyebrow">IT-ADMINISTRATION · NETZWERKMEDIEN</p>
-  <h1>SMB-Medienquellen</h1>
-  <p class="muted">Hier verwaltest du, welcher <strong>SMB-Pfad</strong> hinter einem Ordneralias steckt. Jede Quelle kann danach in der Bibliothek einer Playlist und einem oder mehreren Pis zugeordnet werden.</p>
-  <p class="muted"><strong>Sicherheit:</strong> Das UI speichert ausschließlich Pfade, keine SMB-Passwörter. Der separate Host-Mountdienst darf nur vorher von IT freigegebene Server/Freigaben verwenden und mountet schreibgeschützt. Eine geänderte aktive Freigabe wird niemals automatisch ausgehängt.</p>
+  <h1>Ordner &amp; Quellen</h1>
+  <p class="muted">Einen gemeinsamen SMB-Stammordner verbinden und seine Unterordner automatisch als Playlist-Quellen auswählen. Einzelne zusätzliche SMB-Pfade bleiben optional.</p>
+  <p class="muted">Der Hub speichert nur Pfade, keine Passwörter. Mounten und Aushängen bleiben getrennte, kontrollierte Host-Aufgaben.</p>
 </section>
 <section class="card library-panel media-default-panel" aria-labelledby="default-library-title">
   <p class="eyebrow">01 / STANDARD-BIBLIOTHEK</p>
@@ -33,11 +34,12 @@
   {% elif default_source.status not in ('mounted', 'already-mounted') %}
     <p class="muted" role="status"><strong>Gespeichert, aber noch nicht vom Host bestätigt.</strong> Den realen Mount unter <code>/srv/anthias-sources/default</code> und die Host-Verifikation prüfen. Bis dahin gelten angezeigte Pfade nicht als funktionierender Import.</p>
   {% endif %}
-  <p class="muted">Sicherheit: Der unprivilegierte Hub registriert nur den SMB-Pfad. Ein separater, von IT eingerichteter Host-Mountdienst bindet ausschließlich freigegebene Quellen schreibgeschützt ein. Keine SMB-Passwörter im Browser. Bereits aktive Quellen werden bei Änderungen nicht automatisch ausgehängt.</p>
+  <p class="muted">Ein gespeicherter Pfad ist noch kein Mount. Der Host muss die freigegebene Quelle schreibgeschützt einbinden und bestätigen. Bereits aktive Quellen werden beim Ändern nicht automatisch umgehängt.</p>
   <div class="media-folder-summary" role="status">
     <strong>{{ default_folders|length }} Unterordner im Hub sichtbar</strong>
     <span>{% if default_folders %}Die Ordner erscheinen beim Erstellen einer Playlist als Auswahl.{% else %}Noch keine Unterordner sichtbar. Prüfe bei Bedarf den SMB-Mount; die Ordnerauswahl erfolgt später in der Bibliothek.{% endif %}</span>
   </div>
+  {% if default_source %}{{ retire_control(default_source) }}{% endif %}
 </section>
 
 <section class="card media-folder-notice" aria-label="Ordnerzuordnung">
@@ -48,7 +50,7 @@
 </section>
 
 <details class="media-advanced-sources">
-<summary>Weitere SMB-Quellen &amp; Experten-Einstellungen</summary>
+<summary><span class="library-action-label"><strong>Weitere SMB-Quellen &amp; Experten-Einstellungen</strong><small>{{ sources|length - (1 if default_source else 0) }} zusätzliche Quelle(n) · nur wenn der Standard-Stammordner nicht genügt</small></span><span class="library-action-chevron" aria-hidden="true">⌄</span></summary>
 <div class="media-advanced-body">
 <section class="card library-panel media-sources-admin">
   <h2>Neue Medienquelle hinzufügen</h2>
@@ -58,11 +60,11 @@
     <label>SMB-Pfad<input name="unc" maxlength="650" placeholder="//192.168.1.10/marketing/Bildschirme/Empfang" required></label>
     <button type="submit" class="primary">Quelle speichern</button>
   </form>
-  <p class="muted">Die Ordnerkennung ist dauerhaft. Der SMB-Pfad kann jederzeit bearbeitet werden. Ein neuer Server oder eine neue Freigabe benötigt zuerst die Freigabe im geschützten Host-Allowlist-Dokument.</p>
+  <p class="muted">Ein neuer Server oder eine neue Freigabe benötigt eine Freigabe in der geschützten Host-Allowlist. Ein einzelner Alias kann später wieder ausgetragen werden, sobald keine Playlist ihn mehr verwendet.</p>
 </section>
 <section class="media-source-overview" aria-labelledby="sources-title">
-  <h2 id="sources-title">Konfigurierte Quellen <span class="count">{{ sources|length }}</span></h2>
-  {% for source in sources %}
+  <h2 id="sources-title">Zusätzliche Einzelquellen <span class="count">{{ sources|length - (1 if default_source else 0) }}</span></h2>
+  {% for source in sources if source.alias != 'default' %}
   <article class="card media-source-card">
     <div class="media-source-top">
       <h3>{{ source.alias }}</h3>
@@ -80,12 +82,21 @@
       <label>Gespeicherter SMB-Pfad<input name="unc" value="{{ source.unc }}" maxlength="650" required></label>
       <button type="submit">Änderung speichern</button>
     </form>
-    <p class="muted">Auf dem Pi bleibt alles unverändert, bis der Abgleich erfolgreich ist. Bei geändertem aktivem Mount bitte den kontrollierten Host-Wechsel durchführen.</p>
+    <p class="muted">Eine Pfadänderung ersetzt keinen aktiven Mount. Der Host muss den Wechsel separat prüfen; Pi-Inhalte bleiben unverändert.</p>
+    {{ retire_control(source) }}
   </article>
   {% else %}
-  <p class="card library-empty">Noch keine SMB-Quellen direkt über das UI konfiguriert.</p>
+  <p class="card library-empty">Keine zusätzlichen Einzelquellen. Die Standardbibliothek genügt normalerweise.</p>
   {% endfor %}
 </section>
+{% if retired %}
+<section class="media-source-overview media-retired-list" aria-labelledby="retired-title">
+  <h2 id="retired-title">Ausgetragene Quellen <span class="count">{{ retired|length }}</span></h2>
+  <p class="muted">Diese Aliase sind im Hub deaktiviert und werden nicht mehr als neue Playlist-Quelle angeboten. <strong>Ein vorhandener CIFS-Mount bleibt auf dem Host bestehen, bis IT ihn separat aushängt.</strong></p>
+  <ul>{% for alias in retired %}<li><code>{{ alias }}</code> · Host prüfen: <code>findmnt -M /srv/anthias-sources/{{ alias }}</code></li>{% endfor %}</ul>
+  <p class="muted">Bei Bedarf lässt sich ein Alias mit dem ursprünglichen Pfad erneut registrieren; zuvor immer den Host-Mount und die tatsächliche Freigabe prüfen.</p>
+</section>
+{% endif %}
 {% if unmanaged %}
 <section class="media-source-overview" aria-labelledby="unmanaged-title">
   <h2 id="unmanaged-title">Bereits am Host eingebundene Ordner</h2>
@@ -95,6 +106,8 @@
     <h3>{{ source.alias }}</h3>
     <p class="muted">Erkannte CIFS-Quelle: <code>{{ source.observed if source.observed else 'Nicht eindeutig aus dem Container auslesbar' }}</code></p>
     <p class="muted">Der angezeigte CIFS-Wert kann nur den Freigabestamm statt des vollständigen Unterordners enthalten. Für die genaue Zuordnung auf dem Host <code>findmnt -M /srv/anthias-sources/{{ source.alias }} -o SOURCE,FSTYPE</code> prüfen.</p>
+    <p class="muted">Auch einen früher manuell eingebundenen Alias kannst du aus der Hub-Auswahl ausblenden. Das echte Aushängen erfolgt weiterhin getrennt auf dem Host.</p>
+    {{ retire_control(source) }}
   </article>
   {% endfor %}
 </section>

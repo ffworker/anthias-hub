@@ -87,9 +87,11 @@ class Library:
         """
         from .folder_sync import source_directory
         alias = str(alias or '').strip()
-        if alias:
-            source_directory(alias)
         with _lock:
+            # Serialize verification with admin source retirement. Checking
+            # outside the lock could rebind a source just after its removal.
+            if alias:
+                source_directory(alias)
             collection = self.get(ident)
             if alias:
                 previous_alias = collection.get('folder_source') or collection.get('last_folder_source')

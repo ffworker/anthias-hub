@@ -124,6 +124,14 @@ as a way to force the UI to discover it.
       the **Hub source registry**, one at a time. Do not delete source media.
       `findmnt` must show the expected remaining parent afterward.
 
-The current Hub registry has **no bulk deletion/migration button** for old
-aliases. Deleting a registry entry or unmounting a host share without updating
-its dependent templates is not a supported shortcut.
+The Hub offers **individual safe source retirement** under **Ordner & Quellen**.
+It refuses to retire an alias while any active template uses it (including
+`default/<child>` bindings). The retired alias is hidden from selectors,
+even if the host mount remains present. Nothing on SMB or the Pi is deleted.
+
+**Retirement is not an automatic unmount.** After templates have been safely
+migrated and the host/import worker is quiescent, IT must check the correct
+mountpoint via `findmnt -M /srv/anthias-sources/<alias>`, remove any old
+fstab/systemd remount configuration, and manually unmount only the retired
+alias. Never recursively delete a mounted folder. See
+[IT SMB media sources](it-smb-media-sources.md) for the operator procedure.
