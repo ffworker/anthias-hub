@@ -6,7 +6,7 @@ import time
 import pytest
 
 from app.media_sources import (
-    SourceError, load_sources, save_source, remove_source, retired_aliases,
+    SourceError, load_sources, save_source, remove_source, retired_aliases, retire_unmanaged_source,
     validate_alias, validate_unc, split_unc, mount_statuses,
 )
 
@@ -129,3 +129,15 @@ def test_retired_alias_persists_across_other_source_updates(tmp_path):
     registry.write_text(json.dumps(bad))
     with pytest.raises(SourceError, match='beschädigt'):
         retired_aliases(registry)
+
+
+def test_unmanaged_legacy_mount_can_be_hidden_without_registration(tmp_path):
+    registry = tmp_path / 'sources.json'
+    assert retire_unmanaged_source('legacy', path=registry) == 'retired'
+    assert load_sources(registry) == []
+    assert retired_aliases(registry) == ['legacy']
+    with pytest.raises(SourceError, match='bereits'):
+        retire_unmanaged_source('legacy', path=registry)
+    save_source('legacy', '//10.12.0.4/files$/Screens', path=registry)
+    with pytest.raises(SourceError, match='registriert'):
+        retire_unmanaged_source('legacy', path=registry)
