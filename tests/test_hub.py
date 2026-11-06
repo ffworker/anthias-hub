@@ -2077,7 +2077,7 @@ def test_it_can_add_and_edit_smb_sources_without_exposing_passwords(env, monkeyp
     monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(mountroot))
     login(client, 'it')
     page = client.get('/media-sources').get_data(as_text=True)
-    assert '<h1>Ordner &amp; Quellen</h1>' in page
+    assert '<h1 id="media-page-title">Ordner &amp; Quellen</h1>' in page
     assert 'bistro' in page
     assert 'root@' not in page
     assert 'name="unc"' in page
