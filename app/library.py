@@ -92,9 +92,37 @@ class Library:
         with _lock:
             collection = self.get(ident)
             if alias:
+                previous_alias = collection.get('folder_source') or collection.get('last_folder_source')
+                has_imports = any(i.get('source_file') for i in collection['items'])
+                if has_imports and previous_alias != alias:
+                    raise LibraryError('Quelle enthält bereits importierte Medien. Für einen anderen Ordner bitte eine neue Vorlage erstellen.')
                 collection['folder_source'] = alias
+                collection['last_folder_source'] = alias
             else:
+                if collection.get('folder_source'):
+                    collection['last_folder_source'] = collection['folder_source']
                 collection.pop('folder_source', None)
+                collection['auto_devices'] = []  # explicit re-enablement required
+            self._save(collection)
+        return collection
+
+    def set_auto_devices(self, ident, device_ids, known_devices):
+        """Opt-in list of registered Anthias players, never arbitrary URLs."""
+        from .devices import ID
+        if not isinstance(device_ids, list) or len(device_ids) > 25:
+            raise LibraryError('Maximal 25 Bildschirme auswählbar')
+        if any(not isinstance(d, str) or not ID.fullmatch(d) for d in device_ids):
+            raise LibraryError('Ungültige Gerätekennung')
+        if len(set(device_ids)) != len(device_ids):
+            raise LibraryError('Doppelte Bildschirme')
+        allowed = {device['id'] for device in known_devices}
+        if any(d not in allowed for d in device_ids):
+            raise LibraryError('Bildschirm nicht mehr registriert')
+        with _lock:
+            collection = self.get(ident)
+            if device_ids and not collection.get('folder_source'):
+                raise LibraryError('Zuerst einen Netzwerkordner konfigurieren')
+            collection['auto_devices'] = device_ids
             self._save(collection)
         return collection
 

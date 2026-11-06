@@ -102,13 +102,66 @@ def sync_all(root=None, library_dir=None):
             for t in store.list() if t.get('folder_source')}
 
 
+def run_cycle(*, root=None, library_dir=None, devices_file=None, state_root=None,
+              schedules_file=None, auto_publish=None, api_factory=None):
+    """Independent per-template sync; never publish if its import failed."""
+    from .folder_publish import reconcile, Anthias, PublishError
+    from .anthias import PlayerError
+    from .schedules import ScheduleError
+    store = Library(library_dir or os.environ.get('LIBRARY_DIR', '/data/library'))
+    devices_file = devices_file or os.environ.get('DEVICES_FILE', '/data/devices.json')
+    state_root = state_root or os.environ.get('FOLDER_PUBLICATIONS_DIR', '/data/folder-publications')
+    schedules_file = schedules_file or os.environ.get('SCHEDULES_FILE', '/data/schedules.json')
+    if auto_publish is None:
+        auto_publish = os.environ.get('FOLDER_AUTO_PUBLISH', '0') == '1'
+    if api_factory is None:
+        api_factory = Anthias
+    results = {}
+    for template in store.list():
+        if not template.get('folder_source'):
+            continue
+        template_id = template['id']
+        try:
+            results[template_id] = {'import': sync_template(store, template_id, root),
+                                    'devices': {}}
+        except (OSError, LibraryError, ValueError) as exc:
+            results[template_id] = {'error': str(exc)}
+            continue
+        # Folder imports remain useful independently; Pi writes are opt-in
+        # both per template and via this server-side feature flag.
+        if auto_publish:
+            # Read fresh template after import; IT may have revoked a mapping.
+            for device_id in store.get(template_id).get('auto_devices', []):
+                try:
+                    results[template_id]['devices'][device_id] = reconcile(
+                        store, template_id, device_id, devices_file=devices_file,
+                        state_root=state_root, schedules_file=schedules_file,
+                        api_factory=api_factory)
+                except (PublishError, PlayerError, LibraryError, ScheduleError,
+                        OSError, ValueError) as exc:
+                    results[template_id]['devices'][device_id] = {'error': str(exc)}
+    return results
+
+
 def worker():
     interval = max(60, int(os.environ.get('FOLDER_SYNC_INTERVAL', '300')))
     while True:
         try:
-            sync_all()
+            reports = run_cycle()
+            for template_id, report in reports.items():
+                if 'error' in report:
+                    print(f'Folder {template_id}: import unavailable: {report["error"]}', flush=True)
+                    continue
+                changed = report['import']['added'] + report['import']['updated']
+                if changed:
+                    print(f'Folder {template_id}: imported {report["import"]}', flush=True)
+                for device_id, status in report['devices'].items():
+                    if 'error' in status:
+                        print(f'Folder {template_id}, device {device_id}: {status["error"]}', flush=True)
+                    elif status['added'] or status['updated'] or status['disabled']:
+                        print(f'Folder {template_id}, device {device_id}: {status}', flush=True)
         except (LibraryError, OSError, ValueError) as exc:
-            print(f'Folder import failed, keeping existing media: {exc}', flush=True)
+            print(f'Folder cycle failed, keeping existing media: {exc}', flush=True)
         time.sleep(interval)
 
 

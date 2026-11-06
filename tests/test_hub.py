@@ -1957,3 +1957,51 @@ def test_dashboard_storage_popover_fetches_only_when_opened(env):
     assert 'data-storage-values hidden' in dashboard
     assert 'Wird beim Öffnen abgefragt' in dashboard
     assert 'data-storage-warning hidden' in dashboard
+
+
+def test_folder_auto_targets_require_it_and_csrf(env, monkeypatch):
+    app, marketing_client, tmp = env
+    from app.library import Library
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    root = Path(tmp) / 'sources'
+    (root / 'bistro').mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    store = Library(app.config['LIBRARY_DIR'])
+    ident = store.create('Auto Bistro')['id']
+
+    login(marketing_client, 'marketing')
+    assert marketing_client.post(f'/library/{ident}/folder-source',
+                                 data={'csrf': token(marketing_client),
+                                       'folder_source': 'bistro'}).status_code == 403
+    assert marketing_client.post(f'/library/{ident}/auto-devices',
+                                 data={'csrf': token(marketing_client),
+                                       'devices': 'lab'}).status_code == 403
+    assert 'Netzwerkordner als Medienquelle (IT)' not in (
+        marketing_client.get(f'/library/{ident}').get_data(as_text=True))
+
+    it_client = app.test_client()
+    login(it_client, 'it')
+    detail = it_client.get(f'/library/{ident}').get_data(as_text=True)
+    assert 'Netzwerkordner als Medienquelle (IT)' in detail
+    assert 'name="devices"' in detail
+    assert it_client.post(f'/library/{ident}/folder-source',
+                          data={'folder_source': 'bistro'}).status_code == 400
+    assert not store.get(ident).get('folder_source')
+    assert it_client.post(f'/library/{ident}/folder-source',
+                          data={'csrf': token(it_client),
+                                'folder_source': 'bistro'}).status_code == 302
+    assert store.get(ident)['folder_source'] == 'bistro'
+    assert it_client.post(f'/library/{ident}/auto-devices',
+                          data={'csrf': token(it_client),
+                                'devices': ['lab']}).status_code == 302
+    assert store.get(ident)['auto_devices'] == ['lab']
+    assert it_client.post(f'/library/{ident}/auto-devices',
+                          data={'csrf': token(it_client),
+                                'devices': ['unregistered']}).status_code == 302
+    assert store.get(ident)['auto_devices'] == ['lab']
+
+    # Revoking the source stops publication and clears the device opt-in.
+    assert it_client.post(f'/library/{ident}/folder-source',
+                          data={'csrf': token(it_client),
+                                'folder_source': ''}).status_code == 302
+    assert store.get(ident)['auto_devices'] == []

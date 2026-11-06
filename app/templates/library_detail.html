@@ -83,6 +83,26 @@
       </label>
       <button type="submit">Ordnerquelle speichern</button>
     </form>
+    <hr>
+    <h3>Automatisch auf Bildschirme veröffentlichen</h3>
+    <p class="muted">Nur aktivieren, wenn die Netzwerkquelle und der Test-Pi abgenommen wurden. Nur automatisch importierte Ordner-Medien werden verwaltet; andere Playlist-Inhalte und Zeitpläne bleiben erhalten. Die Hintergrundveröffentlichung ist zusätzlich serverseitig standardmäßig ausgeschaltet.</p>
+    <form method="post" action="{{ url_for('library_auto_devices', template_id=template.id) }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      {% for device in devices %}
+      <label class="library-auto-device">
+        <input type="checkbox" name="devices" value="{{ device.id }}"
+               {% if device.id in template.auto_devices|default([]) %}checked{% endif %}
+               {% if not template.folder_source %}disabled{% endif %}>
+        {{ device.name }}{% if device.location %} · {{ device.location }}{% endif %}
+      </label>
+      {% else %}
+      <p class="muted">Zuerst einen Anthias-Bildschirm registrieren.</p>
+      {% endfor %}
+      <button type="submit" {% if not template.folder_source %}disabled{% endif %}>Zielbildschirme speichern</button>
+    </form>
+    {% if template.auto_devices|default([]) %}
+      <p class="muted">Gespeicherte Zielbildschirme: {{ template.auto_devices|length }}. Aktualisierungen bleiben aus, solange der Publisher nicht freigeschaltet ist.</p>
+    {% endif %}
   </details>
 </section>
 {% endif %}

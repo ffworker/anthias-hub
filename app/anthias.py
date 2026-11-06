@@ -61,7 +61,7 @@ class Anthias:
             raise PlayerError('Ungültiger Gerätebefehl')
         return self.call('POST', '/api/v2/' + action, timeout=8)
 
-    def create(self, name, uri, duration, mimetype='webpage', ext=None, *, schedule=None):
+    def create(self, name, uri, duration, mimetype='webpage', ext=None, *, schedule=None, enabled=True):
         body = {
             'name': name, 'uri': uri, 'duration': duration,
             'mimetype': self._asset_mimetype(mimetype),
@@ -89,7 +89,8 @@ class Anthias:
                     raise PlayerError('Anthias hat die Zeitplanung nicht bestätigt; Inhalt bleibt deaktiviert.')
             except ScheduleError as exc:
                 raise PlayerError('Anthias unterstützt diese Zeitplanung nicht; Inhalt bleibt deaktiviert.') from exc
-        self.patch(result['asset_id'], {'is_enabled': True})
+        if enabled:
+            self.patch(result['asset_id'], {'is_enabled': True})
         return result
 
     @staticmethod
