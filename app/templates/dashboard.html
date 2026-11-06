@@ -25,34 +25,33 @@
     {% endif %}
   </section>
 
-  <section class="hub-workflow-cards" aria-label="Schnelleinstieg">
-    {% if logged_user.role in ('owner', 'it') %}
+  <section class="hub-workflow-cards hub-workflow-screens-first" aria-label="Dein Weg durch Anthias Hub">
     <article class="hub-workflow-card is-leading">
       <div class="hub-workflow-card-copy">
-        <p class="eyebrow">01 / STANDARD-ARBEITSWEG</p>
-        <h2>Ordner verbinden.</h2>
-        <p>Ein gemeinsames Marketing-SMB-Verzeichnis, viele Bildschirmordner. Hier werden aus Ordnern automatisch Playlists.</p>
+        <p class="eyebrow">01 / BILDSCHIRME</p>
+        <h2>Bildschirm auswählen.</h2>
+        <p>Hier startest du: Gerät wählen, aktuelle Wiedergabe ansehen, Playlist bearbeiten und Zeitpläne verwalten.</p>
       </div>
-      <a class="button primary" href="{{ url_for('media_sources_page') }}">Netzwerkordner &amp; Playlists zuweisen →</a>
+      <a class="button primary" href="#fleet-devices">Zu meinen Bildschirmen →</a>
     </article>
-    {% else %}
-    <article class="hub-workflow-card is-leading">
-      <div class="hub-workflow-card-copy">
-        <p class="eyebrow">01 / MARKETING</p>
-        <h2>Playlists bearbeiten.</h2>
-        <p>Die Dateien bleiben im Netzwerkordner. Hier bearbeitest du die Anzeigedauer deiner Bilder und die Web-Inhalte.</p>
-      </div>
-      <a class="button primary" href="{{ url_for('library_index') }}">Playlist-Bibliothek öffnen →</a>
-    </article>
-    {% endif %}
     <article class="hub-workflow-card">
       <div class="hub-workflow-card-copy">
-        <p class="eyebrow">02 / BILDSCHIRME</p>
-        <h2>Wiedergabe kontrollieren.</h2>
-        <p>Gerätestatus, tatsächliche Playlist und Zeitsteuerung bleiben pro Bildschirm erreichbar.</p>
+        <p class="eyebrow">02 / PLAYLISTS</p>
+        <h2>Inhalte vorbereiten.</h2>
+        <p>Vorlagen mit Bildern, Videos und Webseiten zusammenstellen und anschließend gezielt auf einen Bildschirm übertragen.</p>
       </div>
-      <a class="button" href="#fleet-devices">Bildschirme ansehen →</a>
+      <a class="button" href="{{ url_for('library_index') }}">Playlist-Bibliothek öffnen →</a>
     </article>
+    {% if logged_user.role in ('owner', 'it') %}
+    <article class="hub-workflow-card hub-workflow-admin">
+      <div class="hub-workflow-card-copy">
+        <p class="eyebrow">03 / IT · NETZWERKQUELLEN</p>
+        <h2>Ordner verbinden.</h2>
+        <p>SMB-Freigaben und Bildschirmordner einrichten. Das ist Administration, nicht Voraussetzung für manuelle Playlists.</p>
+      </div>
+      <a class="button" href="{{ url_for('media_sources_page') }}">Ordner &amp; Quellen verwalten →</a>
+    </article>
+    {% endif %}
   </section>
 
   <div class="fleet-summary" aria-label="Geräteübersicht">
@@ -62,7 +61,7 @@
     <p class="fleet-summary-hint">Verbindung ≠ Livebild am TV</p>
   </div>
 
-  <div class="fleet-section-heading">
+  <div class="fleet-section-heading" id="fleet-devices-heading">
     <div><p class="eyebrow">ALLE STANDORTE</p><h2>Bildschirmübersicht <span class="count">{{ devices|length }}</span></h2></div>
     <p class="muted">Einfach Bildschirm auswählen und loslegen.</p>
   </div>
