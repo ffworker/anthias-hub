@@ -51,6 +51,12 @@ Hier werden beliebig viele Aliase (z. B. `bistro`, `empfang`,
   gebunden ist (auch `default/<Unterordner>`). Zuerst die betroffenen Vorlagen
   prüfen und Zuordnungen gezielt lösen bzw. migrieren. Importierte Medien,
   individuelle Zeiten und Geräte-Playlists werden nicht gelöscht.
+- **Alte, nicht registrierte Einzel-Mounts:** Der Abschnitt
+  `Bereits am Host eingebundene Ordner` bietet dieselbe
+  `Quelle aus dem Hub entfernen`-Aktion für tatsächlich erkannte
+  Alt-Aliase. Das registriert **keinen** neuen UNC-Pfad und führt zu
+  **keinem** Unmount; es sperrt lediglich die erneute Verwendung im Hub.
+  Aktive Playlist-Zuordnungen blockieren auch hier das Austragen.
 - **Nach dem Austragen:** Alias ist für neue Zuordnungen gesperrt, selbst wenn
   ein altes CIFS-Mount noch vorhanden ist; die Anzeige `Ausgetragene Quellen`
   erinnert an die nötige Host-Prüfung. Es wird **weder ein SMB-Mount ausgehängt
