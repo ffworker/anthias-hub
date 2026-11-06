@@ -6,6 +6,7 @@ Only explicitly allowed SMB server/share pairs are eligible to mount.
 The helper will NOT unmount or replace an existing mount automatically.
 """
 import argparse
+import hashlib
 import json
 import os
 import stat
@@ -143,7 +144,12 @@ def main():
                                                allow_write=not args.check)
                    for src in sources}
         if not args.check:
-            write_status(Path(args.status), results)
+            mapping = {src['alias']: src['unc'] for src in sources}
+            write_status(Path(args.status), {
+                alias: {'state': state,
+                        'fingerprint': hashlib.sha256(mapping[alias].encode('utf-8')).hexdigest()}
+                for alias, state in results.items()
+            })
         for alias, state in results.items():
             print(f'{alias}: {state}')
         return 0 if all(state in ('already-mounted', 'mounted', 'pending') for state in results.values()) else 1
