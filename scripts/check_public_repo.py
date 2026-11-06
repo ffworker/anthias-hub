@@ -29,8 +29,9 @@ PATTERNS = [
 ]
 TEXT_SUFFIXES = {
     ".md", ".py", ".html", ".css", ".js", ".cjs", ".sh", ".json",
-    ".toml", ".yaml", ".yml", ".txt", ".env", ".ini", ".cfg", ".xml",
+    ".toml", ".yaml", ".yml", ".txt", ".env", ".ini", ".cfg", ".xml", ".svg",
 }
+TEXT_NAMES = {".env.example", ".dockerignore", ".gitignore", ".gitkeep", "Dockerfile", "LICENSE"}
 MAX_BYTES = 5 * 1024 * 1024
 
 
@@ -51,7 +52,7 @@ def main() -> int:
             findings.append((relative, "private runtime/credential filename"))
         if not path.is_file():
             continue
-        if path.stat().st_size > MAX_BYTES or path.suffix.lower() not in TEXT_SUFFIXES:
+        if path.stat().st_size > MAX_BYTES or (path.suffix.lower() not in TEXT_SUFFIXES and path.name not in TEXT_NAMES):
             uninspected.append(relative)
             continue
         blob = path.read_bytes()
