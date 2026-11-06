@@ -18,7 +18,7 @@ Manage screens, playlists, local media and reusable content in one web UI. Each 
 - **Folder-backed playlists (experimental):** Marketing keeps saving media to familiar SMB/NFS folders; IT chooses a read-only source alias and target Pis. Marketing sets per-image display time directly in the Hub template; changes persist across file replacements. RSS2Slideshow can be added as a webpage in the same auto-published template. Publishing needs an explicit server-side opt-in (`FOLDER_AUTO_PUBLISH=1`). No automatic remote deletions. See [company workflow](docs/company-folder-workflow.md) and [folder-backed playlists](docs/folder-backed-playlists.md).
 - **Media:** PNG/JPEG/WebP/MP4, sequential batch uploads (up to 20 files) and ZIP import. Up to **4 GiB per file**, and **4 GiB total extracted media per ZIP**, subject to disk capacity and proxy limits. See [media import](docs/marketing-bulk-import.md).
 - **Accounts:** Owner (IT + Marketing), IT, Marketing and Viewer. Marketing can edit content across **all** registered screens; **IT inherits the same content-editing rights** in addition to IT-only administration. Optional confirmed reboot/shutdown and experimental HDMI-CEC where supported.
-- **Single-theme UI:** Nordlicht design, desktop/mobile layouts, no additional frontend framework.
+- **Unified UI:** one shared [design system](docs/ui-design-system.md) with light/dark themes, desktop/mobile layouts and a checkable deployed UI revision; no additional frontend framework.
 
 ## Everyday workflow
 
