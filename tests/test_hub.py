@@ -173,7 +173,7 @@ def test_ui_refresh_library_and_dashboard_role_safety(env):
     login(client, 'marketing')
     library = client.get('/library').data.decode('utf-8')
     assert 'data-bulk-upload' not in library  # imports happen inside templates
-    assert 'Playlist erstellen' in library and 'Vorlagenbackup wiederherstellen' in library
+    assert 'Neue Playlist erstellen' in library and 'Vorlagen-Backup importieren' in library
     assert 'aria-current="page"' in library
     detail = client.get(f"/library/{t['id']}").data.decode('utf-8')
     assert 'library-item-options' in detail
@@ -793,7 +793,7 @@ def test_library_landing_keeps_backup_separate_and_uploads_inside_templates(env)
     page = client.get('/library').data.decode('utf-8')
     assert 'Playlist erstellen' in page
     assert 'manifest.json' in page
-    assert 'Vorlagenbackup wiederherstellen' in page
+    assert 'Vorlagen-Backup importieren' in page
     assert 'data-bulk-upload' not in page
     assert '/library/media-import' not in page
     assert '/library/import' in page
@@ -934,7 +934,7 @@ def test_library_publish_action_is_above_media_list_and_not_hidden_in_sidebar(en
     assert 'library-publish-hero' in page
     assert 'id="library-publish-heading"' in page
     assert page.index('id="library-publish-heading"') < page.index('id="items-title"')
-    assert page.index('Vorlage zur Playlist hinzufügen') < page.index('Bild oder Video speichern')
+    assert page.index('Inhalte und Wiedergabereihenfolge') < page.index('Vorlage zur Playlist hinzufügen')
     assert page.count(f'/library/{template["id"]}/append-to-device') == 1
     assert 'name="device" required' in page
     assert 'name="ack" value="yes" required' in page
@@ -1193,16 +1193,16 @@ def test_library_template_shows_media_first_and_website_only_on_request(env):
     collection = library.create('Bistro-Archiv')
     login(client, 'marketing')
     page = client.get('/library/' + collection['id']).data.decode('utf-8')
-    assert page.index('Bild oder Video speichern') < page.index('Medien-Sammelimport')
-    assert page.index('Medien-Sammelimport') < page.index('Optional: Webseite verlinken')
-    assert re.search(r'<details class="library-website-details"\s*>', page)
-    assert 'library-website-details" open' not in page
+    assert page.index('Einzeldatei hinzufügen') < page.index('ZIP / mehrere Dateien importieren')
+    assert page.index('ZIP / mehrere Dateien importieren') < page.index('Webseite / RSS hinzufügen')
+    assert re.search(r'<details class="card library-panel library-website-secondary library-website-details library-action-disclosure"\s*>', page)
+    assert 'library-website-details library-action-disclosure" open' not in page
     assert 'library_add_url' not in page  # internal endpoint name is not exposed
     assert '/url' in page  # existing URL submission stays available
     assert 'RSS2Slideshow-Anzeige' in page
     assert 'data-upload-form="library"' in page
     assert 'data-bulk-upload' in page
-    assert page.index('Vorlage zur Playlist hinzufügen') < page.index('Bild oder Video speichern')
+    assert page.index('Inhalte und Wiedergabereihenfolge') < page.index('Vorlage zur Playlist hinzufügen')
 
 
 def test_library_optional_website_submission_and_role_guards_are_unchanged(env):
@@ -1983,13 +1983,13 @@ def test_folder_auto_targets_require_it_and_csrf(env, monkeypatch):
     assert marketing_client.post(f'/library/{ident}/auto-devices',
                                  data={'csrf': token(marketing_client),
                                        'devices': 'lab'}).status_code == 403
-    assert 'Playlist mit Netzwerkordner verbinden (IT)' not in (
+    assert 'Netzwerkquelle &amp; Zielbildschirme' not in (
         marketing_client.get(f'/library/{ident}').get_data(as_text=True))
 
     it_client = app.test_client()
     login(it_client, 'it')
     detail = it_client.get(f'/library/{ident}').get_data(as_text=True)
-    assert 'Playlist mit Netzwerkordner verbinden (IT)' in detail
+    assert 'Netzwerkquelle &amp; Zielbildschirme' in detail
     assert 'name="devices"' in detail
     assert it_client.post(f'/library/{ident}/folder-source',
                           data={'folder_source': 'bistro'}).status_code == 400
@@ -2142,7 +2142,8 @@ def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monke
 
     login(client, 'it')
     dash = client.get('/').get_data(as_text=True)
-    assert 'Netzwerkordner &amp; Playlists zuweisen' in dash
+    assert 'Zu meinen Bildschirmen' in dash
+    assert 'Ordner &amp; Quellen verwalten' in dash
     assert 'Ordner &amp; Quellen' in dash
     assert 'ui-system.css' in dash
     assert 'data-product-theme-toggle' in dash
