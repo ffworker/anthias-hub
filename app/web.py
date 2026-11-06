@@ -49,7 +49,7 @@ def create_app(config=None):
         LIBRARY_DIR=os.environ.get('LIBRARY_DIR', '/data/library'),
         SCHEDULES_FILE=os.environ.get('SCHEDULES_FILE', '/data/schedules.json'),
         MEDIA_SOURCES_FILE=os.environ.get('MEDIA_SOURCES_FILE', '/data/media-sources.json'),
-        MEDIA_MOUNT_STATUS_FILE=os.environ.get('MEDIA_MOUNT_STATUS_FILE', '/data/media-mount-status.json'),
+        MEDIA_MOUNT_STATUS_FILE=os.environ.get('MEDIA_MOUNT_STATUS_FILE', '/sources/.mount-status.json'),
         SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax',
         SESSION_COOKIE_SECURE=os.environ.get('COOKIE_SECURE', '1') == '1',
         PERMANENT_SESSION_LIFETIME=60 * 60 * 8,
