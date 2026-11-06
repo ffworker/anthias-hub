@@ -141,7 +141,7 @@ def test_nordlicht_navigation_and_playlist_forms(env):
     assert 'theme-init.js' not in login_page and 'themes.js' not in login_page
     assert login_page.count('data-theme-choice=') == 0
     assert 'icons.svg#mark' in login_page
-    for asset in ('ui-refinements.css', 'icons.svg', 'favicon.svg'):
+    for asset in ('ui-system.css', 'icons.svg', 'favicon.svg'):
         assert client.get('/static/' + asset).status_code == 200
 
     login(client, 'marketing')
@@ -2144,7 +2144,7 @@ def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monke
     dash = client.get('/').get_data(as_text=True)
     assert 'Netzwerkordner &amp; Playlists zuweisen' in dash
     assert 'Ordner &amp; Quellen' in dash
-    assert 'product-ui.css' in dash
+    assert 'ui-system.css' in dash
     assert 'data-product-theme-toggle' in dash
     page = client.get('/media-sources')
     assert page.status_code == 200
