@@ -281,3 +281,71 @@ def test_video_duration_remains_automatic(tmp_path):
     assert item['duration'] == 0
     with pytest.raises(LibraryError, match='voller Länge'):
         store.update_item_duration(ident, item['id'], '30')
+
+
+class OrderedPlayer(FakePlayer):
+    """Anthias-like ordered assets for a dedicated, Hub-managed display."""
+    def assets(self):
+        return sorted(self.entries.values(),
+                      key=lambda asset: (asset.get('play_order', 0), asset['asset_id']))
+
+    def order(self, ids):
+        assert set(ids) == set(self.entries)
+        self.events.append(('order', tuple(ids)))
+        for index, ident in enumerate(ids, 1):
+            self.entries[ident]['play_order'] = index
+        return {'success': True}
+
+
+def test_folder_playlist_reordering_matches_template_on_dedicated_player(setup):
+    env = setup
+    from app.folder_sync import sync_template
+    sync_template(env['store'], env['template'])
+    env['store'].add_url(env['template'], 'Bistro RSS',
+                         'http://192.0.2.44/feed', 45)
+    env['player'] = OrderedPlayer()  # New Anthias Pi: no unrelated manual items.
+    assert perform(env)['added'] == 2
+    template = env['store'].get(env['template'])
+    web = next(item for item in template['items'] if item['kind'] == 'url')
+    assert env['player'].assets()[0]['asset_id'] == 'asset1'
+
+    # Marketing changes the template order. Subsequent sync must reorder
+    # exactly once and never duplicate or re-upload the existing media.
+    env['store'].move(env['template'], web['id'], 'up')
+    assert perform(env)['unchanged'] == 2
+    assert [item['asset_id'] for item in env['player'].assets()] == ['asset2', 'asset1']
+    assert sum(e[0] == 'order' for e in env['player'].events) == 1
+    assert perform(env)['unchanged'] == 2
+    assert sum(e[0] == 'order' for e in env['player'].events) == 1
+
+    # New version disables old asset. New slide retains its library position;
+    # obsolete files stay at the end, disabled, never deleted.
+    (env['folder'] / 'banner.png').write_bytes(PNG + b'new revision')
+    assert sync_template(env['store'], env['template'])['updated'] == 1
+    assert perform(env)['updated'] == 1
+    assert [item['asset_id'] for item in env['player'].assets()] == ['asset2', 'asset3', 'asset1']
+    assert env['player'].entries['asset1']['is_enabled'] is False
+    assert env['player'].entries['asset3']['is_enabled'] is True
+
+
+def test_reconcile_never_reorders_existing_mixed_manual_playlist(setup):
+    env = setup
+    from app.folder_sync import sync_template
+    sync_template(env['store'], env['template'])
+    env['store'].add_url(env['template'], 'RSS',
+                         'http://192.0.2.44/feed', 45)
+    player = OrderedPlayer()
+    player.entries['manual'] = {
+        'asset_id': 'manual', 'name': 'Manually managed announcement',
+        'uri': 'https://example.org/other', 'play_order': 1,
+        'is_enabled': True
+    }
+    env['player'] = player
+    perform(env)
+    assert not any(event[0] == 'order' for event in player.events)
+    web = next(i for i in env['store'].get(env['template'])['items']
+               if i['kind'] == 'url')
+    env['store'].move(env['template'], web['id'], 'up')
+    perform(env)
+    assert not any(event[0] == 'order' for event in player.events)
+    assert player.entries['manual']['is_enabled'] is True

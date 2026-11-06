@@ -624,3 +624,10 @@ body.studio-drawer-open{overflow:hidden}
 
 .playlist-workspace .drag-handle .icon{width:24px;height:24px;fill:currentColor}
 .playlist-workspace .studio-bottom-add .icon{width:17px;height:17px}
+
+/* IT-only network-source composer: four consistent choices; Marketing keeps three. */
+.playlist-workspace .add-type-switch.with-network{grid-template-columns:repeat(4,minmax(0,1fr))}
+.playlist-workspace .composer-pane[data-add-pane="folder"] select{width:100%;min-height:44px;background:#0b1725;border:1px solid #436278;border-radius:9px;color:#e5f3fc;padding:9px;font:inherit}
+.playlist-workspace .composer-pane[data-add-pane="folder"] .button{display:inline-flex;margin-top:10px}
+.playlist-workspace .folder-linked-notice .muted{margin:8px 0}
+@media(max-width:580px){.playlist-workspace .add-type-switch.with-network{grid-template-columns:repeat(2,minmax(0,1fr))}.playlist-workspace .add-type-switch.with-network .add-mode{flex-direction:row;font-size:12px}}

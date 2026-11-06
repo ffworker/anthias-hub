@@ -23,8 +23,9 @@
 
   {% if error %}<div class="notice error" role="alert">Gerät nicht erreichbar: {{ error }}. Die Playlist kann derzeit nicht bearbeitet werden.</div>{% endif %}
   {% if folder_templates %}
-  <section class="notice" aria-label="Automatisch verwaltete Inhalte">
-    <strong>Medien aus Netzwerkordnern</strong> – Anzeigedauer der automatisch veröffentlichten Bilder bitte in der jeweiligen Hub-Vorlage einstellen, nicht direkt am Player.
+  <section class="notice folder-linked-notice" aria-label="Automatisch verwaltete Inhalte">
+    <strong>Netzwerkordner verknüpft · automatische Playlist</strong>
+    <p class="muted">Diese Quelle ist mit dem Bildschirm verbunden. Bildzeiten und Reihenfolge bitte in der Hub-Vorlage bearbeiten. Die automatische Veröffentlichung erfolgt nur bei serverseitiger Freigabe.</p>
     {% for source in folder_templates %}
       <a href="{{ url_for('library_detail', template_id=source.id) }}">{{ source.name }} ({{ source.folder_source }})</a>{% if not loop.last %} · {% endif %}
     {% endfor %}
@@ -261,10 +262,13 @@
           <p class="muted">Inhalte werden direkt zur Playlist dieses Bildschirms hinzugefügt.</p>
         </div>
 
-        <div class="add-type-switch" aria-label="Inhaltsart wählen">
+        <div class="add-type-switch{{ ' with-network' if logged_user.role in ('owner', 'it') else '' }}" aria-label="Inhaltsart wählen">
           <button type="button" class="add-mode selected" data-add-mode="media" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#image"></use></svg> Bild / Video</button>
           <button type="button" class="add-mode" data-add-mode="library" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Bibliothek</button>
           <button type="button" class="add-mode" data-add-mode="website" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#web"></use></svg> Webseite</button>
+          {% if logged_user.role in ('owner', 'it') %}
+          <button type="button" class="add-mode" data-add-mode="folder" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Netzwerkordner</button>
+          {% endif %}
         </div>
 
         <div class="composer-pane" data-add-pane="website">
@@ -396,6 +400,32 @@
           <a class="button" href="{{ url_for('library_index') }}">Bibliothek öffnen →</a>
           {% endif %}
         </div>
+        {% if logged_user.role in ('owner', 'it') %}
+        <div class="composer-pane" data-add-pane="folder">
+          <p class="composer-explainer">Verfügbaren Netzwerkordner auswählen und mit <strong>{{ device.name }}</strong> verknüpfen. Die Medien bleiben im freigegebenen Share; kein erneuter Upload nötig.</p>
+          {% if available_folder_sources %}
+          <form method="post" action="{{ url_for('attach_folder_playlist_to_device', device_id=device.id) }}">
+            <input type="hidden" name="csrf" value="{{ csrf() }}">
+            <label>Netzwerkordner auswählen
+              <select name="folder_source" required>
+                <option value="">Verfügbaren Ordner wählen …</option>
+                {% for source in available_folder_sources if source.startswith('default/') %}
+                <option value="{{ source }}">Standardbibliothek · {{ source[8:] }}</option>
+                {% endfor %}
+                {% for source in available_folder_sources if not source.startswith('default/') %}
+                <option value="{{ source }}">Einzelquelle · {{ source }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <p class="muted">IT-Verknüpfung: Bestehende Player-Inhalte werden nicht gelöscht. Der automatische Import und die Veröffentlichung müssen separat vom Server freigegeben werden.</p>
+            <button class="primary full-width" type="submit">Netzwerkordner verknüpfen →</button>
+          </form>
+          {% else %}
+          <p class="muted" role="status">Noch kein Netzwerkordner verfügbar. Prüfe den schreibgeschützten Mount der SMB-Quelle. Eine neue Quelle kann IT unter „Ordner &amp; Quellen“ einrichten.</p>
+          {% endif %}
+          <a class="button" href="{{ url_for('media_sources_page') }}">Netzwerkquellen verwalten</a>
+        </div>
+        {% endif %}
         <p class="composer-footnote">Aktionen am Player bleiben im Hub. Änderungen werden direkt gespeichert; kein direkter Gerätezugang für Marketing nötig.</p>
       </aside>
     {% endif %}

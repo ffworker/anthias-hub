@@ -20,8 +20,9 @@ manuellen Upload im Hub.
 
 IT verbindet Netzwerkquelle und Zielbildschirm. Änderungen erscheinen auf
 dem Pi **erst wenn die automatische Geräteveröffentlichung von IT aktiviert**
-und erfolgreich durchgeführt wurde. Das bestehende Binary-Emotions-System
-wird bis zur Umstellung weiterhin normal benutzt.
+und erfolgreich durchgeführt wurde. Die vorhandene Anthias-Playlist bleibt auch bei einem vorübergehend nicht
+verfügbaren Hub auf dem Pi bestehen. Änderungen am Bildschirm erst nach
+erfolgreicher Prüfung der Freigabe übernehmen.
 
 ## Alternative: manuell gepflegte Playlists
 

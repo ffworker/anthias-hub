@@ -791,7 +791,7 @@ def test_library_landing_keeps_backup_separate_and_uploads_inside_templates(env)
     sample = lib.create('Bistro Medien')
     login(client, 'marketing')
     page = client.get('/library').data.decode('utf-8')
-    assert 'Neue Vorlage erstellen' in page
+    assert 'Playlist erstellen' in page
     assert 'manifest.json' in page
     assert 'Vorlagenbackup wiederherstellen' in page
     assert 'data-bulk-upload' not in page
@@ -1195,7 +1195,7 @@ def test_library_template_shows_media_first_and_website_only_on_request(env):
     page = client.get('/library/' + collection['id']).data.decode('utf-8')
     assert page.index('Bild oder Video speichern') < page.index('Medien-Sammelimport')
     assert page.index('Medien-Sammelimport') < page.index('Optional: Webseite verlinken')
-    assert '<details class="library-website-details">' in page
+    assert re.search(r'<details class="library-website-details"\s*>', page)
     assert 'library-website-details" open' not in page
     assert 'library_add_url' not in page  # internal endpoint name is not exposed
     assert '/url' in page  # existing URL submission stays available
@@ -2050,7 +2050,7 @@ def test_folder_backed_marketing_view_is_duration_first_and_it_has_setup(env, mo
 
     login(client, 'it')
     it = client.get(f'/library/{ident}').get_data(as_text=True)
-    assert 'RSS2Slideshow / Web-Feed hinzufügen (IT)' in it
+    assert 'RSS2Slideshow / Webseite zur Playlist hinzufügen' in it
     assert 'name="folder_source"' in it
     assert 'value="bistro" selected' in it
     assert 'value="empfang"' in it
@@ -2150,8 +2150,12 @@ def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monke
     assert page.status_code == 200
     html = page.get_data(as_text=True)
     assert 'Ein Netzwerkordner. Alle Bildschirme.' in html
-    assert 'GH-Wie4-BistroConnect' in html
-    assert 'Als Playlist verwenden' in html
+    assert 'GH-Wie4-BistroConnect' not in html  # selection moves to library
+    assert '1 Unterordner im Hub sichtbar' in html
+    assert 'Playlist mit Ordner erstellen' in html
+    assert 'value="default/GH-Wie4-BistroConnect"' in client.get('/library').get_data(as_text=True)
+    assert 'Als Playlist verwenden' not in html
+    assert 'id="new-playlist"' in client.get('/library').get_data(as_text=True)
     assert 'name="alias" value="default"' in html
     assert 'Stammverzeichnis speichern' in html
 
@@ -2182,3 +2186,55 @@ def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monke
                                      'folder': 'GH-Wie4-BistroConnect'}).status_code == 403
     assert 'Ordner &amp; Quellen' not in client.get('/').get_data(as_text=True)
     assert 'Playlist-Bibliothek öffnen' in client.get('/').get_data(as_text=True)
+
+
+def test_it_can_link_network_share_from_screen_composer_without_publishing(env, monkeypatch):
+    """The screen workflow reuses the existing IT-only, non-destructive bind route."""
+    app, client, tmp = env
+    from app.library import Library
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    root = Path(tmp) / 'sources'
+    (root / 'default' / 'Bistro').mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    store = Library(app.config['LIBRARY_DIR'])
+
+    login(client, 'marketing')
+    marketing_page = client.get('/devices/lab').get_data(as_text=True)
+    assert 'data-add-mode="folder"' not in marketing_page
+    assert 'data-add-pane="folder"' not in marketing_page
+    assert client.post('/devices/lab/folder-playlist', data={
+        'csrf': token(client), 'folder_source': 'default/Bistro'
+    }).status_code == 403
+    client.post('/logout', data={'csrf': token(client)})
+
+    login(client, 'it')
+    it_page = client.get('/devices/lab').get_data(as_text=True)
+    assert 'data-add-mode="folder"' in it_page
+    assert 'data-add-pane="folder"' in it_page
+    assert 'value="default/Bistro"' in it_page
+    assert 'Netzwerkordner verknüpfen' in it_page
+
+    invalid = client.post('/devices/lab/folder-playlist', data={
+        'csrf': token(client), 'folder_source': 'default/../not-allowed'
+    })
+    assert invalid.status_code == 302
+    assert store.list() == []
+
+    first = client.post('/devices/lab/folder-playlist', data={
+        'csrf': token(client), 'folder_source': 'default/Bistro'
+    })
+    assert first.status_code == 302
+    templates = store.list()
+    assert len(templates) == 1
+    assert templates[0]['folder_source'] == 'default/Bistro'
+    assert templates[0]['auto_devices'] == ['lab']
+    assert first.location.endswith('/library/' + templates[0]['id'])
+
+    second = client.post('/devices/lab/folder-playlist', data={
+        'csrf': token(client), 'folder_source': 'default/Bistro'
+    })
+    assert second.status_code == 302
+    assert len(store.list()) == 1
+    assert FakeAnthias.changes == []  # Binding cannot mutate a live Pi playlist.
+    linked_page = client.get('/devices/lab').get_data(as_text=True)
+    assert 'Netzwerkordner verknüpft · automatische Playlist' in linked_page

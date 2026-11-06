@@ -9,7 +9,7 @@
 {% endblock %}
 {% block content %}
 <section class="library-intro">
-  <p class="eyebrow">DEIN STUDIO · GESPEICHERTE INHALTE</p>
+  <p class="eyebrow">BIBLIOTHEK · PLAYLISTS</p>
   <h1>Playlist-Bibliothek</h1>
   <p class="muted">Für Netzwerk-Playlists legt Marketing Bilder und Videos weiterhin im gewohnten Ordner ab. Hier werden Anzeigedauer und Inhalte verwaltet. IT verbindet Ordner und Bildschirme.</p>
   {% if logged_user.role in ('owner', 'it') %}<a href="{{ url_for('media_sources_page') }}" class="button">Netzwerkordner / SMB-Pfade verwalten</a>{% endif %}
@@ -21,37 +21,52 @@
     <p>Marketing speichert Bilder und Videos weiterhin wie gewohnt im Netzwerk. Die Bibliothek übernimmt die Medien automatisch; hier lassen sich Anzeigedauern und RSS-Webseiten verwalten.</p>
   </div>
   {% if logged_user.role in ('owner', 'it') %}
-    <a class="button primary" href="{{ url_for('media_sources_page') }}">Bildschirmordner auswählen →</a>
+    <a class="button primary" href="#new-playlist">Playlist mit Netzwerkordner erstellen →</a>
   {% else %}
     <a class="button primary" href="#library-list-title">Ordner-Playlists ansehen →</a>
   {% endif %}
 </section>
 <div class="library-grid">
   <section aria-labelledby="library-list-title">
-    <h2 id="library-list-title">Deine Vorlagen <span class="count">{{ templates|length }}</span></h2>
+    <h2 id="library-list-title">Playlists & Vorlagen <span class="count">{{ templates|length }}</span></h2>
     <div class="library-list">
       {% for template in templates %}
       <div class="card library-entry-shell">
         <a class="library-entry" href="{{ url_for('library_detail', template_id=template.id) }}">
           <span class="library-glyph" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg></span>
-          <span><strong>{{ template.name }}</strong><small>{% if template.folder_source|default(false) %}Netzwerkordner: {{ template.folder_source }} · {% endif %}{{ template['items']|length }} Inhalte{% if template.auto_devices|default([]) %} · {{ template.auto_devices|length }} Zielbildschirm(e){% endif %} · Öffnen und bearbeiten</small></span>
+          <span><span class="library-entry-heading"><strong>{{ template.name }}</strong><span class="library-entry-type {{ 'is-automatic' if template.folder_source|default(false) else 'is-manual' }}">{{ 'Automatisch · Netzwerkordner' if template.folder_source|default(false) else 'Manuelle Vorlage' }}</span></span><small>{% if template.folder_source|default(false) %}Quelle: {{ template.folder_source }} · {% endif %}{{ template['items']|length }} Inhalte{% if template.auto_devices|default([]) %} · {{ template.auto_devices|length }} Zielbildschirm(e){% endif %} · Öffnen und bearbeiten</small></span>
           <span aria-hidden="true">→</span>
         </a>
         {% if logged_user.role in ('marketing', 'owner', 'it') %}{{ delete_control(template) }}{% endif %}
       </div>
-      {% else %}<div class="card library-empty">Noch keine Vorlage vorhanden. Erstelle rechts deine erste Sammlung.</div>{% endfor %}
+      {% else %}<div class="card library-empty">Noch keine Playlist vorhanden. Erstelle rechts eine Vorlage.</div>{% endfor %}
     </div>
   </section>
   {% if logged_user.role in ('marketing', 'owner', 'it') %}
   <aside class="library-actions">
-    <section class="card library-panel">
-      <p class="library-step">OPTIONAL / MANUELLE SAMMLUNG</p>
-      <h2>Neue Vorlage erstellen</h2>
-      <p class="muted">Medien fügst du anschließend innerhalb der Vorlage hinzu.</p>
+    <section class="card library-panel" id="new-playlist">
+      <p class="library-step">NEUE PLAYLIST</p>
+      <h2>Playlist erstellen</h2>
+      <p class="muted">IT kann einen vorhandenen Netzwerkordner direkt zuordnen. Alternativ eine leere, manuelle Vorlage erstellen.</p>
       <form method="post" action="{{ url_for('library_create') }}">
         <input type="hidden" name="csrf" value="{{ csrf() }}">
-        <label>Vorlagenname<input name="name" maxlength="100" required placeholder="z. B. Bistro Herbstaktion"></label>
-        <button class="primary">Vorlage erstellen →</button>
+        <label>Playlist-Name<input name="name" maxlength="100" required placeholder="z. B. Bistro"></label>
+        {% if logged_user.role in ('owner', 'it') %}
+        <label>Medienquelle
+          <select name="folder_source">
+            <option value="">Manuelle Playlist (ohne Netzwerkordner)</option>
+            {% for source in folder_sources if source.startswith('default/') %}
+            <option value="{{ source }}">{{ source[8:] }} · Standardbibliothek</option>
+            {% endfor %}
+            {% for source in folder_sources if not source.startswith('default/') %}
+            <option value="{{ source }}">{{ source }} · Einzelquelle</option>
+            {% endfor %}
+          </select>
+        </label>
+        <p class="muted">Bei einer Netzwerk-Playlist werden Inhalte aus dem gewählten Ordner übernommen, sobald der Importdienst läuft. Eine Zuweisung zum Bildschirm erfolgt danach.</p>
+        {% if not folder_sources %}<p class="muted" role="status">Aktuell keine Netzwerkordner verfügbar. Sobald der Stammordner eingebunden ist, erscheinen hier automatisch seine Unterordner. Manuelle Playlists sind bereits möglich.</p>{% endif %}
+        {% endif %}
+        <button class="primary">Playlist erstellen →</button>
       </form>
     </section>
     <section class="card library-panel library-backup-panel">

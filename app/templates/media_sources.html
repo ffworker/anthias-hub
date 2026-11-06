@@ -29,39 +29,17 @@
     <button type="submit" class="primary">{{ 'Stammverzeichnis aktualisieren' if default_source else 'Stammverzeichnis speichern' }}</button>
   </form>
   <p class="muted">Sicherheit: Nur von IT freigegebene SMB-Server und Freigaben werden auf dem Host eingehängt. Das UI kennt keine Passwörter. Die bestehende Quelle wird bei einer Änderung nicht automatisch ausgehängt.</p>
+  <div class="media-folder-summary" role="status">
+    <strong>{{ default_folders|length }} Unterordner im Hub sichtbar</strong>
+    <span>{% if default_folders %}Die Ordner erscheinen beim Erstellen einer Playlist als Auswahl.{% else %}Noch keine Unterordner sichtbar. Prüfe bei Bedarf den SMB-Mount; die Ordnerauswahl erfolgt später in der Bibliothek.{% endif %}</span>
+  </div>
 </section>
 
-<section class="media-default-folders" aria-labelledby="default-folders-title">
-  <div class="media-folder-heading">
-    <div><p class="eyebrow">02 / ORDNER ZUORDNEN</p><h2 id="default-folders-title">Bildschirmordner <span class="count">{{ default_folders|length }}</span></h2></div>
-    <p class="muted">Ordner wird automatisch erkannt · Playlist bleibt zentral bearbeitbar</p>
-  </div>
-  <div class="media-folder-grid">
-    {% for folder in default_folders %}
-    <article class="card media-folder-card">
-      <div class="media-folder-symbol" aria-hidden="true">▤</div>
-      <div class="media-folder-info">
-        <p class="eyebrow">NETZWERKORDNER</p>
-        <h3>{{ folder.name }}</h3>
-        <small>{{ folder.source }}</small>
-      </div>
-      {% if folder.template %}
-        <a class="button primary" href="{{ url_for('library_detail', template_id=folder.template.id) }}">Playlist öffnen →</a>
-      {% else %}
-        <form method="post" action="{{ url_for('media_sources_use_folder') }}">
-          <input type="hidden" name="csrf" value="{{ csrf() }}">
-          <input type="hidden" name="folder" value="{{ folder.name }}">
-          <button type="submit" class="primary">Als Playlist verwenden →</button>
-        </form>
-      {% endif %}
-    </article>
-    {% else %}
-    <div class="card media-folders-empty">
-      <h3>Noch keine Unterordner gefunden</h3>
-      <p>Den Stammordner zuerst oben speichern und vom Host schreibgeschützt einbinden lassen. Danach erscheinen hier automatisch die einzelnen Bildschirmordner.</p>
-    </div>
-    {% endfor %}
-  </div>
+<section class="card media-folder-notice" aria-label="Ordnerzuordnung">
+  <p class="eyebrow">02 / PLAYLIST-VERKNÜPFUNG</p>
+  <h2>Bildschirmordner beim Erstellen der Playlist auswählen</h2>
+  <p class="muted">Die einzelnen Unterordner verwaltest du in der Playlist-Bibliothek. Dort werden verfügbare Netzwerkordner automatisch zur Auswahl angeboten, sobald die SMB-Quelle am Host eingebunden ist.</p>
+  <a class="button primary" href="{{ url_for('library_index') }}#new-playlist">Playlist mit Ordner erstellen</a>
 </section>
 
 <details class="media-advanced-sources">
