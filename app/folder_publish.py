@@ -95,6 +95,29 @@ def _matching(existing, name):
     return found[0] if found else None
 
 
+def _confirm_duration(api, asset_id, expected):
+    """PATCH only timing; fetch again to detect upstream silently ignoring it."""
+    result = api.patch(asset_id, {'duration': expected})
+    actual = next((entry for entry in _remote_assets(api)
+                   if entry['asset_id'] == asset_id), None)
+    if not actual or actual.get('duration') != expected:
+        raise PublishError('Anthias hat die Anzeigedauer nicht bestätigt; IT muss prüfen')
+    return result
+
+
+def _url_name(template_id, item):
+    if not TEMPLATE_ID.fullmatch(template_id) or not TEMPLATE_ID.fullmatch(item.get('id', '')):
+        raise PublishError('Ungültige Webseiten-ID')
+    revision = hashlib.sha256(item['url'].encode('utf-8')).hexdigest()[:12]
+    key = item['id'][:12]
+    suffix = f' [HubWeb:{key}-{revision}]'
+    return item['name'][:100-len(suffix)] + suffix
+
+
+def media_path_suffix_is_image(item):
+    return not item.get('file', '').lower().endswith('.mp4')
+
+
 def _schedule_fields(existing_asset, schedules_file, device_id):
     """Carry forward current native per-asset schedule, not a stale Hub preset."""
     if existing_asset is not None:
@@ -165,7 +188,12 @@ def reconcile(store, template_id, device_id, *,
         # Do not hash huge video files every 5 minutes when the managed
         # revision already exists. Fresh/changed imports are fully verified.
         if record and record.get('revision') == revision and old and old['asset_id'] == record['asset_id']:
-            stats['unchanged'] += 1
+            if media_path_suffix_is_image(item) and old.get('duration') != item['duration']:
+                _confirm_duration(api, old['asset_id'], item['duration'])
+                existing = _remote_assets(api)
+                stats['updated'] += 1
+            else:
+                stats['unchanged'] += 1
             continue
         media_path = store.verified_media_path(template_id, item)
         media_type = _MEDIA.get(media_path.suffix.lower())
