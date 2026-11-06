@@ -70,7 +70,8 @@ journalctl -u anthias-hub-smb-mounts.service -n 30 --no-pager
 Das Skript verweigert bestehende Units, verändert keine Docker-Dienste
 und schreibt keine Credentials. Der Timer prüft ungefähr jede Minute.
 Status erscheint ohne Geheimnisse unter
-`/data/media-mount-status.json`.
+`/srv/anthias-sources/.mount-status.json` (im Container schreibgeschützt
+als `/sources/.mount-status.json`).
 
 ## Docker-Mounts: ursprüngliche Deploy-Konfiguration beibehalten
 
