@@ -2127,6 +2127,88 @@ def test_only_it_or_owner_can_change_smb_sources(env):
         'unc': '//10.11.0.5/files$/Screen'}).status_code == 302
 
 
+
+def test_it_can_retire_unused_smb_source_but_never_mounted_files(env, monkeypatch):
+    app, client, tmp = env
+    from app.media_sources import load_sources, retired_aliases, save_source
+    from app.folder_sync import available_sources, source_directory
+    from app.library import Library, LibraryError
+    reg = Path(tmp) / 'sources.json'
+    root = Path(tmp) / 'sources'
+    folder = root / 'default' / 'Bistro'
+    folder.mkdir(parents=True)
+    marker = folder / 'content.txt'
+    marker.write_text('unchanged')
+    libroot = Path(tmp) / 'library'
+    app.config['LIBRARY_DIR'] = str(libroot)
+    app.config['MEDIA_SOURCES_FILE'] = str(reg)
+    app.config['MEDIA_MOUNT_STATUS_FILE'] = str(Path(tmp) / 'status.json')
+    monkeypatch.setenv('MEDIA_SOURCES_FILE', str(reg))
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    save_source('default', '//10.11.0.5/files$/Screens', path=reg)
+    assert available_sources() == ['default/Bistro']
+
+    store = Library(libroot)
+    template = store.create('Bistro')
+    store.set_folder_source(template['id'], 'default/Bistro')
+    login(client, 'it')
+    page = client.get('/media-sources').get_data(as_text=True)
+    assert 'Quelle aus dem Hub entfernen' in page
+    assert 'Entfernen gesperrt' in page
+    assert '/library/' + template['id'] in page
+
+    # Protection is server-side even if the user bypasses the disabled UI.
+    data = {'csrf': token(client), 'alias': 'default',
+            'confirm': 'default', 'ack': 'yes'}
+    assert client.post('/media-sources/remove', data=data).status_code == 302
+    assert load_sources(reg)[0]['alias'] == 'default'
+    assert marker.read_text() == 'unchanged'
+
+    store.set_folder_source(template['id'], '')
+    assert client.post('/media-sources/remove', data={
+        'csrf': token(client), 'alias': 'default', 'confirm': 'other',
+        'ack': 'yes',
+    }).status_code == 302
+    assert len(load_sources(reg)) == 1
+    assert client.post('/media-sources/remove', data=data).status_code == 302
+    assert load_sources(reg) == []
+    assert retired_aliases(reg) == ['default']
+    assert available_sources() == []
+    with pytest.raises(LibraryError, match='ausgetragen'):
+        source_directory('default/Bistro')
+    assert marker.read_text() == 'unchanged'
+    assert 'Ausgetragene Quellen' in client.get('/media-sources').get_data(as_text=True)
+
+    # Re-registration is deliberate; the physical contents were never altered.
+    assert client.post('/media-sources', data={
+        'csrf': token(client), 'alias': 'default',
+        'unc': '//10.11.0.5/files$/Screens',
+    }).status_code == 302
+    assert retired_aliases(reg) == []
+    assert available_sources() == ['default/Bistro']
+
+
+def test_only_it_owner_may_retire_source_and_csrf_is_required(env):
+    app, client, tmp = env
+    from app.media_sources import load_sources, save_source
+    registry = Path(tmp) / 'sources.json'
+    app.config['MEDIA_SOURCES_FILE'] = str(registry)
+    save_source('extra', '//10.11.0.5/files$/Extra', path=registry)
+    data = {'alias': 'extra', 'confirm': 'extra', 'ack': 'yes'}
+    for role in ('viewer', 'marketing'):
+        login(client, role)
+        assert client.post('/media-sources/remove', data={
+            **data, 'csrf': token(client),
+        }).status_code == 403
+    login(client, 'it')
+    assert client.post('/media-sources/remove', data=data).status_code == 400
+    assert load_sources(registry)[0]['alias'] == 'extra'
+    assert client.post('/media-sources/remove', data={
+        **data, 'csrf': token(client),
+    }).status_code == 302
+    assert load_sources(registry) == []
+
+
 def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monkeypatch):
     app, client, tmp = env
     from app.library import Library
