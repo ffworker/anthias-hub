@@ -47,3 +47,28 @@ def test_templates_parse_without_jinja_syntax_errors():
     env = Environment()
     for path in TEMPLATES.glob('*.html'):
         env.parse(path.read_text(encoding='utf-8'))
+
+
+def test_playlist_workflows_have_explicit_categories_and_theme_aware_contrast():
+    base = (TEMPLATES / 'base.html').read_text(encoding='utf-8')
+    library = (TEMPLATES / 'library.html').read_text(encoding='utf-8')
+    detail = (TEMPLATES / 'library_detail.html').read_text(encoding='utf-8')
+    player = (TEMPLATES / 'playlist.html').read_text(encoding='utf-8')
+    sheet = (STATIC / 'workflow-ui.css').read_text(encoding='utf-8')
+
+    assert base.index('product-ui.css') < base.index('workflow-ui.css')
+    for title in ('Inhalte / Netzwerkordner', 'ZIP-Import &amp; Export', 'Playlist anwenden'):
+        assert title in library
+    assert 'id="backup-zip"' in library
+    assert 'Backup-ZIP exportieren' in detail
+    assert 'Vorlage zur Playlist hinzufügen' in detail
+    assert 'library-folder-settings' in detail
+    assert 'data-add-mode="zip"' in player
+    assert 'data-add-mode="library"' in player
+    assert 'import_network_folder_once' in player
+    assert 'attach_folder_playlist_to_device' in player
+    assert "color:var(--ui-fg)!important" in sheet
+    assert '.library-item' in sheet and 'grid-template-columns:' in sheet
+    assert '@media(max-width:1170px)' in sheet
+    assert 'html[data-theme="dark"]' in sheet
+    assert 'html[data-theme="light"]' in sheet
