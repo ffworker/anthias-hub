@@ -179,6 +179,27 @@ def remove_source(alias, *, path=None):
     return 'retired'
 
 
+def retire_unmanaged_source(alias, *, path=None):
+    """Hide a visible legacy host mount without first registering its UNC.
+
+    The caller is responsible for verifying that the alias really exists in
+    the trusted mount source directory and that no playlist depends on it.
+    """
+    alias = validate_alias(alias)
+    target = registry_file(path)
+    with LOCK:
+        entries = load_sources(target)
+        retired = retired_aliases(target)
+        if any(entry['alias'] == alias for entry in entries):
+            raise SourceError('Quelle ist bereits registriert; reguläres Austragen verwenden')
+        if alias in retired:
+            raise SourceError('Quelle wurde bereits ausgetragen')
+        if len(retired) >= 50:
+            raise SourceError('Zu viele ausgetragene Quellen; Host-Bereinigung prüfen')
+        _write_registry(target, entries, retired + [alias])
+    return 'retired'
+
+
 def mount_statuses(path=None, registry_path=None):
     """Host helper writes only non-sensitive per-alias states, never passwords."""
     target = Path(path or os.environ.get('MEDIA_MOUNT_STATUS_FILE', '/sources/.mount-status.json'))
