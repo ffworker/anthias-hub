@@ -10,18 +10,24 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='workspace.css') }}">
   {% block extra_head %}{% endblock %}
   <link rel="stylesheet" href="{{ url_for('static', filename='ui-refinements.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='product-ui.css') }}">
+  <script src="{{ url_for('static', filename='product-theme.js') }}"></script>
 </head>
 <body>
+<a class="skip-link" href="#hauptinhalt">Zum Inhalt springen</a>
 <header class="top site-top">
   <div class="wrap top-inner site-header">
     <a class="brand site-brand" href="{{ url_for('dashboard') }}" aria-label="Anthias Hub – zur Bildschirmübersicht"><span class="brand-symbol" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#mark"></use></svg></span><span>Anthias <strong>Hub</strong></span></a>
     {% if logged_user %}
     <nav class="site-nav" aria-label="Hauptnavigation">
+      {% if logged_user.role in ('it', 'owner') %}
+      <a class="site-nav-link site-nav-primary {{ 'is-active' if request.path.startswith('/media-sources') else '' }}" {% if request.path.startswith('/media-sources') %}aria-current="page"{% endif %} href="{{ url_for('media_sources_page') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#folder"></use></svg> Ordner &amp; Quellen</a>
+      {% endif %}
+      <a class="site-nav-link {{ 'is-active' if request.path.startswith('/library') else '' }}" {% if request.path.startswith('/library') %}aria-current="page"{% endif %} href="{{ url_for('library_index') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Playlists</a>
       <a class="site-nav-link {{ 'is-active' if request.path == '/' or request.path.startswith('/devices/') else '' }}" {% if request.path == '/' or request.path.startswith('/devices/') %}aria-current="page"{% endif %} href="{{ url_for('dashboard') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg> Bildschirme</a>
-      <a class="site-nav-link {{ 'is-active' if request.path.startswith('/library') else '' }}" {% if request.path.startswith('/library') %}aria-current="page"{% endif %} href="{{ url_for('library_index') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Bibliothek</a>
-      {% if logged_user.role in ('it', 'owner') %}<a class="site-nav-link {{ 'is-active' if request.path.startswith('/media-sources') else '' }}" {% if request.path.startswith('/media-sources') %}aria-current="page"{% endif %} href="{{ url_for('media_sources_page') }}">Medienquellen</a>{% endif %}
     </nav>
     <div class="user site-user">
+      <button type="button" class="product-theme-toggle" data-product-theme-toggle aria-label="Darstellung zwischen hell und dunkel wechseln" aria-pressed="false">Dunkel</button>
       <span class="user-avatar" aria-hidden="true">{{ logged_user.username[0]|upper }}</span>
       <span class="user-details"><span class="user-name">{{ logged_user.username }}</span><span class="role">{{ 'OWNER' if logged_user.role == 'owner' else 'IT' if logged_user.role == 'it' else 'MARKETING' if logged_user.role == 'marketing' else 'VIEWER' }}</span></span>
       <form action="{{ url_for('logout') }}" method="post">
@@ -34,7 +40,7 @@
     {% endif %}
   </div>
 </header>
-<main class="wrap site-main">
+<main class="wrap site-main" id="hauptinhalt" tabindex="-1">
   {% with notices=get_flashed_messages(with_categories=true) %}
     {% for category, message in notices %}
       <div class="notice site-notice {{ category }}" role="{{ 'alert' if category == 'error' else 'status' }}"><span class="notice-symbol" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#{{ 'alert' if category == 'error' else 'check' }}"></use></svg></span>{{ message }}</div>
