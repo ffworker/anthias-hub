@@ -179,6 +179,39 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--ui-accent)}
 .breadcrumbs a{color:var(--ui-accent)}
 details summary{color:var(--ui-fg)}
 details summary:hover{color:var(--ui-accent)}
+/* Signaturee-style 'operate first' gateway. Folder sharing takes top billing. */
+.hub-workflow-cards{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin:8px 0 22px}
+.hub-workflow-card,.library-source-feature{
+  display:grid;align-content:space-between;gap:22px;
+  padding:23px 26px;background:var(--ui-surface);
+  border:1px solid var(--ui-line);border-radius:3px;box-shadow:none;
+}
+.hub-workflow-card.is-leading,.library-source-feature{border-top:3px solid var(--ui-accent)}
+.hub-workflow-card h2,.library-source-feature h2{
+  font:400 clamp(22px,2.2vw,30px)/1.15 var(--ui-serif);
+  letter-spacing:-.025em;color:var(--ui-fg);margin:5px 0 10px;
+}
+.hub-workflow-card p,.library-source-feature p{
+  margin:0;max-width:610px;color:var(--ui-muted);line-height:1.6;
+}
+.hub-workflow-card .eyebrow,.library-source-feature .eyebrow{color:var(--ui-accent);margin-bottom:8px}
+.hub-workflow-card>a{justify-self:start}
+.library-source-feature{
+  grid-template-columns:minmax(0,1fr) auto;align-items:center;
+  margin-bottom:22px;
+}
+.library-source-feature .button{min-width:235px}
+@media(max-width:920px){
+  .hub-workflow-cards{grid-template-columns:1fr 1fr}
+  .library-source-feature{grid-template-columns:1fr}
+  .library-source-feature .button{width:max-content;min-width:0}
+}
+@media(max-width:640px){
+  .hub-workflow-cards{grid-template-columns:1fr}
+  .hub-workflow-card,.library-source-feature{padding:20px}
+  .library-source-feature .button,.hub-workflow-card .button{width:100%}
+}
+
 /* Dashboard: a ruled operational table with real status, not glowing cards. */
 .fleet-workspace .fleet-hero{overflow:visible;margin-bottom:18px}
 .fleet-hero .fleet-add-button{white-space:normal}
