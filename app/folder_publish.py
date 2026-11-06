@@ -158,18 +158,19 @@ def reconcile(store, template_id, device_id, *,
         if record is not None and not isinstance(record, dict):
             raise PublishError('Ungültiger Medienstatus; keine Änderungen')
         old = _owned(existing, record)
+        name = _name(template_id, source, item)
+        revision = item['file'].split('/')[-1].split('.')[0]
+        target = _matching(existing, name)
+
+        # Do not hash huge video files every 5 minutes when the managed
+        # revision already exists. Fresh/changed imports are fully verified.
+        if record and record.get('revision') == revision and old and old['asset_id'] == record['asset_id']:
+            stats['unchanged'] += 1
+            continue
         media_path = store.verified_media_path(template_id, item)
         media_type = _MEDIA.get(media_path.suffix.lower())
         if not media_type:
             raise PublishError('Ungültiger Medientyp')
-        name = _name(template_id, source, item)
-        revision = media_path.stem
-        target = _matching(existing, name)
-
-        # Existing version: preserve manual toggles and schedules.
-        if record and record.get('revision') == revision and old and old['asset_id'] == record['asset_id']:
-            stats['unchanged'] += 1
-            continue
 
         # A previous run may have created the asset but crashed before saving
         # the journal. Adopt by its exact versioned name instead of duplicating.
