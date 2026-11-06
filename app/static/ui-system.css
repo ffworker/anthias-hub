@@ -1539,3 +1539,137 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
     padding:8px 7px;font-size:11px!important;gap:5px
   }
 }
+
+
+/* Playlist actions share one high-visibility disclosure component.
+   The same affordance works for Source, File, ZIP, Website, Backup, and Empty Pi. */
+.library-grid{align-items:start}
+.library-actions{
+  display:flex!important;flex-direction:column;align-items:stretch;
+  gap:12px!important;min-width:0;
+}
+.library-actions>*{min-width:0}
+.library-actions-header{padding:4px 1px 6px}
+.library-actions-header .eyebrow,.library-actions-eyebrow{margin:0 0 6px;color:var(--ui-accent)}
+.library-actions-header h2{
+  margin:0 0 6px;font:400 24px/1.18 var(--ui-serif);
+  color:var(--ui-fg)
+}
+.library-actions-header .muted{font-size:12px;margin:0;line-height:1.5}
+.library-action-disclosure,
+.library-panel.library-action-disclosure,
+.library-actions .library-action-disclosure{
+  display:block;min-width:0;padding:0;margin:0!important;
+  background:var(--ui-surface);border:1px solid var(--ui-line-strong);
+  border-radius:var(--ui-radius);box-shadow:none;overflow:visible;
+}
+.library-action-disclosure>summary{
+  display:flex!important;align-items:center;justify-content:space-between;
+  gap:12px;min-height:74px;list-style:none;cursor:pointer;
+  padding:15px 16px!important;margin:0;
+  border-left:4px solid var(--ui-line-strong);
+  border-radius:var(--ui-radius);background:var(--ui-surface)!important;
+  color:var(--ui-fg)!important;text-align:left;
+}
+.library-action-disclosure>summary::-webkit-details-marker{display:none}
+.library-action-disclosure>summary::marker{content:""}
+.library-action-disclosure>summary:hover,
+.library-action-disclosure[open]>summary{
+  background:var(--ui-surface-hover)!important;
+  border-left-color:var(--ui-accent);color:var(--ui-fg)!important;
+}
+.library-action-disclosure[open]>summary{
+  border-bottom:1px solid var(--ui-line);border-radius:var(--ui-radius) var(--ui-radius) 0 0;
+}
+.library-action-label{display:flex;flex-direction:column;min-width:0;gap:5px}
+.library-action-label strong{
+  display:block;font-size:14px;font-weight:750;
+  letter-spacing:0;line-height:1.3;color:var(--ui-fg)
+}
+.library-action-label small{
+  display:block;font-size:12px;font-weight:450;
+  line-height:1.5;color:var(--ui-muted);overflow-wrap:anywhere
+}
+.library-action-chevron{
+  flex:0 0 32px;display:grid;place-items:center;
+  height:32px;border:1px solid var(--ui-line-strong);
+  background:var(--ui-raised);border-radius:5px;
+  color:var(--ui-fg);font:700 20px/1 var(--ui-sans);
+  transition:transform .14s ease
+}
+.library-action-disclosure[open] .library-action-chevron{
+  transform:rotate(180deg);color:var(--ui-accent);border-color:var(--ui-accent)
+}
+.library-action-disclosure .library-action-body{padding:16px}
+.library-action-disclosure .library-action-body>:first-child{margin-top:0}
+.library-action-disclosure form{min-width:0}
+.library-action-disclosure form :is(label,input,select,textarea,button){max-width:100%}
+.library-action-disclosure form :is(input:not([type=checkbox]),select,textarea){min-height:42px}
+.library-action-disclosure button.primary{min-height:44px}
+.library-action-disclosure .muted{font-size:12px;line-height:1.55;color:var(--ui-muted)}
+.library-action-disclosure.library-folder-settings>p,
+.library-action-disclosure.library-folder-settings>form,
+.library-action-disclosure.library-folder-settings>h3,
+.library-action-disclosure.library-folder-settings>hr{
+  margin-left:16px;margin-right:16px
+}
+.library-action-disclosure.library-folder-settings>p:first-of-type{margin-top:16px}
+.library-action-disclosure.library-folder-settings>form:last-of-type{margin-bottom:18px}
+.library-action-disclosure.library-folder-settings hr{border-color:var(--ui-line);margin-top:20px;margin-bottom:18px}
+.library-action-disclosure.library-folder-settings .library-auto-device{
+  display:flex;align-items:flex-start;gap:9px
+}
+.library-action-disclosure.library-folder-settings .library-auto-device input{
+  flex:none;margin-top:3px
+}
+.library-action-disclosure.library-bulk-compact .bulk-media-panel{
+  margin:0;border:0;padding:17px
+}
+.library-action-disclosure.library-bulk-compact .bulk-media-panel h2{font-size:17px}
+.library-action-disclosure.library-website-details>p,
+.library-action-disclosure.library-website-details>form{
+  margin-left:16px;margin-right:16px
+}
+.library-action-disclosure.library-website-details>p{margin-top:16px}
+.library-action-disclosure.library-website-details>form{margin-bottom:17px}
+.library-action-disclosure.library-empty-only .library-apply{
+  padding:16px;background:var(--ui-surface);border:0;
+  border-radius:0 0 var(--ui-radius) var(--ui-radius);box-shadow:none
+}
+.library-action-disclosure.library-empty-only .library-apply h2{
+  font:400 21px/1.2 var(--ui-serif);margin:0 0 9px
+}
+.library-action-disclosure.library-backup-details .library-action-body{
+  padding:17px
+}
+.library-action-disclosure.library-backup-details .library-action-body>p{margin-top:0}
+.library-action-disclosure :is(input,select,textarea){
+  color:var(--ui-fg);background:var(--ui-raised);
+  border:1px solid var(--ui-line-strong)
+}
+.library-action-disclosure .library-action-body input[type=file]{padding:10px}
+.library-actions-eyebrow{margin-top:2px}
+.library-intro .library-jump-apply{min-height:42px}
+.library-template-intro .library-detail-title-row{gap:10px}
+.library-template-intro .library-jump-apply,
+.library-template-intro .library-backup-export{min-height:42px;font-size:12px}
+.library-publish-hero{
+  width:100%;margin-top:28px;
+  scroll-margin-top:28px
+}
+.library-publish-hero .library-publish-copy .eyebrow{color:var(--ui-accent)!important}
+.library-queue-panel>.eyebrow{margin:0 0 8px}
+.library-workflow-nav{scroll-margin-top:24px}
+.library-workflow-nav a{border-top-color:var(--ui-line-strong)}
+.library-workflow-nav a:first-child{border-top-color:var(--ui-accent)}
+.library-workflow-nav a strong{color:var(--ui-fg)}
+@media(max-width:1180px){
+  .library-actions{display:flex!important;flex-direction:column;grid-template-columns:none!important}
+}
+@media(max-width:680px){
+  .library-action-disclosure>summary{padding:13px 12px!important;min-height:68px}
+  .library-action-disclosure .library-action-body{padding:13px}
+  .library-template-intro .library-jump-apply{width:100%;justify-content:center}
+  .library-template-intro .library-backup-export{width:100%;justify-content:center}
+  .library-publish-hero{margin-top:20px;padding:18px}
+}
