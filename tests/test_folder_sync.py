@@ -108,9 +108,9 @@ def test_default_library_discovers_only_safe_direct_children(tmp_path, monkeypat
     (root / 'oldbistro').mkdir()
     monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
 
-    assert default_library_folders() == ['Empfang Nord', 'Demo-Screen-A']
+    assert default_library_folders() == ['Demo-Screen-A', 'Empfang Nord']
     assert available_sources() == [
-        'oldbistro', 'default/Empfang Nord', 'default/Demo-Screen-A'
+        'oldbistro', 'default/Demo-Screen-A', 'default/Empfang Nord'
     ]
     assert source_directory('default/Empfang Nord') == default / 'Empfang Nord'
     for bad in ('default/../outside', 'default/link', 'default/.private',
