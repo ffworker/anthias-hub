@@ -178,14 +178,15 @@ def create_app(config=None):
     @login_required('it')
     def media_sources_page():
         from .folder_sync import available_sources
-        from .media_sources import SourceError, load_sources, mount_statuses
+        from .media_sources import SourceError, load_sources, mount_statuses, observed_mount_source
         try:
             registered = load_sources(app.config['MEDIA_SOURCES_FILE'])
             states = mount_statuses(app.config['MEDIA_MOUNT_STATUS_FILE'])
             aliases = available_sources()
             for source in registered:
                 source['status'] = states.get(source['alias'], 'pending')
-            unmanaged = sorted(set(aliases) - {entry['alias'] for entry in registered})
+            unmanaged = [{'alias': alias, 'observed': observed_mount_source(alias)}
+                         for alias in sorted(set(aliases) - {entry['alias'] for entry in registered})]
             return render_template('media_sources.html', sources=registered,
                                    unmanaged=unmanaged)
         except SourceError as exc:
