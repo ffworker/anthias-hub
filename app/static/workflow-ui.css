@@ -167,10 +167,13 @@ html[data-theme="dark"] { --workflow-hover:#35372f;--workflow-blue:#a9cada }
 
 /* Player queue: remove unreplaced dark-Nordlicht colors on light paper. */
 .playlist-workspace .playlist-overview,
-.playlist-workspace .playlist-overview span,
+.playlist-workspace .playlist-overview span:not(.overview-dot),
 .playlist-workspace .playlist-overview strong,
 .playlist-workspace .playlist-overview .overview-note {
-  color:var(--ui-fg);background-color:transparent;
+  color:var(--ui-fg);
+}
+.playlist-workspace .playlist-overview .overview-dot{
+  background:var(--ui-good);box-shadow:none;
 }
 .playlist-workspace .playlist-overview{background:var(--ui-subtle);border-color:var(--ui-line)}
 .playlist-studio-v2 .asset-body .asset-name{
