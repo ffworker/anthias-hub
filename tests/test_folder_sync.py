@@ -98,7 +98,7 @@ def test_default_library_discovers_only_safe_direct_children(tmp_path, monkeypat
     root = tmp_path / 'sources'
     default = root / 'default'
     default.mkdir(parents=True)
-    (default / 'GH-Wie4-BistroConnect').mkdir()
+    (default / 'Demo-Screen-A').mkdir()
     (default / 'Empfang Nord').mkdir()
     (default / '.private').mkdir()
     (default / 'hidden.txt').write_text('not a directory')
@@ -108,9 +108,9 @@ def test_default_library_discovers_only_safe_direct_children(tmp_path, monkeypat
     (root / 'oldbistro').mkdir()
     monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
 
-    assert default_library_folders() == ['Empfang Nord', 'GH-Wie4-BistroConnect']
+    assert default_library_folders() == ['Empfang Nord', 'Demo-Screen-A']
     assert available_sources() == [
-        'oldbistro', 'default/Empfang Nord', 'default/GH-Wie4-BistroConnect'
+        'oldbistro', 'default/Empfang Nord', 'default/Demo-Screen-A'
     ]
     assert source_directory('default/Empfang Nord') == default / 'Empfang Nord'
     for bad in ('default/../outside', 'default/link', 'default/.private',
@@ -138,13 +138,13 @@ def test_default_library_parent_mount_check_not_each_child(tmp_path, monkeypatch
 
 def test_default_library_child_import_and_retain_duration(tmp_path, monkeypatch):
     root = tmp_path / 'sources'
-    bistro = root / 'default' / 'GH-Wie4-BistroConnect'
+    bistro = root / 'default' / 'Demo-Screen-A'
     bistro.mkdir(parents=True)
     (bistro / 'banner.png').write_bytes(PNG)
     monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
     store = Library(tmp_path / 'library')
     ident = store.create('Bistro')['id']
-    store.set_folder_source(ident, 'default/GH-Wie4-BistroConnect')
+    store.set_folder_source(ident, 'default/Demo-Screen-A')
     assert sync_template(store, ident)['added'] == 1
     item = store.get(ident)['items'][0]
     store.update_item_duration(ident, item['id'], '38')
@@ -153,4 +153,4 @@ def test_default_library_child_import_and_retain_duration(tmp_path, monkeypatch)
     modified = store.get(ident)['items'][0]
     assert modified['id'] == item['id']
     assert modified['duration'] == 38
-    assert store.get(ident)['folder_source'] == 'default/GH-Wie4-BistroConnect'
+    assert store.get(ident)['folder_source'] == 'default/Demo-Screen-A'
