@@ -55,5 +55,6 @@ def test_mount_status_is_root_side_and_expires(tmp_path, monkeypatch):
                    'fingerprint': __import__('hashlib').sha256(unc.encode()).hexdigest()}
     })
     assert mount_statuses(status, registry)['bistro'] == 'already-mounted'
-    monkeypatch.setattr('app.media_sources.time.time', lambda: time.time() + 600)
+    instant = time.time()
+    monkeypatch.setattr('app.media_sources.time.time', lambda: instant + 600)
     assert mount_statuses(status, registry) == {}
