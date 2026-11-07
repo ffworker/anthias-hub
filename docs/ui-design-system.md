@@ -1,6 +1,6 @@
 # Anthias Hub – UI-Designsystem
 
-Stand: November 2026 · UI-Kennung: `ui-20261106-04`
+Stand: November 2026 · UI-Kennung: `ui-20261106-06`
 
 ## Produkt und Arbeitsabläufe
 
@@ -8,7 +8,7 @@ Die Oberfläche folgt einer ruhigen **Paper + Ink**-Gestaltung mit Korall-Akzent
 
 - **Bildschirme (Standard nach Anmeldung):** Der Login führt nach `/` zur Bildschirmübersicht. Hier wählt man einen Pi, bearbeitet dessen aktuelle Playlist, prüft Zeitplanung oder Status und öffnet die einheitlichen Aktionen „Steuern“ und „Verwalten“.
 - **Playlists:** Die gespeicherten Vorlagen sind eigenständig. Innerhalb einer Vorlage ist die Arbeitsreihenfolge **01 Inhalte & Sortierung → 02 Uploads / Quellen → 03 Auf Bildschirm anwenden**. Datei, ZIP, Webseite, Netzwerkquelle und Erstinstallation nutzen konsistente, deutlich beschriftete Aufklappbereiche.
-- **Ordner & Quellen (nur IT):** Hier werden freigegebene, schreibgeschützte SMB-Quellen administriert. Es ist kein allgemeiner Einstieg und keine Voraussetzung für manuell gepflegte Playlists.
+- **Ordner & Quellen (nur IT):** Die Standard-SMB-Freigabe und ihr **aktuell vom Host bestätigter Mountstatus** stehen oben. Weitere bereits vorhandene Einzelquellen und alte, nicht registrierte Host-Ordner bleiben als sichtbares Inventar darunter, auch wenn die Zusatzquellen-Konfiguration geschlossen ist. Hinzufügen, Pfadänderungen und Abmeldung sind bewusst nachrangig. Es ist kein allgemeiner Einstieg und keine Voraussetzung für manuell gepflegte Playlists.
 - **Drei klar getrennte Funktionen:** Dateien oder Netzwerkordner *einmalig* hochladen, Medien-ZIP vs. Hub-Backup-ZIP importieren/exportieren, gespeicherte Vorlagen kontrolliert anwenden/ergänzen.
 
 **Speichern ist nicht automatisch Veröffentlichen.** Eine gespeicherte Netzwerkquelle aktiviert niemals selbständig den Hintergrund-Publisher; `FOLDER_AUTO_PUBLISH` bleibt serverseitig standardmäßig deaktiviert.
@@ -45,7 +45,7 @@ Die früheren Dateien `ui-refinements.css`, `product-ui.css` und `workflow-ui.cs
 Die Seite meldet die aktuelle Designversion direkt im HTML:
 
 ```html
-<meta name="anthias-hub-ui" content="ui-20261106-04">
+<meta name="anthias-hub-ui" content="ui-20261106-06">
 ```
 
 Auf der Hub-VM nach **Merge, erfolgreichem GHCR-Publish und Updater-Ausführung** prüfen:
@@ -57,3 +57,16 @@ docker ps --filter name=anthias-hub
 ```
 
 Fehlt der Marker, ist noch nicht die neue UI-Version installiert. Der `/healthz`-Endpunkt sagt nur etwas über die Server-Erreichbarkeit aus, nicht über die geladene Revision oder das tatsächliche TV-Bild.
+
+### Status- und Menü-Hierarchie (SMB)
+
+| Ebene | Darstellung | Regel |
+| --- | --- | --- |
+| Navigation | **Bildschirme** → **Playlists** → dezenter IT-Eintrag **Ordner & Quellen** | Alltagsarbeit vor Administration. IT-Sichtbarkeit bleibt rollenbasiert. |
+| Primär auf der Quellen-Seite | Standard-Mount, farbiger und **beschrifteter** Status, SMB-Pfad, Host-Mountpunkt, erkannte Unterordner | „Eingehängt · Host bestätigt“ ausschließlich bei gültiger Hostmeldung unter 5 Minuten, Fingerprint zum gespeicherten SMB-Pfad passend. |
+| Problemfall | „Mount unbestätigt“, „Mount fehlgeschlagen“, „Freigabe blockiert“ oder „Anderer Pfad gemountet“ | Fehlender/veralteter Report heißt **unbestätigt**, nicht definitiv „ausgehängt“. Keine falsche Live-Anzeige. |
+| Inventar | Registrierte zusätzliche Quellen und alte Host-Verzeichnisse sofort sichtbar | Alte Verzeichnisse nur dann als „CIFS-Mount erkannt“ bezeichnen, wenn die Container-Mountinfo dies belegt. Sichtbarer Ordner allein beweist keinen Mount. |
+| Sekundär | Unterordner-Details, Playlist-Verknüpfung | Begrenzt anzeigen; keine Karte pro Unterordner zur Mount-Verwaltung. |
+| Tertiär | Pfadänderung, neue Einzelquelle, Registrierung austragen, ausgetragene Quellen | Explizite `details`-Aufklapper mit großem Pfeil; Abmelden bleibt von tatsächlichem `umount` und Pi-Dateien getrennt. |
+
+**Abnahmefälle:** Leere Installation; gespeicherter, unbestätigter Mount; frischer erfolgreicher Mount; nicht freigegeben/fehlerhaft/konfliktierend; veralteter oder zum neuen UNC nicht passender Status; registrierte zusätzliche Quellen; Legacy-CIFS-Mount vs. nur sichtbarer Legacy-Ordner; abhängige Playlists; ausgetragene Quelle; IT/Marketing; hell/dunkel; 390/768/1280 px.
