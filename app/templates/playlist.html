@@ -4,13 +4,13 @@
 {% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='playlist.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-preview.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='media-lightbox.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='upload-feedback.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='bulk-upload.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='storage-ui.css') }}"><script defer src="{{ url_for('static', filename='storage-ui.js') }}"></script><script defer src="{{ url_for('static', filename='schedule-choice.js') }}"></script>{% endblock %}
 {% block content %}
 <div class="playlist-workspace playlist-studio-v2" data-can-edit="{{ 'yes' if logged_user.role in ('marketing', 'owner', 'it') and not error else 'no' }}">
-  <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Alle Bildschirme</a><span aria-hidden="true">›</span><span>{{ device.name }}</span><span aria-hidden="true">·</span><a href="{{ url_for('library_index') }}">Bibliothek</a></nav>
+  <nav class="breadcrumbs device-page-breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Bildschirme</a><span aria-hidden="true">›</span><span>{{ device.name }}</span><span aria-hidden="true">›</span><span aria-current="page">Playlist</span></nav>
 
-  <header class="playlist-hero">
+  <header class="playlist-hero device-page-hero">
     <div class="playlist-hero-copy">
-      <p class="eyebrow">DEIN BILDSCHIRM · {{ device.location or 'Ohne Standort' }}</p>
-      <h1>{{ device.name }} <svg class="icon hero-sparkle" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></h1>
-      <p class="muted">Gestalte, was auf diesem Bildschirm zu sehen ist – ganz ohne Technik-Menüs.</p>
+      <p class="eyebrow">BILDSCHIRM · {{ device.name }} · {{ device.location or 'Ohne Standort' }}</p>
+      <h1>Playlist</h1>
+      <p class="muted">Inhalte und Wiedergabereihenfolge dieses Bildschirms bearbeiten.</p>
       {% if logged_user.role in ('marketing', 'owner', 'it') and not error %}<p class="live-warning"><span aria-hidden="true">●</span> Änderungen werden sofort auf dem Player gespeichert.</p>{% endif %}
     </div>
     <div class="hero-status">
@@ -42,7 +42,7 @@
           <h2 id="queue-title">Playlist <span class="count">{{ assets|length }}</span></h2>
           <p class="section-hint" id="queue-help">
             {% if logged_user.role in ('marketing', 'owner', 'it') and not error %}
-              Am Griff ziehen (Maus oder Touch). Tastatur: Griff fokussieren, Leertaste aufnehmen, ↑/↓ verschieben, Enter ablegen oder Esc abbrechen.
+              Am Griff ziehen · Tastatur: Leertaste, ↑/↓, Enter zum Ablegen oder Esc zum Abbrechen.
             {% else %}Die Inhalte werden in dieser Reihenfolge abgespielt.{% endif %}
           </p>
         </div>
@@ -109,7 +109,7 @@
                     <span class="asset-duration">{% if is_video %}Automatische Dauer{% else %}{{ asset.duration or 15 }} Sek.{% endif %}</span>
                   </span>
                   <span class="asset-name">{{ asset.name or 'Ohne Titel' }}</span>
-                  <span class="muted clip">{{ asset.uri or 'Lokales Medium' }}</span>
+                  <span class="muted clip" title="{{ asset.uri or 'Lokales Medium' }}">{{ asset.uri or 'Lokales Medium' }}</span>
                   <span class="asset-schedule-summary"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg>{{ asset.schedule_label }}</span>
               {% if logged_user.role in ('marketing', 'owner', 'it') and not error %}
                   <span class="asset-edit-hint" aria-hidden="true">Bearbeiten <span class="asset-chevron">⌄</span></span>
