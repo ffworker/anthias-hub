@@ -1,6 +1,16 @@
 # Anthias Hub – UI-Designsystem
 
-Stand: November 2026 · UI-Kennung: `ui-20261106-06`
+Stand: November 2026 · UI-Kennung: `ui-20261109-01`
+
+## Klarheitspass 09.11.2026 (Code-Review; visuelle Abnahme ausstehend)
+
+- **Bildschirme:** Die operativen Geräte erscheinen direkt nach einer schlanken Übersicht. Die bisherigen großen Anleitungskarten sind entfernt; Links zu Playlists und IT-Quellen folgen als leise Sekundäraufgaben.
+- **Playlist-Bibliothek:** Vorhandene Vorlagen bleiben zuerst sichtbar. „Neue Playlist erstellen“ ist eine klare Aktion; auf leerem System öffnet sich der Dialog direkt. Backup-Import steht nachrangig.
+- **Playlist-Detail:** Erst Titel, dann Importstatus. Sprungnavigation zu Inhalten, Hinzufügen, Anwenden und IT-Quellen; seltene IT-Einstellungen stehen unter den Inhaltstools.
+- **Ordner & Quellen:** Standardbibliothek und bestätigter Hoststatus kommen vor Bestandszahlen. Die ersten erkannten Unterordner sind sofort sichtbar, Legacy-Mounts und Austragen bleiben getrennt und sicher.
+- **Bedienung:** Gleichmäßige Abstände, zurückhaltende Sekundärlinks, weiterhin eine finale CSS-Datei. Deep-Links öffnen gezielt den erforderlichen nativen Aufklapper, auch aus einer anderen Seite.
+
+**Status:** Geplantes UX-Update als eigener PR, keine Aussage über eine bereits geänderte Live-UI. Vor Ausrollen: Hell/Dunkel, 390/768/Desktop, Viewer/Marketing/IT, Formulare, Dropdowns, echte Browser-Screenshots und die vorhandenen Upload-/CSRF-Tests abnehmen. Kein unkontrollierter Player-Write.
 
 ## Produkt und Arbeitsabläufe
 
@@ -45,7 +55,7 @@ Die früheren Dateien `ui-refinements.css`, `product-ui.css` und `workflow-ui.cs
 Die Seite meldet die aktuelle Designversion direkt im HTML:
 
 ```html
-<meta name="anthias-hub-ui" content="ui-20261106-06">
+<meta name="anthias-hub-ui" content="ui-20261109-01">
 ```
 
 Auf der Hub-VM nach **Merge, erfolgreichem GHCR-Publish und Updater-Ausführung** prüfen:
