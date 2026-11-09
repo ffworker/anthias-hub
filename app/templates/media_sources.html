@@ -11,15 +11,8 @@
   <p class="muted">Hier siehst du, welche SMB-Freigaben <strong>wirklich vom Host bestätigt</strong> wurden, welche nur gespeichert sind und welche zusätzlichen Mounts noch existieren.</p>
 </section>
 
-<section class="media-overview-strip" aria-label="SMB-Mount-Übersicht">
-  <div class="media-overview-stat is-confirmed"><strong>{{ mounted_count }}</strong><span>Host-bestätigte Quellen</span></div>
-  <div class="media-overview-stat {{ 'is-attention' if attention_count else '' }}"><strong>{{ attention_count }}</strong><span>Prüfung offen / Fehler</span></div>
-  <div class="media-overview-stat"><strong>{{ unmanaged|length }}</strong><span>Alte, nicht registrierte Ordner</span></div>
-  <p class="media-overview-caption">Hoststatus wird nur aus einer gültigen Prüfung der letzten 5 Minuten übernommen. Ein gespeicherter Pfad allein ist <strong>kein Mount</strong>.</p>
-</section>
-
 <section class="card library-panel media-default-panel {{ 'is-confirmed' if default_source and default_source.status in ('mounted','already-mounted') else 'is-error' if default_source and default_source.status in ('blocked','conflict','error') else 'is-attention' if default_source else 'is-empty' }}" aria-labelledby="default-library-title">
-  <p class="eyebrow">01 / STANDARDQUELLE · EMPFOHLEN</p>
+  <p class="eyebrow">STANDARDQUELLE · EMPFOHLEN</p>
   <div class="media-default-heading">
     <div>
       <h2 id="default-library-title">Ein Netzwerkordner. Alle Bildschirme.</h2>
@@ -91,8 +84,8 @@
     {% endif %}
   </div>
   {% if default_source and default_source.status in ('mounted','already-mounted') and default_folders %}
-  <details class="media-folder-peek">
-    <summary>Erkannte Unterordner ansehen <span class="media-disclosure-chevron" aria-hidden="true">⌄</span></summary>
+  <section class="media-folder-peek" aria-labelledby="media-folders-heading">
+    <h3 id="media-folders-heading">Erkannte Bildschirmordner</h3>
     <ul>
       {% for folder in default_folders[:8] %}
       <li><span><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#folder"></use></svg> {{ folder.name }}</span>
@@ -101,7 +94,7 @@
       {% endfor %}
     </ul>
     {% if default_folders|length > 8 %}<p class="muted">Weitere {{ default_folders|length - 8 }} Unterordner sind in der Playlist-Bibliothek auswählbar.</p>{% endif %}
-  </details>
+  </section>
   {% endif %}
 
   {% if default_source %}
@@ -123,17 +116,17 @@
   {% endif %}
 </section>
 
-<section class="card media-folder-notice" aria-labelledby="media-next-title">
-  <div><p class="eyebrow">02 / WEITERARBEITEN</p>
-    <h2 id="media-next-title">Inhalte in Playlists verwalten</h2>
-    <p class="muted">Die hier erkannten Ordner wählst du in einer Vorlage aus. Hier konfigurierst du nur die Freigaben, nicht die Bildschirm-Playlist selbst.</p>
-  </div>
-  <a class="button" href="{{ url_for('library_index') }}#new-playlist">Zu den Playlists →</a>
+<!-- Existing and legacy sources remain visible after the primary shared library. -->
+<section class="media-overview-strip" aria-label="SMB-Mount-Übersicht">
+  <div class="media-overview-stat is-confirmed"><strong>{{ mounted_count }}</strong><span>Host-bestätigte Quellen</span></div>
+  <div class="media-overview-stat {{ 'is-attention' if attention_count else '' }}"><strong>{{ attention_count }}</strong><span>Prüfung offen / Fehler</span></div>
+  <div class="media-overview-stat"><strong>{{ unmanaged|length }}</strong><span>Alte, nicht registrierte Ordner</span></div>
+  <p class="media-overview-caption">Hoststatus wird nur aus einer gültigen Prüfung der letzten 5 Minuten übernommen. Ein gespeicherter Pfad allein ist <strong>kein Mount</strong>.</p>
 </section>
 
 <section class="media-source-overview media-existing-sources" aria-labelledby="sources-title">
   <div class="media-section-heading">
-    <div><p class="eyebrow">03 / BESTEHENDE EINZELQUELLEN</p>
+    <div><p class="eyebrow">02 / ZUSÄTZLICHE QUELLEN</p>
       <h2 id="sources-title">Weitere Quellen <span class="count">{{ sources|length - (1 if default_source else 0) + unmanaged|length }}</span></h2>
       <p class="muted">Bereits vorhandene Einzelquellen bleiben sichtbar – auch ohne die Experten-Einstellungen zu öffnen. Neue Quellen sind nur bei Bedarf sinnvoll.</p>
     </div>
