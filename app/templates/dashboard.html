@@ -12,8 +12,8 @@
 <div class="fleet-workspace">
   <section class="fleet-hero" aria-labelledby="fleet-title">
     <div class="fleet-hero-copy">
-      <p class="eyebrow">DEIN DIGITAL SIGNAGE STUDIO</p>
-      <h1 id="fleet-title">Deine Bildschirme <svg class="icon fleet-sparkle" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></h1>
+      <p class="eyebrow">BILDSCHIRMÜBERSICHT</p>
+      <h1 id="fleet-title">Bildschirme</h1>
       <p class="muted">
         {% if logged_user.role in ('owner', 'it') %}Netzwerkordner verbinden, Playlists zuweisen und alle Bildschirme zentral steuern.
         {% elif logged_user.role == 'marketing' %}Medien bleiben in den gewohnten Netzwerkordnern. Anzeigedauern und Web-Inhalte verwaltest du in den Playlists.
@@ -34,7 +34,7 @@
 
   <div class="fleet-section-heading" id="fleet-devices-heading">
     <div><p class="eyebrow">ALLE STANDORTE</p><h2>Bildschirmübersicht <span class="count">{{ devices|length }}</span></h2></div>
-    <p class="muted">Einfach Bildschirm auswählen und loslegen.</p>
+    <p class="muted">Inhalte und Zeitpläne direkt am jeweiligen Bildschirm öffnen.</p>
   </div>
 
   <div class="fleet-grid{{ ' fleet-grid-single' if devices|length == 1 else '' }}" id="fleet-devices">
@@ -50,16 +50,19 @@
           <strong data-device-count>–</strong>
           <span>Playlist-Inhalte</span>
         </div>
-        <a class="button primary fleet-open" href="{{ url_for('playlist', device_id=device.id) }}">{{ 'Playlist bearbeiten' if logged_user.role in ('owner', 'it', 'marketing') else 'Playlist ansehen' }} <span aria-hidden="true">→</span></a>
-        <a class="fleet-schedule-link" href="{{ url_for('device_schedules', device_id=device.id) }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg> Zeitpläne verwalten →</a>
+        <div class="fleet-device-primary-actions" aria-label="Inhalte und Zeitpläne für {{ device.name }}">
+          <a class="button primary fleet-open" href="{{ url_for('playlist', device_id=device.id) }}">{{ 'Inhalte bearbeiten' if logged_user.role in ('owner', 'it', 'marketing') else 'Inhalte ansehen' }} <span aria-hidden="true">→</span></a>
+          <a class="button fleet-schedule-link" href="{{ url_for('device_schedules', device_id=device.id) }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg> Zeitpläne</a>
+        </div>
         {% if logged_user.role in ('owner', 'it', 'marketing') %}
-          <div class="fleet-device-actions">
+          <p class="fleet-device-tools-label">Geräteaktionen <span>Nur bei Bedarf</span></p>
+          <div class="fleet-device-actions {{ 'fleet-actions-it' if logged_user.role in ('owner', 'it') else 'fleet-actions-marketing' }}">
           {{ device_control(device, logged_user.role) }}
         {% endif %}
 
         {% if logged_user.role in ('owner', 'it') %}
           <details class="fleet-settings">
-            <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#settings"></use></svg> Verwalten <svg class="icon settings-chevron" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#chevron-down"></use></svg></summary>
+            <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#settings"></use></svg> Einstellungen <svg class="icon settings-chevron" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#chevron-down"></use></svg></summary>
             <div class="fleet-settings-content">
               <div class="fleet-panel-head"><p class="fleet-panel-title">Gerät verwalten <span>{{ device.name }}</span></p><button type="button" class="fleet-panel-close" data-close-fleet-menu aria-label="Geräteverwaltung schließen"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#close"></use></svg></button></div>
               <p class="code fleet-device-address">{{ device.url }}</p>
@@ -88,6 +91,7 @@
           <details class="fleet-storage-menu" data-storage-url="{{ url_for('device_storage', device_id=device.id) }}">
             <summary aria-label="Gerätespeicher von {{ device.name }} anzeigen" title="Gerätespeicher anzeigen">
               <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#storage"></use></svg>
+              <span>Speicher</span>
               <span class="storage-warning-dot" data-storage-warning hidden aria-hidden="true"></span>
             </summary>
             <div class="fleet-storage-panel">
@@ -116,7 +120,7 @@
 
   <section class="hub-next-steps" aria-labelledby="hub-next-steps-title">
     <div class="hub-next-steps-heading">
-      <h2 id="hub-next-steps-title">Weitere Aufgaben</h2>
+      <h2 id="hub-next-steps-title">Weitere Bereiche</h2>
       <p class="muted">Nur das, was du für den nächsten Schritt brauchst.</p>
     </div>
     <div class="hub-next-steps-grid">

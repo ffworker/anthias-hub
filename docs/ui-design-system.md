@@ -1,3 +1,7 @@
+## Dashboard-Iteration 1 · Bildschirmübersicht (09.11.2026)
+
+UI-Kennung `ui-20261109-06`. Auf Bildschirmkarten stehen **Inhalte** und **Zeitpläne** vor den selteneren **Geräteaktionen**. Der Speicherzugriff trägt statt eines unklaren Icons jetzt die Beschriftung „Speicher“; „Verwalten“ heißt „Einstellungen“. Die Rollen IT, Marketing und Viewer erhalten weiter ausschließlich autorisierte Aktionen. Player-API, CSRF, SMB und Publishing sind unverändert. Die visuelle Live-Abnahme in Hell/Dunkel und auf Mobilgeräten steht aus.
+
 ## Playlist-Item-Editor: gezielter visueller Hotfix (09.11.2026)
 
 Nach dem ersten Live-Browsercheck des UI-Codes wurde der aufklappbare Editor eines Playlist-Eintrags als verbleibende alte Designinsel erkannt. **UI-Kennung `ui-20261109-05` (Quellcode):** Titel- und Dauerfeld, Editier-Aktionen, Löschbestätigung und Zeitplanung verwenden jetzt dieselben Farb-Tokens, Rahmen, Feldhöhen und Responsivregeln wie andere Seiten. Der Video-Titel erhält mehr Platz. Der Zeitplan-Bereich ist neutral statt fest dunkelblau, und „Zeitplanung speichern“ ist eine sekundäre Aktion. Die bisherige Hilfe „nur neu hinzugefügte Inhalte“ erscheint nur noch bei neuen Inhalten; am bestehenden Playlist-Eintrag wird ein korrekter, kontextbezogener Text gezeigt.
@@ -7,7 +11,7 @@ Nach dem ersten Live-Browsercheck des UI-Codes wurde der aufklappbare Editor ein
 
 # Anthias Hub – UI-Designsystem
 
-Stand: November 2026 · aktuelle Quellcode-Revision `ui-20261109-05`. Eine Änderung in `main` bedeutet **nicht** automatisch ein Deployment.
+Stand: November 2026 · aktuelle Quellcode-Revision `ui-20261109-06`. Eine Änderung in `main` bedeutet **nicht** automatisch ein Deployment.
 
 ## Abschließender UI-Konsistenzpass (09.11.2026)
 
@@ -87,7 +91,7 @@ Die früheren Dateien `ui-refinements.css`, `product-ui.css` und `workflow-ui.cs
 Die Seite meldet die aktuelle Designversion direkt im HTML:
 
 ```html
-<meta name="anthias-hub-ui" content="ui-20261109-05">
+<meta name="anthias-hub-ui" content="ui-20261109-06">
 ```
 
 Auf der Hub-VM erst nach **expliziter Release-Freigabe, erfolgreichem Image-Publish und kontrolliertem Deployment** prüfen. Ein Merge allein schaltet keinen geplanten Updater ein:

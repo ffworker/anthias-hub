@@ -2529,3 +2529,99 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
   .site-main .device-page-hero .hero-status small{text-align:left}
   .site-main .schedule-workspace .schedule-onboarding{padding:14px}
 }
+
+/* UI 06: screen-first device cards, role-safe controls, consistent tool labels. */
+.site-main .fleet-workspace .fleet-device{
+  padding:20px 20px 17px;gap:0;overflow:visible;
+}
+.site-main .fleet-workspace .fleet-device-top{margin-bottom:12px}
+.site-main .fleet-workspace .fleet-location{margin-bottom:4px}
+.site-main .fleet-workspace .fleet-device h3{margin:0 0 12px}
+.site-main .fleet-workspace .fleet-device-line{
+  margin:0 0 18px;padding:0;min-height:25px;border:0
+}
+.site-main .fleet-workspace .fleet-device-primary-actions{
+  display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);
+  gap:8px;align-items:stretch;margin-top:auto;margin-bottom:16px
+}
+.site-main .fleet-workspace .fleet-device-primary-actions>.button{
+  box-sizing:border-box;display:flex!important;align-items:center;
+  justify-content:center!important;gap:8px;width:100%;min-width:0;
+  min-height:44px;padding:9px 11px;margin:0!important;
+  text-align:center;font-size:12px;line-height:1.35;
+  border-radius:var(--ui-radius);text-decoration:none
+}
+.site-main .fleet-workspace .fleet-device-primary-actions>.fleet-open{
+  justify-content:space-between!important
+}
+.site-main .fleet-workspace .fleet-device-primary-actions>.fleet-schedule-link{
+  color:var(--ui-fg)!important;border:1px solid var(--ui-line-strong);
+  background:var(--ui-raised);font-weight:700
+}
+.site-main .fleet-workspace .fleet-device-primary-actions>.fleet-schedule-link:hover{
+  border-color:var(--ui-accent);background:var(--ui-surface-hover)
+}
+.site-main .fleet-workspace .fleet-device-primary-actions>.fleet-schedule-link .icon{
+  width:16px;height:16px;flex:none;color:var(--ui-accent)
+}
+.site-main .fleet-workspace .fleet-device-tools-label{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin:0 0 8px;padding-top:12px;border-top:1px solid var(--ui-line);
+  color:var(--ui-muted);font:700 10px/1.5 var(--ui-sans);
+  letter-spacing:.055em;text-transform:uppercase
+}
+.site-main .fleet-workspace .fleet-device-tools-label span{
+  font-size:10px;font-weight:500;letter-spacing:0;text-transform:none
+}
+.site-main .fleet-workspace .fleet-device-actions.fleet-actions-it:has(>.fleet-storage-menu){
+  grid-template-columns:repeat(3,minmax(0,1fr));gap:8px
+}
+.site-main .fleet-workspace .fleet-device-actions.fleet-actions-marketing:has(>.fleet-storage-menu){
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:8px
+}
+.site-main .fleet-workspace .fleet-device-actions>details{min-width:0;width:100%;justify-self:stretch}
+.site-main .fleet-workspace .fleet-device-actions>details>summary{
+  box-sizing:border-box;display:flex;justify-content:center;
+  width:100%;min-width:0;min-height:44px;
+  padding:8px 7px;gap:6px;white-space:normal;
+  text-align:center;font-size:11px!important
+}
+.site-main .fleet-workspace .fleet-device-actions>details>summary>.icon:first-child{
+  width:15px;height:15px;flex:none
+}
+.site-main .fleet-workspace .fleet-device-actions>details>summary :is(.settings-chevron,.fleet-remote-arrow){
+  margin-left:0;width:12px;height:12px
+}
+.site-main .fleet-workspace .fleet-device-actions>.fleet-storage-menu{
+  width:100%;min-width:0;justify-self:stretch
+}
+.site-main .fleet-workspace .fleet-device-actions>.fleet-storage-menu>summary{
+  display:flex;justify-content:center;width:100%;min-width:0;
+  padding:8px 7px
+}
+.site-main .fleet-workspace .fleet-device-actions>.fleet-storage-menu>summary>.icon:first-child{
+  margin:0;width:15px;height:15px
+}
+.site-main .fleet-workspace .fleet-device-actions .fleet-storage-panel{
+  width:min(310px,calc(100vw - 24px));max-width:calc(100vw - 24px);
+  right:0;bottom:calc(100% + 10px);overflow-wrap:anywhere
+}
+.site-main .fleet-workspace .fleet-grid-single .fleet-device{padding:20px 20px 17px}
+.site-main .fleet-workspace .fleet-grid-single .fleet-device-primary-actions,
+.site-main .fleet-workspace .fleet-grid-single .fleet-device-actions{max-width:560px}
+@media(max-width:600px){
+  .site-main .fleet-workspace .fleet-device,
+  .site-main .fleet-workspace .fleet-grid-single .fleet-device{padding:16px}
+  .site-main .fleet-workspace .fleet-device-primary-actions{
+    grid-template-columns:minmax(0,1fr);gap:8px;margin-bottom:14px
+  }
+  .site-main .fleet-workspace .fleet-device-actions.fleet-actions-it:has(>.fleet-storage-menu){
+    grid-template-columns:repeat(2,minmax(0,1fr))
+  }
+  .site-main .fleet-workspace .fleet-device-actions.fleet-actions-it>.fleet-storage-menu{
+    grid-column:1/-1
+  }
+  .site-main .fleet-workspace .fleet-device-actions>details>summary{
+    justify-content:center;min-height:44px;font-size:12px!important
+  }
+}
