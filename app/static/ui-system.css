@@ -644,7 +644,6 @@ html.fleet-popovers-ready .fleet-device-actions>details>.fleet-settings-content 
 .playlist-workspace .asset-schedule-details,.playlist-workspace .delete-panel{border-color:var(--ui-line)}
 .playlist-workspace .asset-schedule-details>summary{background:var(--ui-subtle);color:var(--ui-fg);border-radius:3px}
 .playlist-workspace .asset-bulk-choice{margin:0}
-.playlist-workspace .playlist-bottom-actions{background:transparent;border-top:1px solid var(--ui-line);padding:18px 0}
 .playlist-workspace .playlist-bulk-management{background:transparent;border:1px solid var(--ui-line);border-radius:3px;padding:14px}
 .playlist-workspace .composer{background:var(--ui-surface);color:var(--ui-fg);box-shadow:-15px 0 45px #0003}
 .playlist-workspace .composer-close-row{background:#191b1a;color:#eeece2}
@@ -928,9 +927,6 @@ html[data-theme="dark"] { --workflow-hover:#35372f;--workflow-blue:#a9cada }
   border:1px solid var(--ui-line);padding:14px;border-radius:4px;
 }
 .playlist-workspace .studio-bulk-details>summary{color:var(--ui-fg);font-weight:750}
-.playlist-workspace .library-template-append{background:var(--ui-raised);border:1px solid var(--ui-line);border-radius:4px;padding:12px}
-.playlist-workspace .library-template-append>summary{color:var(--ui-fg);font-weight:750}
-.playlist-workspace .library-template-append .muted{color:var(--ui-muted)}
 .playlist-workspace .composer-footnote{background:var(--ui-subtle);color:var(--ui-muted)}
 
 /* Third-pass player composer: frequent tasks stay prominent, optional
@@ -1508,7 +1504,7 @@ html[data-theme="dark"] .site-main .playlist-workspace .asset-schedule-details i
 .playlist-workspace .composer .composer-pane{color:var(--ui-fg);background:var(--ui-surface)}
 .playlist-workspace .composer-pane .composer-explainer{color:var(--ui-muted)}
 .playlist-workspace .composer-pane a{color:var(--ui-accent)}
-.playlist-workspace .composer-pane :is(.composer-source-choice,.studio-bulk-details,.library-template-append){background:var(--ui-raised);border-color:var(--ui-line)}
+.playlist-workspace .composer-pane :is(.composer-source-choice,.studio-bulk-details){background:var(--ui-raised);border-color:var(--ui-line)}
 .playlist-workspace .composer-pane :is(.append-confirm,.storage-override){color:var(--ui-fg)}
 .playlist-workspace .composer-pane :is(input,select,textarea){color:var(--ui-fg);background:var(--ui-raised);border-color:var(--ui-line-strong)}
 .playlist-workspace .composer-pane .add-mode{color:var(--ui-fg)}
@@ -2930,4 +2926,22 @@ body.studio-drawer-open{overflow:hidden}
   .site-main .library-index-workspace .library-entry .library-entry-arrow{
     transition:none!important;transform:none!important
   }
+}
+
+/* UI 11: direct content additions only; whole templates and folder
+   automation belong to their centrally managed library template. */
+.site-main .playlist-workspace .composer-library-central{
+  display:grid;gap:9px;align-content:start;padding:15px;
+  border:1px solid var(--ui-line);border-left:3px solid var(--ui-accent);
+  border-radius:var(--ui-radius);background:var(--ui-subtle);
+  color:var(--ui-fg);font-size:12px;line-height:1.55
+}
+.site-main .playlist-workspace .composer-library-central strong{font-size:13px;color:var(--ui-fg)}
+.site-main .playlist-workspace .composer-library-central p{margin:0;color:var(--ui-muted)}
+.site-main .playlist-workspace .composer-library-central .button{
+  min-height:42px;width:100%;justify-content:center;margin:3px 0 0;
+  background:var(--ui-surface);border-color:var(--ui-line-strong);color:var(--ui-fg)
+}
+.site-main .playlist-workspace .composer-library-central .button:hover{
+  border-color:var(--ui-accent);color:var(--ui-accent)
 }

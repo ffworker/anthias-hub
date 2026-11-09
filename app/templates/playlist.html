@@ -201,17 +201,11 @@
           <div class="card empty-state">
             <div class="empty-symbol" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg></div>
             <h3>{{ 'Playlist nicht verfügbar' if error else 'Ein Bildschirm voller Möglichkeiten!' }}</h3>
-            <p class="muted">{{ 'Die Verbindung prüfen und neu laden.' if error else 'Füge dein erstes Bild oder Video hinzu – oder wähle etwas aus der Bibliothek.' }}</p>
-            {% if logged_user.role in ('marketing', 'owner', 'it') and not error %}<a href="#add-content" class="button primary studio-add-trigger" data-open-composer aria-haspopup="dialog" aria-controls="add-content">Ersten Inhalt hinzufügen →</a>{% endif %}
+            <p class="muted">{{ 'Die Verbindung prüfen und neu laden.' if error else 'Öffne oben „Inhalt hinzufügen“: Datei, ZIP, Webseite oder ein Bibliotheksinhalt.' }}</p>
           </div>
         {% endfor %}
       </div>
       {% if logged_user.role in ('marketing', 'owner', 'it') and not error and assets %}
-        <div class="playlist-bottom-actions">
-          <a href="#add-content" class="button studio-bottom-add studio-add-trigger" data-open-composer
-             aria-haspopup="dialog" aria-controls="add-content"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Weiteren Inhalt hinzufügen</a>
-          <span class="playlist-bottom-note">Bild, Video, Webseite oder Bibliotheksvorlage ergänzen</span>
-        </div>
         <details class="playlist-bulk-management" data-bulk-management>
           <summary>Mehrere Inhalte löschen oder Playlist leeren</summary>
           <div class="playlist-bulk-content">
@@ -267,7 +261,7 @@
           <div class="add-type-switch" role="group" aria-label="Häufige Aktionen">
             <button type="button" class="add-mode selected" data-add-mode="media" aria-pressed="true">Datei</button>
             <button type="button" class="add-mode" data-add-mode="zip" aria-pressed="false">ZIP / Mehrere</button>
-            <button type="button" class="add-mode" data-add-mode="library" aria-pressed="false">Vorlage anwenden</button>
+            <button type="button" class="add-mode" data-add-mode="library" aria-pressed="false">Bibliothek</button>
           </div>
           <p class="composer-choice-label composer-choice-extra-label">Weitere Quellen</p>
           <div class="add-type-extra" role="group" aria-label="Weitere Inhaltsquellen">
@@ -348,7 +342,7 @@
           <p class="muted">ZIP-<strong>Export / Wiederherstellung</strong> einer kompletten Vorlage ist ein anderer Vorgang: in der <a href="{{ url_for('library_index') }}">Playlist-Bibliothek</a> unter „Vorlagen-Backup“.</p>
         </div>
         <div class="composer-pane" data-add-pane="library">
-          <p class="composer-explainer"><strong>Aus der Bibliothek:</strong> Einen gespeicherten Inhalt oder eine komplette Vorlage hinzufügen. Die bestehende Playlist wird nicht ersetzt.</p>
+          <p class="composer-explainer"><strong>Einzelnen Inhalt übernehmen:</strong> Wähle einen gespeicherten Inhalt aus einer Hub-Vorlage. Dieser wird sofort zur aktuellen Bildschirm-Playlist ergänzt.</p>
           {% if library_items_available %}
           <form method="post" action="{{ url_for('add_library_item_from_player', device_id=device.id) }}">
             <input type="hidden" name="csrf" value="{{ csrf() }}">
@@ -381,51 +375,13 @@
             {{ schedule_select(schedule_profiles, schedule_default) }}
             <button type="submit" class="primary full-width">Inhalt zur Playlist hinzufügen →</button>
           </form>
-          <details class="library-template-append">
-            <summary>Bestehende Playlist ergänzen · ganze Vorlage</summary>
-            <p class="muted"><strong>Option A – Ergänzen:</strong> Alle Inhalte werden angehängt, bereits vorhandene Inhalte bleiben bestehen. Identische Webseiten werden übersprungen; identische Medien werden nicht automatisch erkannt.</p>
-            <form method="post" data-template-transfer data-transfer-device-id="{{ device.id }}" data-transfer-overview-path="{{ url_for('device_overview', device_id='__DEVICE__') }}" action="{{ url_for('append_library_from_player', device_id=device.id) }}">
-              <input type="hidden" name="csrf" value="{{ csrf() }}">
-              <input type="hidden" name="confirm" value="append">
-              <label>Bibliotheksvorlage
-                <select name="template_id" required>
-                  <option value="">Komplette Vorlage auswählen …</option>
-                  {% for collection in library_templates %}
-                    {% if collection['items'] %}
-                      <option value="{{ collection.id }}">{{ collection.name }} · {{ collection['items']|length }} Inhalte</option>
-                    {% endif %}
-                  {% endfor %}
-                </select>
-              </label>
-              <label class="append-confirm"><input type="checkbox" name="ack" value="yes" required>
-                Alle Inhalte jetzt auf diesem Bildschirm anhängen
-              </label>
-              {{ schedule_select(schedule_profiles, schedule_default, title='Zeitplanung für neu hinzugefügte Inhalte') }}
-              <button type="submit" class="primary full-width">Alle Inhalte zur Playlist hinzufügen →</button>
-              <div class="template-transfer-feedback" data-transfer-feedback role="status" aria-live="polite" hidden><span class="template-transfer-spinner" aria-hidden="true"></span><strong data-transfer-message>Übertragung läuft …</strong><small data-transfer-live>Bestehende Playlist bleibt erhalten. Bitte nicht erneut klicken.</small></div>
-            </form>
-          </details>
-          <details class="library-template-append apply-empty-player">
-            <summary>Leere Playlist initialisieren · ganze Vorlage</summary>
-            <p class="muted"><strong>Option B – Nur bei leerem Pi:</strong> Die Übertragung wird vom Server abgelehnt, wenn bereits Inhalte auf dem Bildschirm vorhanden sind. Bestehende Inhalte werden nie ersetzt.</p>
-            <form method="post" data-template-transfer data-transfer-device-id="{{ device.id }}" data-transfer-overview-path="{{ url_for('device_overview', device_id='__DEVICE__') }}" action="{{ url_for('apply_library', device_id=device.id) }}">
-              <input type="hidden" name="csrf" value="{{ csrf() }}">
-              <label>Vorlage auswählen
-                <select name="template_id" required>
-                  <option value="">Vorlage auswählen …</option>
-                  {% for collection in library_templates if collection['items'] %}
-                    <option value="{{ collection.id }}">{{ collection.name }} · {{ collection['items']|length }} Inhalte</option>
-                  {% endfor %}
-                </select>
-              </label>
-              {{ schedule_select(schedule_profiles, schedule_default, title='Zeitplanung der neuen Inhalte') }}
-              <label class="append-confirm"><input type="checkbox" name="confirm" value="yes" required> Ich habe geprüft, dass die Ziel-Playlist leer ist.</label>
-              <button type="submit" class="primary full-width">Leere Playlist initialisieren</button>
-              <div class="template-transfer-feedback" data-transfer-feedback role="status" aria-live="polite" hidden><strong data-transfer-message>Übertragung läuft …</strong><small data-transfer-live>Nicht erneut klicken; Teilübertragungen sind möglich.</small></div>
-            </form>
-          </details>
+          <div class="composer-library-central">
+            <strong>Eine komplette Vorlage übertragen?</strong>
+            <p>Öffne zentral <strong>Playlists → Vorlage → Auf Bildschirm anwenden</strong>. Dort kannst du auch einen leeren Pi initialisieren.</p>
+            <a class="button" href="{{ url_for('library_index') }}">Playlists öffnen <span aria-hidden="true">→</span></a>
+          </div>
           {% else %}
-          <p class="muted">Noch keine gespeicherten Inhalte vorhanden.</p>
+          <p class="muted">Noch keine gespeicherten Inhalte vorhanden. Erstelle zuerst eine Vorlage in der Playlist-Bibliothek.</p>
           <a class="button" href="{{ url_for('library_index') }}">Bibliothek öffnen →</a>
           {% endif %}
         </div>
@@ -459,25 +415,11 @@
               <button class="primary full-width" type="submit">Ordnerinhalt einmalig hinzufügen</button>
             </form>
           </section>
-          <details class="composer-source-choice composer-source-auto">
-            <summary>Alternative: automatisch mit dem Ordner verbinden (IT)</summary>
-            <p class="muted">Damit wird eine Hub-Vorlage mit diesem Bildschirm verbunden. Der Import und das Veröffentlichen müssen serverseitig gesondert freigeschaltet werden. Es wird <strong>nicht sofort</strong> hochgeladen.</p>
-            <form method="post" action="{{ url_for('attach_folder_playlist_to_device', device_id=device.id) }}">
-              <input type="hidden" name="csrf" value="{{ csrf() }}">
-              <label>Ordner für laufende Verbindung
-                <select name="folder_source" required>
-                  <option value="">Netzwerkordner wählen …</option>
-                  {% for source in available_folder_sources if source.startswith('default/') %}
-                  <option value="{{ source }}">Standardbibliothek · {{ source[8:] }}</option>
-                  {% endfor %}
-                  {% for source in available_folder_sources if not source.startswith('default/') %}
-                  <option value="{{ source }}">Einzelquelle · {{ source }}</option>
-                  {% endfor %}
-                </select>
-              </label>
-              <button type="submit" class="full-width">Quelle für spätere Automatik verknüpfen</button>
-            </form>
-          </details>
+          <div class="composer-library-central">
+            <strong>Ordner dauerhaft zuordnen?</strong>
+            <p>Ordner-Playlists und Zielbildschirme werden zentral unter <strong>Playlists</strong> verwaltet. Hier gibt es nur den direkten Einmalimport.</p>
+            <a class="button" href="{{ url_for('library_index') }}">Ordner-Playlists öffnen <span aria-hidden="true">→</span></a>
+          </div>
           {% else %}
           <p class="muted" role="status">Noch kein Netzwerkordner verfügbar. Prüfe zuerst die Freigabe und den schreibgeschützten Host-Mount.</p>
           {% endif %}

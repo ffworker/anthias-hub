@@ -260,21 +260,6 @@
   min-height:37px;
   margin:0;
 }
-.playlist-workspace .library-template-append{
-  padding-top:17px;margin-top:21px;border-top:1px solid #2b4454
-}
-.playlist-workspace .library-template-append h3{font-size:14px;margin:0 0 9px}
-.playlist-workspace .library-template-append .muted{font-size:12px;line-height:1.6}
-.playlist-workspace .library-template-append select{
-  width:100%;min-height:42px;border:1px solid #456276;border-radius:9px;
-  background:#0d1b2b;color:#edf6fa;padding:8px
-}
-.playlist-workspace .library-template-append .append-confirm{
-  display:flex;align-items:start;gap:9px;margin:12px 0;font-size:12px;line-height:1.55
-}
-.playlist-workspace .library-template-append .append-confirm input{
-  flex:none;width:18px;min-height:18px;margin:1px 0 0;accent-color:var(--studio-aqua)
-}
 @media(max-width:860px){
   .playlist-workspace .asset-toolbar{gap:8px}
    .playlist-workspace .asset-inline-edit{grid-template-columns:minmax(105px,1.05fr) minmax(145px,.95fr);gap:8px}
@@ -479,24 +464,6 @@ body.studio-drawer-open{overflow:hidden}
 }
 
 
-/* Playlist finishing actions: easy to add at the end, cautious to remove. */
-.playlist-studio-v2 .playlist-bottom-actions{
-  margin:14px 0 10px;display:flex;align-items:center;
-  justify-content:space-between;gap:12px;flex-wrap:wrap;
-  padding:16px 18px;border:1px dashed #3d6265;border-radius:13px;
-  background:#162a33
-}
-.playlist-studio-v2 .studio-bottom-add{
-  display:inline-flex;align-items:center;gap:9px;min-height:41px;
-  padding:8px 13px;border:1px solid #547c74;border-radius:10px;
-  background:#234139;color:#cef7e9;font-size:13px;font-weight:700;
-  text-decoration:none
-}
-.playlist-studio-v2 .studio-bottom-add:hover,
-.playlist-studio-v2 .studio-bottom-add:focus-visible{
-  background:#305548;border-color:#8de7cb;color:#fff
-}
-.playlist-studio-v2 .playlist-bottom-note{color:#9cb6bd;font-size:11px}
 .playlist-studio-v2 .asset-bulk-choice{
   display:flex;align-items:center;justify-content:center;flex:none;
   padding:8px;margin:0;border:0;border-radius:9px;cursor:pointer
@@ -574,8 +541,6 @@ body.studio-drawer-open{overflow:hidden}
   border-radius:8px;background:#102031;color:#f4fcfc
 }
 @media(max-width:600px){
-  .playlist-studio-v2 .playlist-bottom-actions{padding:13px}
-  .playlist-studio-v2 .playlist-bottom-note{width:100%}
   .playlist-studio-v2 .asset-bulk-choice{padding:5px}
   .playlist-studio-v2 .bulk-delete-selected,.playlist-studio-v2 .bulk-clear-all{
     justify-self:stretch;width:100%
@@ -602,10 +567,6 @@ body.studio-drawer-open{overflow:hidden}
 .playlist-workspace .studio-bulk-details>h3,
 .playlist-workspace .studio-bulk-details>p,
 .playlist-workspace .studio-bulk-details>form{margin-left:13px;margin-right:13px}
-.playlist-workspace .library-template-append{border:1px solid var(--border);border-radius:10px;margin:17px 0 0;padding:0}
-.playlist-workspace .library-template-append>summary{cursor:pointer;font-size:12px;color:#c7e8df;padding:13px;min-height:44px;font-weight:700}
-.playlist-workspace .library-template-append>p,
-.playlist-workspace .library-template-append>form{margin:10px 13px 14px}
 .playlist-workspace .composer-pane select:disabled{opacity:.6;cursor:not-allowed}
 @media(max-width:580px){
   .playlist-workspace .add-type-switch{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -619,12 +580,9 @@ body.studio-drawer-open{overflow:hidden}
 .playlist-studio-v2 .asset-edit-hint{font-size:12px}
 .playlist-workspace .playlist-overview,.playlist-workspace .overview-note{font-size:12px}
 .playlist-studio-v2 .composer-explainer,.playlist-workspace .composer-footnote{font-size:12px}
-.playlist-workspace .playlist-bottom-note{font-size:12px}
 @media(max-width:580px){.playlist-studio-v2 .asset-side .pill{font-size:11px;padding:5px 8px}}
 
 .playlist-workspace .drag-handle .icon{width:24px;height:24px;fill:currentColor}
-.playlist-workspace .studio-bottom-add .icon{width:17px;height:17px}
-
 /* IT-only network-source composer: four consistent choices; Marketing keeps three. */
 .playlist-workspace .add-type-switch.with-network{grid-template-columns:repeat(4,minmax(0,1fr))}
 .playlist-workspace .composer-pane[data-add-pane="folder"] select{width:100%;min-height:44px;background:#0b1725;border:1px solid #436278;border-radius:9px;color:#e5f3fc;padding:9px;font:inherit}
