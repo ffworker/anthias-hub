@@ -159,7 +159,7 @@ def test_nordlicht_navigation_and_playlist_forms(env):
     assert 'icons.svg#web' in page and 'icons.svg#image' in page
     assert 'studio-bulk-details' in page
     assert 'add-mode-secondary' not in page
-    assert 'Weiteren Inhalt hinzufügen' in page  # populated playlist keeps bottom CTA
+    assert page.count('data-open-composer') == 1  # one consistent add drawer entrypoint
     assert "'unsafe-inline'" not in client.get('/devices/lab').headers['Content-Security-Policy']
 
 
@@ -1435,32 +1435,31 @@ def test_screen_card_ctas_have_equal_insets_for_marketing_it_and_viewer(env):
         client.post('/logout', data={'csrf': token(client)})
 
 
-def test_playlist_bottom_add_and_bulk_controls_are_marketing_only(env):
+def test_device_playlist_one_add_drawer_bulk_selection_stays_in_context(env):
     _, client, _ = env
-    login(client, 'marketing')
-    page = client.get('/devices/lab').get_data(as_text=True)
-    assert 'Weiteren Inhalt hinzufügen' in page
-    assert 'playlist-bottom-actions' in page
-    assert page.index('id="playlist-items"') < page.index('playlist-bottom-actions')
-    assert 'data-open-composer' in page.split('playlist-bottom-actions', 1)[1]
-    assert 'data-bulk-management' in page
-    assert 'name="selected" value="one123" form="playlist-bulk-form"' in page
-    assert 'name="baseline" value="one123"' in page
-    assert 'name="mode" value="selected"' in page
-    assert 'name="mode" value="all"' in page
-    assert 'name="name_confirmation"' in page
-    assert 'playlist-bulk.js' in page
-    client.post('/logout', data={'csrf': token(client)})
-    login(client, 'it')
-    it_editor = client.get('/devices/lab').get_data(as_text=True)
-    assert 'Weiteren Inhalt hinzufügen' in it_editor
-    assert 'playlist-bottom-actions' in it_editor
+    for role in ('marketing', 'it'):
+        login(client, role)
+        page = client.get('/devices/lab').get_data(as_text=True)
+        assert page.count('data-open-composer') == 1
+        assert 'playlist-bottom-actions' not in page
+        assert 'Weiteren Inhalt hinzufügen' not in page
+        assert 'data-bulk-management' in page
+        assert page.index('id="playlist-items"') < page.index('data-bulk-management')
+        assert 'name="selected" value="one123" form="playlist-bulk-form"' in page
+        assert 'name="baseline" value="one123"' in page
+        assert 'name="mode" value="selected"' in page
+        assert 'name="mode" value="all"' in page
+        assert 'name="name_confirmation"' in page
+        assert 'playlist-bulk.js' in page
+        assert 'add_library_item_from_player' in page
+        assert 'append_library_from_player' not in page
+        assert 'attach_folder_playlist_to_device' not in page
+        assert 'data-add-mode="library"' in page
+        client.post('/logout', data={'csrf': token(client)})
 
-    client.post('/logout', data={'csrf': token(client)})
     login(client, 'viewer')
     read_only = client.get('/devices/lab').get_data(as_text=True)
-    assert 'Weiteren Inhalt hinzufügen' not in read_only
-    assert 'playlist-bottom-actions' not in read_only
+    assert 'data-open-composer' not in read_only
     assert 'playlist-bulk-form' not in read_only
 
 
@@ -1471,7 +1470,8 @@ def test_playlist_empty_has_first_add_but_no_bulk_or_bottom_add(env):
     try:
         FakeAnthias.assets_data = []
         page = client.get('/devices/lab').get_data(as_text=True)
-        assert 'Ersten Inhalt hinzufügen' in page
+        assert page.count('data-open-composer') == 1
+        assert 'Öffne oben „Inhalt hinzufügen“' in page
         assert 'Weiteren Inhalt hinzufügen' not in page
         assert 'playlist-bulk-form' not in page
     finally:
@@ -2501,7 +2501,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
     response = client.get('/login')
     assert response.status_code == 200
     text = response.get_data(as_text=True)
-    assert 'content="ui-20261109-10"' in text
+    assert 'content="ui-20261109-11"' in text
     assert 'ui-system.css' in text
     assert all(f"filename='{name}'" not in text for name in (
         'product-ui.css', 'ui-refinements.css', 'workflow-ui.css'))
@@ -2513,7 +2513,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
         result = client.get(path)
         assert result.status_code == 200, path
         text = result.get_data(as_text=True)
-        assert 'content="ui-20261109-10"' in text, path
+        assert 'content="ui-20261109-11"' in text, path
         assert text.count('ui-system.css') == 1, path
         assert 'data-product-theme-toggle' in text, path
         assert 'class="site-main"' not in text or 'id="hauptinhalt"' in text
@@ -2539,7 +2539,7 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert page.index('id="fleet-devices"') < page.index('class="hub-next-steps"')
     assert 'Playlists verwalten' in page
     assert 'Ordner &amp; Quellen' in page
-    assert 'ui-system.css?v=ui-20261109-10' in page
+    assert 'ui-system.css?v=ui-20261109-11' in page
 
     libpage = client.get('/library').get_data(as_text=True)
     assert libpage.index('id="library-page-title"') < libpage.index('class="library-grid library-index-grid"')
