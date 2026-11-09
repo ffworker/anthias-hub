@@ -13,7 +13,7 @@ def test_product_theme_loads_last_and_controls_are_real():
     assert "filename='product-ui.css'" not in base
     assert "filename='workflow-ui.css'" not in base
     assert "filename='ui-refinements.css'" not in base
-    assert 'name="anthias-hub-ui" content="ui-20261109-01"' in base
+    assert 'name="anthias-hub-ui" content="ui-20261109-02"' in base
     assert base.index('{% block extra_head %}') < base.index("filename='ui-system.css'")
     assert 'product-theme.js' in base
     assert 'data-product-theme-toggle' in base
@@ -146,3 +146,23 @@ def test_smb_design_levels_and_statuses_are_textual_in_both_themes():
     assert 'var(--ui-good-bg)' in css
     assert 'var(--ui-warn-bg)' in css
     assert 'var(--ui-error-bg)' in css
+
+def test_device_pages_prioritize_current_task_without_touching_player_actions():
+    playlist = (TEMPLATES / 'playlist.html').read_text(encoding='utf-8')
+    schedule = (TEMPLATES / 'schedules.html').read_text(encoding='utf-8')
+    ui = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
+    assert '<span aria-current="page">Playlist</span>' in playlist
+    assert '<h1>Playlist</h1>' in playlist
+    assert '<h1>Zeitpläne</h1>' in schedule
+    assert '<span aria-current="page">Zeitpläne</span>' in schedule
+    assert 'BILDSCHIRM · {{ device.name }}' in playlist
+    assert 'BILDSCHIRM · {{ device.name }}' in schedule
+    assert 'Zeitplan zuweisen' in schedule
+    # The first-setup case has no presets. Don't render an empty collection
+    # with the same explanation before the already-open creation form.
+    first = schedule.split('{% if not profiles %}', 1)[1]
+    first = first.split('    {% if can_edit %}', 1)[0]
+    assert 'class="schedule-presets"' not in first
+    assert 'Ersten Zeitplan erstellen' in first
+    assert '.device-page-hero' in ui
+    assert '.device-page-breadcrumbs' in ui
