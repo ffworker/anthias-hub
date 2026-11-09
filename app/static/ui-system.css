@@ -2860,3 +2860,6 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
 @media(max-width:760px){.site-main .library-template-workspace .library-item{grid-template-columns:24px 44px minmax(0,1fr)}.site-main .library-template-workspace .library-header-actions>.button{flex:1 1 auto;justify-content:center}.site-main .library-template-workspace .library-drawer-pane{padding:16px}}
 @media(max-width:580px){.site-main .library-template-workspace.library-drawer-ready .library-detail-drawer{width:100vw;border:0;border-radius:0}.site-main .library-template-workspace .library-queue-heading .library-add-inline{width:100%;justify-content:center}}
 @media(prefers-reduced-motion:reduce){.site-main .library-template-workspace.library-drawer-ready .library-detail-drawer{transition:none!important}}
+
+/* The library drawer and player composer share the same scroll lock. */
+body.studio-drawer-open{overflow:hidden}

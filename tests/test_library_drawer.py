@@ -43,3 +43,7 @@ def test_progressive_drawer_keyboard_and_discard_protection():
     assert 'location.hash' in SCRIPT
     assert 'library-drawer-ready' in SCRIPT
     assert '@media(prefers-reduced-motion:reduce)' in UI
+
+def test_single_add_entrypoint_and_shared_scroll_lock():
+    assert PAGE.count('data-open-library-drawer="add"') == 1
+    assert 'body.studio-drawer-open{overflow:hidden}' in UI

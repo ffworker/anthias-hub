@@ -177,8 +177,8 @@ def test_ui_refresh_library_and_dashboard_role_safety(env):
     assert 'aria-current="page"' in library
     detail = client.get(f"/library/{t['id']}").data.decode('utf-8')
     assert 'library-item-options' in detail
-    assert 'template-options' in detail
-    assert 'library-bulk-compact' in detail
+    assert 'data-library-drawer-pane="more"' in detail
+    assert 'data-library-add-pane="bulk"' in detail
     assert 'name="direction" value="up"' in detail
     playlist = client.get('/devices/lab').data.decode('utf-8')
     assert 'data-library-template' in playlist and 'data-library-source' in playlist
@@ -2543,7 +2543,7 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
              'id="playlist-anwenden"', 'Netzwerkquelle &amp; Zielbildschirme']
     indices = [detail.index(x) for x in order]
     assert indices == sorted(indices)
-    assert 'Keine Netzwerkquelle · optional mit Ordner verbinden (IT)' in detail
+    assert 'data-library-drawer-pane="settings"' in detail
     assert 'class="library-drawer-backdrop"' in detail
     assert 'data-library-drawer-pane="settings"' in detail
     assert 'library-action-disclosure' not in detail

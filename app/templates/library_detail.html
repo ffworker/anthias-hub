@@ -48,8 +48,7 @@
 <section aria-labelledby="items-title" class="library-queue-panel">
 <div class="library-queue-heading">
  <div><p class="eyebrow">INHALTE DIESER VORLAGE</p><h2 id="items-title">Inhalte und Wiedergabereihenfolge <span class="count">{{ template['items']|length }}</span></h2></div>
- {% if logged_user.role in ('marketing','owner','it') and (not template.folder_source or logged_user.role in ('owner','it')) %}
- <a class="button library-add-inline" href="#library-edit-tools" data-open-library-drawer="add">+ Inhalt hinzufügen</a>{% endif %}
+
 </div>
 <p class="muted">Von oben nach unten: Bildzeiten einstellen und Inhalte mit den Pfeilen sortieren. Auf ausschließlich vom Hub verwalteten Pis übernimmt der automatische Abgleich die Reihenfolge.</p>
 <ol class="library-items">
