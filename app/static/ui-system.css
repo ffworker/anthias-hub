@@ -927,6 +927,93 @@ html[data-theme="dark"] { --workflow-hover:#35372f;--workflow-blue:#a9cada }
 .playlist-workspace .library-template-append .muted{color:var(--ui-muted)}
 .playlist-workspace .composer-footnote{background:var(--ui-subtle);color:var(--ui-muted)}
 
+/* Third-pass player composer: frequent tasks stay prominent, optional
+   sources are still discoverable without squeezing five buttons into one grid. */
+.site-main .playlist-workspace .composer-source-menu{
+  padding:12px 20px 7px;
+  border-bottom:1px solid var(--ui-line);
+  background:var(--ui-surface);
+}
+.site-main .playlist-workspace .composer-choice-label{
+  margin:0 0 7px;color:var(--ui-muted);
+  font:750 10px/1.4 var(--ui-sans);letter-spacing:.075em;
+  text-transform:uppercase;
+}
+.site-main .playlist-workspace .composer-source-menu .add-type-switch{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;margin:0;padding:5px;max-width:none;
+  background:var(--ui-subtle);border:1px solid var(--ui-line);
+  border-radius:var(--ui-radius);
+}
+.site-main .playlist-workspace .composer-source-menu .add-type-extra{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,145px),1fr));
+  gap:7px;min-width:0;
+}
+.site-main .playlist-workspace .composer-choice-extra-label{
+  margin:13px 0 6px;
+}
+.site-main .playlist-workspace .composer-source-menu .add-mode{
+  display:flex;align-items:center;justify-content:center;
+  margin:0;min-height:44px;min-width:0;padding:9px 8px;
+  font-size:12px;line-height:1.35;font-weight:675;
+  color:var(--ui-fg);background:transparent;border:1px solid transparent;
+  border-radius:var(--ui-radius);box-shadow:none;
+  white-space:normal;overflow-wrap:anywhere;
+}
+.site-main .playlist-workspace .composer-source-menu .add-type-extra .add-mode{
+  min-height:40px;border-color:var(--ui-line);background:var(--ui-raised);
+  font-weight:600;
+}
+.site-main .playlist-workspace .composer-source-menu .add-mode:is(:hover,:focus-visible){
+  color:var(--ui-accent);border-color:var(--ui-accent);
+  background:var(--ui-surface-hover);
+}
+.site-main .playlist-workspace .composer-source-menu .add-mode.selected{
+  color:var(--ui-accent);background:var(--ui-surface);
+  border:1px solid var(--ui-accent);box-shadow:none;
+}
+.site-main .playlist-workspace .composer-source-menu .add-mode:focus-visible{
+  outline:2px solid var(--ui-accent);outline-offset:2px;
+}
+.site-main .playlist-workspace .composer-pane[data-add-pane="zip"] .studio-bulk-details{
+  margin:12px 0 0;padding:13px 14px 14px;
+  background:var(--ui-raised);border:1px solid var(--ui-line);
+  border-radius:var(--ui-radius);
+}
+.site-main .playlist-workspace .composer-pane[data-add-pane="zip"] .studio-bulk-details>h3{
+  color:var(--ui-fg);font-size:15px;margin:0 0 7px;
+}
+.site-main .playlist-workspace .composer-pane[data-add-pane="zip"] .studio-bulk-details>p,
+.site-main .playlist-workspace .composer-pane[data-add-pane="zip"] .studio-bulk-details>form{
+  margin-left:0;margin-right:0;
+}
+.site-main .playlist-workspace .composer-pane .composer-explainer{
+  margin:0 0 13px;line-height:1.55;
+}
+@media(max-width:580px){
+  .site-main .playlist-workspace .composer-source-menu{
+    padding:11px 14px 7px;
+  }
+  .site-main .playlist-workspace .composer-source-menu .add-type-switch{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    margin:0;
+  }
+  .site-main .playlist-workspace .composer-source-menu .add-mode{
+    font-size:11px;min-height:48px;line-height:1.3;
+  }
+  .site-main .playlist-workspace .composer-source-menu .add-type-extra .add-mode{
+    min-height:44px;font-size:12px;
+  }
+}
+@media(max-width:350px){
+  .site-main .playlist-workspace .composer-source-menu .add-type-switch{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .site-main .playlist-workspace .composer-source-menu .add-type-switch .add-mode:last-child{
+    grid-column:1/-1;
+  }
+}
+
 /* Keep actions readable on normal laptops instead of stacking filenames 3 chars wide. */
 @media(max-width:1170px){
   .library-grid{grid-template-columns:minmax(0,1fr)}
