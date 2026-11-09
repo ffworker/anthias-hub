@@ -1,91 +1,103 @@
 {% extends 'base.html' %}
-{% from '_template_delete.html' import delete_control with context %}
-{% block title %}Playlist-Bibliothek · Anthias Hub{% endblock %}
+{% block title %}Playlists · Anthias Hub{% endblock %}
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='bulk-upload.css') }}">
-<script defer src="{{ url_for('static', filename='bulk-upload.js') }}"></script>
-<script defer src="{{ url_for('static', filename='template-delete.js') }}"></script>
+<script defer src="{{ url_for('static', filename='library-drawer.js') }}"></script>
 {% endblock %}
 {% block content %}
+<div class="library-template-workspace library-index-workspace" data-library-workspace>
 <section class="library-intro library-index-intro" aria-labelledby="library-page-title">
   <div class="library-index-heading">
     <div>
       <p class="eyebrow">INHALTE · VORLAGEN</p>
       <h1 id="library-page-title">Playlists</h1>
-      <p class="muted">Vorlagen hier bearbeiten. Auf einen Bildschirm übertragen wird erst nach deiner Bestätigung.</p>
+      <p class="muted">Gespeicherte Vorlagen zentral bearbeiten. Übertragungen auf Bildschirme erfolgen bewusst und erst nach deiner Bestätigung.</p>
     </div>
     {% if logged_user.role in ('marketing', 'owner', 'it') %}
-    <a href="#new-playlist" class="button primary library-new-button">Neue Playlist erstellen</a>
+    <div class="library-index-header-actions">
+      <a href="#new-playlist" class="button primary library-new-button" data-open-library-drawer="create" aria-controls="library-index-drawer">
+        <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Neue Playlist
+      </a>
+      <a href="#backup-zip" class="button library-index-backup-button" data-open-library-drawer="backup" aria-controls="library-index-drawer">Backup importieren</a>
+    </div>
     {% endif %}
   </div>
-  {% if logged_user.role in ('owner', 'it') %}
-  <a href="{{ url_for('media_sources_page') }}" class="library-admin-link">Netzwerkordner &amp; SMB-Quellen verwalten →</a>
-  {% endif %}
 </section>
-<div class="library-grid">
+<div class="library-grid library-index-grid">
   <section aria-labelledby="library-list-title">
-    <h2 id="library-list-title">Gespeicherte Vorlagen <span class="count">{{ templates|length }}</span></h2>
+    <div class="library-index-list-heading">
+      <h2 id="library-list-title">Gespeicherte Vorlagen <span class="count">{{ templates|length }}</span></h2>
+      <p class="muted">Playlist auswählen, um Inhalte zu bearbeiten oder auf einen Bildschirm anzuwenden.</p>
+    </div>
     <div class="library-list">
       {% for template in templates %}
       <div class="card library-entry-shell">
         <a class="library-entry" href="{{ url_for('library_detail', template_id=template.id) }}">
           <span class="library-glyph" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg></span>
           <span><span class="library-entry-heading"><strong>{{ template.name }}</strong><span class="library-entry-type {{ 'is-automatic' if template.folder_source|default(false) else 'is-manual' }}">{{ 'Netzwerkordner · Import in Hub' if template.folder_source|default(false) else 'Manuelle Vorlage' }}</span></span><small>{% if template.folder_source|default(false) %}Quelle: {{ template.folder_source }} · {% endif %}{{ template['items']|length }} Inhalte{% if template.auto_devices|default([]) %} · {{ template.auto_devices|length }} Zielbildschirm(e){% endif %} · Öffnen und bearbeiten</small></span>
-          <span aria-hidden="true">→</span>
+          <span class="library-entry-arrow" aria-hidden="true">→</span>
         </a>
-        {% if logged_user.role in ('marketing', 'owner', 'it') %}{{ delete_control(template) }}{% endif %}
       </div>
       {% else %}
         <div class="card library-empty" role="status">
           <strong>Noch keine Vorlagen vorhanden.</strong>
-          <p class="muted">{% if logged_user.role in ('marketing', 'owner', 'it') %}Erstelle deine erste Playlist über „Neue Playlist erstellen“. Bis du sie auf einen Bildschirm überträgst, bleibt dessen Wiedergabe unverändert.{% else %}Sobald eine Vorlage angelegt wird, erscheint sie hier. Du kannst die Bildschirme bereits über die Übersicht ansehen.{% endif %}</p>
+          <p class="muted">{% if logged_user.role in ('marketing', 'owner', 'it') %}Erstelle deine erste Playlist über „Neue Playlist“. Damit verändert sich noch nichts auf einem Pi.{% else %}Sobald eine Vorlage angelegt wird, erscheint sie hier. Du kannst die Bildschirme bereits über die Übersicht ansehen.{% endif %}</p>
           {% if logged_user.role == 'viewer' %}<a href="{{ url_for('dashboard') }}" class="button">Zur Bildschirmübersicht</a>{% endif %}
         </div>
       {% endfor %}
     </div>
   </section>
-  {% if logged_user.role in ('marketing', 'owner', 'it') %}
-  <aside class="library-actions" aria-label="Playlist-Verwaltung">
-    <p class="eyebrow library-actions-eyebrow">NEU &amp; IMPORT</p>
-    <details class="card library-panel library-action-disclosure" id="new-playlist"{% if not templates %} open{% endif %}>
-      <summary><span class="library-action-label"><strong>Neue Playlist erstellen</strong><small>Manuell oder mit freigegebener Netzwerkquelle</small></span><span class="library-action-chevron" aria-hidden="true">⌄</span></summary>
-      <div class="library-action-body">
-      <p class="muted">Du erstellst eine Hub-Vorlage. Damit ändert sich noch nichts auf einem Pi.</p>
-      <form method="post" action="{{ url_for('library_create') }}">
-        <input type="hidden" name="csrf" value="{{ csrf() }}">
-        <label>Playlist-Name<input name="name" maxlength="100" required placeholder="z. B. Bistro"></label>
-        {% if logged_user.role in ('owner', 'it') %}
-        <label>Modus / Medienquelle
-          <select name="folder_source">
-            <option value="">Manuell · Dateien später hinzufügen</option>
-            {% for source in folder_sources if source.startswith('default/') %}
-            <option value="{{ source }}">{{ source[8:] }} · Standardbibliothek</option>
-            {% endfor %}
-            {% for source in folder_sources if not source.startswith('default/') %}
-            <option value="{{ source }}">{{ source }} · Einzelquelle</option>
-            {% endfor %}
-          </select>
-        </label>
-        <p class="muted">Netzwerkordner sind optional. Nach Freigabe des Imports erscheinen die Medien in der Vorlage; automatische Pi-Veröffentlichung bleibt separat gesperrt.</p>
-        {% if not folder_sources %}<p class="muted" role="status">Aktuell keine Netzwerkordner verfügbar. Sobald der Stammordner eingebunden ist, erscheinen hier automatisch seine Unterordner. Manuelle Playlists sind bereits möglich.</p>{% endif %}
-        {% endif %}
-        <button class="primary">Playlist erstellen →</button>
-      </form>
-      </div>
-    </details>
-    <details class="card library-panel library-backup-panel library-backup-details library-action-disclosure" id="backup-zip">
-      <summary><span class="library-action-label"><strong>Vorlagen-Backup importieren</strong><small>Nur eine zuvor aus dem Hub exportierte Backup-ZIP</small></span><span class="library-action-chevron" aria-hidden="true">⌄</span></summary>
-      <div class="library-action-body">
-        <p class="muted">Ein <strong>Hub-Vorlagen-Backup</strong> enthält eine <code>manifest.json</code> sowie gespeicherte Inhalte. Export: Vorlage öffnen → „Backup-ZIP exportieren“. <strong>Eine reine Medien-ZIP gehört in den Medienimport der jeweiligen Vorlage oder des Bildschirms.</strong></p>
-        <form method="post" enctype="multipart/form-data" action="{{ url_for('library_import') }}">
-          <input type="hidden" name="csrf" value="{{ csrf() }}">
-          <label>Hub-Backup-ZIP auswählen<input type="file" name="archive" accept=".zip" required></label>
-          <button type="submit">Vorlagenbackup-ZIP importieren</button>
-        </form>
-      </div>
-    </details>
-  </aside>
-  {% endif %}
+</div>
+{% if logged_user.role in ('marketing', 'owner', 'it') %}
+<div class="library-drawer-backdrop" data-close-library-drawer hidden></div>
+<aside class="library-detail-drawer" id="library-index-drawer" data-library-drawer tabindex="-1" aria-labelledby="library-drawer-title">
+  <div class="library-drawer-close-row">
+    <span>PLAYLIST-VERWALTUNG</span>
+    <button type="button" class="library-drawer-close" data-close-library-drawer aria-label="Seitenpanel schließen">×</button>
+  </div>
+  <header class="library-drawer-header">
+    <p class="eyebrow">PLAYLISTS · HUB</p>
+    <h2 id="library-drawer-title">Playlists verwalten</h2>
+    <p class="muted" data-library-drawer-description>Aktion auswählen und gezielt ausführen.</p>
+  </header>
+  <nav class="library-drawer-tabs" aria-label="Playlist-Bibliothek">
+    <button type="button" data-library-drawer-tab="create" aria-pressed="false">Neue Playlist</button>
+    <button type="button" data-library-drawer-tab="backup" aria-pressed="false">Backup importieren</button>
+  </nav>
+  <section class="library-drawer-pane" id="new-playlist" data-library-drawer-pane="create" aria-label="Neue Playlist erstellen">
+    <h3>Neue Playlist erstellen</h3>
+    <p class="muted">Neue Vorlage im Hub anlegen. Laufende Bildschirme bleiben unverändert.</p>
+    <form method="post" action="{{ url_for('library_create') }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <label>Playlist-Name<input name="name" maxlength="100" required placeholder="z. B. Bistro"></label>
+      {% if logged_user.role in ('owner', 'it') %}
+      <label>Modus / Medienquelle
+        <select name="folder_source">
+          <option value="">Manuell · Dateien später hinzufügen</option>
+          {% for source in folder_sources if source.startswith('default/') %}
+          <option value="{{ source }}">{{ source[8:] }} · Standardbibliothek</option>
+          {% endfor %}
+          {% for source in folder_sources if not source.startswith('default/') %}
+          <option value="{{ source }}">{{ source }} · Einzelquelle</option>
+          {% endfor %}
+        </select>
+      </label>
+      <p class="muted">Netzwerkordner sind optional. Nach Freigabe des Imports erscheinen die Medien in der Vorlage; automatische Pi-Veröffentlichung bleibt separat gesperrt.</p>
+      {% if not folder_sources %}<p class="muted" role="status">Aktuell keine Netzwerkordner verfügbar. Sobald der Stammordner eingebunden ist, erscheinen hier seine Unterordner. Manuelle Playlists sind bereits möglich.</p>{% endif %}
+      {% endif %}
+      <button class="primary" type="submit">Playlist erstellen →</button>
+    </form>
+  </section>
+  <section class="library-drawer-pane" id="backup-zip" data-library-drawer-pane="backup" aria-label="Vorlagen-Backup importieren">
+    <h3>Vorlagen-Backup importieren</h3>
+    <p class="muted">Nur ein zuvor aus dem Hub exportiertes Vorlagenbackup mit <code>manifest.json</code> und gespeicherten Inhalten. Eine reine Medien-ZIP gehört in „Inhalt hinzufügen“ innerhalb der jeweiligen Playlist oder des Bildschirms.</p>
+    <form method="post" enctype="multipart/form-data" action="{{ url_for('library_import') }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <label>Hub-Backup-ZIP auswählen<input type="file" name="archive" accept=".zip" required></label>
+      <button class="primary" type="submit">Vorlagenbackup-ZIP importieren</button>
+    </form>
+  </section>
+</aside>
+{% endif %}
 </div>
 {% endblock %}

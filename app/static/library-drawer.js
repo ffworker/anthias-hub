@@ -23,7 +23,7 @@
   if(!panes.some(x=>x.dataset.libraryDrawerPane===mode))return false;
   panes.forEach(x=>x.hidden=x.dataset.libraryDrawerPane!==mode);
   tabs.forEach(x=>{let on=x.dataset.libraryDrawerTab===mode;x.classList.toggle('selected',on);x.setAttribute('aria-pressed',String(on))});
-  const labels={add:['Inhalt hinzufügen','Medien oder Webseiten in die Vorlage speichern.'],apply:['Auf Bildschirm anwenden','Vorlage bewusst auf einen Bildschirm übertragen.'],settings:['Quelle & Zielgeräte','IT-Konfiguration und Netzwerkzuordnung.'],more:['Weitere Optionen','Backup und seltene Verwaltungsaktionen.']};
+  const labels={add:['Inhalt hinzufügen','Medien oder Webseiten in die Vorlage speichern.'],apply:['Auf Bildschirm anwenden','Vorlage bewusst auf einen Bildschirm übertragen.'],settings:['Quelle & Zielgeräte','IT-Konfiguration und Netzwerkzuordnung.'],more:['Weitere Optionen','Backup und seltene Verwaltungsaktionen.'],create:['Neue Playlist','Eine neue Hub-Vorlage erstellen, ohne laufende Bildschirme zu verändern.'],backup:['Backup importieren','Nur bereits exportierte Hub-Vorlagenbackups wiederherstellen.']};
   drawer.querySelector('#library-drawer-title').textContent=labels[mode][0];
   drawer.querySelector('[data-library-drawer-description]').textContent=labels[mode][1];
   return true;
@@ -58,7 +58,7 @@
   else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
  });
  function openHash(){
-  const mode={'#library-edit-tools':'add','#playlist-anwenden':'apply','#network-settings':'settings','#library-more':'more'}[location.hash];
+  const mode={'#library-edit-tools':'add','#playlist-anwenden':'apply','#network-settings':'settings','#library-more':'more','#new-playlist':'create','#backup-zip':'backup'}[location.hash];
   if(mode)open(mode,root.querySelector('[data-open-library-drawer="'+mode+'"]'));
  }
  if(addPanes.length)selectAdd(addPanes[0].dataset.libraryAddPane);

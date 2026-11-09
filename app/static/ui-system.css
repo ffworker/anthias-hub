@@ -2863,3 +2863,71 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
 
 /* The library drawer and player composer share the same scroll lock. */
 body.studio-drawer-open{overflow:hidden}
+
+/* UI 10: playlist index is a content-first workspace, not a permanent
+   sidebar of duplicate menu disclosures. Reuses existing library drawer. */
+.site-main .library-index-workspace .library-index-intro{padding:15px 0 23px;margin-bottom:25px;border-bottom:1px solid var(--ui-line)}
+.site-main .library-index-workspace .library-index-heading{gap:16px 24px}
+.site-main .library-index-workspace .library-index-header-actions{
+  display:flex;gap:9px;align-items:center;flex-wrap:wrap
+}
+.site-main .library-index-workspace .library-index-header-actions .button{
+  min-height:44px;margin:0;display:inline-flex;align-items:center;
+  justify-content:center;gap:8px;padding:10px 14px;font-size:12px
+}
+.site-main .library-index-workspace .library-index-backup-button{
+  background:transparent;color:var(--ui-muted);border-color:var(--ui-line)
+}
+.site-main .library-index-workspace .library-index-grid{
+  display:block;grid-template-columns:minmax(0,1fr);
+  width:100%;max-width:none
+}
+.site-main .library-index-workspace .library-index-grid>section{max-width:100%}
+.site-main .library-index-workspace .library-index-list-heading{
+  display:flex;align-items:baseline;justify-content:space-between;
+  flex-wrap:wrap;gap:5px 22px;margin-bottom:14px
+}
+.site-main .library-index-workspace .library-index-list-heading h2{
+  font:400 clamp(23px,2.5vw,29px)/1.2 var(--ui-serif);
+  color:var(--ui-fg);margin:0
+}
+.site-main .library-index-workspace .library-index-list-heading .muted{
+  font-size:12px;margin:0;color:var(--ui-muted)
+}
+.site-main .library-index-workspace .library-list{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch
+}
+.site-main .library-index-workspace .library-entry-shell.card{
+  display:block;padding:0!important;border:1px solid var(--ui-line);
+  box-shadow:none;transition:border-color .16s ease,box-shadow .16s ease
+}
+.site-main .library-index-workspace .library-entry-shell.card:is(:hover,:focus-within){
+  border-color:var(--ui-accent);box-shadow:0 5px 18px #00000012
+}
+.site-main .library-index-workspace .library-entry{
+  width:100%;height:100%;min-height:98px;padding:18px!important;
+  display:flex;gap:13px;align-items:center;border:0
+}
+.site-main .library-index-workspace .library-entry>span:nth-child(2){min-width:0;flex:1}
+.site-main .library-index-workspace .library-entry .library-entry-heading{
+  display:flex;gap:5px 12px;align-items:center;flex-wrap:wrap
+}
+.site-main .library-index-workspace .library-entry .library-entry-arrow{
+  flex:none;min-width:22px;text-align:center;font-size:19px;
+  color:var(--ui-accent);transition:transform .16s ease
+}
+.site-main .library-index-workspace .library-entry:hover .library-entry-arrow{transform:translateX(3px)}
+.site-main .library-index-workspace .library-empty{grid-column:1/-1}
+@media(max-width:900px){
+  .site-main .library-index-workspace .library-list{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .site-main .library-index-workspace .library-index-header-actions{width:100%}
+  .site-main .library-index-workspace .library-index-header-actions .button{flex:1 1 100%}
+  .site-main .library-index-workspace .library-entry{padding:14px!important;min-height:83px}
+}
+@media(prefers-reduced-motion:reduce){
+  .site-main .library-index-workspace .library-entry .library-entry-arrow{
+    transition:none!important;transform:none!important
+  }
+}
