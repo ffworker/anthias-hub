@@ -2319,10 +2319,12 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
   display:flex;align-items:center;justify-content:space-between;
   gap:12px;min-width:0;padding:13px 15px;
   border:1px solid var(--ui-line);border-radius:var(--ui-radius);
-  background:var(--ui-surface);color:var(--ui-fg);text-decoration:none
+  background:var(--ui-surface);color:var(--ui-fg);text-decoration:none;
+  transition:border-color .16s ease,background-color .16s ease,box-shadow .16s ease
 }
-.site-main .hub-task-link:hover{
-  border-color:var(--ui-accent);background:var(--ui-surface-hover)
+.site-main .hub-task-link:is(:hover,:focus-within){
+  border-color:var(--ui-accent);background:var(--ui-surface-hover);
+  box-shadow:0 4px 16px #00000012
 }
 .site-main .hub-task-link>span:first-child{display:flex;flex-direction:column;gap:2px;min-width:0}
 .site-main .hub-task-link strong{font-size:13px;line-height:1.4}
@@ -2355,10 +2357,11 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
 .site-main .library-grid>.library-actions>.library-actions-eyebrow{margin-bottom:0}
 .site-main .library-index-intro + .library-grid .library-list{gap:9px}
 .site-main .library-index-intro + .library-grid .library-entry-shell{
-  box-shadow:none;border:1px solid var(--ui-line)
+  box-shadow:none;border:1px solid var(--ui-line);
+  transition:border-color .16s ease,background-color .16s ease,box-shadow .16s ease
 }
-.site-main .library-index-intro + .library-grid .library-entry-shell:hover{
-  border-color:var(--ui-accent)
+.site-main .library-index-intro + .library-grid .library-entry-shell:is(:hover,:focus-within){
+  border-color:var(--ui-accent);box-shadow:0 4px 16px #00000012
 }
 .site-main .library-index-intro + .library-grid .library-entry{
   padding:14px 15px!important
@@ -2390,7 +2393,25 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
 }
 .site-main .library-detail-nav a:hover,
 .site-main .library-detail-nav a:focus-visible{
-  border-bottom-color:var(--ui-accent);color:var(--ui-fg)
+  border-bottom-color:var(--ui-accent);color:var(--ui-fg);
+  background:var(--ui-subtle)
+}
+/* The current in-page destination stays visible after a step link is clicked. */
+.site-main:has(#items-title:target) .library-detail-nav a[href="#items-title"],
+.site-main:has(#library-edit-tools:target) .library-detail-nav a[href="#library-edit-tools"],
+.site-main:has(#playlist-anwenden:target) .library-detail-nav a[href="#playlist-anwenden"],
+.site-main:has(#network-settings:target) .library-detail-nav a[href="#network-settings"]{
+  background:var(--ui-subtle);border-bottom-color:var(--ui-accent);
+  color:var(--ui-fg)
+}
+@media(min-width:900px){
+  .site-main .library-detail-nav{
+    position:sticky;top:0;z-index:25;
+    background:var(--ui-bg);padding-top:5px
+  }
+  .site-main :is(#items-title,#library-edit-tools,#playlist-anwenden,#network-settings){
+    scroll-margin-top:80px
+  }
 }
 .site-main .library-detail-nav .library-detail-admin-link{
   margin-left:auto;font-size:11px
@@ -2554,6 +2575,10 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
 .site-main .fleet-workspace .fleet-device-primary-actions>.fleet-open{
   justify-content:space-between!important
 }
+/* Only an intentional CTA moves slightly; device cards and tool flyouts stay still. */
+.site-main .fleet-workspace .fleet-device-primary-actions>.fleet-open>span:last-child{
+  transition:transform .16s ease
+}
 .site-main .fleet-workspace .fleet-device-primary-actions>.fleet-schedule-link{
   color:var(--ui-fg)!important;border:1px solid var(--ui-line-strong);
   background:var(--ui-raised);font-weight:700
@@ -2641,11 +2666,13 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
   min-height:44px;padding:9px 14px;border:1px solid transparent;
   border-radius:var(--ui-radius);background:transparent;
   color:var(--ui-muted);font-size:13px;font-weight:600;
+  transition:background-color .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease
 }
 .site-main .device-workspace-tabs a:hover{color:var(--ui-fg);background:var(--ui-surface-hover)}
 .site-main .device-workspace-tabs a[aria-current="page"]{
   background:var(--ui-surface);color:var(--ui-fg);
-  border-color:var(--ui-line-strong);box-shadow:none;
+  border-color:var(--ui-line-strong);box-shadow:inset 0 -3px 0 var(--ui-coral);
+  font-weight:750
 }
 .site-main .device-workspace-tabs a[aria-current="page"] .icon{color:var(--ui-accent)}
 .site-main .schedule-shortcut{
@@ -2743,9 +2770,13 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
   display:flex;align-items:center;justify-content:space-between;
   gap:12px;padding:14px 15px;text-decoration:none;
   border:1px solid var(--ui-line);border-radius:var(--ui-radius);
-  background:var(--ui-surface);color:var(--ui-fg)
+  background:var(--ui-surface);color:var(--ui-fg);
+  transition:border-color .16s ease,background-color .16s ease,box-shadow .16s ease
 }
-.site-main .schedule-device-link:hover{border-color:var(--ui-accent);background:var(--ui-surface-hover)}
+.site-main .schedule-device-link:is(:hover,:focus-visible){
+  border-color:var(--ui-accent);background:var(--ui-surface-hover);
+  box-shadow:0 4px 16px #00000012
+}
 .site-main .schedule-device-link span:first-child{display:grid;gap:3px}
 .site-main .schedule-device-link small{color:var(--ui-muted);font-size:11px}
 @media(max-width:760px){
@@ -2758,4 +2789,42 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
   .site-main .schedule-library-new-link{width:100%;justify-content:center}
   .site-main .device-workspace-tabs a{font-size:12px;padding:9px 7px}
   .site-main .schedule-library-section .schedule-section-heading .muted{text-align:left}
+}
+
+/* UI 08 · Orientation and purposeful feedback, with no framework/JS overlay. */
+.site-nav .site-nav-link{
+  position:relative;transition:background-color .16s ease,
+  border-color .16s ease,color .16s ease;
+}
+.site-nav .site-nav-link .icon{transition:transform .16s ease,color .16s ease}
+.site-nav .site-nav-link.is-active{
+  background:#31332f;border-bottom-color:#ff795c;
+  color:#fff;font-weight:750
+}
+.site-nav .site-nav-link.is-active .icon{color:#ffb39f}
+.site-nav .site-nav-link:not(.is-active):is(:hover,:focus-visible){
+  background:#2d302c;color:#fff;border-bottom-color:#7a7e72
+}
+.site-nav .site-nav-link:active{background:#393b35}
+.site-main .breadcrumbs [aria-current="page"]{
+  color:var(--ui-fg);font-weight:700
+}
+.site-main .hub-task-arrow,
+.site-main .library-entry>span:last-child,
+.site-main .schedule-device-link>span:last-child{
+  transition:transform .16s ease
+}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+  .site-nav .site-nav-link:not(.is-active):hover .icon{transform:translateY(-1px)}
+  .site-main .fleet-workspace .fleet-device-primary-actions>.fleet-open:hover>span:last-child,
+  .site-main .hub-task-link:hover .hub-task-arrow,
+  .site-main .library-entry:hover>span:last-child,
+  .site-main .schedule-device-link:hover>span:last-child{
+    transform:translateX(3px)
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .site-nav .site-nav-link,.site-nav .site-nav-link .icon{
+    transition:none!important;transform:none!important
+  }
 }
