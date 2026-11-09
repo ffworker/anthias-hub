@@ -140,7 +140,7 @@ def test_schedule_ui_is_per_device_and_has_examples(hub):
     assert page.status_code == 200
     html = page.get_data(as_text=True)
     assert 'Pi im Bistro' in html
-    assert 'Werktag_Default' in html
+    assert 'Gemeinsame Zeitpläne' in html
     shared = client.get('/schedules').get_data(as_text=True)
     assert 'data-schedule-example="weekday"' in shared
     assert 'data-schedule-example="event"' in shared
@@ -517,7 +517,7 @@ def test_global_schedule_shared_via_two_device_routes(hub):
     assert 'Werktag_Default' in page
     assert 'Werktag_Default' in playlist
     assert 'Gemeinsame Zeitpläne' in page
-    assert 'Hubweite' in client.get('/schedules').get_data(as_text=True).title()
+    assert 'GEMEINSAME VORLAGEN' in client.get('/schedules').get_data(as_text=True)
     post(client,'/devices/lab-two/schedules/default', {'profile_id':rule['id']})
     assert default_for(app.config['SCHEDULES_FILE'],'lab-two')==rule['id']
     assert default_for(app.config['SCHEDULES_FILE'],'lab') is None
