@@ -94,7 +94,7 @@ test('only canonical UI sheet is loaded; no redundant layered themes', () => {
   for (const retired of ['ui-refinements.css', 'product-ui.css', 'workflow-ui.css']) {
     assert.ok(!template.includes("filename='" + retired + "'"), 'still loading ' + retired);
   }
-  assert.match(template, /name="anthias-hub-ui" content="ui-20261109-03"/);
+  assert.match(template, /name="anthias-hub-ui" content="ui-20261109-04"/);
 });
 
 test('primary page content precedes secondary administration and disclosures', () => {
@@ -121,4 +121,22 @@ test('primary page content precedes secondary administration and disclosures', (
   assert.match(sources, /class="media-folder-peek" aria-labelledby="media-folders-heading"/);
   assert.match(ui, /\.hub-next-steps-grid/);
   assert.match(template, /filename='ui-navigation\.js'/);
+});
+
+
+test('mobile header navigation has visible touch-friendly tabs', () => {
+  const css = fs.readFileSync(path.join(staticDir, 'ui-system.css'), 'utf8');
+  const required = [
+    '.site-nav:has(.site-nav-utility)',
+    'grid-template-columns:repeat(2,minmax(0,1fr))',
+    'overflow:visible;flex-wrap:wrap',
+    '.site-nav-link',
+    'min-height:44px',
+  ];
+  for (const token of required) assert.ok(css.includes(token), 'missing '+token);
+  const retired = ['hub-workflow-card', 'library-workflow-nav',
+                   'library-source-feature', 'media-folder-notice'];
+  for (const token of retired) {
+    assert.ok(!css.includes(token), 'dead stylesheet selector '+token);
+  }
 });
