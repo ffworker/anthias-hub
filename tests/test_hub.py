@@ -2314,7 +2314,7 @@ def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monke
     assert client.post(target, data={'csrf': token(client),
                                      'folder': 'Demo-Screen-A'}).status_code == 403
     assert 'Ordner &amp; Quellen' not in client.get('/').get_data(as_text=True)
-    assert 'Playlist-Bibliothek öffnen' in client.get('/').get_data(as_text=True)
+    assert 'Playlists verwalten' in client.get('/').get_data(as_text=True)
 
 
 def test_it_can_link_network_share_from_screen_composer_without_publishing(env, monkeypatch):
