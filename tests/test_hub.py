@@ -1453,8 +1453,9 @@ def test_device_playlist_one_add_drawer_bulk_selection_stays_in_context(env):
         assert 'name="mode" value="all"' in page
         assert 'name="name_confirmation"' in page
         assert 'playlist-bulk.js' in page
-        assert 'data-library-source' in page
-        assert 'Eine komplette Vorlage übertragen?' in page
+        assert 'data-add-mode="library"' in page
+        assert 'Noch keine gespeicherten Inhalte vorhanden.' in page
+        assert 'Eine komplette Vorlage übertragen?' not in page  # no template exists yet
         assert 'append_library_from_player' not in page
         assert 'attach_folder_playlist_to_device' not in page
         assert 'data-add-mode="library"' in page
