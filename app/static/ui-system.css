@@ -1309,7 +1309,7 @@ html.fleet-popovers-ready .fleet-workspace .fleet-device-actions>details>.fleet-
 
 /* Player item editor: replace remaining hard-coded navy/teal styling with
    the same surfaces and control hierarchy used throughout the Hub. */
-.site-main .playlist-workspace .asset.is-expanded .asset-toolbar{
+.site-main .playlist-workspace .asset .asset-toolbar{
   display:grid;grid-template-columns:minmax(0,1fr) auto;
   align-items:end;gap:14px 18px;padding:16px 18px;
   background:var(--ui-surface);border-top:1px solid var(--ui-line);
@@ -1471,7 +1471,7 @@ html[data-theme="dark"] .site-main .playlist-workspace .asset-schedule-details i
   border-color:var(--ui-accent);
 }
 @media(max-width:900px){
-  .site-main .playlist-workspace .asset.is-expanded .asset-toolbar{
+  .site-main .playlist-workspace .asset .asset-toolbar{
     grid-template-columns:minmax(0,1fr);
   }
   .site-main .playlist-workspace .asset-toolbar>.asset-inline-edit{
@@ -1485,7 +1485,7 @@ html[data-theme="dark"] .site-main .playlist-workspace .asset-schedule-details i
   }
 }
 @media(max-width:620px){
-  .site-main .playlist-workspace .asset.is-expanded .asset-toolbar{padding:13px}
+  .site-main .playlist-workspace .asset .asset-toolbar{padding:13px}
   .site-main .playlist-workspace .asset-toolbar>.asset-inline-edit,
   .site-main .playlist-workspace .asset-toolbar>.asset-inline-edit.is-video{
     grid-template-columns:minmax(0,1fr);
