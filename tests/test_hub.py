@@ -1855,7 +1855,7 @@ def test_storage_menu_is_small_and_only_shows_detail_on_demand(env):
     assert 'data-storage-refresh' in player
     assert 'data-player-available="' in player
     assert 'storage-note' not in player
-    assert '6.0 GB' not in player.split('<header class="playlist-hero">')[1].split('</header>')[0]
+    assert '6.0 GB' not in player.split('<header class="playlist-hero device-page-hero">')[1].split('</header>')[0]
     assert disk.status_code == 200 and disk.json['ok']
     assert disk.json['usable_bytes'] > 0
     assert disk.headers['Cache-Control'] == 'no-store'
