@@ -834,9 +834,11 @@ def test_whole_template_can_append_to_nonempty_playlist(env):
     lib.add_media(template['id'], 'Bild', io.BytesIO(b'\x89PNG\r\n\x1a\n' + b'test'), 'bild.png', 20)
     login(client, 'marketing')
     page = client.get('/devices/lab').data.decode('utf-8')
-    assert 'Bestehende Playlist ergänzen · ganze Vorlage' in page
-    assert 'Inhalt hinzufügen' in page
-    assert 'Vorlage auswählen' in page or 'Vorlage' in page
+    assert 'Bestehende Playlist ergänzen · ganze Vorlage' not in page
+    assert 'Eine komplette Vorlage übertragen?' in page
+    central = client.get('/library/' + template['id']).get_data(as_text=True)
+    assert 'Vorlage zur Playlist hinzufügen' in central
+    assert '/append-to-device' in central
     result = client.post('/devices/lab/append-library', data={
         'csrf': token(client), 'confirm': 'append', 'ack': 'yes',
         'template_id': template['id'],
@@ -1451,7 +1453,8 @@ def test_device_playlist_one_add_drawer_bulk_selection_stays_in_context(env):
         assert 'name="mode" value="all"' in page
         assert 'name="name_confirmation"' in page
         assert 'playlist-bulk.js' in page
-        assert 'add_library_item_from_player' in page
+        assert 'data-library-source' in page
+        assert 'Eine komplette Vorlage übertragen?' in page
         assert 'append_library_from_player' not in page
         assert 'attach_folder_playlist_to_device' not in page
         assert 'data-add-mode="library"' in page
@@ -2331,8 +2334,8 @@ def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monke
     assert 'Playlists verwalten' in client.get('/').get_data(as_text=True)
 
 
-def test_it_can_link_network_share_from_screen_composer_without_publishing(env, monkeypatch):
-    """The screen workflow reuses the existing IT-only, non-destructive bind route."""
+def test_it_legacy_network_bind_route_stays_safe_after_centralization(env, monkeypatch):
+    """Legacy IT binding remains guarded, although its UI action moved to Playlists."""
     app, client, tmp = env
     from app.library import Library
     app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
@@ -2356,7 +2359,8 @@ def test_it_can_link_network_share_from_screen_composer_without_publishing(env, 
     assert 'data-add-pane="folder"' in it_page
     assert 'value="default/Bistro"' in it_page
     assert 'Ordnerinhalt einmalig hinzufügen' in it_page
-    assert 'automatisch mit dem Ordner verbinden' in it_page
+    assert 'Ordner-Playlists öffnen' in it_page
+    assert '/devices/lab/folder-playlist' not in it_page
 
     invalid = client.post('/devices/lab/folder-playlist', data={
         'csrf': token(client), 'folder_source': 'default/../not-allowed'
@@ -2470,7 +2474,7 @@ def test_player_composer_workflows_are_explicit_and_marketing_does_not_administe
     assert 'Bestehende Playlist' in page or 'bestehende Playlist' in page
 
 
-def test_template_composer_offers_append_and_empty_only_apply_after_content_exists(env):
+def test_template_apply_uses_central_ui_while_legacy_empty_route_is_guarded(env):
     app, client, tmp = env
     app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
     from app.library import Library
@@ -2479,10 +2483,14 @@ def test_template_composer_offers_append_and_empty_only_apply_after_content_exis
     library.add_url(template['id'], 'News', 'https://example.org/news', 30)
     login(client, 'marketing')
     page = client.get('/devices/lab').get_data(as_text=True)
-    assert 'Bestehende Playlist ergänzen · ganze Vorlage' in page
-    assert 'Leere Playlist initialisieren' in page
-    assert '/devices/lab/append-library' in page
-    assert '/devices/lab/apply-library' in page
+    assert 'Bestehende Playlist ergänzen · ganze Vorlage' not in page
+    assert 'Leere Playlist initialisieren' not in page
+    assert '/devices/lab/append-library' not in page
+    assert '/devices/lab/apply-library' not in page
+    central = client.get('/library/' + template['id']).get_data(as_text=True)
+    assert 'data-library-drawer-pane="apply"' in central
+    assert 'Alternative: nur leeren Pi initialisieren' in central
+    assert '/append-to-device' in central
     refused = client.post('/devices/lab/apply-library', data={
         'csrf': token(client), 'template_id': template['id'], 'confirm': 'yes'
     }, follow_redirects=True)
