@@ -800,7 +800,7 @@ def test_library_landing_keeps_backup_separate_and_uploads_inside_templates(env)
     assert sample['name'] in page
     detail = client.get('/library/' + sample['id']).data.decode('utf-8')
     assert 'data-bulk-upload' in detail
-    assert 'library-bulk-compact' in detail
+    assert 'data-library-add-pane="bulk"' in detail
 
 
 
