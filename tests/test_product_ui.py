@@ -13,7 +13,7 @@ def test_product_theme_loads_last_and_controls_are_real():
     assert "filename='product-ui.css'" not in base
     assert "filename='workflow-ui.css'" not in base
     assert "filename='ui-refinements.css'" not in base
-    assert 'name="anthias-hub-ui" content="ui-20261109-03"' in base
+    assert 'name="anthias-hub-ui" content="ui-20261109-04"' in base
     assert base.index('{% block extra_head %}') < base.index("filename='ui-system.css'")
     assert 'product-theme.js' in base
     assert 'data-product-theme-toggle' in base
@@ -189,3 +189,29 @@ def test_composer_prioritizes_common_content_sources_and_keeps_forms():
     assert 'composer-choice-label' in css
     assert 'add-type-extra' in css
 
+
+
+def test_final_ui_navigation_forms_and_zero_states_are_role_aware():
+    base = (TEMPLATES / 'base.html').read_text(encoding='utf-8')
+    dashboard = (TEMPLATES / 'dashboard.html').read_text(encoding='utf-8')
+    library = (TEMPLATES / 'library.html').read_text(encoding='utf-8')
+    schedules = (TEMPLATES / 'schedules.html').read_text(encoding='utf-8')
+    css = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
+    assert 'aria-label="Hauptnavigation"' in base
+    assert 'aria-current="page"' in base
+    assert '.site-nav:has(.site-nav-utility)' in css
+    assert 'grid-template-columns:repeat(3,minmax(0,1fr))' in css
+    assert 'overflow:visible;flex-wrap:wrap' in css
+    assert 'Gespeicherte Vorlagen' in library
+    assert 'role="status"' in library
+    assert "logged_user.role == 'viewer'" in library
+    assert 'Noch keine Bildschirme verbunden' in dashboard
+    assert 'class="button schedule-empty-link"' in schedules
+    assert "url_for('playlist', device_id=device.id)" in schedules
+    assert "if can_edit else 'Playlist ansehen'" in schedules
+    assert 'input[type="file"]::file-selector-button' in css
+    assert ':user-invalid' in css
+    for retired in ('hub-workflow-cards','hub-workflow-card',
+                    'library-workflow-nav','library-source-feature',
+                    'media-folder-notice'):
+        assert retired not in css
