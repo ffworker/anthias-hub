@@ -2252,3 +2252,56 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
 @media(prefers-reduced-motion:reduce){
   .site-main .fleet-workspace .fleet-device{transition:none}
 }
+
+
+/* Device subpages: clear current task, restrained context, consistent scale. */
+.site-main .device-page-breadcrumbs{
+  margin-bottom:10px;font-size:12px;line-height:1.45
+}
+.site-main .device-page-hero{
+  padding:15px 0 17px;margin:0 0 7px;
+  gap:12px;align-items:center
+}
+.site-main .device-page-hero h1{
+  font-size:clamp(30px,3.3vw,43px);line-height:1.13;
+  margin:0 0 6px
+}
+.site-main .device-page-hero .eyebrow{
+  margin:0 0 6px;overflow-wrap:anywhere
+}
+.site-main .device-page-hero .muted{font-size:13px;line-height:1.55;margin:0}
+.site-main .device-page-hero .hero-status{gap:5px}
+.site-main .device-page-hero .hero-status small{
+  font-size:11px;text-align:right;color:var(--ui-muted)
+}
+.site-main .playlist-workspace .section-title{margin-bottom:10px}
+.site-main .playlist-workspace .section-hint{
+  max-width:650px;font-size:12px;line-height:1.5;color:var(--ui-muted)
+}
+.site-main .playlist-workspace .asset-body .clip{
+  display:block;min-width:0;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.site-main .schedule-workspace .schedule-onboarding{
+  padding:19px 20px
+}
+.site-main .schedule-workspace .schedule-onboarding .schedule-collection-note{
+  padding:10px 12px;margin-bottom:9px
+}
+.site-main .schedule-workspace .schedule-onboarding .schedule-new{
+  margin-top:9px
+}
+.site-main .schedule-workspace .schedule-section-heading h2{
+  font-size:clamp(22px,2.3vw,28px)
+}
+.site-main .schedule-workspace .schedule-section-heading .muted{
+  font-size:12px;line-height:1.55
+}
+@media(max-width:700px){
+  .site-main .device-page-hero{align-items:flex-start;flex-direction:column}
+  .site-main .device-page-hero .hero-status{
+    align-items:flex-start;flex-direction:row;flex-wrap:wrap;gap:6px 12px
+  }
+  .site-main .device-page-hero .hero-status small{text-align:left}
+  .site-main .schedule-workspace .schedule-onboarding{padding:14px}
+}
