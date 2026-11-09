@@ -557,7 +557,7 @@ def test_schedule_workspace_prioritizes_assignment_when_shared_plans_exist(hub):
     # Actual content assignment is above all low-frequency administration.
     assert html.index('id="schedule-assign"') < html.index('data-schedule-default')
     assert html.index('id="schedule-assign"') < html.index('data-schedule-library')
-    assert 'Inhalte zeitlich planen' in html
+    assert 'Zeitplan zuweisen' in html
     assert 'data-schedule-onboarding' not in html
     assert '<details class="schedule-secondary-panel schedule-library-accordion" data-schedule-library>' in html
     assert '<details class="schedule-secondary-panel schedule-default-accordion" data-schedule-default>' in html
