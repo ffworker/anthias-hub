@@ -1,6 +1,13 @@
+## Playlist-Item-Editor: gezielter visueller Hotfix (09.11.2026)
+
+Nach dem ersten Live-Browsercheck des UI-Codes wurde der aufklappbare Editor eines Playlist-Eintrags als verbleibende alte Designinsel erkannt. **UI-Kennung `ui-20261109-05` (Quellcode):** Titel- und Dauerfeld, Editier-Aktionen, Löschbestätigung und Zeitplanung verwenden jetzt dieselben Farb-Tokens, Rahmen, Feldhöhen und Responsivregeln wie andere Seiten. Der Video-Titel erhält mehr Platz. Der Zeitplan-Bereich ist neutral statt fest dunkelblau, und „Zeitplanung speichern“ ist eine sekundäre Aktion. Die bisherige Hilfe „nur neu hinzugefügte Inhalte“ erscheint nur noch bei neuen Inhalten; am bestehenden Playlist-Eintrag wird ein korrekter, kontextbezogener Text gezeigt.
+
+**Sicherheitsgrenze:** Keine Änderungen an Player-API, Routen, Form-Actions, CSRF, Rollen oder Upload-/Publisher-/SMB-Logik. Test der neuen Version in Hell/Dunkel, Desktop/Mobil nach ausdrücklich freigegebenem Webcontainer-only-Deployment durchführen. Ein grüner CI-Lauf ist keine visuelle Live-Abnahme.
+
+
 # Anthias Hub – UI-Designsystem
 
-Stand: November 2026 · aktuelle Quellcode-Revision `ui-20261109-04`. Eine Änderung in `main` bedeutet **nicht** automatisch ein Deployment.
+Stand: November 2026 · aktuelle Quellcode-Revision `ui-20261109-05`. Eine Änderung in `main` bedeutet **nicht** automatisch ein Deployment.
 
 ## Abschließender UI-Konsistenzpass (09.11.2026)
 
@@ -8,7 +15,7 @@ Stand: November 2026 · aktuelle Quellcode-Revision `ui-20261109-04`. Eine Ände
 - **Formulare:** Dateiauswahl, Feldbreiten, Fokus und Hinweise zu ungültigen Eingaben vereinheitlicht. Native Übermittlung, CSRF, Regeln und Upload-Logik bleiben unverändert.
 - **Leerzustände:** Bibliothek mit rollenabhängigem Einstieg; Viewer bekommen keinen unerreichbaren Schreibaufruf. Bei leerer Geräte-Playlist führt die Zeitplanung zurück zur Playlist, beschriftet als Anzeigen/Bearbeiten je nach Rolle. Leere Geräteübersicht erhält klare Botschaft.
 - **CSS-Aufräumen:** CSS-Regeln zu längst entfernten Dashboard-Onboarding-Karten, Bibliotheks-Workflow-Navigation und Quellenhinweisen entfernt; veraltete Theme-Kommentare aktualisiert. Ein finaler Stylesheet-Einstieg, kein neues Framework.
-- **Revision:** ui-20261109-04. CI und strukturelle Abnahme sind nicht gleich echte Browseransicht. Hell/Dunkel, Mobile und Desktop müssen im Browser visuell kontrolliert werden. Produktive Player, SMB und Publisher sind kein Bestandteil dieses PR.
+- **Revision:** ui-20261109-05. CI und strukturelle Abnahme sind nicht gleich echte Browseransicht. Hell/Dunkel, Mobile und Desktop müssen im Browser visuell kontrolliert werden. Produktive Player, SMB und Publisher sind kein Bestandteil dieses PR.
 
 ## Historie · Composer / „Inhalt hinzufügen“ – UI-Pass 3 (09.11.2026)
 
@@ -80,7 +87,7 @@ Die früheren Dateien `ui-refinements.css`, `product-ui.css` und `workflow-ui.cs
 Die Seite meldet die aktuelle Designversion direkt im HTML:
 
 ```html
-<meta name="anthias-hub-ui" content="ui-20261109-04">
+<meta name="anthias-hub-ui" content="ui-20261109-05">
 ```
 
 Auf der Hub-VM erst nach **expliziter Release-Freigabe, erfolgreichem Image-Publish und kontrolliertem Deployment** prüfen. Ein Merge allein schaltet keinen geplanten Updater ein:

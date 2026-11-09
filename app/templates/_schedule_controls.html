@@ -1,5 +1,5 @@
 {# Shared player-side choice: template library stays schedule-free. #}
-{% macro schedule_select(profiles, default_id, mode='default', title='Zeitplanung', custom_days=none, custom_from='08:00', custom_to='18:00') %}
+{% macro schedule_select(profiles, default_id, mode='default', title='Zeitplanung', custom_days=none, custom_from='08:00', custom_to='18:00', hint='Gilt nur für neu hinzugefügte Inhalte. Bestehende Playlist bleibt unverändert.') %}
 <fieldset class="schedule-choice" data-schedule-choice>
   <legend>{{ title }}</legend>
   <label class="schedule-choice-current">Zeitfenster
@@ -26,7 +26,7 @@
       <label>Bis<input type="time" name="schedule_to" value="{{ custom_to }}" disabled></label>
     </div>
   </div>
-  <p class="schedule-choice-hint">Gilt nur für neu hinzugefügte Inhalte. Bestehende Playlist bleibt unverändert.</p>
+  <p class="schedule-choice-hint">{{ hint }}</p>
 </fieldset>
 {% endmacro %}
 

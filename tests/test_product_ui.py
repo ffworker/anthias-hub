@@ -13,7 +13,7 @@ def test_product_theme_loads_last_and_controls_are_real():
     assert "filename='product-ui.css'" not in base
     assert "filename='workflow-ui.css'" not in base
     assert "filename='ui-refinements.css'" not in base
-    assert 'name="anthias-hub-ui" content="ui-20261109-04"' in base
+    assert 'name="anthias-hub-ui" content="ui-20261109-05"' in base
     assert base.index('{% block extra_head %}') < base.index("filename='ui-system.css'")
     assert 'product-theme.js' in base
     assert 'data-product-theme-toggle' in base
@@ -215,3 +215,36 @@ def test_final_ui_navigation_forms_and_zero_states_are_role_aware():
                     'library-workflow-nav','library-source-feature',
                     'media-folder-notice'):
         assert retired not in css
+
+
+def test_playlist_asset_editor_finishing_pass_uses_shared_tokens_and_context_help():
+    player = (TEMPLATES / 'playlist.html').read_text(encoding='utf-8')
+    schedule = (TEMPLATES / '_schedule_controls.html').read_text(encoding='utf-8')
+    css = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
+    assert "asset-inline-edit{{ ' is-video' if is_video else ' is-static' }}" in player
+    assert 'Ändert nur die Zeitplanung dieses Inhalts.' in player
+    assert "hint='Gilt nur für neu hinzugefügte Inhalte." in schedule
+    assert '<p class="schedule-choice-hint">{{ hint }}</p>' in schedule
+    assert 'class="button schedule-save" type="submit"' in player
+    assert 'name="csrf" value="{{ csrf() }}"' in player
+    assert "url_for('asset_schedule', device_id=device.id" in player
+    assert "url_for('delete_asset', device_id=device.id" in player
+    assert "url_for('toggle_asset', device_id=device.id" in player
+    editor = css.split('/* Player item editor: replace remaining hard-coded', 1)[1]
+    editor = editor.split('/* Scheduling: old all-dark', 1)[0]
+    for selector in (
+        '.asset-toolbar>.asset-inline-edit.is-video',
+        '.asset-toolbar-actions .quick-toggle',
+        '.asset-toolbar-actions .delete-confirmation',
+        '.asset-schedule-details .schedule-choice',
+        '.asset-schedule-details .schedule-choice select',
+        '.asset-schedule-details>form>.schedule-save',
+    ):
+        assert selector in editor
+    for token in ('var(--ui-surface)', 'var(--ui-raised)',
+                  'var(--ui-line-strong)', 'var(--ui-muted)'):
+        assert token in editor
+    for old_color in ('#102834', '#122a38', '#101f30', '#231e2c'):
+        assert old_color not in editor
+    assert '@media(max-width:900px)' in editor
+    assert '@media(max-width:620px)' in editor
