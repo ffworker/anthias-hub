@@ -7,16 +7,16 @@
 {% endblock %}
 {% block content %}
 <div class="schedule-workspace">
-  <nav class="breadcrumbs" aria-label="Pfad">
+  <nav class="breadcrumbs device-page-breadcrumbs" aria-label="Pfad">
     <a href="{{ url_for('dashboard') }}">Bildschirme</a><span aria-hidden="true">›</span>
     <a href="{{ url_for('playlist', device_id=device.id) }}">{{ device.name }}</a>
-    <span aria-hidden="true">›</span><span>Zeitpläne</span>
+    <span aria-hidden="true">›</span><span aria-current="page">Zeitpläne</span>
   </nav>
-  <header class="playlist-hero">
+  <header class="playlist-hero device-page-hero">
     <div class="playlist-hero-copy">
-      <p class="eyebrow">DEIN BILDSCHIRM · {{ device.location or 'Ohne Standort' }}</p>
-      <h1>{{ device.name }} <svg class="icon hero-sparkle" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></h1>
-      <p class="muted">Steuere, welche Inhalte an welchen Tagen und Uhrzeiten laufen.</p>
+      <p class="eyebrow">BILDSCHIRM · {{ device.name }} · {{ device.location or 'Ohne Standort' }}</p>
+      <h1>Zeitpläne</h1>
+      <p class="muted">Lege fest, wann einzelne Inhalte dieses Bildschirms laufen.</p>
     </div>
     <div class="hero-status"><span class="pill {{ 'bad' if problem else 'ok' }}">{{ 'Nicht erreichbar' if problem else 'API erreichbar' }}</span><small>Zeitzone des Pi maßgeblich</small></div>
   </header>
@@ -29,61 +29,13 @@
   {% if not profiles %}
     <section class="schedule-section schedule-onboarding" data-schedule-onboarding>
     <div class="schedule-section-heading">
-      <div><p class="eyebrow">01 · EINMAL EINRICHTEN</p><h2>Ersten Zeitplan erstellen</h2></div>
+      <div><p class="eyebrow">EINMALIGE EINRICHTUNG</p><h2>Ersten Zeitplan erstellen</h2></div>
       <p class="muted">Lege den ersten gemeinsamen Wochenplan an. Er kann anschließend auf allen Bildschirmen verwendet werden.</p>
     </div>
     <div class="schedule-collection-note">
       <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg>
       <span><strong>Einmal anlegen, überall auswählen.</strong> Der Zeitplan ist im ganzen Hub verfügbar; die Zuordnung zu Inhalten erfolgt je Gerät.</span>
     </div>
-    <div class="schedule-presets">
-      {% for rule in profiles %}
-        <article class="card schedule-rule">
-          <div class="schedule-rule-top">
-            <div><h3>{{ rule.name }}</h3><p class="schedule-times">{{ rule.start }} – {{ rule.end }} Uhr</p></div>
-            <span class="schedule-day-pill">
-              {% for day, label in [(1,'Mo'),(2,'Di'),(3,'Mi'),(4,'Do'),(5,'Fr'),(6,'Sa'),(7,'So')] %}{% if day in rule.days %}{{ label }}{% if not loop.last %} {% endif %}{% endif %}{% endfor %}
-            </span>
-          </div>
-          {% if can_edit %}
-            <details class="schedule-rule-edit">
-              <summary>Zeitfenster bearbeiten</summary>
-              <form method="post" action="{{ url_for('device_schedule_edit', device_id=device.id, profile_id=rule.id) }}" data-schedule-form>
-                <input type="hidden" name="csrf" value="{{ csrf() }}">
-                <label>Name<input name="name" maxlength="60" required value="{{ rule.name }}"></label>
-                <div class="schedule-time-fields">
-                  <label>Von<input type="time" name="start" required value="{{ rule.start }}"></label>
-                  <label>Bis<input type="time" name="end" required value="{{ rule.end }}"></label>
-                </div>
-                <fieldset class="schedule-day-fieldset"><legend>Wochentage</legend>
-                  {% for day, label in [(1,'Mo'),(2,'Di'),(3,'Mi'),(4,'Do'),(5,'Fr'),(6,'Sa'),(7,'So')] %}
-                    <label><input type="checkbox" name="days" value="{{ day }}" {% if day in rule.days %}checked{% endif %}>{{ label }}</label>
-                  {% endfor %}
-                </fieldset>
-                <p class="schedule-hint">Diese Vorlage ist hubweit verfügbar. Änderungen an Wochentagen und Zeiten erscheinen auf allen Geräten. Bestehende Pi-Inhalte werden nicht automatisch geändert.</p>
-                <label class="schedule-sync-check"><input type="checkbox" name="sync_assigned" value="yes"> Bereits zugeordnete Inhalte auf <strong>{{ device.name }}</strong> aktualisieren (andere Pis bleiben unverändert)</label>
-                <button class="primary" type="submit">Zeitplan speichern</button>
-              </form>
-            </details>
-            <form class="schedule-remove-form" method="post" action="{{ url_for('device_schedule_delete', device_id=device.id, profile_id=rule.id) }}">
-              <input type="hidden" name="csrf" value="{{ csrf() }}">
-              <input type="hidden" name="confirm" value="{{ rule.id }}">
-              <details class="schedule-global-delete">
-                <summary>Vorlage entfernen</summary>
-                <p>Entfernt diesen Zeitplan hubweit, auch aus den Geräte-Standards. Die bisherigen Zeitfenster auf den Pis bleiben erhalten.</p>
-                <label class="schedule-global-confirm"><input type="checkbox" name="confirm_global" value="yes" required> Hubweit entfernen bestätigen</label>
-                <button class="schedule-remove" type="submit">Endgültig aus Sammlung entfernen</button>
-              </details>
-            </form>
-          {% endif %}
-        </article>
-      {% else %}
-        <div class="card schedule-empty">
-          <p>Noch keine gemeinsamen Zeitpläne vorhanden. Erstelle hier einen Plan – er ist anschließend auf jedem Gerät verfügbar.</p>
-        </div>
-      {% endfor %}
-    </div>
-
     {% if can_edit %}
       <details class="card schedule-new" {% if not profiles %}open{% endif %}>
         <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Gemeinsamen Zeitplan erstellen</summary>
@@ -114,8 +66,8 @@
   <section class="schedule-section" id="schedule-assign">
     {% if gap_warning %}<div class="notice schedule-gap-warning" role="status"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#alert"></use></svg> {{ gap_warning }} Anthias bleibt für die Ausgabe verantwortlich; es wird kein Fallback erzeugt.</div>{% endif %}
     <div class="schedule-section-heading">
-      <div><p class="eyebrow">01 · DEIN ARBEITSBEREICH</p><h2>Inhalte zeitlich planen</h2></div>
-      <p class="muted">Wähle einen vorhandenen Zeitplan und markiere die Inhalte dieses Bildschirms.</p>
+      <div><p class="eyebrow">INHALTE DIESES BILDSCHIRMS</p><h2>Zeitplan zuweisen</h2></div>
+      <p class="muted">Zeitplan auswählen, betroffene Inhalte markieren und Änderung bestätigen.</p>
     </div>
     {% if assets %}
       {% if can_edit %}
