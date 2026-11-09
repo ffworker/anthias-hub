@@ -94,7 +94,7 @@ test('only canonical UI sheet is loaded; no redundant layered themes', () => {
   for (const retired of ['ui-refinements.css', 'product-ui.css', 'workflow-ui.css']) {
     assert.ok(!template.includes("filename='" + retired + "'"), 'still loading ' + retired);
   }
-  assert.match(template, /name="anthias-hub-ui" content="ui-20261109-09"/);
+  assert.match(template, /name="anthias-hub-ui" content="ui-20261109-10"/);
 });
 
 test('primary page content precedes secondary administration and disclosures', () => {
@@ -108,7 +108,9 @@ test('primary page content precedes secondary administration and disclosures', (
     'device cards must appear before secondary tasks');
   assert.doesNotMatch(dashboard, /hub-workflow-cards/, 'do not block devices with onboarding cards');
   assert.match(library, /class="library-intro library-index-intro"/);
-  assert.match(library, /id="new-playlist"{% if not templates %} open{% endif %}/);
+  assert.match(library, /id="new-playlist" data-library-drawer-pane="create"/);
+  assert.match(library, /id="backup-zip" data-library-drawer-pane="backup"/);
+  assert.doesNotMatch(library, /library-action-disclosure/);
   assert.ok(detail.indexOf('class="library-intro library-template-intro"') <
             detail.indexOf('class="folder-workflow"'),
     'template identity precedes folder importer details');

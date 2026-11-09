@@ -13,7 +13,7 @@ def test_product_theme_loads_last_and_controls_are_real():
     assert "filename='product-ui.css'" not in base
     assert "filename='workflow-ui.css'" not in base
     assert "filename='ui-refinements.css'" not in base
-    assert 'name="anthias-hub-ui" content="ui-20261109-09"' in base
+    assert 'name="anthias-hub-ui" content="ui-20261109-10"' in base
     assert base.index('{% block extra_head %}') < base.index("filename='ui-system.css'")
     assert 'product-theme.js' in base
     assert 'data-product-theme-toggle' in base
@@ -45,7 +45,9 @@ def test_default_library_is_primary_in_all_three_core_views():
     assert 'class="media-folder-peek"' in folders
     assert 'library_index' in folders
     assert 'media-default-folders' not in folders
-    assert 'id="new-playlist"' in library
+    assert 'id="new-playlist" data-library-drawer-pane="create"' in library
+    assert 'library-index-drawer' in library
+    assert 'class="library-actions"' not in library
     assert 'source.startswith(\'default/\')' in detail
 
 
@@ -65,7 +67,8 @@ def test_playlist_workflows_have_explicit_categories_and_theme_aware_contrast():
     assert base.index('{% block extra_head %}') < base.index('ui-system.css')
     for title in ('Playlists', 'Neue Playlist erstellen', 'Vorlagen-Backup importieren'):
         assert title in library
-    assert 'id="backup-zip"' in library
+    assert 'id="backup-zip" data-library-drawer-pane="backup"' in library
+    assert 'data-open-library-drawer="backup"' in library
     assert 'Backup-ZIP exportieren' in detail
     assert 'Vorlage zur Playlist hinzufügen' in detail
     assert 'data-library-drawer-pane="settings"' in detail

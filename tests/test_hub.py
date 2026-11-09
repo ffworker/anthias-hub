@@ -1312,10 +1312,12 @@ def test_library_marketing_can_delete_whole_template_without_touching_pi(env):
     detail = client.get('/library/' + collection['id']).data.decode('utf-8')
     overview = client.get('/library').data.decode('utf-8')
     assert 'template-delete-control template-delete-detail' in detail
-    assert 'template-delete-control template-delete-list' in overview
+    assert 'template-delete-control template-delete-list' not in overview
+    assert 'data-library-drawer-pane="create"' in overview
+    assert 'data-library-drawer-pane="backup"' in overview
     assert 'name="name_confirmation"' in detail
     assert 'name="ack" value="yes"' in detail
-    assert 'template-delete.js' in overview
+    assert 'template-delete.js' in detail
     route = '/library/' + collection['id'] + '/delete'
     assert client.post(route, data={'csrf': t, 'confirm': collection['id'],
                                     'ack': 'yes', 'name_confirmation': 'Falsch'}).status_code == 302
@@ -1374,32 +1376,41 @@ def test_library_template_delete_csrf_roles_confirm_and_symlink_protection(env):
     assert (external / 'important.txt').read_text() == 'keep'
 
 
-def test_library_overview_actions_share_aligned_card_without_overlay_offsets(env):
+def test_library_overview_uses_one_action_drawer_and_deletion_only_in_detail(env):
     app, client, tmp = env
     from app.library import Library
     app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
-    Library(app.config['LIBRARY_DIR']).create('Aktionsvorlage')
+    lib = Library(app.config['LIBRARY_DIR'])
+    template = lib.create('Aktionsvorlage')
     login(client, 'marketing')
     page = client.get('/library').get_data(as_text=True)
-    # The clickable template title and separate delete menu are flex siblings
-    # within the SAME card. No nested links/buttons or absolute-centering hacks.
+    detail = client.get('/library/' + template['id']).get_data(as_text=True)
+
     assert '<div class="card library-entry-shell">' in page
     entry = page.split('<div class="card library-entry-shell">', 1)[1]
     assert '<a class="library-entry" href=' in entry
-    assert 'class="template-delete-control template-delete-list"' in entry
-    assert entry.index('<a class="library-entry"') < entry.index('template-delete-control')
-    sheet = (Path(__file__).resolve().parents[1] / 'app' / 'static' / 'library.css').read_text()
-    assert '.library-entry-shell.card{' in sheet
-    assert 'display:flex;align-items:center;gap:10px' in sheet
-    assert '.template-delete-control{' in sheet
-    assert 'color:var(--ink);margin:0;padding:0;border:0' in sheet
-    assert 'top:50%;transform:translateY(-50%)' not in sheet
-    assert '.library-actions .library-panel form>button.primary' in sheet
+    assert 'class="template-delete-control template-delete-list"' not in entry
+    assert 'class="library-actions"' not in page
+    assert 'library-action-disclosure' not in page
+    assert page.index('id="library-list-title"') < page.index('id="new-playlist"')
+    assert 'data-open-library-drawer="create"' in page
+    assert 'data-open-library-drawer="backup"' in page
+    assert 'data-library-drawer-pane="create"' in page
+    assert 'data-library-drawer-pane="backup"' in page
+    assert 'name="csrf"' in page and 'name="archive"' in page
+    assert 'template-delete-control template-delete-detail' in detail
+    style = (Path(__file__).resolve().parents[1] / 'app' / 'static' /
+             'ui-system.css').read_text(encoding='utf-8')
+    assert '.site-main .library-index-workspace .library-list{' in style
+    assert '.site-main .library-index-workspace .library-index-grid{' in style
+    assert 'width:min(485px,100vw)' in style
     client.post('/logout', data={'csrf': token(client)})
     login(client, 'viewer')
     viewer = client.get('/library').get_data(as_text=True)
     assert '<div class="card library-entry-shell">' in viewer
+    assert 'data-library-drawer' not in viewer
     assert 'template-delete-control' not in viewer
+    assert 'library_create' not in viewer
 
 
 def test_screen_card_ctas_have_equal_insets_for_marketing_it_and_viewer(env):
@@ -2490,7 +2501,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
     response = client.get('/login')
     assert response.status_code == 200
     text = response.get_data(as_text=True)
-    assert 'content="ui-20261109-09"' in text
+    assert 'content="ui-20261109-10"' in text
     assert 'ui-system.css' in text
     assert all(f"filename='{name}'" not in text for name in (
         'product-ui.css', 'ui-refinements.css', 'workflow-ui.css'))
@@ -2502,7 +2513,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
         result = client.get(path)
         assert result.status_code == 200, path
         text = result.get_data(as_text=True)
-        assert 'content="ui-20261109-09"' in text, path
+        assert 'content="ui-20261109-10"' in text, path
         assert text.count('ui-system.css') == 1, path
         assert 'data-product-theme-toggle' in text, path
         assert 'class="site-main"' not in text or 'id="hauptinhalt"' in text
@@ -2528,14 +2539,15 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert page.index('id="fleet-devices"') < page.index('class="hub-next-steps"')
     assert 'Playlists verwalten' in page
     assert 'Ordner &amp; Quellen' in page
-    assert 'ui-system.css?v=ui-20261109-09' in page
+    assert 'ui-system.css?v=ui-20261109-10' in page
 
     libpage = client.get('/library').get_data(as_text=True)
     assert libpage.index('id="library-page-title"') < libpage.index('class="library-grid"')
-    assert libpage.count('library-action-disclosure') >= 2
-    assert 'id="new-playlist"' in libpage
-    assert 'id="new-playlist" open' not in libpage  # existing templates: form collapsed
-    assert 'id="backup-zip" open' not in libpage
+    assert 'library-action-disclosure' not in libpage
+    assert 'id="new-playlist" data-library-drawer-pane="create"' in libpage
+    assert 'id="backup-zip" data-library-drawer-pane="backup"' in libpage
+    assert 'class="library-actions"' not in libpage
+    assert libpage.index('id="library-list-title"') < libpage.index('id="new-playlist"')
 
     detail = client.get('/library/' + tpl['id']).get_data(as_text=True)
     order = ['id="items-title"', 'Einzeldatei hinzufügen',
