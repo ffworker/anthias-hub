@@ -1103,6 +1103,92 @@ def create_app(config=None):
                                can_schedule=current_user()['role'] in ('owner', 'it', 'marketing'),
                                error=error, storage=storage, storage_reason=storage_reason)
 
+    @app.get('/schedules')
+    @login_required()
+    def schedule_library_page():
+        """Shared presets live here; viewing them never calls a player API."""
+        try:
+            profiles = profiles_for(app.config['SCHEDULES_FILE'])
+        except ScheduleError as exc:
+            profiles = []
+            flash(str(exc), 'error')
+        return render_template(
+            'schedule_library.html', profiles=profiles,
+            devices=load(app.config['DEVICES_FILE']),
+            can_edit=current_user()['role'] in ('owner', 'it', 'marketing'),
+        )
+
+    @app.post('/schedules/add')
+    @login_required('it', 'marketing')
+    def schedule_library_add():
+        try:
+            saved = add_profile(
+                app.config['SCHEDULES_FILE'], 'hub',
+                request.form.get('name', ''), request.form.getlist('days'),
+                request.form.get('start', ''), request.form.get('end', ''),
+            )
+            audit('schedule.add', 'hub', saved['id'])
+            flash('Gemeinsamer Zeitplan erstellt. Bestehende Pi-Inhalte bleiben unverändert.', 'success')
+        except ScheduleError as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('schedule_library_page'))
+
+    @app.post('/schedules/<profile_id>/edit')
+    @login_required('it', 'marketing')
+    def schedule_library_edit(profile_id):
+        sync_device = request.form.get('sync_device', '').strip()
+        if sync_device:
+            # The explicit target must still be a registered player.
+            player_or_404(sync_device)
+        try:
+            saved = edit_profile(
+                app.config['SCHEDULES_FILE'], 'hub', profile_id,
+                request.form.get('name', ''), request.form.getlist('days'),
+                request.form.get('start', ''), request.form.get('end', ''),
+            )
+            audit('schedule.edit', 'hub', saved['id'])
+            if sync_device:
+                _, api = player_or_404(sync_device)
+                linked = assignments_for(app.config['SCHEDULES_FILE'], sync_device)
+                originals = {item['asset_id']: item for item in api.assets()}
+                to_sync = []
+                for ident, record in linked.items():
+                    if record.get('profile_id') != profile_id or ident not in originals:
+                        continue
+                    try:
+                        # Only change values last acknowledged on this Pi.
+                        if native_key(originals[ident]) == linked_native_key(record):
+                            to_sync.append(ident)
+                    except ScheduleError:
+                        continue
+                if to_sync:
+                    apply_to_assets(
+                        api, saved, to_sync,
+                        on_applied=lambda ident, values: bind_asset(
+                            app.config['SCHEDULES_FILE'], sync_device, ident, profile_id, values))
+                flash(f'Vorlage gespeichert. {len(to_sync)} bestätigte Inhalte auf '
+                      f'{sync_device} aktualisiert; andere Pis unverändert.', 'success')
+            else:
+                flash('Gemeinsame Vorlage aktualisiert. Zeitfenster auf allen Pis bleiben '
+                      'unverändert, bis sie ausdrücklich zugewiesen werden.', 'success')
+        except (ScheduleError, PlayerError) as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('schedule_library_page'))
+
+    @app.post('/schedules/<profile_id>/delete')
+    @login_required('it', 'marketing')
+    def schedule_library_delete(profile_id):
+        if (request.form.get('confirm') != profile_id or
+                request.form.get('confirm_global') != 'yes'):
+            abort(400, 'Hubweites Entfernen des Zeitplans ausdrücklich bestätigen')
+        try:
+            remove_profile(app.config['SCHEDULES_FILE'], 'hub', profile_id)
+            audit('schedule.delete', 'hub', profile_id)
+            flash('Zeitplan hubweit entfernt. Vorhandene Pi-Zeitfenster bleiben erhalten.', 'success')
+        except ScheduleError as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('schedule_library_page'))
+
     @app.get('/devices/<device_id>/schedules')
     @login_required()
     def device_schedules(device_id):

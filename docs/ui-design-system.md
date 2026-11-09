@@ -1,3 +1,7 @@
+## UI-Iteration 2 · zentrale Zeitpläne (09.11.2026)
+
+UI `ui-20261109-07`: „Zeitpläne“ ist eine zurückhaltende globale Navigation neben „Playlists“. Gemeinsame Wochenpläne werden an `/schedules` angelegt, bearbeitet und gelöscht, unabhängig vom Gerät. Die gerätebezogene Zeitplanung zeigt nach dem Reiter sofort einen sichtbaren Link zur zentralen Verwaltung; dort bleiben ausschließlich Zuweisungen zu vorhandenen Pi-Inhalten und der Geräte-Standard. Leere Installationen zeigen einen zentralen Einstieg. Das zentrale Bearbeiten darf optional nur auf ausdrückliche Auswahl eines registrierten Pi dessen noch unveränderte, zuletzt bestätigte Zuordnungen aktualisieren. Alte gerätespezifische POST-Routen bleiben aus Kompatibilitätsgründen vorhanden, aber nicht mehrfach im UI verlinkt. Bei Löschung bleiben native Pi-Zeitfenster unverändert. Playlist-Übertragungs-Dopplungen werden in einer eigenen, nachfolgenden Abnahmeetappe behandelt.
+
 ## Dashboard-Iteration 1 · Bildschirmübersicht (09.11.2026)
 
 UI-Kennung `ui-20261109-06`. Auf Bildschirmkarten stehen **Inhalte** und **Zeitpläne** vor den selteneren **Geräteaktionen**. Der Speicherzugriff trägt statt eines unklaren Icons jetzt die Beschriftung „Speicher“; „Verwalten“ heißt „Einstellungen“. Die Rollen IT, Marketing und Viewer erhalten weiter ausschließlich autorisierte Aktionen. Player-API, CSRF, SMB und Publishing sind unverändert. Die visuelle Live-Abnahme in Hell/Dunkel und auf Mobilgeräten steht aus.
@@ -11,7 +15,7 @@ Nach dem ersten Live-Browsercheck des UI-Codes wurde der aufklappbare Editor ein
 
 # Anthias Hub – UI-Designsystem
 
-Stand: November 2026 · aktuelle Quellcode-Revision `ui-20261109-06`. Eine Änderung in `main` bedeutet **nicht** automatisch ein Deployment.
+Stand: November 2026 · aktuelle Quellcode-Revision `ui-20261109-07`. Eine Änderung in `main` bedeutet **nicht** automatisch ein Deployment.
 
 ## Abschließender UI-Konsistenzpass (09.11.2026)
 
@@ -91,7 +95,7 @@ Die früheren Dateien `ui-refinements.css`, `product-ui.css` und `workflow-ui.cs
 Die Seite meldet die aktuelle Designversion direkt im HTML:
 
 ```html
-<meta name="anthias-hub-ui" content="ui-20261109-06">
+<meta name="anthias-hub-ui" content="ui-20261109-07">
 ```
 
 Auf der Hub-VM erst nach **expliziter Release-Freigabe, erfolgreichem Image-Publish und kontrolliertem Deployment** prüfen. Ein Merge allein schaltet keinen geplanten Updater ein:

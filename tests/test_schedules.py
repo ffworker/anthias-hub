@@ -141,8 +141,9 @@ def test_schedule_ui_is_per_device_and_has_examples(hub):
     html = page.get_data(as_text=True)
     assert 'Pi im Bistro' in html
     assert 'Werktag_Default' in html
-    assert 'data-schedule-example="weekday"' in html
-    assert 'data-schedule-example="event"' in html
+    shared = client.get('/schedules').get_data(as_text=True)
+    assert 'data-schedule-example="weekday"' in shared
+    assert 'data-schedule-example="event"' in shared
     assert 'Ohne Zeitplan' in html
     assert 'Individuell in Anthias' in html  # explanation in footer
     assert 'schedules.js' in html
@@ -515,7 +516,8 @@ def test_global_schedule_shared_via_two_device_routes(hub):
     playlist=client.get('/devices/lab-two').get_data(as_text=True)
     assert 'Werktag_Default' in page
     assert 'Werktag_Default' in playlist
-    assert 'Hubweite Zeitplan-Sammlung' in page
+    assert 'Gemeinsame Zeitpläne' in page
+    assert 'Hubweite' in client.get('/schedules').get_data(as_text=True).title()
     post(client,'/devices/lab-two/schedules/default', {'profile_id':rule['id']})
     assert default_for(app.config['SCHEDULES_FILE'],'lab-two')==rule['id']
     assert default_for(app.config['SCHEDULES_FILE'],'lab') is None
@@ -556,18 +558,17 @@ def test_schedule_workspace_prioritizes_assignment_when_shared_plans_exist(hub):
     html=page.get_data(as_text=True)
     # Actual content assignment is above all low-frequency administration.
     assert html.index('id="schedule-assign"') < html.index('data-schedule-default')
-    assert html.index('id="schedule-assign"') < html.index('data-schedule-library')
+    assert html.index('class="schedule-shortcut"') < html.index('id="schedule-assign"')
     assert 'Zeitplan zuweisen' in html
     assert 'data-schedule-onboarding' not in html
-    assert '<details class="schedule-secondary-panel schedule-library-accordion" data-schedule-library>' in html
     assert '<details class="schedule-secondary-panel schedule-default-accordion" data-schedule-default>' in html
-    assert '<details class="schedule-secondary-panel schedule-library-accordion" data-schedule-library open' not in html
-    assert '<details class="schedule-secondary-panel schedule-default-accordion" data-schedule-default open' not in html
-    # All prior functions remain reachable within the collapsible settings.
-    assert 'Gemeinsamen Zeitplan erstellen' in html
-    assert 'Zeitfenster bearbeiten' in html
-    assert 'Vorlage entfernen' in html
+    assert 'data-schedule-library' not in html
+    assert 'Gemeinsame Zeitpläne' in html
     assert 'Auf ausgewählte Inhalte anwenden' in html
+    shared = client.get('/schedules').get_data(as_text=True)
+    assert 'Zeitfenster bearbeiten' in shared
+    assert 'Vorlage entfernen' in shared
+    assert 'Neuen gemeinsamen Zeitplan erstellen' in shared
 
 
 def test_schedule_workspace_onboards_when_no_shared_plans_exist(hub):
@@ -576,8 +577,10 @@ def test_schedule_workspace_onboards_when_no_shared_plans_exist(hub):
     html=client.get('/devices/lab/schedules').get_data(as_text=True)
     assert 'data-schedule-onboarding' in html
     assert 'Ersten Zeitplan erstellen' in html
-    assert 'Gemeinsamen Zeitplan erstellen' in html
-    assert '<details class="card schedule-new" open>' in html
+    assert 'zentralen Zeitplan-Verwaltung' in html
+    assert 'data-schedule-form' not in html
+    central = client.get('/schedules').get_data(as_text=True)
+    assert '<details class="card schedule-new schedule-library-new" id="new-schedule" open>' in central
     assert html.index('data-schedule-onboarding') < html.index('id="schedule-assign"')
     assert 'data-schedule-library' not in html
     assert 'data-schedule-default' not in html
@@ -592,7 +595,65 @@ def test_viewer_still_reads_assignment_but_cannot_edit_collapsed_shared_collecti
     post(client,'/logout',{})
     sign_in(client,'viewer')
     html=client.get('/devices/lab/schedules').get_data(as_text=True)
-    assert html.index('id="schedule-assign"') < html.index('data-schedule-library')
+    assert 'data-schedule-library' not in html
     assert 'Event' in html
     assert 'data-schedule-form' not in html
     assert 'Auf ausgewählte Inhalte anwenden' not in html
+    shared = client.get('/schedules').get_data(as_text=True)
+    assert 'Event' in shared
+    assert 'name="sync_device"' not in shared
+
+
+def test_central_schedule_library_preserves_permissions_and_zero_state(hub):
+    app,client,tmp=hub
+    sign_in(client, 'viewer')
+    no_edit = client.get('/schedules').get_data(as_text=True)
+    assert 'Noch keine gemeinsamen Zeitpläne' in no_edit
+    assert 'schedule_library_add' not in no_edit
+    assert post(client, '/schedules/add', {'name':'No','days':['1'],'start':'08:00','end':'18:00'}).status_code == 403
+    post(client, '/logout', {})
+    sign_in(client, 'marketing')
+    blank = client.get('/schedules').get_data(as_text=True)
+    assert 'id="new-schedule" open' in blank
+    assert post(client,'/schedules/add',{'name':'Werktag','days':['1','2','3','4','5'],'start':'08:00','end':'18:00'}).status_code == 200
+    rules = profiles_for(app.config['SCHEDULES_FILE'])
+    assert len(rules)==1
+    assert 'Werktag' in client.get('/devices/lab/schedules').get_data(as_text=True)
+    response = post(client, '/schedules/'+rules[0]['id']+'/edit', {
+        'name':'Werktag neu','days':['1','2','3','4','5'],'start':'09:00','end':'17:00'
+    })
+    assert response.status_code == 200
+    assert profiles_for(app.config['SCHEDULES_FILE'])[0]['start']=='09:00'
+    assert Player.patches == []
+    with client.session_transaction() as data:
+        csrf=data['csrf']
+    refused=client.post('/schedules/'+rules[0]['id']+'/delete', data={
+        'csrf':csrf,'confirm':rules[0]['id']})
+    assert refused.status_code == 400
+    assert len(profiles_for(app.config['SCHEDULES_FILE']))==1
+    assert post(client,'/schedules/'+rules[0]['id']+'/delete',{
+        'confirm':rules[0]['id'],'confirm_global':'yes'
+    }).status_code == 200
+    assert profiles_for(app.config['SCHEDULES_FILE'])==[]
+
+
+def test_central_schedule_optional_sync_only_changes_unchanged_native_values(hub):
+    app,client,tmp=hub
+    sign_in(client,'it')
+    post(client,'/schedules/add',{'name':'Event','days':['6'],'start':'10:00','end':'14:00'})
+    profile=profiles_for(app.config['SCHEDULES_FILE'])[0]
+    post(client,'/devices/lab/schedules/apply',{'profile_id':profile['id'],'asset_ids':['a']})
+    assert Player.records['a']['play_time_from']=='10:00:00'
+    patches=len(Player.patches)
+    resp=post(client,'/schedules/'+profile['id']+'/edit',{
+        'name':'Event','days':['6'],'start':'11:00','end':'15:00','sync_device':'lab'
+    })
+    assert resp.status_code == 200
+    assert len(Player.patches)==patches+1
+    assert Player.records['a']['play_time_from']=='11:00:00'
+    assert 'aktualisiert' in resp.get_data(as_text=True)
+    no_match=client.post('/schedules/'+profile['id']+'/edit',data={
+        'csrf':'bogus','name':'Nope','days':['1'],'start':'07:00','end':'09:00'
+    })
+    assert no_match.status_code==400
+    assert profiles_for(app.config['SCHEDULES_FILE'])[0]['name']=='Event'

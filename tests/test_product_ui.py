@@ -13,7 +13,7 @@ def test_product_theme_loads_last_and_controls_are_real():
     assert "filename='product-ui.css'" not in base
     assert "filename='workflow-ui.css'" not in base
     assert "filename='ui-refinements.css'" not in base
-    assert 'name="anthias-hub-ui" content="ui-20261109-06"' in base
+    assert 'name="anthias-hub-ui" content="ui-20261109-07"' in base
     assert base.index('{% block extra_head %}') < base.index("filename='ui-system.css'")
     assert 'product-theme.js' in base
     assert 'data-product-theme-toggle' in base
@@ -166,6 +166,10 @@ def test_device_pages_prioritize_current_task_without_touching_player_actions():
     assert 'Ersten Zeitplan erstellen' in first
     assert '.device-page-hero' in ui
     assert '.device-page-breadcrumbs' in ui
+    assert 'schedule_library_page' in schedule
+    shared = (TEMPLATES / 'schedule_library.html').read_text(encoding='utf-8')
+    assert 'schedule_library_add' in shared and 'schedule_library_edit' in shared
+    assert 'schedule_library_delete' in shared
 
 def test_composer_prioritizes_common_content_sources_and_keeps_forms():
     player = (TEMPLATES / 'playlist.html').read_text(encoding='utf-8')
@@ -205,6 +209,7 @@ def test_final_ui_navigation_forms_and_zero_states_are_role_aware():
     assert 'Gespeicherte Vorlagen' in library
     assert 'role="status"' in library
     assert "logged_user.role == 'viewer'" in library
+    assert 'site-nav-schedule' in base
     assert 'Noch keine Bildschirme verbunden' in dashboard
     assert 'class="button schedule-empty-link"' in schedules
     assert "url_for('playlist', device_id=device.id)" in schedules
