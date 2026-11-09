@@ -119,7 +119,11 @@
         </div>
       {% endif %}
     {% else %}
-      <div class="card schedule-empty">Noch keine Inhalte verfügbar. Übertrage zuerst Medien oder Webseiten in die Playlist.</div>
+      <div class="card schedule-empty">
+        <strong>Noch keine Inhalte auf diesem Bildschirm.</strong>
+        <p class="muted">{% if can_edit %}Füge zuerst Bilder, Videos oder Webseiten zur Playlist hinzu. Danach kannst du hier Zeitpläne zuweisen.{% else %}Sobald Inhalte vorhanden sind, wird ihre Zeitplanung hier angezeigt.{% endif %}</p>
+        <a class="button schedule-empty-link" href="{{ url_for('playlist', device_id=device.id) }}">{{ 'Playlist bearbeiten' if can_edit else 'Playlist ansehen' }} →</a>
+      </div>
     {% endif %}
   </section>
 

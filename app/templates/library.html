@@ -25,7 +25,7 @@
 </section>
 <div class="library-grid">
   <section aria-labelledby="library-list-title">
-    <h2 id="library-list-title">Playlists & Vorlagen <span class="count">{{ templates|length }}</span></h2>
+    <h2 id="library-list-title">Gespeicherte Vorlagen <span class="count">{{ templates|length }}</span></h2>
     <div class="library-list">
       {% for template in templates %}
       <div class="card library-entry-shell">
@@ -36,7 +36,13 @@
         </a>
         {% if logged_user.role in ('marketing', 'owner', 'it') %}{{ delete_control(template) }}{% endif %}
       </div>
-      {% else %}<div class="card library-empty">Noch keine Playlist vorhanden. Erstelle über „Neue Playlist“ deine erste Vorlage.</div>{% endfor %}
+      {% else %}
+        <div class="card library-empty" role="status">
+          <strong>Noch keine Vorlagen vorhanden.</strong>
+          <p class="muted">{% if logged_user.role in ('marketing', 'owner', 'it') %}Erstelle deine erste Playlist über „Neue Playlist erstellen“. Bis du sie auf einen Bildschirm überträgst, bleibt dessen Wiedergabe unverändert.{% else %}Sobald eine Vorlage angelegt wird, erscheint sie hier. Du kannst die Bildschirme bereits über die Übersicht ansehen.{% endif %}</p>
+          {% if logged_user.role == 'viewer' %}<a href="{{ url_for('dashboard') }}" class="button">Zur Bildschirmübersicht</a>{% endif %}
+        </div>
+      {% endfor %}
     </div>
   </section>
   {% if logged_user.role in ('marketing', 'owner', 'it') %}

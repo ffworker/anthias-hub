@@ -1,25 +1,33 @@
-## Composer / „Inhalt hinzufügen“ – UI-Pass 3 (09.11.2026)
+# Anthias Hub – UI-Designsystem
+
+Stand: November 2026 · aktuelle Quellcode-Revision `ui-20261109-04`. Eine Änderung in `main` bedeutet **nicht** automatisch ein Deployment.
+
+## Abschließender UI-Konsistenzpass (09.11.2026)
+
+- **Mobile Navigation:** Die Hauptnavigation zeigt auf kompakten Viewports statt einer seitlich versteckten Scrollleiste zwei oder drei sichtbare Touch-Felder, abhängig von der Berechtigung. Keine Änderung an Login-/Navigationsrouten.
+- **Formulare:** Dateiauswahl, Feldbreiten, Fokus und Hinweise zu ungültigen Eingaben vereinheitlicht. Native Übermittlung, CSRF, Regeln und Upload-Logik bleiben unverändert.
+- **Leerzustände:** Bibliothek mit rollenabhängigem Einstieg; Viewer bekommen keinen unerreichbaren Schreibaufruf. Bei leerer Geräte-Playlist führt die Zeitplanung zurück zur Playlist, beschriftet als Anzeigen/Bearbeiten je nach Rolle. Leere Geräteübersicht erhält klare Botschaft.
+- **CSS-Aufräumen:** CSS-Regeln zu längst entfernten Dashboard-Onboarding-Karten, Bibliotheks-Workflow-Navigation und Quellenhinweisen entfernt; veraltete Theme-Kommentare aktualisiert. Ein finaler Stylesheet-Einstieg, kein neues Framework.
+- **Revision:** ui-20261109-04. CI und strukturelle Abnahme sind nicht gleich echte Browseransicht. Hell/Dunkel, Mobile und Desktop müssen im Browser visuell kontrolliert werden. Produktive Player, SMB und Publisher sind kein Bestandteil dieses PR.
+
+## Historie · Composer / „Inhalt hinzufügen“ – UI-Pass 3 (09.11.2026)
 
 - **Oft genutzt:** Datei, ZIP/Mehrere und gespeicherte Vorlage erscheinen als klarer Hauptblock. **Weitere Quellen:** Webseite und ausschließlich für IT/Owner Netzwerkordner. Die bestehenden `data-add-mode`-Schalter und dieselben serverseitigen Routen, Rollen und CSRF-Formulare bleiben erhalten.
 - **ZIP:** Die bereits geöffnete, doppelte Accordion-Ebene entfällt zugunsten eines direkt sichtbaren Inhaltsbereichs, sobald „ZIP / Mehrere“ ausgewählt ist; bei fehlendem JavaScript bleibt das Formular sichtbar.
 - **Texte:** Der Einstieg erklärt den Wirkungskreis, einzelne Quelltypen enthalten knappe, eindeutige Warnungen bzw. Hinweise. Keine Funktion, kein globales Publishing und kein Playergerät werden verändert.
 - **Responsive / Themes:** Häufige Quellen auf einer Zeile, auf sehr schmalen Geräten sinnvoll zweizeilig; optionale Quellen erhalten einen eigenen Abschnitt. Styles im bestehenden zentralen `ui-system.css`, kein zusätzliches Framework.
-- **UI-Revision:** `ui-20261109-03`. Browser-/Visual-Review nach grüner CI bleibt Pflicht vor Merge. Die bestehende Installation behält ihre private Image-Pin-Konfiguration; produktive Bildschirme werden nicht für UI-Tests beschrieben.
+- **UI-Revision:** `ui-20261109-03`. Browser-/Visual-Review bleibt für jeden Release Pflicht. Die bestehende Installation behält ihre private Image-Pin-Konfiguration; produktive Bildschirme werden nicht für UI-Tests beschrieben.
 
-## Geräte-Unterseiten: Workflow-Klarheit (09.11.2026, zweiter Pass)
+## Historie · Geräte-Unterseiten: Workflow-Klarheit (09.11.2026, zweiter Pass)
 
 - **Playlist und Zeitplanung:** H1 bezeichnet die aktuelle Aufgabe; Gerätename und Standort stehen als Kontext darüber. Die Breadcrumbs bilden den tatsächlichen Pfad ab. Ein Bibliothekslink ist kein irreführender Breadcrumb mehr, die Hauptnavigation zu Playlists bleibt erhalten.
 - **Zeitplanung bei leerer Plan-Sammlung:** Die leere, unerreichbare Sammlungsschleife vor dem ersten Formular wurde entfernt. Das Formular bleibt direkt geöffnet, ohne Änderungen an Rollen, CSRF oder Speicherablauf.
 - **Playlist:** Die Sortierhilfe ist kompakter. Lange Medienadressen werden in der Kartenübersicht gekürzt; vollständiger Text bleibt als Tooltip vorhanden. Der bestehende Inline-Editor, die Zeitplanung und sichere Löschbestätigungen bleiben unverändert.
-- **Design:** Gemeinsame final geladene CSS-Datei, neue UI-Kennung `ui-20261109-03`. Keine neuen Assets/Frameworks; keine API-, Geräte-, SMB-, Worker- oder Publisher-Änderung.
+- **Design:** Gemeinsame final geladene CSS-Datei, UI-Kennung `ui-20261109-02`. Keine neuen Assets/Frameworks; keine API-, Geräte-, SMB-, Worker- oder Publisher-Änderung.
 
-**Review:** CI und visuelle Freigabe vor Merge. Das registrierte Anzeigegerät wird produktiv verwendet und darf nicht als Testgerät benutzt werden. Kein automatischer Live-Deploy.
+**Review-Hinweis:** Die Tests und Code-Abnahme sind abgeschlossen; visuelle Browserkontrolle und kontrolliertes Deployment sind gesonderte Schritte. Produktive Bildschirme dürfen nicht für schreibende UI-Tests verwendet werden.
 
-# Anthias Hub – UI-Designsystem
-
-Stand: November 2026 · UI-Kennung: `ui-20261109-03`
-
-## Klarheitspass 09.11.2026 (Code-Review; visuelle Abnahme ausstehend)
+## Historie · Klarheitspass 09.11.2026 (erster Pass)
 
 - **Bildschirme:** Die operativen Geräte erscheinen direkt nach einer schlanken Übersicht. Die bisherigen großen Anleitungskarten sind entfernt; Links zu Playlists und IT-Quellen folgen als leise Sekundäraufgaben.
 - **Playlist-Bibliothek:** Vorhandene Vorlagen bleiben zuerst sichtbar. „Neue Playlist erstellen“ ist eine klare Aktion; auf leerem System öffnet sich der Dialog direkt. Backup-Import steht nachrangig.
@@ -27,7 +35,7 @@ Stand: November 2026 · UI-Kennung: `ui-20261109-03`
 - **Ordner & Quellen:** Standardbibliothek und bestätigter Hoststatus kommen vor Bestandszahlen. Die ersten erkannten Unterordner sind sofort sichtbar, Legacy-Mounts und Austragen bleiben getrennt und sicher.
 - **Bedienung:** Gleichmäßige Abstände, zurückhaltende Sekundärlinks, weiterhin eine finale CSS-Datei. Deep-Links öffnen gezielt den erforderlichen nativen Aufklapper, auch aus einer anderen Seite.
 
-**Status:** Geplantes UX-Update als eigener PR, keine Aussage über eine bereits geänderte Live-UI. Vor Ausrollen: Hell/Dunkel, 390/768/Desktop, Viewer/Marketing/IT, Formulare, Dropdowns, echte Browser-Screenshots und die vorhandenen Upload-/CSRF-Tests abnehmen. Kein unkontrollierter Player-Write.
+**Status des ersten Passes:** Abgenommen, gemerged und auf einer vorhandenen Hub-Installation mit Revisionsmarker `ui-20261109-01` verifiziert. Spätere UI-Pässe werden separat geprüft und ausgerollt; das alte erfolgreiche Deployment bestätigt keine neuere Revision.
 
 ## Produkt und Arbeitsabläufe
 
@@ -59,7 +67,7 @@ Die früheren Dateien `ui-refinements.css`, `product-ui.css` und `workflow-ui.cs
 - Medienvorschau und Lightbox nicht ohne eigenen Test verändern. Medien-ZIP niemals mit Hub-Backup-ZIP verwechseln.
 - Keine automatische Löschung, Ersetzung oder Umsortierung fremder Player-Inhalte.
 
-## Abnahme vor Merge
+## Abnahme vor Merge oder Live-Release
 
 1. `python -m pytest -q` sowie `node --test tests/css-maintenance.test.cjs`.
 2. Hell- **und** Dunkel-Theme auf Login, Bildschirmübersicht, Ordner & Quellen, Bibliothek, Vorlagendetails, Pi-Playlist, „Inhalt hinzufügen“, Zeitplanung, Status-/Fehlermeldungen und Popovers prüfen.
@@ -72,14 +80,13 @@ Die früheren Dateien `ui-refinements.css`, `product-ui.css` und `workflow-ui.cs
 Die Seite meldet die aktuelle Designversion direkt im HTML:
 
 ```html
-<meta name="anthias-hub-ui" content="ui-20261109-03">
+<meta name="anthias-hub-ui" content="ui-20261109-04">
 ```
 
-Auf der Hub-VM nach **Merge, erfolgreichem GHCR-Publish und Updater-Ausführung** prüfen:
+Auf der Hub-VM erst nach **expliziter Release-Freigabe, erfolgreichem Image-Publish und kontrolliertem Deployment** prüfen. Ein Merge allein schaltet keinen geplanten Updater ein:
 
 ```bash
 curl -fsSL http://127.0.0.1:8765/login | grep 'name="anthias-hub-ui"'
-sudo journalctl -u anthias-hub-cd.service -n 30 --no-pager
 docker ps --filter name=anthias-hub
 ```
 

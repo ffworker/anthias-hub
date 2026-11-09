@@ -1,10 +1,9 @@
-/* Anthias Hub — unified UI skin (version: ui-20261109-01).
+/* Anthias Hub — canonical, theme-aware UI skin (version: ui-20261109-04).
    This combines the previously separate refinements, product and workflow
    layers in one ordered cascade. Do not add new late UI stylesheets. */
 /* -------- app/static/ui-refinements.css: imported into canonical UI system -------- */
-/* Shared UI refinements, loaded last after page CSS to preserve existing cascade.
- * Nordlicht is the only supported appearance; no theme switcher is used.
- * Keep the playlist and global icon rules together when making future CSS changes. */
+/* Shared UI refinements, loaded last after page CSS.
+ * Theme tokens support both light and dark appearance. */
 .icon{display:inline-block;width:19px;height:19px;flex:none;vertical-align:middle;fill:none;color:inherit}
 .brand-symbol .icon{width:25px;height:25px}
 .site-nav-link .icon{width:17px;height:17px}
@@ -285,6 +284,7 @@ h3{font-weight:650;letter-spacing:-.015em}
 }
 .site-nav-link.site-nav-primary{color:#ffbdac;font-weight:700}
 .site-nav-link.site-nav-primary.is-active{color:#fff}
+.site-nav .site-nav-primary{font-weight:750}
 .site-user{color:#dcddd1;margin-left:auto;gap:10px}
 .site-user .user-avatar{display:none}
 .site-user .user-name{color:#eeece2}
@@ -353,39 +353,6 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--ui-accent)}
 .breadcrumbs a{color:var(--ui-accent)}
 details summary{color:var(--ui-fg)}
 details summary:hover{color:var(--ui-accent)}
-/* Signaturee-style 'operate first' gateway. Folder sharing takes top billing. */
-.hub-workflow-cards{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin:8px 0 22px}
-.hub-workflow-card,.library-source-feature{
-  display:grid;align-content:space-between;gap:22px;
-  padding:23px 26px;background:var(--ui-surface);
-  border:1px solid var(--ui-line);border-radius:3px;box-shadow:none;
-}
-.hub-workflow-card.is-leading,.library-source-feature{border-top:3px solid var(--ui-accent)}
-.hub-workflow-card h2,.library-source-feature h2{
-  font:400 clamp(22px,2.2vw,30px)/1.15 var(--ui-serif);
-  letter-spacing:-.025em;color:var(--ui-fg);margin:5px 0 10px;
-}
-.hub-workflow-card p,.library-source-feature p{
-  margin:0;max-width:610px;color:var(--ui-muted);line-height:1.6;
-}
-.hub-workflow-card .eyebrow,.library-source-feature .eyebrow{color:var(--ui-accent);margin-bottom:8px}
-.hub-workflow-card>a{justify-self:start}
-.library-source-feature{
-  grid-template-columns:minmax(0,1fr) auto;align-items:center;
-  margin-bottom:22px;
-}
-.library-source-feature .button{min-width:235px}
-@media(max-width:920px){
-  .hub-workflow-cards{grid-template-columns:1fr 1fr}
-  .library-source-feature{grid-template-columns:1fr}
-  .library-source-feature .button{width:max-content;min-width:0}
-}
-@media(max-width:640px){
-  .hub-workflow-cards{grid-template-columns:1fr}
-  .hub-workflow-card,.library-source-feature{padding:20px}
-  .library-source-feature .button,.hub-workflow-card .button{width:100%}
-}
-
 /* Dashboard: a ruled operational table with real status, not glowing cards. */
 .fleet-workspace .fleet-hero{overflow:visible;margin-bottom:18px}
 .fleet-hero .fleet-add-button{white-space:normal}
@@ -574,8 +541,18 @@ html.fleet-popovers-ready .fleet-device-actions>details>.fleet-settings-content 
   main.wrap.site-main{padding-top:24px}
   .site-header{padding-top:10px;min-height:65px}
   .site-brand,.site-brand>span:last-child{font-size:25px}
-  .site-nav{overflow-x:auto;flex-wrap:nowrap;padding-bottom:3px}
-  .site-nav-link{font-size:12px;padding:10px 9px;flex:none}
+  .site-nav{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+    align-items:stretch;gap:4px;width:100%;min-width:0;
+    overflow:visible;flex-wrap:wrap;padding-bottom:0;
+  }
+  .site-nav:has(.site-nav-utility){grid-template-columns:repeat(3,minmax(0,1fr))}
+  .site-nav-link{
+    min-width:0;min-height:44px;justify-content:center;
+    font-size:11px;line-height:1.3;white-space:normal;text-align:center;
+    gap:5px;padding:9px 4px;overflow-wrap:anywhere;
+  }
+  .site-nav-link .icon{width:16px;height:16px;flex:none}
   .site-user{gap:7px}
   .site-user .user-details{display:none}
   .product-theme-toggle{padding:6px 9px!important}
@@ -592,6 +569,59 @@ html.fleet-popovers-ready .fleet-device-actions>details>.fleet-settings-content 
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto!important}
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+
+
+/* Final form grammar. Native inputs retain validation and form submission. */
+.site-main :is(.library-action-body,.composer-pane,.fleet-setup-form,.media-source-form,.media-default-form,.schedule-assign) form,
+.site-main :is(.fleet-setup-form,.media-source-form,.media-default-form){
+  min-width:0;
+}
+.site-main :is(.library-action-body,.composer-pane,.fleet-setup-form,.media-source-form,.media-default-form) input[type="file"]{
+  display:block;width:100%;max-width:100%;min-width:0;
+  padding:7px;overflow:hidden;white-space:normal;
+}
+.site-main input[type="file"]::file-selector-button{
+  border:1px solid var(--ui-line-strong);border-radius:var(--ui-radius);
+  background:var(--ui-subtle);color:var(--ui-fg);
+  padding:9px 11px;min-height:36px;margin-right:11px;
+  font:650 12px/1.3 var(--ui-sans);cursor:pointer;
+}
+.site-main input[type="file"]::file-selector-button:hover{
+  background:var(--ui-surface-hover);border-color:var(--ui-accent);
+}
+.site-main :is(input,select,textarea):user-invalid{
+  border-color:var(--ui-error);box-shadow:0 0 0 1px var(--ui-error);
+}
+.site-main :is(.library-action-body,.composer-pane,.media-default-form,.media-source-form,.fleet-setup-form) :is(label,p,.muted){
+  overflow-wrap:anywhere;
+}
+.site-main :is(.library-action-body,.composer-pane,.media-default-form,.media-source-form) select{
+  width:100%;max-width:100%;min-width:0;
+}
+.site-main .library-empty,
+.site-main .schedule-empty{
+  padding:20px 22px;border:1px solid var(--ui-line);
+  border-left:3px solid var(--ui-accent);border-radius:var(--ui-radius);
+  background:var(--ui-surface);line-height:1.6;
+}
+.site-main .library-empty strong,
+.site-main .schedule-empty strong{
+  display:block;color:var(--ui-fg);font-size:15px;margin-bottom:4px;
+}
+.site-main .library-empty .muted,
+.site-main .schedule-empty .muted{margin:0 0 12px;font-size:12px}
+.site-main .schedule-empty-link{display:inline-flex;align-items:center;min-height:42px;text-decoration:none}
+@media(max-width:700px){
+  .site-header{align-items:center}
+  .site-user{margin-left:auto;min-width:0}
+  .site-user .site-logout{white-space:nowrap}
+  .site-main .library-empty,.site-main .schedule-empty{padding:15px 16px}
+}
+@media(max-width:370px){
+  .site-nav-link{gap:3px;padding:9px 3px;font-size:10px}
+  .site-nav-link .icon{width:14px;height:14px}
+  .site-brand,.site-brand>span:last-child{font-size:22px}
 }
 
 /* Final workspace cleanup: one visual grammar across managed playlists, manual
@@ -644,18 +674,12 @@ html.fleet-popovers-ready .fleet-device-actions>details>.fleet-settings-content 
 .library-panel>details>summary{font-size:13px;font-weight:650}
 .folder-workflow{border-left:3px solid var(--ui-accent);padding:15px 19px}
 .folder-workflow-title strong{font-family:var(--ui-serif);font-weight:400;font-size:21px}
-.media-folder-notice{display:flex;align-items:center;flex-wrap:wrap;gap:12px 22px;margin:25px 0;padding:22px}
-.media-folder-notice h2{font:400 25px/1.2 var(--ui-serif);letter-spacing:-.025em;margin:0}
-.media-folder-notice .muted{flex:1 1 260px;margin:0}
-.media-folder-notice .eyebrow{width:100%;margin:0}
-.media-folder-notice .button{flex:none}
 @media(max-width:780px){
   .playlist-workspace .asset-main{padding:10px;gap:7px;flex-wrap:wrap}
   .playlist-workspace .asset-toolbar{padding:12px}
   .library-item{flex-wrap:wrap}
   .library-duration-form{width:auto;flex:1 1 150px;justify-content:flex-start}
   .library-order-controls{margin-left:auto}
-  .media-folder-notice .button{width:100%}
 }
 
 /* -------- app/static/workflow-ui.css: imported into canonical UI system -------- */
@@ -714,24 +738,6 @@ html[data-theme="dark"] { --workflow-hover:#35372f;--workflow-blue:#a9cada }
 .site-main .muted,.site-main small {color:var(--ui-muted)}
 .site-main :is(.card,.notice,details,form,fieldset){min-width:0}
 
-/* Three real jobs: create/pick a source, import/export an archive, apply. */
-.library-workflow-nav {
-  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;
-  margin:0 0 24px;
-}
-.library-workflow-nav a {
-  display:flex;flex-direction:column;gap:5px;min-width:0;
-  border:1px solid var(--ui-line);border-top:3px solid var(--ui-accent);
-  border-radius:4px;padding:15px 17px;background:var(--ui-surface);
-  text-decoration:none;color:var(--ui-fg);
-}
-.library-workflow-nav a:hover{border-color:var(--ui-accent);background:var(--workflow-hover)}
-.library-workflow-nav strong{font-size:14px;font-weight:750;color:var(--ui-fg)}
-.library-workflow-nav span{font-size:12px;line-height:1.5;color:var(--ui-muted)}
-.library-source-feature{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:18px;padding:20px 23px}
-.library-source-feature h2{font-size:clamp(20px,2.2vw,27px)}
-.library-source-feature p{max-width:780px}
-.library-source-feature .button{min-width:0;white-space:normal;text-align:center}
 .library-entry-type.is-automatic{color:var(--ui-accent);border-color:var(--ui-accent)}
 .library-entry-type.is-manual{color:var(--ui-muted)}
 .library-entry-shell .library-entry{align-items:center}
@@ -1022,10 +1028,6 @@ html[data-theme="dark"] { --workflow-hover:#35372f;--workflow-blue:#a9cada }
   .library-apply{grid-column:1/-1}
 }
 @media(max-width:850px){
-  .library-workflow-nav{grid-template-columns:1fr}
-  .library-workflow-nav a{padding:13px 16px}
-  .library-source-feature{grid-template-columns:1fr}
-  .library-source-feature .button{justify-self:start}
   .library-item{grid-template-columns:26px 54px minmax(0,1fr);gap:10px!important}
   .library-item>.library-glyph,.library-item>.library-media-preview{grid-column:2}
   .library-item-copy{grid-column:3}
@@ -1043,7 +1045,6 @@ html[data-theme="dark"] { --workflow-hover:#35372f;--workflow-blue:#a9cada }
   .library-duration-form{grid-column:1/-1}
   .library-item-actions{grid-column:1/-1}
   .library-template-intro .library-backup-export{width:100%}
-  .library-source-feature .button{width:100%}
   .playlist-workspace .add-type-switch,
   .playlist-workspace .add-type-switch.with-network{grid-template-columns:repeat(2,minmax(0,1fr));margin:10px 14px}
   .playlist-workspace .composer-workflow-note{margin:10px 14px 4px}
@@ -1053,25 +1054,6 @@ html[data-theme="dark"] { --workflow-hover:#35372f;--workflow-blue:#a9cada }
 
 /* Dashboard finish: legacy fleet.css/workspace.css dark-only colors must not
    leak into the shared light/dark theme or mix blue and coral actions. */
-.fleet-workspace .hub-workflow-card>a.button:not(.primary){
-  display:inline-flex;align-items:center;justify-content:center;min-height:42px;
-  background:var(--ui-raised)!important;color:var(--ui-fg)!important;
-  border:1px solid var(--ui-line-strong)!important;border-radius:5px!important;
-  padding:9px 15px;text-decoration:none;font-weight:700;box-shadow:none!important;
-}
-.fleet-workspace .hub-workflow-card>a.button:not(.primary):hover{
-  background:var(--workflow-hover)!important;
-  border-color:var(--ui-accent)!important;color:var(--ui-accent)!important;
-}
-.fleet-workspace .hub-workflow-card>a.button.primary{
-  color:#191b1a!important;background:#ff795c!important;
-  border:1px solid #ff795c!important;border-radius:5px!important;
-  box-shadow:none!important;text-decoration:none;
-}
-.fleet-workspace .hub-workflow-card>a.button.primary:hover{
-  color:#191b1a!important;background:#ff977e!important;
-  border-color:#ff977e!important;
-}
 .fleet-workspace .fleet-summary .fleet-stat-label,
 .fleet-workspace .fleet-summary .fleet-summary-hint,
 .fleet-workspace .fleet-device .fleet-device-line span,
@@ -1166,8 +1148,7 @@ html[data-theme="dark"] { --workflow-hover:#35372f;--workflow-blue:#a9cada }
   .fleet-workspace .fleet-setup-toggle-action{min-height:40px}
   .fleet-workspace .fleet-setup-body{padding:17px}
   .fleet-workspace .fleet-setup-body .fleet-setup-form{grid-template-columns:1fr}
-  .fleet-workspace .hub-workflow-card>a.button{width:100%;max-width:100%;text-align:center}
-}
+  }
 
 /* =========================================================================
    CANONICAL SHARED COMPONENTS · all user-facing routes, both themes
@@ -1198,7 +1179,7 @@ body{background:var(--ui-bg);color:var(--ui-fg)}
 .site-main :is(label,legend){color:var(--ui-fg)}
 .site-main .muted,.site-main .field-note{color:var(--ui-muted)}
 .site-main :is(.eyebrow,.section-index){color:var(--ui-accent)!important}
-.site-main :is(.card,.library-panel,.schedule-section,.schedule-rule,.media-source-card,.hub-workflow-card){border-color:var(--ui-line);border-radius:var(--ui-radius);background:var(--ui-surface);color:var(--ui-fg)}
+ .site-main :is(.card,.library-panel,.schedule-section,.schedule-rule,.media-source-card){border-color:var(--ui-line);border-radius:var(--ui-radius);background:var(--ui-surface);color:var(--ui-fg)}
 .site-main :is(.card,.library-panel,.schedule-section) :is(h2,h3,h4){color:var(--ui-fg)}
 .site-main :is(.button,button).primary:not(:disabled),
 .site-main :is(.button,button).fleet-open.primary:not(:disabled){
@@ -1291,9 +1272,6 @@ html.fleet-popovers-ready .fleet-workspace .fleet-device-actions>details>.fleet-
 .fleet-workspace .fleet-setup-body{background:var(--ui-surface)}
 .fleet-workspace .fleet-setup-toggle:hover{background:var(--ui-surface-hover)}
 .fleet-workspace .fleet-setup-form input{background:var(--ui-raised);border-color:var(--ui-line-strong)}
-.fleet-workspace .hub-workflow-card>a{max-width:100%;white-space:normal;text-align:center}
-.fleet-workspace .hub-workflow-card .button:not(.primary){background:var(--ui-raised)!important;color:var(--ui-fg)!important;border-color:var(--ui-line-strong)!important}
-.fleet-workspace .hub-workflow-card .button:not(.primary):hover{background:var(--ui-surface-hover)!important;color:var(--ui-accent)!important;border-color:var(--ui-accent)!important}
 
 /* Library: retain line breaks and readable captions independent of thumbnails. */
 .library-grid{align-items:start}
@@ -1312,7 +1290,6 @@ html.fleet-popovers-ready .fleet-workspace .fleet-device-actions>details>.fleet-
 .library-publish-hero .library-publish-form{min-width:0}
 .library-publish-hero .library-publish-form label{color:var(--ui-fg)}
 .library-publish-hero :is(.library-publish-hint,.library-publish-copy p:not(.eyebrow)){color:var(--ui-muted)!important}
-.library-source-feature p{color:var(--ui-muted)}
 .library-backup-panel>details>summary{color:var(--ui-fg)}
 
 /* Player: trust the light/dark tokens, never hard-coded old Nordlicht ink. */
@@ -1400,15 +1377,14 @@ html.fleet-popovers-ready .fleet-workspace .fleet-device-actions>details>.fleet-
   .library-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:900px){
-  .hub-workflow-cards{grid-template-columns:1fr 1fr}
   .site-header{gap:10px}
   .site-user{margin-left:auto}
   .schedule-workspace .schedule-assign-controls{min-width:0}
   .schedule-workspace .schedule-presets{grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr))}
 }
 @media(max-width:760px){
-  .site-nav{order:3;flex-basis:100%;width:100%;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap}
-  .site-nav-link{white-space:nowrap;min-height:42px}
+  .site-nav{order:3;flex-basis:100%;width:100%;justify-content:flex-start;overflow:visible;flex-wrap:wrap}
+  .site-nav-link{white-space:normal;min-height:44px}
   .site-header{align-items:center}
   .user-details{display:none}
   .library-actions{grid-template-columns:1fr}
@@ -1423,10 +1399,8 @@ html.fleet-popovers-ready .fleet-workspace .fleet-device-actions>details>.fleet-
 }
 @media(max-width:540px){
   .wrap{width:calc(100% - 28px)}
-  .hub-workflow-cards{grid-template-columns:1fr}
   .fleet-workspace .fleet-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
   .fleet-workspace .fleet-summary-hint{grid-column:1/-1}
-  .library-workflow-nav{grid-template-columns:1fr}
   .library-grid{grid-template-columns:1fr}
   .library-item{grid-template-columns:22px 48px minmax(0,1fr);gap:8px}
   .library-item .library-media-preview{min-width:48px;width:48px;height:48px}
@@ -1507,23 +1481,6 @@ html[data-theme="dark"] .schedule-workspace input[type=time]{color-scheme:dark}
 }
 
 
-/* Screens-first UI: genuine post-login landing, not the IT source setup. */
-.site-nav .site-nav-primary{color:#fff;font-weight:750}
-.fleet-workspace .hub-workflow-screens-first{
-  grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));
-  align-items:stretch;gap:14px;
-}
-.fleet-workspace .hub-workflow-screens-first .hub-workflow-card{
-  min-width:0;display:flex;flex-direction:column;gap:16px;
-  padding:21px 23px;
-}
-.fleet-workspace .hub-workflow-screens-first .hub-workflow-card>a{
-  display:inline-flex;align-items:center;justify-content:center;
-  margin-top:auto;min-height:44px;padding:9px 13px;max-width:100%;
-}
-.fleet-workspace .hub-workflow-screens-first .hub-workflow-admin{
-  border-top:1px solid var(--ui-line);
-}
 .fleet-workspace .fleet-grid{scroll-margin-top:28px}
 .fleet-workspace .fleet-section-heading{scroll-margin-top:30px}
 
@@ -1746,10 +1703,6 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
 }
 .library-publish-hero .library-publish-copy .eyebrow{color:var(--ui-accent)!important}
 .library-queue-panel>.eyebrow{margin:0 0 8px}
-.library-workflow-nav{scroll-margin-top:24px}
-.library-workflow-nav a{border-top-color:var(--ui-line-strong)}
-.library-workflow-nav a:first-child{border-top-color:var(--ui-accent)}
-.library-workflow-nav a strong{color:var(--ui-fg)}
 @media(max-width:1180px){
   .library-actions{display:flex!important;flex-direction:column;grid-template-columns:none!important}
 }
@@ -1867,10 +1820,6 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
 }
 .site-nav .site-nav-utility:not(.is-active):hover{color:#fff}
 .site-nav .site-nav-utility.is-active{color:#fff;font-weight:700}
-.fleet-workspace .hub-workflow-admin .hub-admin-mount-hint{
-  display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap;
-  margin:0;font-size:12px;font-weight:650;color:var(--ui-muted)
-}
 .fleet-workspace .hub-admin-mount-hint.is-confirmed{color:var(--ui-good)}
 .fleet-workspace .hub-admin-mount-hint.is-attention{color:var(--ui-warn)}
 .fleet-workspace .hub-admin-mount-hint .hub-mount-indicator{
@@ -2046,14 +1995,6 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
 .media-source-manage-body>.muted{font-size:12px;line-height:1.6;overflow-wrap:anywhere}
 .media-source-manage-body>.media-default-form{margin-top:17px}
 .media-source-manage-body .media-retire-control{margin-top:20px}
-.media-folder-notice{
-  display:flex;gap:16px 26px;align-items:center;justify-content:space-between;
-  padding:20px 24px!important;margin:14px 0 28px!important
-}
-.media-folder-notice h2{font-size:18px;margin:0 0 7px}
-.media-folder-notice .eyebrow{margin:0 0 5px}
-.media-folder-notice .muted{font-size:12px;margin:0;line-height:1.6}
-.media-folder-notice .button{flex:none;min-height:44px;white-space:normal}
 .media-existing-sources{margin:0 0 18px;gap:13px}
 .media-section-heading{padding:0 1px 4px}
 .media-section-heading .eyebrow{margin:0 0 6px}
@@ -2091,8 +2032,6 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
   .media-default-heading{align-items:start;flex-wrap:wrap}
   .media-default-panel .media-folder-summary{flex-wrap:wrap}
   .media-folder-summary .button{width:100%}
-  .media-folder-notice{align-items:stretch;flex-direction:column}
-  .media-folder-notice .button{align-self:flex-start}
 }
 @media(max-width:600px){
   .media-overview-strip{grid-template-columns:1fr}
@@ -2109,7 +2048,6 @@ html.fleet-popovers-ready .fleet-workspace .fleet-remote-buttons button[name="ac
   .media-folder-peek li{align-items:start;flex-direction:column}
   .media-folder-peek li>small{text-align:left}
   .media-source-card .media-mount-badge{width:max-content}
-  .media-folder-notice .button{width:100%}
   .media-advanced-sources>.media-advanced-body{padding:12px}
   .site-nav .site-nav-utility{margin-left:0;padding-left:9px}
 }
