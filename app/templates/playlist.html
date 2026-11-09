@@ -42,7 +42,7 @@
           <h2 id="queue-title">Playlist <span class="count">{{ assets|length }}</span></h2>
           <p class="section-hint" id="queue-help">
             {% if logged_user.role in ('marketing', 'owner', 'it') and not error %}
-              Am Griff ziehen · Tastatur: Leertaste, ↑/↓, Enter zum Ablegen oder Esc zum Abbrechen.
+              Am Griff ziehen. Tastatur: Griff fokussieren, Leertaste → ↑/↓ → Enter; Esc bricht ab.
             {% else %}Die Inhalte werden in dieser Reihenfolge abgespielt.{% endif %}
           </p>
         </div>
