@@ -124,7 +124,7 @@
             {% if logged_user.role in ('marketing', 'owner', 'it') and not error %}
               <div class="asset-toolbar" id="asset-editor-{{ asset.asset_id }}" role="region"
                    aria-label="{{ asset.name or 'Element' }} bearbeiten">
-                <form id="asset-edit-{{ asset.asset_id }}" method="post" class="asset-edit asset-inline-edit"
+                <form id="asset-edit-{{ asset.asset_id }}" method="post" class="asset-edit asset-inline-edit{{ ' is-video' if is_video else ' is-static' }}"
                       action="{{ url_for('edit_asset', device_id=device.id, asset_id=asset.asset_id) }}">
                   <input type="hidden" name="csrf" value="{{ csrf() }}">
                   <label class="inline-edit-name">
@@ -157,8 +157,8 @@
                   <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg> Zeitplanung · {{ asset.schedule_label }}</summary>
                   <form method="post" action="{{ url_for('asset_schedule', device_id=device.id, asset_id=asset.asset_id) }}">
                     <input type="hidden" name="csrf" value="{{ csrf() }}">
-                    {{ schedule_select(schedule_profiles, schedule_default, mode=asset.schedule_choice, title='Wann soll dieser Inhalt laufen?', custom_days=asset.play_days, custom_from=(asset.play_time_from or '08:00')[:5], custom_to=(asset.play_time_to or '18:00')[:5]) }}
-                    <button class="button primary" type="submit">Zeitplanung speichern</button>
+                    {{ schedule_select(schedule_profiles, schedule_default, mode=asset.schedule_choice, title='Wann soll dieser Inhalt laufen?', custom_days=asset.play_days, custom_from=(asset.play_time_from or '08:00')[:5], custom_to=(asset.play_time_to or '18:00')[:5], hint='Ändert nur die Zeitplanung dieses Inhalts. Andere Playlist-Einträge bleiben unverändert.') }}
+                    <button class="button schedule-save" type="submit">Zeitplanung speichern</button>
                   </form>
                 </details>
                 <div class="asset-toolbar-actions" aria-label="Aktionen für {{ asset.name or 'Element' }}">
