@@ -2542,7 +2542,7 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert 'ui-system.css?v=ui-20261109-10' in page
 
     libpage = client.get('/library').get_data(as_text=True)
-    assert libpage.index('id="library-page-title"') < libpage.index('class="library-grid"')
+    assert libpage.index('id="library-page-title"') < libpage.index('class="library-grid library-index-grid"')
     assert 'library-action-disclosure' not in libpage
     assert 'id="new-playlist" data-library-drawer-pane="create"' in libpage
     assert 'id="backup-zip" data-library-drawer-pane="backup"' in libpage
