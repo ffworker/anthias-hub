@@ -596,7 +596,7 @@ def test_studio_visual_language_on_every_user_facing_page(env):
     client.post('/logout', data={'csrf': token(client)})
     login(client, 'viewer')
     viewer_page = client.get('/').get_data(as_text=True)
-    assert 'Playlist ansehen' in viewer_page
+    assert 'Inhalte ansehen' in viewer_page
     assert 'id="device-setup"' not in viewer_page
 
 
