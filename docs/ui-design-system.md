@@ -1,6 +1,15 @@
+## Geräte-Unterseiten: Workflow-Klarheit (09.11.2026, zweiter Pass)
+
+- **Playlist und Zeitplanung:** H1 bezeichnet die aktuelle Aufgabe; Gerätename und Standort stehen als Kontext darüber. Die Breadcrumbs bilden den tatsächlichen Pfad ab. Ein Bibliothekslink ist kein irreführender Breadcrumb mehr, die Hauptnavigation zu Playlists bleibt erhalten.
+- **Zeitplanung bei leerer Plan-Sammlung:** Die leere, unerreichbare Sammlungsschleife vor dem ersten Formular wurde entfernt. Das Formular bleibt direkt geöffnet, ohne Änderungen an Rollen, CSRF oder Speicherablauf.
+- **Playlist:** Die Sortierhilfe ist kompakter. Lange Medienadressen werden in der Kartenübersicht gekürzt; vollständiger Text bleibt als Tooltip vorhanden. Der bestehende Inline-Editor, die Zeitplanung und sichere Löschbestätigungen bleiben unverändert.
+- **Design:** Gemeinsame final geladene CSS-Datei, neue UI-Kennung `ui-20261109-02`. Keine neuen Assets/Frameworks; keine API-, Geräte-, SMB-, Worker- oder Publisher-Änderung.
+
+**Review:** CI und visuelle Freigabe vor Merge. Das einzige im Hub registrierte Gerät `RPI5-Bistro` ist produktiv und darf nicht als Testgerät verwendet werden. Kein automatischer Live-Deploy.
+
 # Anthias Hub – UI-Designsystem
 
-Stand: November 2026 · UI-Kennung: `ui-20261109-01`
+Stand: November 2026 · UI-Kennung: `ui-20261109-02`
 
 ## Klarheitspass 09.11.2026 (Code-Review; visuelle Abnahme ausstehend)
 
@@ -55,7 +64,7 @@ Die früheren Dateien `ui-refinements.css`, `product-ui.css` und `workflow-ui.cs
 Die Seite meldet die aktuelle Designversion direkt im HTML:
 
 ```html
-<meta name="anthias-hub-ui" content="ui-20261109-01">
+<meta name="anthias-hub-ui" content="ui-20261109-02">
 ```
 
 Auf der Hub-VM nach **Merge, erfolgreichem GHCR-Publish und Updater-Ausführung** prüfen:
