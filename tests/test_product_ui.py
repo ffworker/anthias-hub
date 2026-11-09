@@ -13,7 +13,7 @@ def test_product_theme_loads_last_and_controls_are_real():
     assert "filename='product-ui.css'" not in base
     assert "filename='workflow-ui.css'" not in base
     assert "filename='ui-refinements.css'" not in base
-    assert 'name="anthias-hub-ui" content="ui-20261106-06"' in base
+    assert 'name="anthias-hub-ui" content="ui-20261109-01"' in base
     assert base.index('{% block extra_head %}') < base.index("filename='ui-system.css'")
     assert 'product-theme.js' in base
     assert 'data-product-theme-toggle' in base
@@ -38,11 +38,11 @@ def test_default_library_is_primary_in_all_three_core_views():
     library = (TEMPLATES / 'library.html').read_text(encoding='utf-8')
     folders = (TEMPLATES / 'media_sources.html').read_text(encoding='utf-8')
     detail = (TEMPLATES / 'library_detail.html').read_text(encoding='utf-8')
-    assert dashboard.index('hub-workflow-cards') < dashboard.index('fleet-summary')
+    assert dashboard.index('id="fleet-devices"') < dashboard.index('class="hub-next-steps"')
     assert 'library-source-feature' not in library  # no network hero before the playlists
-    assert library.index('library-workflow-nav') < library.index('library-grid')
+    assert library.index('library-index-intro') < library.index('library-grid')
     assert folders.index('media-default-panel') < folders.index('media-sources-admin')
-    assert 'media-folder-notice' in folders
+    assert 'class="media-folder-peek"' in folders
     assert 'library_index' in folders
     assert 'media-default-folders' not in folders
     assert 'id="new-playlist"' in library
@@ -63,7 +63,7 @@ def test_playlist_workflows_have_explicit_categories_and_theme_aware_contrast():
     sheet = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
 
     assert base.index('{% block extra_head %}') < base.index('ui-system.css')
-    for title in ('Vorlagen ansehen', 'Neue Playlist', 'ZIP-Backup'):
+    for title in ('Playlists', 'Neue Playlist erstellen', 'Vorlagen-Backup importieren'):
         assert title in library
     assert 'id="backup-zip"' in library
     assert 'Backup-ZIP exportieren' in detail
@@ -84,7 +84,7 @@ def test_dashboard_links_to_actual_screen_list_and_new_device_form_is_optional()
     page = (TEMPLATES / 'dashboard.html').read_text(encoding='utf-8')
     css = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
     script = (STATIC / 'fleet-setup.js').read_text(encoding='utf-8')
-    assert 'href="#fleet-devices"' in page
+    assert 'class="hub-next-steps"' in page
     assert 'id="fleet-devices"' in page
     assert 'href="#fleet-title">Bildschirme ansehen' not in page
     assert '<details id="device-setup"' in page
@@ -94,7 +94,7 @@ def test_dashboard_links_to_actual_screen_list_and_new_device_form_is_optional()
     assert "window.location.hash === '#device-setup'" in script
     assert 'setup.open = true' in script
     assert '.fleet-grid-single' in css
-    assert '.hub-workflow-card>a.button:not(.primary)' in css
+    assert '.hub-next-steps-grid' in css
     assert 'var(--ui-fg)!important' in css
     assert 'fleet-setup-collapsible' in css
 
@@ -122,8 +122,8 @@ def test_smb_design_levels_and_statuses_are_textual_in_both_themes():
     css = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
 
     assert 'site-nav-utility' in base  # IT administration is secondary navigation.
-    assert 'hub-admin-mount-hint' in dashboard
-    assert sources.index('media-overview-strip') < sources.index('media-default-panel')
+    assert 'Stammordner: Host-Mount bestätigt' in dashboard
+    assert sources.index('media-default-panel') < sources.index('media-overview-strip')
     assert sources.index('media-default-panel') < sources.index('media-existing-sources')
     assert sources.index('media-existing-sources') < sources.index('media-advanced-sources')
     assert sources.index('media-source-facts') < sources.index('media-source-manage')
