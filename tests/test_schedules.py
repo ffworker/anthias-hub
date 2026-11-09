@@ -575,13 +575,13 @@ def test_schedule_workspace_onboards_when_no_shared_plans_exist(hub):
     _, client, _ = hub
     sign_in(client, 'marketing')
     html=client.get('/devices/lab/schedules').get_data(as_text=True)
-    assert 'data-schedule-onboarding' in html
+    assert 'data-schedule-onboarding' not in html
     assert 'Ersten Zeitplan erstellen' in html
     assert 'zentralen Zeitplan-Verwaltung' in html
     assert 'data-schedule-form' not in html
     central = client.get('/schedules').get_data(as_text=True)
     assert '<details class="card schedule-new schedule-library-new" id="new-schedule" open>' in central
-    assert html.index('data-schedule-onboarding') < html.index('id="schedule-assign"')
+    assert html.index('class="schedule-shortcut"') < html.index('id="schedule-assign"')
     assert 'data-schedule-library' not in html
     assert 'data-schedule-default' not in html
     assert 'Ohne Zeitplan' in html
