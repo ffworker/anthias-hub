@@ -125,9 +125,9 @@
         <span class="hub-task-arrow" aria-hidden="true">→</span>
       </a>
       {% if logged_user.role in ('owner', 'it') %}
-      <a class="hub-task-link hub-task-admin" href="{{ url_for('media_sources_page') }}">
+      <a class="hub-task-link hub-task-admin" href="{{ url_for('media_sources_page') }}" aria-label="Ordner und Quellen verwalten">
         <span><strong>Ordner &amp; Quellen</strong>
-          <small>{% if default_mount_state in ('mounted', 'already-mounted') %}Standardordner · Host-Mount bestätigt{% elif default_mount_state == 'unconfigured' %}Standardordner noch nicht eingerichtet{% else %}Mount-Status prüfen{% endif %}</small>
+          <small>{% if default_mount_state in ('mounted', 'already-mounted') %}Stammordner: Host-Mount bestätigt{% elif default_mount_state == 'unconfigured' %}Stammordner: noch nicht eingerichtet{% else %}Stammordner: Host-Mount nicht bestätigt{% endif %}</small>
         </span>
         <span class="hub-task-arrow" aria-hidden="true">→</span>
       </a>
