@@ -1415,7 +1415,7 @@ def test_screen_card_ctas_have_equal_insets_for_marketing_it_and_viewer(env):
         assert label in page
         if role == 'it':
             assert 'fleet-settings' in page
-            assert 'class="button primary fleet-add-button"' in page
+            assert 'fleet-add-button' in page and 'href="#device-setup"' in page
         else:
             assert 'fleet-settings' not in page
         client.post('/logout', data={'csrf': token(client)})
@@ -2270,7 +2270,7 @@ def test_default_library_first_class_ui_and_one_click_folder_playlist(env, monke
 
     login(client, 'it')
     dash = client.get('/').get_data(as_text=True)
-    assert 'Zu meinen Bildschirmen' in dash
+    assert 'id="fleet-devices"' in dash
     assert 'Ordner &amp; Quellen verwalten' in dash
     assert 'Ordner &amp; Quellen' in dash
     assert 'ui-system.css' in dash
@@ -2487,7 +2487,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
     response = client.get('/login')
     assert response.status_code == 200
     text = response.get_data(as_text=True)
-    assert 'content="ui-20261106-06"' in text
+    assert 'content="ui-20261109-01"' in text
     assert 'ui-system.css' in text
     assert all(f"filename='{name}'" not in text for name in (
         'product-ui.css', 'ui-refinements.css', 'workflow-ui.css'))
@@ -2499,7 +2499,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
         result = client.get(path)
         assert result.status_code == 200, path
         text = result.get_data(as_text=True)
-        assert 'content="ui-20261106-06"' in text, path
+        assert 'content="ui-20261109-01"' in text, path
         assert text.count('ui-system.css') == 1, path
         assert 'data-product-theme-toggle' in text, path
         assert 'class="site-main"' not in text or 'id="hauptinhalt"' in text
@@ -2522,21 +2522,22 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
 
     page = client.get('/').get_data(as_text=True)
     assert page.index('Bildschirme</a>') < page.index('Playlists</a>') < page.index('Ordner &amp; Quellen</a>')
-    assert page.index('01 / BILDSCHIRME') < page.index('02 / PLAYLISTS') < page.index('03 / IT')
-    assert 'Zu meinen Bildschirmen' in page
-    assert 'href="#fleet-devices"' in page
-    assert 'ui-system.css?v=ui-20261106-06' in page
+    assert page.index('id="fleet-devices"') < page.index('class="hub-next-steps"')
+    assert 'Playlists verwalten' in page
+    assert 'Ordner &amp; Quellen' in page
+    assert 'ui-system.css?v=ui-20261109-01' in page
 
     libpage = client.get('/library').get_data(as_text=True)
-    assert libpage.index('01 · Vorlagen ansehen') < libpage.index('02 · Neue Playlist') < libpage.index('03 · ZIP-Backup')
+    assert libpage.index('id="library-page-title"') < libpage.index('class="library-grid"')
     assert libpage.count('library-action-disclosure') >= 2
-    assert 'id="new-playlist" open' in libpage
+    assert 'id="new-playlist"' in libpage
+    assert 'id="new-playlist" open' not in libpage  # existing templates: form collapsed
     assert 'id="backup-zip" open' not in libpage
 
     detail = client.get('/library/' + tpl['id']).get_data(as_text=True)
-    order = ['id="items-title"', 'Netzwerkquelle &amp; Zielbildschirme',
-             'Einzeldatei hinzufügen', 'ZIP / mehrere Dateien importieren',
-             'Webseite / RSS hinzufügen', 'id="playlist-anwenden"']
+    order = ['id="items-title"', 'Einzeldatei hinzufügen',
+             'ZIP / mehrere Dateien importieren', 'Webseite / RSS hinzufügen',
+             'Netzwerkquelle &amp; Zielbildschirme', 'id="playlist-anwenden"']
     indices = [detail.index(x) for x in order]
     assert indices == sorted(indices)
     assert 'Keine Netzwerkquelle · optional mit Ordner verbinden (IT)' in detail
@@ -2681,7 +2682,7 @@ def test_smb_ui_reports_verified_mount_only_for_fresh_matching_host_status(env, 
     confirmed = client.get('/media-sources').get_data(as_text=True)
     assert 'Eingehängt · Host bestätigt' in confirmed
     assert '1 Unterordner im Hub sichtbar' in confirmed
-    assert 'Erkannte Unterordner ansehen' in confirmed
+    assert 'Erkannte Bildschirmordner' in confirmed
     assert 'Screen-A' in confirmed
     assert 'Playlist mit Netzwerkordner erstellen' in confirmed
     assert 'Stammordner: Host-Mount bestätigt' in client.get('/').get_data(as_text=True)
