@@ -94,7 +94,7 @@ test('only canonical UI sheet is loaded; no redundant layered themes', () => {
   for (const retired of ['ui-refinements.css', 'product-ui.css', 'workflow-ui.css']) {
     assert.ok(!template.includes("filename='" + retired + "'"), 'still loading ' + retired);
   }
-  assert.match(template, /name="anthias-hub-ui" content="ui-20261109-04"/);
+  assert.match(template, /name="anthias-hub-ui" content="ui-20261109-05"/);
 });
 
 test('primary page content precedes secondary administration and disclosures', () => {
@@ -139,4 +139,16 @@ test('mobile header navigation has visible touch-friendly tabs', () => {
   for (const token of retired) {
     assert.ok(!css.includes(token), 'dead stylesheet selector '+token);
   }
+});
+
+
+test('inline asset editor uses shared theme variables and separate schedule action', () => {
+  const css = fs.readFileSync(path.join(staticDir, 'ui-system.css'), 'utf8');
+  const player = fs.readFileSync(path.join(__dirname, '../app/templates/playlist.html'), 'utf8');
+  assert.match(css, /\.asset-toolbar>\.asset-inline-edit\.is-video/);
+  assert.match(css, /\.asset-schedule-details \.schedule-choice\{/);
+  assert.match(css, /\.asset-schedule-details>form>\.schedule-save/);
+  assert.match(css, /html\[data-theme="light"\][^\n]*input\[type="time"\]/);
+  assert.match(css, /html\[data-theme="dark"\][^\n]*input\[type="time"\]/);
+  assert.match(player, /class="button schedule-save" type="submit"/);
 });
