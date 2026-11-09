@@ -932,6 +932,8 @@ def test_library_publish_action_is_above_media_list_and_not_hidden_in_sidebar(en
     login(client, 'marketing')
     page = client.get(f"/library/{template['id']}").data.decode('utf-8')
     assert 'library-publish-hero' in page
+    assert 'data-library-drawer-pane="apply"' in page
+    assert 'data-open-library-drawer="apply"' in page
     assert 'id="library-publish-heading"' in page
     assert page.index('id="items-title"') < page.index('id="library-publish-heading"')
     assert page.index('Inhalte und Wiedergabereihenfolge') < page.index('Vorlage zur Playlist hinzufügen')
@@ -1195,8 +1197,9 @@ def test_library_template_shows_media_first_and_website_only_on_request(env):
     page = client.get('/library/' + collection['id']).data.decode('utf-8')
     assert page.index('Einzeldatei hinzufügen') < page.index('ZIP / mehrere Dateien importieren')
     assert page.index('ZIP / mehrere Dateien importieren') < page.index('Webseite / RSS hinzufügen')
-    assert re.search(r'<details class="card library-panel library-website-secondary library-website-details library-action-disclosure"\s*>', page)
-    assert 'library-website-details library-action-disclosure" open' not in page
+    assert 'data-library-add-tab="website"' in page
+    assert 'data-library-add-pane="website"' in page
+    assert 'library-website-details library-action-disclosure' not in page
     assert 'library_add_url' not in page  # internal endpoint name is not exposed
     assert '/url' in page  # existing URL submission stays available
     assert 'RSS2Slideshow-Anzeige' in page
@@ -2487,7 +2490,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
     response = client.get('/login')
     assert response.status_code == 200
     text = response.get_data(as_text=True)
-    assert 'content="ui-20261109-08"' in text
+    assert 'content="ui-20261109-09"' in text
     assert 'ui-system.css' in text
     assert all(f"filename='{name}'" not in text for name in (
         'product-ui.css', 'ui-refinements.css', 'workflow-ui.css'))
@@ -2499,7 +2502,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
         result = client.get(path)
         assert result.status_code == 200, path
         text = result.get_data(as_text=True)
-        assert 'content="ui-20261109-08"' in text, path
+        assert 'content="ui-20261109-09"' in text, path
         assert text.count('ui-system.css') == 1, path
         assert 'data-product-theme-toggle' in text, path
         assert 'class="site-main"' not in text or 'id="hauptinhalt"' in text
@@ -2525,7 +2528,7 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert page.index('id="fleet-devices"') < page.index('class="hub-next-steps"')
     assert 'Playlists verwalten' in page
     assert 'Ordner &amp; Quellen' in page
-    assert 'ui-system.css?v=ui-20261109-08' in page
+    assert 'ui-system.css?v=ui-20261109-09' in page
 
     libpage = client.get('/library').get_data(as_text=True)
     assert libpage.index('id="library-page-title"') < libpage.index('class="library-grid"')
@@ -2537,12 +2540,13 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     detail = client.get('/library/' + tpl['id']).get_data(as_text=True)
     order = ['id="items-title"', 'Einzeldatei hinzufügen',
              'ZIP / mehrere Dateien importieren', 'Webseite / RSS hinzufügen',
-             'Netzwerkquelle &amp; Zielbildschirme', 'id="playlist-anwenden"']
+             'id="playlist-anwenden"', 'Netzwerkquelle &amp; Zielbildschirme']
     indices = [detail.index(x) for x in order]
     assert indices == sorted(indices)
     assert 'Keine Netzwerkquelle · optional mit Ordner verbinden (IT)' in detail
-    assert 'class="library-action-chevron"' in detail
-    assert 'id="network-settings" open' not in detail
+    assert 'class="library-drawer-backdrop"' in detail
+    assert 'data-library-drawer-pane="settings"' in detail
+    assert 'library-action-disclosure' not in detail
     assert FakeAnthias.changes == []
 
     client.post('/logout', data={'csrf': token(client)})

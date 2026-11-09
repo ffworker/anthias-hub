@@ -1,6 +1,10 @@
+## UI-Iteration 4 · Vorlagen: Inhaltsfokus und Drawer (09.11.2026)
+
+UI `ui-20261109-09`: Die Playlist-Vorlage zeigt Inhalte jetzt über die volle Breite. Permanente rechte Aktionsleiste, vier verschachtelte Aufklappkarten und der riesige untere Veröffentlichungsblock wurden als sichtbare Menüs entfernt. Stattdessen ein gemeinsames Seitenpanel mit **Datei / ZIP / Webseite hinzufügen**, **Vorlage auf Bildschirm anwenden** (inkl. Erstinstallation auf leerem Pi), **IT-Netzwerkquelle & Zielgeräte** und **Weitere Optionen** (Backup/Löschen). Alle bestehenden serverseitigen Formulare, Rechte, CSRF-Werte und Lösch-/Transferbestätigungen bleiben erhalten. Ohne JavaScript stehen die Formulare unter der Inhaltsliste als Fallback zur Verfügung. Escape, Fokusfalle, Deep-Links, Mobilansicht und reduzierte Bewegung sind berücksichtigt. Das ist bewusst eine Abnahmeetappe nur für die Vorlagen-Detailansicht; Playlist-Index und Geräteübersicht folgen ggf. nach visueller Prüfung.
+
 ## UI-Iteration 3 · Navigations-Feinschliff (09.11.2026)
 
-UI `ui-20261109-08`: Deutlichere aktive Hauptnavigation und Geräte-Reiter; dezente, schnelle Hover- und Tastatur-Fokus-Rückmeldungen auf sekundären Navigationskarten; leichter Pfeilversatz nur auf echten Links. In einer Playlist-Vorlage bleibt die Arbeitsschritt-Navigation auf Desktop erreichbar und hebt das gewählte Sprungziel hervor. Mobil bleibt sie unsticky. `prefers-reduced-motion: reduce` deaktiviert Bewegung/Übergänge. Keine animierten Live-Statusanzeigen, kein Seiteneinblend-Flicker, kein neuer Stylesheet-Layer oder JavaScript-Framework, keine Veränderung an Player, Form-POSTs oder SMB.
+UI `ui-20261109-09`: Deutlichere aktive Hauptnavigation und Geräte-Reiter; dezente, schnelle Hover- und Tastatur-Fokus-Rückmeldungen auf sekundären Navigationskarten; leichter Pfeilversatz nur auf echten Links. In einer Playlist-Vorlage bleibt die Arbeitsschritt-Navigation auf Desktop erreichbar und hebt das gewählte Sprungziel hervor. Mobil bleibt sie unsticky. `prefers-reduced-motion: reduce` deaktiviert Bewegung/Übergänge. Keine animierten Live-Statusanzeigen, kein Seiteneinblend-Flicker, kein neuer Stylesheet-Layer oder JavaScript-Framework, keine Veränderung an Player, Form-POSTs oder SMB.
 
 ## UI-Iteration 2 · zentrale Zeitpläne (09.11.2026)
 
@@ -19,7 +23,7 @@ Nach dem ersten Live-Browsercheck des UI-Codes wurde der aufklappbare Editor ein
 
 # Anthias Hub – UI-Designsystem
 
-Stand: November 2026 · aktuelle Quellcode-Revision `ui-20261109-08`. Eine Änderung in `main` bedeutet **nicht** automatisch ein Deployment.
+Stand: November 2026 · aktuelle Quellcode-Revision `ui-20261109-09`. Eine Änderung in `main` bedeutet **nicht** automatisch ein Deployment.
 
 ## Abschließender UI-Konsistenzpass (09.11.2026)
 
@@ -99,7 +103,7 @@ Die früheren Dateien `ui-refinements.css`, `product-ui.css` und `workflow-ui.cs
 Die Seite meldet die aktuelle Designversion direkt im HTML:
 
 ```html
-<meta name="anthias-hub-ui" content="ui-20261109-08">
+<meta name="anthias-hub-ui" content="ui-20261109-09">
 ```
 
 Auf der Hub-VM erst nach **expliziter Release-Freigabe, erfolgreichem Image-Publish und kontrolliertem Deployment** prüfen. Ein Merge allein schaltet keinen geplanten Updater ein:

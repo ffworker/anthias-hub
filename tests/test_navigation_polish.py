@@ -15,12 +15,12 @@ def test_main_navigation_has_visible_active_state_without_script():
 def test_navigation_polish_is_role_safe_and_targeted():
     assert '.site-main .device-workspace-tabs a[aria-current="page"]' in UI
     assert 'box-shadow:inset 0 -3px 0 var(--ui-coral)' in UI
-    for target in ('items-title','library-edit-tools','playlist-anwenden','network-settings'):
+    assert 'id="items-title"' in DETAIL
+    for target in ('library-edit-tools','playlist-anwenden','library-more'):
         assert f'href="#{target}"' in DETAIL
-        assert f'#{target}:target' in UI
-    assert '.site-main .library-detail-nav{' in UI
-    assert 'position:sticky;top:0' in UI
-    assert 'media(min-width:900px)' in UI
+    assert 'data-library-workspace' in DETAIL
+    assert 'data-library-drawer' in DETAIL
+    assert '.site-main .library-template-workspace.library-drawer-ready' in UI
     assert 'url_for(\'playlist\'' in DEVICE_TABS
 
 def test_hover_has_no_persistent_motion_or_hidden_ui():
