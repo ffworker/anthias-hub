@@ -221,8 +221,7 @@ def test_playlist_asset_editor_finishing_pass_uses_shared_tokens_and_context_hel
     player = (TEMPLATES / 'playlist.html').read_text(encoding='utf-8')
     schedule = (TEMPLATES / '_schedule_controls.html').read_text(encoding='utf-8')
     css = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
-    assert "is-video' if is_video else ' is-static'" not in player
-    assert "is-video' if is_video else 'is-static'" in player
+    assert "asset-inline-edit{{ ' is-video' if is_video else ' is-static' }}" in player
     assert 'Ändert nur die Zeitplanung dieses Inhalts.' in player
     assert "hint='Gilt nur für neu hinzugefügte Inhalte." in schedule
     assert '<p class="schedule-choice-hint">{{ hint }}</p>' in schedule
