@@ -28,7 +28,7 @@
 <section class="folder-workflow" aria-label="Ordnergesteuerte Playlist">
   <div class="folder-workflow-title"><strong>Automatisch aus dem Netzwerkordner</strong><span class="pill">Zugeordnet: {{ template.folder_source }}</span></div>
   <p>Marketing legt Bilder und Videos wie gewohnt im Netzwerkordner ab. Hier werden <strong>Anzeigedauer</strong> eingestellt. Videos laufen vollständig.</p>
-  <p class="muted">Bildzeiten und Wiedergabereihenfolge hier festlegen. Auf ausschließlich vom Hub verwalteten Pis übernimmt der nächste erfolgreiche Abgleich die Änderungen.</p>
+  <p class="muted">Bildzeiten und Reihenfolge werden zuerst in dieser Hub-Vorlage gespeichert. {% if folder_sync_status.auto_publish %}Ein freigegebener Abgleich kann Änderungen auf ausschließlich vom Hub verwaltete Pi-Playlists übernehmen.{% else %}<strong>Automatische Veröffentlichung auf die Pis ist derzeit ausgeschaltet.</strong>{% endif %}</p>
   <div class="folder-workflow-status" role="status">
     {% if folder_sync_status.state == 'ok' %}
     <strong>Letzter Import: erfolgreich</strong>
@@ -49,7 +49,9 @@
 <nav class="library-detail-nav" aria-label="Arbeitsschritte dieser Playlist">
   <a href="#items-title"><strong>01</strong> Inhalte &amp; Sortierung</a>
   {% if logged_user.role in ('marketing', 'owner', 'it') %}
+  {% if not template.folder_source or logged_user.role in ('owner', 'it') %}
   <a href="#library-edit-tools"><strong>02</strong> Inhalte hinzufügen</a>
+  {% endif %}
   <a href="#playlist-anwenden"><strong>03</strong> Auf Bildschirm anwenden</a>
   {% endif %}
   {% if logged_user.role in ('owner', 'it') %}
@@ -108,7 +110,7 @@
         </details><details><summary>Aus Vorlage entfernen</summary><form method="post" action="{{ url_for('library_remove_item', template_id=template.id, item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="confirm" value="{{ item.id }}"><label class="library-confirm"><input type="checkbox" name="ack" value="yes" required> Aus Vorlage entfernen</label><button class="danger-btn" aria-label="{{ item.name }} entfernen">Endgültig entfernen</button></form></details></div></details>{% endif %}</div>{% endif %}</li>
 {% else %}<li class="card library-empty">Noch keine Inhalte in dieser Vorlage.</li>{% endfor %}
 </ol></section>
-{% if logged_user.role in ('marketing', 'owner', 'it') %}<aside class="library-actions" id="library-edit-tools" aria-label="Inhalte und Quellen hinzufügen">
+{% if logged_user.role in ('marketing', 'owner', 'it') and (not template.folder_source or logged_user.role in ('owner', 'it')) %}<aside class="library-actions" id="library-edit-tools" aria-label="Inhalte und Quellen hinzufügen">
   <div class="library-actions-header">
     <p class="eyebrow">02 / WEITERE INHALTE &amp; QUELLEN</p>
     <h2>Inhalte hinzufügen</h2>
