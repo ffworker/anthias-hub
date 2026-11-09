@@ -321,7 +321,7 @@
         <div class="composer-pane" data-add-pane="zip">
           <p class="composer-explainer"><strong>Einmalig übertragen:</strong> Mehrere Bilder oder Videos direkt zur bestehenden Playlist hinzufügen, ohne vorhandene Inhalte zu ersetzen.</p>
         <section class="bulk-media-panel studio-bulk-details" aria-labelledby="composer-bulk-heading">
-          <h3 id="composer-bulk-heading">Dateien oder Medien-ZIP</h3>
+          <h3 id="composer-bulk-heading">Medien-ZIP importieren oder Dateien auswählen</h3>
           <p class="muted">Eine Medien-ZIP oder bis zu 20 Dateien direkt an diesen Pi übertragen. Das ist KEIN Export einer kompletten Hub-Vorlage.</p>
           <form class="bulk-media-form" data-bulk-upload method="post" enctype="multipart/form-data" action="{{ url_for('player_bulk_media', device_id=device.id) }}">
   <input type="hidden" name="csrf" value="{{ csrf() }}">
