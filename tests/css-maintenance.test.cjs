@@ -94,7 +94,7 @@ test('only canonical UI sheet is loaded; no redundant layered themes', () => {
   for (const retired of ['ui-refinements.css', 'product-ui.css', 'workflow-ui.css']) {
     assert.ok(!template.includes("filename='" + retired + "'"), 'still loading ' + retired);
   }
-  assert.match(template, /name="anthias-hub-ui" content="ui-20261109-02"/);
+  assert.match(template, /name="anthias-hub-ui" content="ui-20261109-03"/);
 });
 
 test('primary page content precedes secondary administration and disclosures', () => {

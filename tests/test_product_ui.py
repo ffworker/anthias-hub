@@ -13,7 +13,7 @@ def test_product_theme_loads_last_and_controls_are_real():
     assert "filename='product-ui.css'" not in base
     assert "filename='workflow-ui.css'" not in base
     assert "filename='ui-refinements.css'" not in base
-    assert 'name="anthias-hub-ui" content="ui-20261109-02"' in base
+    assert 'name="anthias-hub-ui" content="ui-20261109-03"' in base
     assert base.index('{% block extra_head %}') < base.index("filename='ui-system.css'")
     assert 'product-theme.js' in base
     assert 'data-product-theme-toggle' in base
@@ -166,3 +166,26 @@ def test_device_pages_prioritize_current_task_without_touching_player_actions():
     assert 'Ersten Zeitplan erstellen' in first
     assert '.device-page-hero' in ui
     assert '.device-page-breadcrumbs' in ui
+
+def test_composer_prioritizes_common_content_sources_and_keeps_forms():
+    player = (TEMPLATES / 'playlist.html').read_text(encoding='utf-8')
+    css = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
+    # Direct, frequently used actions are a single group, with URL and
+    # IT-only folder sources deliberately lower in the dialog.
+    frequent = player.split('class="add-type-switch"', 1)[1].split('</div>', 1)[0]
+    further = player.split('class="add-type-extra"', 1)[1].split('</div>', 1)[0]
+    for mode in ('media', 'zip', 'library'):
+        assert 'data-add-mode="' + mode + '"' in frequent
+    for mode in ('website', 'folder'):
+        assert 'data-add-mode="' + mode + '"' in further
+    assert player.index('Häufig genutzt') < player.index('Weitere Quellen')
+    assert player.index('data-add-mode="library"') < player.index('data-add-mode="website"')
+    assert '<section class="bulk-media-panel studio-bulk-details"' in player
+    assert '<details class="bulk-media-panel studio-bulk-details"' not in player
+    assert 'data-bulk-upload' in player
+    assert 'action="{{ url_for(\'player_bulk_media\', device_id=device.id) }}"' in player
+    assert 'name="csrf"' in player
+    assert 'composer-source-menu' in css
+    assert 'composer-choice-label' in css
+    assert 'add-type-extra' in css
+

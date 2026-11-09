@@ -1,15 +1,23 @@
+## Composer / „Inhalt hinzufügen“ – UI-Pass 3 (09.11.2026)
+
+- **Oft genutzt:** Datei, ZIP/Mehrere und gespeicherte Vorlage erscheinen als klarer Hauptblock. **Weitere Quellen:** Webseite und ausschließlich für IT/Owner Netzwerkordner. Die bestehenden `data-add-mode`-Schalter und dieselben serverseitigen Routen, Rollen und CSRF-Formulare bleiben erhalten.
+- **ZIP:** Die bereits geöffnete, doppelte Accordion-Ebene entfällt zugunsten eines direkt sichtbaren Inhaltsbereichs, sobald „ZIP / Mehrere“ ausgewählt ist; bei fehlendem JavaScript bleibt das Formular sichtbar.
+- **Texte:** Der Einstieg erklärt den Wirkungskreis, einzelne Quelltypen enthalten knappe, eindeutige Warnungen bzw. Hinweise. Keine Funktion, kein globales Publishing und kein Playergerät werden verändert.
+- **Responsive / Themes:** Häufige Quellen auf einer Zeile, auf sehr schmalen Geräten sinnvoll zweizeilig; optionale Quellen erhalten einen eigenen Abschnitt. Styles im bestehenden zentralen `ui-system.css`, kein zusätzliches Framework.
+- **UI-Revision:** `ui-20261109-03`. Browser-/Visual-Review nach grüner CI bleibt Pflicht vor Merge. Die bestehende Installation behält ihre private Image-Pin-Konfiguration; produktive Bildschirme werden nicht für UI-Tests beschrieben.
+
 ## Geräte-Unterseiten: Workflow-Klarheit (09.11.2026, zweiter Pass)
 
 - **Playlist und Zeitplanung:** H1 bezeichnet die aktuelle Aufgabe; Gerätename und Standort stehen als Kontext darüber. Die Breadcrumbs bilden den tatsächlichen Pfad ab. Ein Bibliothekslink ist kein irreführender Breadcrumb mehr, die Hauptnavigation zu Playlists bleibt erhalten.
 - **Zeitplanung bei leerer Plan-Sammlung:** Die leere, unerreichbare Sammlungsschleife vor dem ersten Formular wurde entfernt. Das Formular bleibt direkt geöffnet, ohne Änderungen an Rollen, CSRF oder Speicherablauf.
 - **Playlist:** Die Sortierhilfe ist kompakter. Lange Medienadressen werden in der Kartenübersicht gekürzt; vollständiger Text bleibt als Tooltip vorhanden. Der bestehende Inline-Editor, die Zeitplanung und sichere Löschbestätigungen bleiben unverändert.
-- **Design:** Gemeinsame final geladene CSS-Datei, neue UI-Kennung `ui-20261109-02`. Keine neuen Assets/Frameworks; keine API-, Geräte-, SMB-, Worker- oder Publisher-Änderung.
+- **Design:** Gemeinsame final geladene CSS-Datei, neue UI-Kennung `ui-20261109-03`. Keine neuen Assets/Frameworks; keine API-, Geräte-, SMB-, Worker- oder Publisher-Änderung.
 
-**Review:** CI und visuelle Freigabe vor Merge. Das einzige im Hub registrierte Gerät `RPI5-Bistro` ist produktiv und darf nicht als Testgerät verwendet werden. Kein automatischer Live-Deploy.
+**Review:** CI und visuelle Freigabe vor Merge. Das registrierte Anzeigegerät wird produktiv verwendet und darf nicht als Testgerät benutzt werden. Kein automatischer Live-Deploy.
 
 # Anthias Hub – UI-Designsystem
 
-Stand: November 2026 · UI-Kennung: `ui-20261109-02`
+Stand: November 2026 · UI-Kennung: `ui-20261109-03`
 
 ## Klarheitspass 09.11.2026 (Code-Review; visuelle Abnahme ausstehend)
 
@@ -64,7 +72,7 @@ Die früheren Dateien `ui-refinements.css`, `product-ui.css` und `workflow-ui.cs
 Die Seite meldet die aktuelle Designversion direkt im HTML:
 
 ```html
-<meta name="anthias-hub-ui" content="ui-20261109-02">
+<meta name="anthias-hub-ui" content="ui-20261109-03">
 ```
 
 Auf der Hub-VM nach **Merge, erfolgreichem GHCR-Publish und Updater-Ausführung** prüfen:
