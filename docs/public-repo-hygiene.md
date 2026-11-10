@@ -13,6 +13,7 @@ internal network maps, actual player URLs or live customer/media data.
   text files only**. It blocks obvious key/token formats, runtime artifact
   filenames and company-style internal host identifiers. It prints categories
   and file/line locations **without printing values**.
+- Site-specific VLAN IDs, DHCP scopes, lease allocations, Pi MACs and internal IP maps belong in restricted internal documentation, not in the repository. The `.gitignore` excludes common internal documentation names, but this is only a safeguard; review staged files and history before any commit.
 - Use dummy names such as `Screen-A` and documentation-only DNS suffixes.
   RFC 5737 addresses are appropriate for example public/test IPs.
 - Before uploading any screenshots, media, PDFs or ZIPs, check their content

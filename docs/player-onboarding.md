@@ -6,7 +6,7 @@
 
 - [ ] Geräte-ID, Standort, Raspberry-Pi-Modell, Bildschirm, Netzteil und Datenträger dokumentieren.
 - [ ] Bei einem Austausch: vorhandene Playlist, Medien, Zeitpläne und die bisherige Wiedergabe sichern bzw. dokumentieren. Alten Datenträger bis zum erfolgreich geprüften Ersatz aufbewahren.
-- [ ] Ein freigegebenes Verwaltungsnetz und eine **stabile IP** vorsehen, bevorzugt per DHCP-Reservierung. Keine doppelte Adresse vergeben; DNS/NTP und Erreichbarkeit prüfen.
+- [ ] Ein freigegebenes Verwaltungsnetz und eine **stabile IP** vorsehen, bevorzugt per DHCP-Reservierung. In der **internen IPAM-/VLAN-Dokumentation** zuordnen: Standort, SSID/Port, tatsächliche VLAN-ID, IP/Präfix, Gateway, DNS/NTP, MAC und Reservierungsstatus. Adressblock gegen aktive Leases und den DHCP-Scope prüfen; ein bloß geplanter Block ist noch keine Reservierung. Keine doppelte Adresse vergeben.
 - [ ] Verwaltete SSH-/Admin-Zugänge und ein Updateschema für den Pi festlegen; keine Standardpasswörter verwenden.
 
 ## 2. Anthias aufsetzen
@@ -27,7 +27,9 @@ Die native Anthias-Oberfläche ist anschließend normalerweise unter `http://<PI
 
 ## 3. Im Hub registrieren (IT)
 
-- [ ] Kontrollieren, dass der **Hub-Host** die Pi-IP/Anthias-API erreichen kann und die Adresse in `ANTHIAS_ALLOWED_CIDRS` freigegeben ist.
+- [ ] Vor der Registrierung auf dem Pi `ip -4 addr`, `ip -4 route` und `ip -4 route get <HUB_IP>` prüfen: Netzmaske muss zum tatsächlichen Standort-VLAN passen. **Gleiches WLAN oder funktionierende native Webseite beweisen keine Hub-API-Verbindung.**
+- [ ] Vom **Hub-Host und Hub-Container** `http://<PI_IP>/api/v2/assets` testen: HTTP 200 mit JSON-Liste, `[]` ist bei leerer Playlist normal. Containerverbindung nutzt keine Proxy-Umgebungsvariablen/Redirects. Genaue Kommandos: [Netz-/VLAN-Runbook](signage-network-operations.md).
+- [ ] Kontrollieren, dass der Hub die Pi-IP erreichen kann und die Adresse in `ANTHIAS_ALLOWED_CIDRS` freigegeben ist. Nur die **Basis-URL** `http://<PI_IP>` im Hub eintragen.
 - [ ] Mit IT-/Owner-Konto im Hub unter **Bildschirme** den Pi registrieren; Name/Standort eindeutig wählen.
 - [ ] Den Pi **nicht** über eine öffentliche Management-Adresse anbinden. Den Hub für Marketing nur über freigegebenen HTTPS-/VPN-Zugang bereitstellen.
 - [ ] Eine Test-Webseite und ein Testbild über den Hub hinzufügen, Reihenfolge und Anzeigedauer prüfen. Am **physischen Bildschirm** bestätigen, nicht nur in der Vorschau.
@@ -44,4 +46,4 @@ Die native Anthias-Oberfläche ist anschließend normalerweise unter `http://<PI
 
 **Betriebsprinzip:** Der Hub vereinfacht zentrale Pflege; **Anthias läuft auf jedem Pi eigenständig**. Die direkte Pi-Oberfläche ist ein IT-Fallback, keine zweite frei zugängliche Marketing-Verwaltung. Änderungen direkt am Pi können im Hub bei Zeitplänen als *„Abweichend in Anthias“* markiert werden.
 
-Weitere Prüfpunkte: [Pilot-/Produktionsabnahme](pilot-acceptance.md) · [IT-Betrieb und Backups](IT_ADMIN_GUIDE.md) · [Sicherheit](../SECURITY.md).
+Weitere Prüfpunkte: [Signage-Netzstandard / IPAM](signage-network-operations.md) · [Pilot-/Produktionsabnahme](pilot-acceptance.md) · [IT-Betrieb und Backups](IT_ADMIN_GUIDE.md) · [Sicherheit](../SECURITY.md).

@@ -27,11 +27,12 @@ change devices, network shares or auto-publication targets. Viewer is read-only.
    [single-root setup](single-root-smb-setup.md).
 2. IT ensures both the Hub web container and the optional importer see that
    directory at `/sources` (read-only).
-3. IT chooses an available network folder while creating a playlist in the
-   library and assigns the target Pis. Alternatively, under **Bildschirm →
-   Playlist → Inhalt hinzufügen → Netzwerkordner**, IT explicitly chooses:
-   **one-time import** (up to 20 files, append-only to Pi) or **automatic
-   binding** (no immediate upload; server-side publisher remains disabled).
+3. IT chooses an available network folder when creating a playlist in
+   **Playlists**, then uses the **template's IT settings** to assign target Pis.
+   On a particular screen, **Bildschirm → Playlist → Inhalt hinzufügen →
+   Netzwerkordner** offers only a **one-time import** (up to 20 files,
+   append-only to Pi). Automatic folder-to-device binding is centralized
+   in the library template; it does not immediately publish to a Pi.
 4. Marketing continues saving images and videos in the share. The importer
    scans every 300 seconds by default and shows a heartbeat in the template.
 5. Marketing opens the **same template**, edits each image's duration, and

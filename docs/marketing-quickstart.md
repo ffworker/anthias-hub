@@ -9,7 +9,7 @@ Du brauchst weder einen Raspberry Pi noch eine ZIP-Datei oder einen
 manuellen Upload im Hub.
 
 1. Bilder/Videos im gewohnten Ordner hinzufügen oder ersetzen.
-2. Anthias Hub öffnen → **Bibliothek** → die von IT angelegte Ordner-Playlist
+2. Anthias Hub öffnen → **Playlists** → die von IT angelegte Ordner-Playlist
    (zum Beispiel „Bistro“) öffnen.
 3. Beim gewünschten **Bild** im Feld **Anzeigedauer** Sekunden eintragen und
    auf **Speichern** klicken (5–3600 Sekunden).
@@ -26,8 +26,8 @@ erfolgreicher Prüfung der Freigabe übernehmen.
 ## Drei klare Aktionen – manuell, ZIP, ganze Vorlage
 
 1. **Manuell hinzufügen:** Bildschirme → gewünschten Pi → Playlist → Inhalt hinzufügen. Mit **Datei** ein einzelnes Bild/Video hochladen; **Webseite** für eine URL. IT darf unter **Netzwerkordner** bis zu 20 freigegebene Bilder/Videos *einmalig* direkt auf den Pi kopieren. Das ist **keine** automatische Verknüpfung.
-2. **ZIP importieren oder exportieren:** Unter **ZIP / Mehrere** eine normale Bild-/Video-ZIP oder mehrere Dateien einmalig auf den Pi importieren. Für ein **vollständiges Hub-Vorlagen-Backup** dagegen in der Bibliothek die Vorlage öffnen → **Backup-ZIP exportieren**; Import in der Bibliothek unter **Vorlagenbackup wiederherstellen**. Die beiden ZIP-Formate nicht verwechseln.
-3. **Playlist anwenden:** Unter **Vorlage anwenden** einzelne gespeicherte Inhalte oder eine ganze Vorlage auswählen. **Bestehende Playlist ergänzen** hängt nur an; **leere Playlist initialisieren** wird serverseitig abgelehnt, falls schon Inhalte vorhanden sind. Nichts wird automatisch gelöscht.
+2. **ZIP importieren oder exportieren:** Am Bildschirm unter **Inhalt hinzufügen → ZIP / Mehrere** eine normale Bild-/Video-ZIP oder mehrere Dateien direkt importieren. Für ein **Hub-Vorlagenbackup** dagegen **Playlists → Vorlage öffnen → Weitere Optionen → Backup-ZIP exportieren**; Wiederherstellung unter **Playlists → Backup importieren**. Die beiden ZIP-Formate nicht verwechseln.
+3. **Playlist anwenden:** Einen **einzelnen gespeicherten Inhalt** über **Bildschirm → Inhalt hinzufügen → Bibliothek** ergänzen. Eine **ganze Vorlage** nur zentral unter **Playlists → Vorlage öffnen → Auf Bildschirm anwenden** übertragen. „Vorlage zur Playlist hinzufügen“ ergänzt vorhandene Inhalte; die alternative Erstinitialisierung ist ausschließlich für leere Pi-Playlists möglich. Nichts wird automatisch gelöscht.
 
 Anzeigedauer und optionalen Zeitplan prüfen; Video-Laufzeiten ermittelt der Pi. Nach Änderungen die Wiedergabe am echten Bildschirm kontrollieren. Bei unterbrochenen Uploads nicht blind erneut übertragen.
 
@@ -37,7 +37,7 @@ Anzeigedauer und optionalen Zeitplan prüfen; Video-Laufzeiten ermittelt der Pi.
 | --- | --- | --- |
 | Bilder oder Videos hochladen | Bildschirm → Playlist → Inhalt hinzufügen | Für mehrere Dateien gibt es Mehrfachauswahl und ZIP-Import; bei Fehlern den Pi prüfen, bevor erneut hochgeladen wird |
 | Webseite einbinden | Bildschirm → Playlist → Inhalt hinzufügen → Webseite | Die Seite muss **vom jeweiligen Pi** erreichbar sein |
-| Wiederkehrende Inhalte vorbereiten | **Bibliothek** → Vorlage anlegen / bearbeiten | **Speichern ist nicht Veröffentlichen**: Inhalte anschließend zum Zielbildschirm übertragen |
+| Wiederkehrende Inhalte vorbereiten | **Playlists** → Vorlage anlegen / bearbeiten | **Speichern ist nicht Veröffentlichen**: Inhalte anschließend zum Zielbildschirm übertragen |
 | Zeiten festlegen | Bildschirm → **Zeitplanung** oder direkt am Playlist-Inhalt | Gemeinsame Vorlagen sind wiederverwendbar; die tatsächliche Zuordnung gilt pro Gerät/Inhalt |
 | Reihenfolge / Pause ändern | Bildschirm → Playlist | Änderungen wirken auf die Playlist dieses Pis |
 
@@ -46,7 +46,7 @@ Anzeigedauer und optionalen Zeitplan prüfen; Video-Laufzeiten ermittelt der Pi.
 **RSS2Slideshow** erstellt eine sich selbst aktualisierende Nachrichten-Webseite; **Anthias Hub** plant deren Anzeige wie jede andere Webseite. Die beiden Anwendungen sind unabhängig.
 
 1. In RSS2Slideshow die Nachrichtenquellen und das Design im dafür freigegebenen Editor pflegen.
-2. Bei **ordnergebundenen Playlists** trägt IT die freigegebene Kiosk-Adresse einmalig in der zugeordneten Bibliotheksvorlage unter **RSS2Slideshow / Webseite zur Playlist hinzufügen** ein. Für manuell gepflegte Playlists weiterhin **Inhalt hinzufügen → Webseite** verwenden. Nie die `/admin`-Adresse nutzen.
+2. Bei **ordnergebundenen Playlists** trägt IT die freigegebene Kiosk-Adresse einmalig in der zugeordneten Playlist-Vorlage über **Inhalt hinzufügen → Webseite / RSS** ein. Für manuell gepflegte Playlists weiterhin **Inhalt hinzufügen → Webseite** verwenden. Nie die `/admin`-Adresse nutzen.
 3. Die **Anzeigedauer der Webseite im Hub** einstellen: So lange bleibt die Nachrichten-Seite in der Playlist. Der **Artikelwechsel innerhalb der Seite** wird separat in RSS2Slideshow konfiguriert.
 4. Am Bildschirm prüfen, dass Artikel geladen werden und die Webseite zum geplanten Zeitpunkt erscheint.
 

@@ -22,3 +22,11 @@ backups/
 *.tar.zst
 compose.private*.yaml
 compose.local*.yaml
+
+# Private, site-specific network plans/inventory must never enter the public repo
+docs/_internal/
+internal/
+*.internal.md
+*-INTERN.md
+*site-ipam*.csv
+*device-inventory.private*
