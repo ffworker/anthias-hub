@@ -78,7 +78,9 @@ certification. See [network access](docs/network-access.md) for TLS setup.
 
 | Guide | When to use it |
 | --- | --- |
-| [Marketing – quick start (DE)](docs/marketing-quickstart.md) | Day-to-day playlists, library, RSS websites, schedules |\n| [New Pi / trainee checklist (DE)](docs/player-onboarding.md) | Standardize installations and hand over new screens |\n| [Signage networks, VLANs & IPAM (DE)](docs/signage-network-operations.md) | Network architecture, IP reservations, firewall paths and player API diagnosis |
+| [Marketing – quick start (DE)](docs/marketing-quickstart.md) | Day-to-day playlists, library, RSS websites, schedules |
+| [New Pi / trainee checklist (DE)](docs/player-onboarding.md) | Standardize installations and hand over new screens |
+| [Signage networks, VLANs & IPAM (DE)](docs/signage-network-operations.md) | Network architecture, IP reservations, firewall paths and player API diagnosis |
 | [Network / Caddy HTTPS](docs/network-access.md) | LAN access, client CA trust, CSRF and TLS |
 | [Test-VM auto-deploy](docs/auto-deploy.md) | GHCR `:latest`, timer, rollback and manual Compose |
 | [New host and controlled releases](docs/reproducible-production.md) | Reproducible install, backups and approved images |
