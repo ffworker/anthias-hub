@@ -37,6 +37,13 @@
       {% for source in folder_templates %}
         <a class="button primary" href="{{ url_for('library_detail', template_id=source.id) }}">Playlist „{{ source.name }}“ öffnen →</a>
         <small>Netzwerkordner: {{ source.folder_source }}</small>
+        {% set sync = folder_sync_by_template.get(source.id, {}) %}
+        <small class="managed-sync-status" role="status">
+          Abgleich {{ 'erfolgreich' if sync.state == 'ok' else 'fehlerhaft' if sync.state == 'error' else 'veraltet' if sync.state == 'stale' else 'noch unbekannt' }}
+          · {{ (sync.interval_seconds // 60)|string ~ ' Min.' if sync.interval_seconds else 'Intervall nicht gemeldet' }}
+          · Pi-Veröffentlichung {{ 'aktiv' if sync.auto_publish and sync.state == 'ok' else 'nicht bestätigt' if sync.auto_publish else 'aus' }}
+          {% if sync.checked_at %}· letzter Lauf {{ sync.checked_at }}{% endif %}
+        </small>
       {% endfor %}
     </div>
   </section>
