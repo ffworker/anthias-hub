@@ -1,0 +1,41 @@
+# Isolated fresh-device ONLY. Never include on the production GH-PiHub.
+# Add after compose.yaml: docker compose -f compose.yaml -f compose.dev.yaml ...
+# The test source is a LOCAL directory, not a real SMB mount.
+services:
+  anthias-hub:
+    environment:
+      HUB_DEVELOPMENT_MODE: "1"
+      FOLDER_AUTO_PUBLISH: "0"
+      MEDIA_SOURCE_ROOT: /sources
+    volumes:
+      - ./dev-sources:/sources:ro
+
+  anthias-folder-import:
+    build: .
+    image: anthias-hub:pilot
+    env_file: .env
+    command: ["python", "-m", "app.folder_sync"]
+    user: "${HUB_UID:-1000}:${HUB_GID:-1000}"
+    environment:
+      LIBRARY_DIR: /data/library
+      MEDIA_SOURCE_ROOT: /sources
+      # 60 seconds only for fast isolated testing. Real default is 1800 seconds.
+      FOLDER_SYNC_INTERVAL: "${FOLDER_SYNC_INTERVAL:-60}"
+      FOLDER_AUTO_PUBLISH: "0"
+      FOLDER_PRUNE_MISSING: "0"
+      # A test folder is deliberately not an OS mount. Real SMB requires
+      # the normal guarded compose.folder-import.yaml workflow.
+      FOLDER_REQUIRE_MOUNT: "0"
+      FOLDER_REQUIRE_VERIFIED: "0"
+      DEVICES_FILE: /data/devices.json
+      SCHEDULES_FILE: /data/schedules.json
+      FOLDER_PUBLICATIONS_DIR: /data/folder-publications
+    volumes:
+      - ./data:/data
+      - ./dev-sources:/sources:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
