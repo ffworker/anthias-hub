@@ -8,7 +8,7 @@ usage() {
 Usage: bash scripts/dev-sandbox.sh start|status|logs|stop
 Test host only. First run: bash scripts/setup-pilot.sh --solo
 Then: mkdir -p dev-sources/demo
-Never run this on GH-PiHub production.
+Never run this on Produktiv-Hub production.
 USAGE
 }
 
