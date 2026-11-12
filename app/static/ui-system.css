@@ -3011,3 +3011,16 @@ body.studio-drawer-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
   .site-main .playlist-workspace .network-import-progress-track span{transition:none}
 }
+
+/* Identify the exact running server image without overwhelming the footer.
+   This is release metadata baked into the image, not the .env's desired tag. */
+.site-foot .site-release{
+  display:inline-flex;align-items:center;justify-content:flex-start;
+  flex-wrap:wrap;gap:3px 6px;min-width:0;
+  color:var(--ui-muted);font-size:11px
+}
+.site-foot .site-release code{
+  font:600 11px/1.4 var(--ui-mono,ui-monospace,monospace);
+  white-space:nowrap;color:var(--ui-fg)
+}
+.site-foot .site-release a{color:var(--ui-accent);text-decoration:underline;text-underline-offset:3px}
