@@ -3029,3 +3029,75 @@ def test_managed_screens_announce_same_source_on_dashboard_schedule_and_library(
                        data={'csrf': token(client),
                              'sync_device': 'lab'}).status_code == 409
     assert not FakeAnthias.changes
+
+
+def test_explicit_development_mode_unlocks_managed_player_without_changing_default(env, monkeypatch):
+    """On a separate test installation management remains visible but not a blocker."""
+    app, client, tmp = env
+    from app.library import Library
+    root = Path(tmp) / 'sources'
+    (root / 'demo').mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    lib = Library(app.config['LIBRARY_DIR'])
+    template = lib.create('Demo-Ordner')
+    lib.set_folder_source(template['id'], 'demo')
+    lib.set_auto_devices(template['id'], ['lab'], [{'id':'lab'}])
+    app.config['HUB_DEVELOPMENT_MODE'] = True
+    login(client, 'it')
+    screen = client.get('/devices/lab').get_data(as_text=True)
+    assert 'data-managed-playlist' in screen
+    assert 'data-can-edit="yes"' in screen
+    assert 'TESTSYSTEM · Bearbeiten erlaubt' in screen
+    assert 'data-open-composer' in screen
+    assert 'data-managed-player-assets open' in screen
+    dash = client.get('/').get_data(as_text=True)
+    assert 'Playlist zugeordnet · Testmodus: bearbeiten erlaubt' in dash
+    assert 'Inhalte testen' in dash
+    schedule = client.get('/devices/lab/schedules').get_data(as_text=True)
+    assert 'TESTMODUS: Zeitpläne bearbeiten erlaubt' in schedule
+    assert 'data-schedule-assign' in schedule
+    response = client.post('/devices/lab/add-url', data={
+        'csrf': token(client), 'name': 'Testquelle',
+        'url': 'https://example.org', 'duration': '30',
+    })
+    assert response.status_code == 302
+    edit = client.post('/devices/lab/assets/one123/edit', data={
+        'csrf': token(client), 'name': 'Experiment', 'duration': '25',
+    })
+    assert edit.status_code == 302
+    assert any(event[0] == 'create' for event in FakeAnthias.changes)
+    assert any(event[0] == 'patch' for event in FakeAnthias.changes)
+    assert lib.get(template['id'])['auto_devices'] == ['lab']
+
+
+def test_development_mode_reassigns_already_managed_screen_without_touching_pi(env, monkeypatch):
+    """Move target between folder playlists with one save; normal mode still refuses."""
+    app, client, tmp = env
+    from app.library import Library
+    root = Path(tmp) / 'sources'
+    (root / 'alpha').mkdir(parents=True)
+    (root / 'beta').mkdir()
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    store = Library(app.config['LIBRARY_DIR'])
+    first = store.create('Alpha')
+    second = store.create('Beta')
+    store.set_folder_source(first['id'], 'alpha')
+    store.set_folder_source(second['id'], 'beta')
+    store.set_auto_devices(first['id'], ['lab'], [{'id':'lab'}])
+    login(client, 'it')
+    t = token(client)
+    refused = client.post(f"/library/{second['id']}/auto-devices",
+                          data={'csrf': t, 'devices': ['lab']}, follow_redirects=True)
+    assert refused.status_code == 200
+    assert 'bereits der Playlist' in refused.get_data(as_text=True)
+    assert store.get(first['id'])['auto_devices'] == ['lab']
+    app.config['HUB_DEVELOPMENT_MODE'] = True
+    changed = client.post(f"/library/{second['id']}/auto-devices",
+                          data={'csrf': t, 'devices': ['lab']}, follow_redirects=True)
+    assert changed.status_code == 200
+    assert 'Testmodus: Zielzuordnung gespeichert' in changed.get_data(as_text=True)
+    assert store.get(first['id'])['auto_devices'] == []
+    assert store.get(second['id'])['auto_devices'] == ['lab']
+    assert FakeAnthias.changes == []
