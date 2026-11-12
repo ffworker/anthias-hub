@@ -32,8 +32,11 @@ SMB parent (one host mount)
 - The worker uses `FOLDER_REQUIRE_MOUNT=1` and
   `FOLDER_REQUIRE_VERIFIED=1`. A running host-coordinator/status process is
   therefore needed for registered sources; saving a UNC is not enough.
-- The worker imports incrementally every 300 seconds by default. Images keep
-  their stored duration, identity and order when the file is replaced.
+- The worker imports incrementally every **1800 seconds (30 minutes)** by default
+  (configured by `FOLDER_SYNC_INTERVAL`). An existing installation may override
+  this variable; the UI displays the **observed worker interval** from the
+  status heartbeat rather than promising an unverified schedule.
+  Images keep their stored duration, identity and order when the file is replaced.
   Manual media and websites in a template remain separate.
 - When a share is unavailable, imports stop; cached Hub media and Pi
   playlists are **not** deleted.
@@ -56,9 +59,33 @@ without reuploading unrelated manual assets. Reordering is applied only when
 the whole target playlist is known to belong to the same managed template.
 Native schedules and manual enablement must be checked on the actual Pi.
 
-**No strict mirror semantics:** deleting a file on SMB does not
-automatically delete its Pi asset. The feature is intentionally conservative
-until removal-after-repeated-verified-scan behavior is accepted.
+### Missing media recovery and optional safe cleanup
+
+- If a **Hub-owned asset is missing from a Pi**, the publisher detects the
+  missing asset ID and reuploads/recreates it from the **verified Hub cache**
+  on the next successful publish cycle. It does not edit, clear or adopt
+  arbitrary/manual Pi assets.
+- If a **file disappears from a mounted source directory**, the default
+  `FOLDER_PRUNE_MISSING=0` leaves the template and Pi content intact.
+  **Only** when IT explicitly sets `FOLDER_PRUNE_MISSING=1`, a previously
+  imported file missing from **two consecutive successful, nonempty folder
+  scans** is removed from the Hub template. The publisher then **disables**
+  its tracked Pi asset after validating its exact ownership marker. It does
+  **not delete** assets or media files from the Pi; cached Hub blobs remain.
+  A returned file can be adopted/reactivated without duplicates.
+- **Empty shares are never pruned automatically**. This fails safely when the
+  SMB mount disappears, loses its children or temporarily yields zero files.
+  A deliberate completely-empty playlist still requires an explicit operator
+  process; the publisher never wipes a Pi merely because a folder is empty.
+- Manual items on a Pi and manual entries in the Hub template are never
+  deleted by this mechanism. For a screen consisting solely of Hub-managed
+  entries and a healthy, explicitly configured publisher, active content
+  converges to the approved folder + linked web items. Historic retired
+  entries remain disabled for recovery, not physically removed.
+- The separate importer worker must also run the new image for these
+  changes to take effect. Updating only the Flask web-Hub container does
+  **not** update the importer. Never use `docker compose --remove-orphans`
+  while the existing importer is managed separately.
 
 ## Operational acceptance
 
