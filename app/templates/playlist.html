@@ -9,8 +9,8 @@
   <header class="playlist-hero device-page-hero">
     <div class="playlist-hero-copy">
       <p class="eyebrow">BILDSCHIRM · {{ device.name }} · {{ device.location or 'Ohne Standort' }}</p>
-      <h1>Playlist</h1>
-      <p class="muted">{{ 'Anzeige der vom Hub verwalteten Playlist. Inhalte bitte in der zugeordneten Playlist bearbeiten.' if folder_managed else 'Inhalte und Wiedergabereihenfolge dieses Bildschirms bearbeiten.' }}</p>
+      <h1>{{ 'Netzwerkordner-Anzeige' if folder_managed else 'Playlist' }}</h1>
+      <p class="muted">{{ 'Dieser Bildschirm übernimmt seine Inhalte aus einer zentral verwalteten Ordner-Playlist. Hier erfolgt keine direkte Inhaltsbearbeitung.' if folder_managed else 'Inhalte und Wiedergabereihenfolge dieses Bildschirms bearbeiten.' }}</p>
       {% if can_edit_player %}<p class="live-warning"><span aria-hidden="true">●</span> Änderungen werden sofort auf dem Player gespeichert.</p>{% endif %}
     </div>
     <div class="hero-status">
@@ -25,31 +25,49 @@
   {% if folder_templates %}
   <section class="managed-playlist-banner" aria-label="Zugeordnete Playlist" data-managed-playlist>
     <div class="managed-playlist-banner-copy">
-      <p class="eyebrow">FEST ZUGEORDNET · NUR ANZEIGE</p>
-      <h2>Dieser Bildschirm wird über {% if folder_templates|length == 1 %}eine Playlist{% else %}{{ folder_templates|length }} Playlists{% endif %} verwaltet</h2>
-      <p>Direktes Hinzufügen, Bearbeiten, Sortieren oder Löschen auf dem Pi ist gesperrt.
-         Inhalte und Bildzeiten werden in der zugeordneten Playlist oder über deren Netzwerkordner gepflegt.</p>
-      {% if not folder_publish_enabled %}
-      <p class="managed-playlist-publish-warning">Automatische Übertragung zum Pi ist noch nicht aktiviert. Die Zuordnung allein veröffentlicht keine Änderungen.</p>
-      {% endif %}
+      <p class="eyebrow">AUTOMATISCHE NETZWERKORDNER-VERWALTUNG</p>
+      <h2>Dieser Bildschirm wird über einen Netzwerkordner verwaltet</h2>
+      <p>Bilder und Videos werden im Netzwerkordner gepflegt. Die zugeordnete Hub-Playlist
+         steuert die Reihenfolge und Anzeigedauer. Direkte Inhaltsänderungen auf diesem Pi sind gesperrt.</p>
     </div>
     <div class="managed-playlist-links">
       {% for source in folder_templates %}
-        <a class="button primary" href="{{ url_for('library_detail', template_id=source.id) }}">Playlist „{{ source.name }}“ öffnen →</a>
-        <small>Netzwerkordner: {{ source.folder_source }}</small>
         {% set sync = folder_sync_by_template.get(source.id, {}) %}
-        <small class="managed-sync-status" role="status">
-          Abgleich {{ 'erfolgreich' if sync.state == 'ok' else 'fehlerhaft' if sync.state == 'error' else 'veraltet' if sync.state == 'stale' else 'noch unbekannt' }}
-          · {{ (sync.interval_seconds // 60)|string ~ ' Min.' if sync.interval_seconds else 'Intervall nicht gemeldet' }}
-          · Pi-Veröffentlichung {{ 'aktiv' if sync.auto_publish and sync.state == 'ok' else 'nicht bestätigt' if sync.auto_publish else 'aus' }}
-          {% if sync.checked_at %}· letzter Lauf {{ sync.checked_at }}{% endif %}
-        </small>
+        <div class="managed-source-summary">
+          <span class="managed-source-label">Zugeordnete Playlist</span>
+          <strong>{{ source.name }}</strong>
+          <span class="managed-source-label">Netzwerkpfad</span>
+          <code>{{ source.folder_source }}</code>
+          <div class="managed-source-sync" role="status">
+            <span><strong>Ordnerabgleich:</strong>
+              {% if sync.state == 'ok' %}
+                {{ 'Alle ' ~ (sync.interval_seconds // 60) ~ ' Minuten' if sync.interval_seconds else 'regelmäßig (Intervall unbekannt)' }}
+              {% elif sync.state == 'error' %}Fehler – letzten Import prüfen
+              {% elif sync.state == 'stale' %}Keine aktuelle Rückmeldung vom Importdienst
+              {% else %}Noch kein bestätigter Importlauf{% endif %}
+            </span>
+            <span><strong>Übertragung auf den Pi:</strong>
+              {% if sync.auto_publish and sync.state == 'ok' %}Aktiv – bei jedem Abgleich
+              {% elif sync.auto_publish %}Konfiguriert, aber aktuell nicht bestätigt
+              {% else %}Noch deaktiviert{% endif %}
+            </span>
+            {% if sync.checked_at %}<small>Letzter gemeldeter Lauf: {{ sync.checked_at }}</small>{% endif %}
+          </div>
+          <a class="button primary" href="{{ url_for('library_detail', template_id=source.id) }}">Playlist verwalten →</a>
+        </div>
       {% endfor %}
     </div>
   </section>
   {% endif %}
 
 
+  {% if folder_managed %}
+  <details class="managed-player-assets" data-managed-player-assets>
+    <summary>
+      <span>Einzelne Pi-Inhalte anzeigen <span class="count">{{ assets|length }}</span></span>
+      <small>Nur zur Kontrolle – diese Inhalte werden über die zugeordnete Playlist verwaltet</small>
+    </summary>
+  {% endif %}
   <div class="editor-layout studio-full-layout">
     <section id="playlist-queue" class="queue" aria-labelledby="queue-title"
              {% if can_edit_player %}data-reorder-url="{{ url_for('reorder_assets', device_id=device.id) }}" data-csrf="{{ csrf() }}"{% endif %}>
@@ -457,6 +475,7 @@
       </aside>
     {% endif %}
   </div>
+  {% if folder_managed %}</details>{% endif %}
   <div id="playlist-feedback" class="playlist-feedback" role="status" aria-live="polite" hidden></div>
 </div>
 <script defer src="{{ url_for('static', filename='media-preview.js') }}"></script>
