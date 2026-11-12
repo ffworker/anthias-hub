@@ -1,6 +1,6 @@
 # Anthias Hub – frischer Testaufbau (separat vom Live-Hub)
 
-> **Entwicklungsstand, nicht produktiv deployen.** Der bestehende GH-PiHub,
+> **Entwicklungsstand, nicht produktiv deployen.** Der bestehende Produktiv-Hub,
 > seine `.env`, sein Compose-Override, der Folder-Importer, die Pis und
 > RSS2Slideshow werden **nicht** geändert. Hier wird auf einem **neuen
 > Test-Host** mit einer **neuen Anthias-Pi-Installation** gearbeitet.
@@ -140,6 +140,6 @@ Stoppen ohne die Testdaten zu löschen:
 bash scripts/dev-sandbox.sh stop
 ```
 
-**Keine** Dateien aus `/root/apps/anthias-hub` auf GH-PiHub kopieren,
+**Keine** Dateien aus `/root/apps/anthias-hub` auf Produktiv-Hub kopieren,
 **keine** echten Firmenfreigaben in `dev-sources` einbinden, **keinen**
 `docker compose --remove-orphans`-Befehl auf dem produktiven Host ausführen.
