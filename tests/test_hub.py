@@ -2975,3 +2975,49 @@ def test_screen_cannot_have_two_conflicting_folder_playlist_owners(env, monkeypa
     assert refused.status_code == 200
     assert 'Erst Zielbildschirme' in refused.get_data(as_text=True)
     assert store.get(first['id'])['auto_devices'] == ['lab']
+
+
+def test_managed_screens_announce_same_source_on_dashboard_schedule_and_library(env, monkeypatch):
+    app, client, tmp = env
+    from app.library import Library
+    from app.folder_status import write_status
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    source = Path(tmp) / 'sources'
+    (source / 'bistro').mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(source))
+    store = Library(app.config['LIBRARY_DIR'])
+    t = store.create('Bistro Hauptplaylist')
+    store.set_folder_source(t['id'], 'bistro')
+    store.set_auto_devices(t['id'], ['lab'], [{'id': 'lab'}])
+    heartbeat = Path(tmp) / 'folder-sync.json'
+    monkeypatch.setenv('FOLDER_STATUS_FILE', str(heartbeat))
+    write_status({t['id']: {'import': {'added': 1, 'updated': 0},
+                            'devices': {'lab': {'added': 1, 'updated': 0, 'disabled': 0}}}},
+                 True, heartbeat, interval_seconds=1800)
+    login(client, 'it')
+    dashboard = client.get('/').get_data(as_text=True)
+    player = client.get('/devices/lab').get_data(as_text=True)
+    schedules = client.get('/devices/lab/schedules').get_data(as_text=True)
+    index = client.get('/library').get_data(as_text=True)
+    detail = client.get(f"/library/{t['id']}").get_data(as_text=True)
+    for page in (dashboard, player, schedules, index, detail):
+        assert 'Bistro Hauptplaylist' in page
+        assert f"/library/{t['id']}" in page or page == detail
+    assert '30 Min.' in dashboard
+    assert '30 Min.' in player
+    assert '30 Min.' in index
+    assert '30 Minuten' in detail
+    assert 'Pi-Abgleich: aktiv' in dashboard
+    assert 'Pi-Veröffentlichung: aktiv' in index
+    assert 'Zugeordnete Playlist' in player
+    assert 'Playlist-gesteuerter Bildschirm' in schedules
+    assert 'data-schedule-assign' not in schedules  # Read-only.
+    assert client.post('/devices/lab/schedules/apply',
+                       data={'csrf': token(client)}).status_code == 409
+    assert client.post('/devices/lab/schedules/demo/edit',
+                       data={'csrf': token(client),
+                             'sync_assigned': 'yes'}).status_code == 409
+    assert client.post('/schedules/demo/edit',
+                       data={'csrf': token(client),
+                             'sync_device': 'lab'}).status_code == 409
+    assert not FakeAnthias.changes
