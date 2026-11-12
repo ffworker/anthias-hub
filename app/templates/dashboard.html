@@ -14,6 +14,7 @@
     <div class="fleet-hero-copy">
       <p class="eyebrow">BILDSCHIRMÜBERSICHT</p>
       <h1 id="fleet-title">Bildschirme</h1>
+      {% if development_mode %}<span class="dev-mode-tag">ISOLIERTES TESTSYSTEM · Änderungen erlaubt</span>{% endif %}
       <p class="muted">
         {% if logged_user.role in ('owner', 'it') %}Netzwerkordner verbinden, Playlists zuweisen und alle Bildschirme zentral steuern.
         {% elif logged_user.role == 'marketing' %}Medien bleiben in den gewohnten Netzwerkordnern. Anzeigedauern und Web-Inhalte verwaltest du in den Playlists.
@@ -49,7 +50,7 @@
         <h3>{{ device.name }}</h3>
         {% if managed %}
         <div class="fleet-managed-playlist" aria-label="Zugeordnete Playlist">
-          <strong>Playlist fest zugeordnet · Direktbearbeitung gesperrt</strong>
+          <strong>{{ 'Playlist zugeordnet · Testmodus: bearbeiten erlaubt' if development_mode else 'Playlist fest zugeordnet · Direktbearbeitung gesperrt' }}</strong>
           {% for source in managed %}
             {% set sync = sync_status_by_template.get(source.id, {}) %}
             <a href="{{ url_for('library_detail', template_id=source.id) }}">{{ source.name }}</a>
@@ -69,7 +70,7 @@
           <span>Playlist-Inhalte</span>
         </div>
         <div class="fleet-device-primary-actions" aria-label="Inhalte und Zeitpläne für {{ device.name }}">
-          <a class="button primary fleet-open" href="{{ url_for('playlist', device_id=device.id) }}">{{ 'Playlist ansehen' if managed else 'Inhalte bearbeiten' if logged_user.role in ('owner', 'it', 'marketing') else 'Inhalte ansehen' }} <span aria-hidden="true">→</span></a>
+          <a class="button primary fleet-open" href="{{ url_for('playlist', device_id=device.id) }}">{{ 'Inhalte testen' if managed and development_mode and logged_user.role in ('owner', 'it', 'marketing') else 'Playlist ansehen' if managed else 'Inhalte bearbeiten' if logged_user.role in ('owner', 'it', 'marketing') else 'Inhalte ansehen' }} <span aria-hidden="true">→</span></a>
           <a class="button fleet-schedule-link" href="{{ url_for('device_schedules', device_id=device.id) }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg> Zeitpläne</a>
         </div>
         {% if logged_user.role in ('owner', 'it', 'marketing') %}
