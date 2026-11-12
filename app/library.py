@@ -124,6 +124,17 @@ class Library:
             collection = self.get(ident)
             if device_ids and not collection.get('folder_source'):
                 raise LibraryError('Zuerst einen Netzwerkordner konfigurieren')
+            # One authoritative folder playlist per screen. A second binding
+            # would make the player read-only but leave the owner ambiguous.
+            if device_ids:
+                for other in self.list():
+                    if other['id'] == ident or not other.get('folder_source'):
+                        continue
+                    conflicted = set(device_ids).intersection(other.get('auto_devices', []))
+                    if conflicted:
+                        raise LibraryError('Bildschirm bereits der Playlist „'
+                                           + other['name'] + '“ zugeordnet. '
+                                           'Bitte zuerst dort die Zielzuordnung entfernen.')
             collection['auto_devices'] = device_ids
             self._save(collection)
         return collection

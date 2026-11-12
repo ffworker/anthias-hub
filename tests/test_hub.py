@@ -2386,7 +2386,8 @@ def test_it_legacy_network_bind_route_stays_safe_after_centralization(env, monke
     assert len(store.list()) == 1
     assert FakeAnthias.changes == []  # Binding cannot mutate a live Pi playlist.
     linked_page = client.get('/devices/lab').get_data(as_text=True)
-    assert 'Netzwerkordner zugeordnet · Automatik optional' in linked_page
+    assert 'Dieser Bildschirm wird über eine Playlist verwaltet' in linked_page
+    assert 'Playlist „Bistro“ öffnen' in linked_page
 
 
 def test_manual_network_folder_import_is_guarded_and_append_only(env, monkeypatch):
@@ -2510,10 +2511,10 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
     response = client.get('/login')
     assert response.status_code == 200
     text = response.get_data(as_text=True)
-    assert 'content="ui-20261112-03"' in text
+    assert 'content="ui-20261112-04"' in text
     assert 'ui-system.css' in text
     assert 'data-hub-build-sha="dev"' in text
-    assert 'UI <code>ui-20261112-03</code>' in text
+    assert 'UI <code>ui-20261112-04</code>' in text
     assert all(f"filename='{name}'" not in text for name in (
         'product-ui.css', 'ui-refinements.css', 'workflow-ui.css'))
 
@@ -2524,7 +2525,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
         result = client.get(path)
         assert result.status_code == 200, path
         text = result.get_data(as_text=True)
-        assert 'content="ui-20261112-03"' in text, path
+        assert 'content="ui-20261112-04"' in text, path
         assert text.count('ui-system.css') == 1, path
         assert 'data-product-theme-toggle' in text, path
         assert 'class="site-main"' not in text or 'id="hauptinhalt"' in text
@@ -2563,7 +2564,7 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert page.index('id="fleet-devices"') < page.index('class="hub-next-steps"')
     assert 'Playlists verwalten' in page
     assert 'Ordner &amp; Quellen' in page
-    assert 'ui-system.css?v=ui-20261112-03' in page
+    assert 'ui-system.css?v=ui-20261112-04' in page
 
     libpage = client.get('/library').get_data(as_text=True)
     assert libpage.index('id="library-page-title"') < libpage.index('class="library-grid library-index-grid"')
@@ -2873,3 +2874,104 @@ def test_manual_folder_stream_preflight_and_native_fallback(env, monkeypatch):
     assert native.status_code == 302
     assert native.location.endswith('/devices/lab')
     assert not FakeAnthias.changes
+
+
+def test_bound_folder_playlist_is_visible_and_player_content_is_read_only(env, monkeypatch):
+    """One permanent folder assignment owns screen media even when publisher is off."""
+    app, client, tmp = env
+    from app.library import Library, LibraryError
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    source = Path(tmp) / 'sources'
+    (source / 'bistro').mkdir(parents=True)
+    (source / 'empfang').mkdir()
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(source))
+    store = Library(app.config['LIBRARY_DIR'])
+    template = store.create('Bistro Wochenplan')
+    store.set_folder_source(template['id'], 'bistro')
+    store.set_auto_devices(template['id'], ['lab'],
+                           [{'id': 'lab'}])
+
+    login(client, 'it')
+    home = client.get('/').get_data(as_text=True)
+    assert 'Playlist fest zugeordnet · Direktbearbeitung gesperrt' in home
+    assert 'Bistro Wochenplan' in home
+    assert f'/library/{template["id"]}' in home
+    assert 'Playlist ansehen' in home
+    page = client.get('/devices/lab').get_data(as_text=True)
+    assert 'data-managed-playlist' in page
+    assert 'Bistro Wochenplan' in page and 'Netzwerkordner: bistro' in page
+    assert 'Automatische Übertragung zum Pi ist noch nicht aktiviert' in page
+    assert 'data-can-edit="no"' in page
+    assert 'data-open-composer' not in page
+    assert 'data-reorder-url=' not in page
+    assert 'asset-inline-edit' not in page
+    assert 'data-bulk-management' not in page
+    assert 'data-bulk-check' not in page
+    assert 'data-media-lightbox' in page  # Read-only preview remains available.
+
+    # A stale form or an external call must not bypass the read-only page.
+    blocked = [
+        ('/devices/lab/add-url', {}),
+        ('/devices/lab/upload', {}),
+        ('/devices/lab/bulk-media', {}),
+        ('/devices/lab/import-network-folder', {}),
+        ('/devices/lab/add-library-item', {}),
+        ('/devices/lab/append-library', {}),
+        ('/devices/lab/apply-library', {}),
+        ('/devices/lab/assets/one123/edit', {}),
+        ('/devices/lab/assets/one123/move', {}),
+        ('/devices/lab/reorder', {}),
+        ('/devices/lab/assets/one123/toggle', {}),
+        ('/devices/lab/assets/one123/schedule', {}),
+        ('/devices/lab/assets/one123/delete', {}),
+        ('/devices/lab/bulk-delete', {}),
+        (f'/library/{template["id"]}/apply', {'device': 'lab'}),
+        (f'/library/{template["id"]}/append-to-device', {'device': 'lab'}),
+        (f'/library/{template["id"]}/items/placeholder/add-to-device',
+         {'device': 'lab'}),
+    ]
+    for path, payload in blocked:
+        response = client.post(path, data={'csrf': token(client), **payload})
+        assert response.status_code == 409, path
+        assert 'Ordner-Playlist zugeordnet' in response.get_data(as_text=True)
+    assert not FakeAnthias.changes
+
+    # Direct content controls return only after unassigning this screen.
+    store.set_auto_devices(template['id'], [], [{'id': 'lab'}])
+    unbound = client.get('/devices/lab').get_data(as_text=True)
+    assert 'data-managed-playlist' not in unbound
+    assert 'data-can-edit="yes"' in unbound
+    assert 'data-open-composer' in unbound
+    assert client.post('/devices/lab/add-url', data={
+        'csrf': token(client), 'name': 'Wieder manuell',
+        'url': 'https://example.org/info', 'duration': '30',
+    }).status_code == 302
+    assert any(event[0] == 'create' for event in FakeAnthias.changes)
+
+
+def test_screen_cannot_have_two_conflicting_folder_playlist_owners(env, monkeypatch):
+    from app.library import Library, LibraryError
+    app, client, tmp = env
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    source = Path(tmp) / 'sources'
+    (source / 'first').mkdir(parents=True)
+    (source / 'second').mkdir()
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(source))
+    store = Library(app.config['LIBRARY_DIR'])
+    first = store.create('Bistro')
+    second = store.create('Empfang')
+    store.set_folder_source(first['id'], 'first')
+    store.set_folder_source(second['id'], 'second')
+    known = [{'id': 'lab'}]
+    store.set_auto_devices(first['id'], ['lab'], known)
+    with pytest.raises(LibraryError, match='bereits der Playlist'):
+        store.set_auto_devices(second['id'], ['lab'], known)
+    assert store.get(second['id']).get('auto_devices') in (None, [])
+    login(client, 'it')
+    refused = client.post(f"/library/{first['id']}/delete", data={
+        'csrf': token(client), 'confirm': first['id'],
+        'ack': 'yes', 'name_confirmation': 'Bistro',
+    }, follow_redirects=True)
+    assert refused.status_code == 200
+    assert 'Erst Zielbildschirme' in refused.get_data(as_text=True)
+    assert store.get(first['id'])['auto_devices'] == ['lab']
