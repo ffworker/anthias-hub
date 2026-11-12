@@ -119,6 +119,49 @@ def create_app(config=None):
     def library():
         return Library(app.config['LIBRARY_DIR'])
 
+    def managed_playlists_for_device(device_id, templates=None):
+        """Persisted folder-template assignment is the editing source of truth.
+
+        A one-off 'apply template' is a copy, not a lasting assignment.
+        Do not infer management from asset names or the publisher toggle.
+        """
+        collections = templates if templates is not None else library().list()
+        return [item for item in collections
+                if item.get('folder_source')
+                and device_id in item.get('auto_devices', [])]
+
+    @app.before_request
+    def protect_managed_player_content():
+        """Guard real player writes, including stale forms and library-origin POSTs.
+
+        The background folder publisher calls the Anthias API independently,
+        so these UI endpoint checks cannot disrupt an approved sync.
+        """
+        if request.method != 'POST' or current_user() is None:
+            return
+        device_routes = {
+            'player_bulk_media', 'import_network_folder_once',
+            'add_library_item_from_player', 'append_library_from_player',
+            'apply_library', 'add_url', 'upload',
+            'edit_asset', 'move_asset', 'reorder_assets',
+            'toggle_asset', 'bulk_delete_assets', 'delete_asset',
+            'asset_schedule',
+        }
+        library_routes = {
+            'apply_library_from_template', 'append_library_from_template',
+            'add_library_item_from_template',
+        }
+        if request.endpoint not in device_routes | library_routes:
+            return
+        if request.endpoint in library_routes:
+            device_id = request.form.get('device', '')
+        else:
+            device_id = (request.view_args or {}).get('device_id', '')
+        if device_id and managed_playlists_for_device(device_id):
+            abort(409, description='Bildschirm ist einer Ordner-Playlist zugeordnet. '
+                  'Inhalte ausschließlich unter Playlists oder im Netzwerkordner '
+                  'verwalten; keine direkte Änderung am Pi.')
+
     def read_player_storage(api):
         """Return (API-based upload capacity, failure reason).
 
@@ -365,6 +408,10 @@ def create_app(config=None):
         if request.form.get('confirm') != template_id or request.form.get('ack') != 'yes':
             abort(400, 'Löschung ausdrücklich bestätigen')
         try:
+            chosen = library().get(template_id)
+            if chosen.get('auto_devices'):
+                raise LibraryError('Playlist ist Bildschirmen zugeordnet. Erst Zielbildschirme '
+                                   'in „Quelle & IT“ entfernen, danach Vorlage löschen.')
             deleted = library().delete_template(template_id, request.form.get('name_confirmation', ''))
             audit('library.delete-template', asset_id=template_id)
             flash(f'Vorlage „{deleted["name"]}“ mit {len(deleted["items"])} Inhalten gelöscht. '
@@ -984,7 +1031,11 @@ def create_app(config=None):
                     default_mount_state = 'unconfigured'
             except SourceError:
                 default_mount_state = 'pending'
+        templates = library().list()
+        managed_by_device = {d['id']: managed_playlists_for_device(d['id'], templates)
+                             for d in devices}
         return render_template('dashboard.html', devices=devices,
+                               managed_by_device=managed_by_device,
                                default_mount_state=default_mount_state)
 
     @app.get('/devices/<device_id>/overview')
@@ -1107,11 +1158,13 @@ def create_app(config=None):
         storage = None
         storage_reason = 'Speicher wird geprüft …' if not error else None
         templates = []
-        if not error and current_user()['role'] in ('marketing', 'owner', 'it'):
-            try:
-                templates = library().list()
-            except LibraryError:
-                flash('Bibliothek konnte nicht geladen werden. Bestehende Playlist bleibt unverändert.', 'error')
+        library_unavailable = False
+        try:
+            templates = library().list()
+        except LibraryError:
+            library_unavailable = True
+            flash('Bibliothek konnte nicht geladen werden. Inhaltsänderungen am Bildschirm '
+                  'bleiben vorsorglich gesperrt.', 'error')
         schedule_profiles, schedule_default = schedule_options(device_id)
         bindings = assignments_for(app.config['SCHEDULES_FILE'], device_id)
         for asset in assets:
@@ -1127,13 +1180,18 @@ def create_app(config=None):
                     and asset['play_time_from'].endswith(':00')
                     and asset['play_time_to'].endswith(':00') else 'choose'
             )
-        folder_templates = [t for t in templates if t.get('folder_source')
-                            and device_id in t.get('auto_devices', [])]
+        folder_templates = managed_playlists_for_device(device_id, templates)
+        can_edit_player = (current_user()['role'] in ('marketing', 'owner', 'it')
+                           and not error and not folder_templates and not library_unavailable)
+        from .folder_status import read_status
+        publish_enabled = any(read_status(t['id'])['auto_publish'] for t in folder_templates)
         from .folder_sync import available_sources
         return render_template('playlist.html', device=device, assets=assets,
                                available_folder_sources=available_sources() if current_user()['role'] in ('owner', 'it') else [],
                                folder_templates=folder_templates,
                                folder_managed=bool(folder_templates),
+                               folder_publish_enabled=publish_enabled,
+                               can_edit_player=can_edit_player,
                                library_templates=templates,
                                library_items_available=any(t.get('items') for t in templates),
                                schedule_profiles=schedule_profiles,
