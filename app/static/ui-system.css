@@ -918,10 +918,6 @@ html[data-theme="dark"] { --workflow-hover:#35372f;--workflow-blue:#a9cada }
 .playlist-workspace .composer-source-choice>summary{font-size:13px;font-weight:750;line-height:1.5}
 .playlist-workspace .composer-source-auto{border-left-color:var(--ui-line-strong)}
 .playlist-workspace .composer-source-choice form{display:grid;gap:10px;margin-top:12px}
-.playlist-workspace .composer-source-choice .append-confirm{
-  display:flex;align-items:start;gap:9px;font-size:12px;line-height:1.5;
-}
-.playlist-workspace .composer-source-choice .append-confirm input{flex:none;margin-top:3px}
 .playlist-workspace .studio-bulk-details{
   color:var(--ui-fg);background:var(--ui-raised);
   border:1px solid var(--ui-line);padding:14px;border-radius:4px;
@@ -2958,19 +2954,23 @@ body.studio-drawer-open{overflow:hidden}
 .site-main .playlist-workspace form[data-network-import-form]>label :is(input:not([type="checkbox"]),select){
   width:100%;max-width:100%;min-width:0
 }
-.site-main .playlist-workspace form[data-network-import-form]>label.append-confirm{
-  display:grid;grid-template-columns:18px minmax(0,1fr);align-items:start;gap:11px;
-  min-width:0;width:100%;margin:3px 0 0;font-size:12px;font-weight:550;
-  line-height:1.55;cursor:pointer;overflow-wrap:normal
+/* Checkbox and copy are separate, accessible siblings. Never rely on
+   checkbox intrinsic/form-wide input widths or label flex sizing. */
+.site-main .playlist-workspace form[data-network-import-form]>.network-import-ack{
+  display:grid;grid-template-columns:18px minmax(0,1fr);
+  align-items:start;column-gap:11px;
+  width:100%;max-width:100%;min-width:0;margin:3px 0 0
 }
-.site-main .playlist-workspace form[data-network-import-form]>.append-confirm input[type="checkbox"]{
-  display:block;box-sizing:border-box;flex:0 0 18px;
-  width:18px;max-width:18px;min-width:18px;
-  height:18px;max-height:18px;min-height:18px;
-  padding:0;margin:1px 0 0;accent-color:var(--ui-accent)
+.site-main .playlist-workspace form[data-network-import-form]>.network-import-ack>input[type="checkbox"]{
+  display:block;box-sizing:border-box;grid-column:1;
+  width:18px;min-width:18px;max-width:18px;
+  height:18px;min-height:18px;max-height:18px;
+  margin:2px 0 0;padding:0;accent-color:var(--ui-accent)
 }
-.site-main .playlist-workspace form[data-network-import-form]>.append-confirm span{
-  min-width:0;overflow-wrap:break-word;word-break:normal
+.site-main .playlist-workspace form[data-network-import-form]>.network-import-ack>label{
+  display:block;grid-column:2;min-width:0;max-width:100%;width:auto;
+  margin:0;font-size:12px;line-height:1.55;font-weight:550;
+  overflow-wrap:normal;word-break:normal;white-space:normal;cursor:pointer
 }
 .site-main .playlist-workspace form[data-network-import-form]>button.primary.full-width{
   display:block;box-sizing:border-box;min-width:0;width:100%;max-width:100%;
