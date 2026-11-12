@@ -13,7 +13,8 @@ def test_product_theme_loads_last_and_controls_are_real():
     assert "filename='product-ui.css'" not in base
     assert "filename='workflow-ui.css'" not in base
     assert "filename='ui-refinements.css'" not in base
-    assert 'name="anthias-hub-ui" content="ui-20261109-11"' in base
+    assert 'name="anthias-hub-ui" content="{{ ui_revision }}"' in base
+    assert 'name="anthias-hub-build"' in base
     assert base.index('{% block extra_head %}') < base.index("filename='ui-system.css'")
     assert 'product-theme.js' in base
     assert 'data-product-theme-toggle' in base

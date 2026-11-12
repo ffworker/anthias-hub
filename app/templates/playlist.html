@@ -411,7 +411,11 @@
                 <input type="number" name="duration" min="5" max="3600" value="15" required>
               </label>
               {{ schedule_select(schedule_profiles, schedule_default, title='Zeitplanung für neue Medien') }}
-              <label class="append-confirm"><input type="checkbox" name="ack" value="yes" required><span>Jetzt einmalig übertragen. Bei Teilfehlern zuerst die Playlist prüfen und nicht blind wiederholen.</span></label>
+              <div class="network-import-ack">
+                <input id="network-folder-ack-{{ device.id }}" type="checkbox" name="ack" value="yes" required
+                       style="width:18px;min-width:18px;max-width:18px;height:18px;min-height:18px;max-height:18px;margin:2px 0 0;padding:0">
+                <label for="network-folder-ack-{{ device.id }}">Jetzt einmalig übertragen. Bei Teilfehlern zuerst die Playlist prüfen und nicht blind wiederholen.</label>
+              </div>
               <button class="primary full-width" type="submit">Ordnerinhalt einmalig hinzufügen</button>
                <div class="network-import-progress" data-network-import-feedback role="status" aria-live="polite" hidden>
                  <strong data-network-import-counter>0 / 0 Dateien übertragen</strong>

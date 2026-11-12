@@ -94,7 +94,11 @@ test('only canonical UI sheet is loaded; no redundant layered themes', () => {
   for (const retired of ['ui-refinements.css', 'product-ui.css', 'workflow-ui.css']) {
     assert.ok(!template.includes("filename='" + retired + "'"), 'still loading ' + retired);
   }
-  assert.match(template, /name="anthias-hub-ui" content="ui-20261109-11"/);
+  assert.ok(template.includes('name="anthias-hub-ui" content="{{ ui_revision }}"'));
+  assert.ok(template.includes('name="anthias-hub-build" content="{{ hub_build_sha or'));
+  assert.ok(template.includes("filename='ui-system.css', v=ui_revision"));
+  const release = fs.readFileSync(path.join(__dirname, '../app/version.py'), 'utf8');
+  assert.match(release, /UI_REVISION = "ui-20261112-03"/);
 });
 
 test('primary page content precedes secondary administration and disclosures', () => {

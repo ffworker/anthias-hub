@@ -3,14 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="anthias-hub-ui" content="ui-20261109-11">
+  <meta name="anthias-hub-ui" content="{{ ui_revision }}">
+  <meta name="anthias-hub-build" content="{{ hub_build_sha or 'dev' }}">
   <title>{% block title %}Anthias Hub{% endblock %}</title>
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='modern.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='workspace.css') }}">
   {% block extra_head %}{% endblock %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='ui-system.css', v='ui-20261112-01') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='ui-system.css', v=ui_revision) }}">
   <script src="{{ url_for('static', filename='product-theme.js') }}"></script>
   <script defer src="{{ url_for('static', filename='ui-navigation.js') }}"></script>
 </head>
@@ -53,6 +54,14 @@
 <footer class="wrap foot site-foot">
   <span><svg class="icon footer-mark" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#mark"></use></svg> Anthias Hub · Unabhängiges Open-Source-Projekt</span>
   <span><a href="https://github.com/ffworker/anthias-hub" rel="noopener noreferrer" target="_blank">Projekt auf GitHub ↗</a> · Nicht von Screenly entwickelt oder unterstützt</span>
+  <span class="site-release" data-hub-build-sha="{{ hub_build_sha or 'dev' }}" aria-label="Version der laufenden Anthias-Hub-Instanz">
+    UI <code>{{ ui_revision }}</code> · Build
+    {% if hub_build_sha %}
+    <a href="https://github.com/ffworker/anthias-hub/commit/{{ hub_build_sha }}" target="_blank" rel="noopener noreferrer" title="Vollständiger Build-Commit: {{ hub_build_sha }}"><code>{{ hub_build_sha[:12] }}</code></a>
+    {% else %}
+    <code>lokal/dev</code>
+    {% endif %}
+  </span>
 </footer>
 </body>
 </html>
