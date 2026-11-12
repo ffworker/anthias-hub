@@ -30,3 +30,6 @@ internal/
 *-INTERN.md
 *site-ipam*.csv
 *device-inventory.private*
+
+# Separate fresh-device sandbox media; never commit test photos
+/dev-sources/
