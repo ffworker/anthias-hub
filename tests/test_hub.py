@@ -2386,8 +2386,9 @@ def test_it_legacy_network_bind_route_stays_safe_after_centralization(env, monke
     assert len(store.list()) == 1
     assert FakeAnthias.changes == []  # Binding cannot mutate a live Pi playlist.
     linked_page = client.get('/devices/lab').get_data(as_text=True)
-    assert 'Dieser Bildschirm wird über eine Playlist verwaltet' in linked_page
-    assert 'Playlist „Bistro“ öffnen' in linked_page
+    assert 'Dieser Bildschirm wird über einen Netzwerkordner verwaltet' in linked_page
+    assert 'Playlist verwalten' in linked_page
+    assert 'Einzelne Pi-Inhalte anzeigen' in linked_page
 
 
 def test_manual_network_folder_import_is_guarded_and_append_only(env, monkeypatch):
@@ -2899,8 +2900,14 @@ def test_bound_folder_playlist_is_visible_and_player_content_is_read_only(env, m
     assert 'Playlist ansehen' in home
     page = client.get('/devices/lab').get_data(as_text=True)
     assert 'data-managed-playlist' in page
-    assert 'Bistro Wochenplan' in page and 'Netzwerkordner: bistro' in page
-    assert 'Automatische Übertragung zum Pi ist noch nicht aktiviert' in page
+    assert 'Bistro Wochenplan' in page
+    assert '<code>bistro</code>' in page
+    assert 'Übertragung auf den Pi:' in page and 'Noch deaktiviert' in page
+    assert 'data-managed-player-assets' in page
+    assert '<details class="managed-player-assets" data-managed-player-assets>' in page
+    assert page.index('data-managed-playlist') < page.index('data-managed-player-assets')
+    assert page.index('data-managed-player-assets') < page.index('id="playlist-items"')
+    assert 'Einzelne Pi-Inhalte anzeigen' in page
     assert 'data-can-edit="no"' in page
     assert 'data-open-composer' not in page
     assert 'data-reorder-url=' not in page
@@ -2940,6 +2947,7 @@ def test_bound_folder_playlist_is_visible_and_player_content_is_read_only(env, m
     store.set_auto_devices(template['id'], [], [{'id': 'lab'}])
     unbound = client.get('/devices/lab').get_data(as_text=True)
     assert 'data-managed-playlist' not in unbound
+    assert 'data-managed-player-assets' not in unbound
     assert 'data-can-edit="yes"' in unbound
     assert 'data-open-composer' in unbound
     assert client.post('/devices/lab/add-url', data={
