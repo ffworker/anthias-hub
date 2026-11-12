@@ -3024,3 +3024,57 @@ body.studio-drawer-open{overflow:hidden}
   white-space:nowrap;color:var(--ui-fg)
 }
 .site-foot .site-release a{color:var(--ui-accent);text-decoration:underline;text-underline-offset:3px}
+
+/* Managed screen: prominent source of truth, never another content editor. */
+.site-main .playlist-workspace .managed-playlist-banner{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(200px,.55fr);
+  align-items:center;gap:17px 24px;
+  padding:20px 22px;margin:15px 0 23px;
+  background:var(--ui-subtle);border:1px solid var(--ui-line-strong);
+  border-left:4px solid var(--ui-accent);border-radius:var(--ui-radius)
+}
+.site-main .playlist-workspace .managed-playlist-banner .eyebrow{
+  color:var(--ui-accent);margin:0 0 7px
+}
+.site-main .playlist-workspace .managed-playlist-banner h2{
+  margin:0 0 9px;font:500 clamp(18px,2vw,23px)/1.25 var(--ui-serif);
+  color:var(--ui-fg)
+}
+.site-main .playlist-workspace .managed-playlist-banner p{
+  margin:0;color:var(--ui-muted);font-size:12px;line-height:1.6
+}
+.site-main .playlist-workspace .managed-playlist-banner .managed-playlist-publish-warning{
+  margin-top:10px;color:var(--ui-warn);font-weight:650
+}
+.site-main .playlist-workspace .managed-playlist-links{
+  display:grid;justify-items:stretch;align-content:center;gap:6px;min-width:0
+}
+.site-main .playlist-workspace .managed-playlist-links>.button{
+  box-sizing:border-box;min-width:0;white-space:normal;
+  text-align:center;overflow-wrap:anywhere;min-height:42px
+}
+.site-main .playlist-workspace .managed-playlist-links>small{
+  color:var(--ui-muted);font-size:11px;overflow-wrap:anywhere;margin-bottom:9px
+}
+.site-main .fleet-workspace .fleet-managed-playlist{
+  display:grid;gap:4px;min-width:0;padding:11px 12px;margin:10px 0;
+  background:var(--ui-subtle);border-left:3px solid var(--ui-accent);
+  color:var(--ui-fg)
+}
+.site-main .fleet-workspace .fleet-managed-playlist strong{
+  font-size:11px;line-height:1.5
+}
+.site-main .fleet-workspace .fleet-managed-playlist a{
+  font-weight:700;font-size:13px;color:var(--ui-accent);
+  overflow-wrap:anywhere;text-underline-offset:3px
+}
+.site-main .fleet-workspace .fleet-managed-playlist small,
+.site-main .fleet-workspace .fleet-unmanaged-playlist{
+  font-size:11px;color:var(--ui-muted);overflow-wrap:anywhere
+}
+.site-main .fleet-workspace .fleet-unmanaged-playlist{margin:6px 0 10px}
+@media(max-width:680px){
+  .site-main .playlist-workspace .managed-playlist-banner{
+    grid-template-columns:minmax(0,1fr);padding:15px 16px
+  }
+}
