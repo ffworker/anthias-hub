@@ -3078,3 +3078,34 @@ body.studio-drawer-open{overflow:hidden}
     grid-template-columns:minmax(0,1fr);padding:15px 16px
   }
 }
+
+/* A managed screen announces both ownership and the actual worker heartbeat.
+   Compact metadata stays readable without overpowering primary actions. */
+.site-main .managed-sync-status{
+  display:block;color:var(--ui-muted);font:550 11px/1.6 var(--ui-sans);
+  overflow-wrap:anywhere
+}
+.site-main .library-managed-summary{
+  display:grid;gap:3px;padding:10px 15px 14px;
+  border-top:1px solid var(--ui-line);background:var(--ui-subtle);
+  color:var(--ui-muted);font-size:11px;line-height:1.5
+}
+.site-main .library-managed-summary strong{color:var(--ui-fg);font-size:12px}
+.site-main .folder-managed-targets{
+  display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;
+  margin:12px 0;padding:11px 13px;border:1px solid var(--ui-line);
+  background:var(--ui-subtle);color:var(--ui-muted);font-size:12px
+}
+.site-main .folder-managed-targets strong{color:var(--ui-fg)}
+.site-main .folder-managed-targets a,
+.site-main .schedule-managed-banner a{
+  color:var(--ui-accent);text-decoration:underline;text-underline-offset:3px;
+  font-weight:700;overflow-wrap:anywhere
+}
+.site-main .schedule-managed-banner{
+  display:grid;gap:8px;padding:16px 19px;margin:16px 0;
+  border-left:4px solid var(--ui-accent);border-top:1px solid var(--ui-line);
+  border-bottom:1px solid var(--ui-line);background:var(--ui-subtle);
+  color:var(--ui-fg)
+}
+.site-main .schedule-managed-banner p{margin:0;color:var(--ui-muted);font-size:12px}
