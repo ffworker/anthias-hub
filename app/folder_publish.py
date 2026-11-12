@@ -222,7 +222,8 @@ def _retire(doc, old, target):
 
 def reconcile(store, template_id, device_id, *,
               devices_file='/data/devices.json', state_root='/data/folder-publications',
-              schedules_file='/data/schedules.json', api_factory=Anthias):
+              schedules_file='/data/schedules.json', api_factory=Anthias,
+              retire_missing=False):
     """Reconcile one explicitly opted-in pair; raises and leaves other devices alone.
 
     No remote DELETE calls, no global reordering, and no automatic retries of
@@ -312,6 +313,13 @@ def reconcile(store, template_id, device_id, *,
                 raise PublishError('Alte Version blieb aktiv; IT muss Playlist prüfen')
 
         _retire(doc, old, target)
+        # If a removed file returns with identical bytes, its previously
+        # disabled asset may be adopted. Then it is active, not retired.
+        if isinstance(doc.get('retired_assets', []), list):
+            doc['retired_assets'] = [
+                row for row in doc.get('retired_assets', [])
+                if not isinstance(row, dict) or row.get('asset_id') != target['asset_id']
+            ]
         doc['assets'][source] = {'asset_id': target['asset_id'], 'name': name,
                                  'revision': revision, 'status': 'active'}
         _save(path, doc)
@@ -386,6 +394,36 @@ def reconcile(store, template_id, device_id, *,
         _save(path, doc)
         stats['updated' if record else 'added'] += 1
         existing = _remote_assets(api)
+    # Opt-in source deletion: disable only assets explicitly tracked in the
+    # journal AND still bearing the exact Hub-owned marker. Never delete media
+    # from a Pi and never affect manual or unknown assets. An all-empty folder
+    # is not trusted: import refuses to prune that case as well.
+    if retire_missing and any(item.get('source_file') for item in template['items']):
+        active_sources = {item['source_file'] for item in template['items']
+                          if item.get('source_file') and item.get('kind') == 'media'}
+        for source, record in list(doc['assets'].items()):
+            if source in active_sources:
+                continue
+            if not isinstance(record, dict):
+                raise PublishError('Gespeicherter Medienstatus ungültig; nichts deaktiviert')
+            old = _owned(existing, record)
+            if old and old.get('is_enabled'):
+                api.patch(old['asset_id'], {'is_enabled': False})
+                existing = _remote_assets(api)
+                old = _owned(existing, record)
+                if old and old.get('is_enabled') is not False:
+                    raise PublishError('Verschwundenes Asset konnte nicht deaktiviert werden')
+                stats['disabled'] += 1
+            if old:
+                history = doc.setdefault('retired_assets', [])
+                if not isinstance(history, list):
+                    raise PublishError('Synchronisationshistorie ungültig')
+                if not any(row.get('asset_id') == old['asset_id']
+                           for row in history if isinstance(row, dict)):
+                    history.append({'asset_id': old['asset_id'], 'name': old['name']})
+            del doc['assets'][source]
+            _save(path, doc)
+
     _sync_playlist_order(api, template, doc, existing)
     return stats
 

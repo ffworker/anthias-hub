@@ -11,8 +11,10 @@ services:
     environment:
       LIBRARY_DIR: /data/library
       MEDIA_SOURCE_ROOT: /sources
-      FOLDER_SYNC_INTERVAL: "${FOLDER_SYNC_INTERVAL:-300}"
+      FOLDER_SYNC_INTERVAL: "${FOLDER_SYNC_INTERVAL:-1800}"
       FOLDER_AUTO_PUBLISH: "${FOLDER_AUTO_PUBLISH:-0}"
+      # Safe, opt-in removal after two verified nonempty source scans.
+      FOLDER_PRUNE_MISSING: "${FOLDER_PRUNE_MISSING:-0}"
       FOLDER_REQUIRE_MOUNT: "1"
       FOLDER_REQUIRE_VERIFIED: "1"
       DEVICES_FILE: /data/devices.json

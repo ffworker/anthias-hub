@@ -36,3 +36,29 @@ def test_missing_corrupt_and_stale_status_fail_closed(tmp_path):
     assert read_status('a' * 32, status)['state'] == 'stale'
     status.write_text('x' * 70000)
     assert read_status('a' * 32, status)['state'] == 'unknown'
+
+
+def test_half_hour_heartbeat_reports_correct_timing_and_retire_counts(tmp_path):
+    status = tmp_path / 'status.json'
+    ident = 'f' * 32
+    write_status({ident: {'import': {'added': 1, 'updated': 2, 'retired': 3},
+                          'devices': {'lab': {'added': 1, 'updated': 2, 'disabled': 3}}}},
+                 True, status, interval_seconds=1800, prune_missing=True)
+    report = read_status(ident, status)
+    assert report['state'] == 'ok'
+    assert report['interval_seconds'] == 1800
+    assert report['prune_missing'] is True
+    assert report['published'] == 3
+    assert report['disabled'] == 3
+    assert report['retired'] == 3
+
+    # A 30-minute worker must not show as stale after 16 minutes.
+    data = json.loads(status.read_text(encoding='utf-8'))
+    data['checked_at'] = (datetime.now(timezone.utc) -
+                          timedelta(minutes=16)).isoformat()
+    status.write_text(json.dumps(data), encoding='utf-8')
+    assert read_status(ident, status)['state'] == 'ok'
+    data['checked_at'] = (datetime.now(timezone.utc) -
+                          timedelta(minutes=80)).isoformat()
+    status.write_text(json.dumps(data), encoding='utf-8')
+    assert read_status(ident, status)['state'] == 'stale'

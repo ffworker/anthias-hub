@@ -51,8 +51,14 @@
         <div class="fleet-managed-playlist" aria-label="Zugeordnete Playlist">
           <strong>Playlist fest zugeordnet · Direktbearbeitung gesperrt</strong>
           {% for source in managed %}
+            {% set sync = sync_status_by_template.get(source.id, {}) %}
             <a href="{{ url_for('library_detail', template_id=source.id) }}">{{ source.name }}</a>
             <small>Quelle: {{ source.folder_source }}</small>
+            <small class="managed-sync-status">
+              Ordnerabgleich: {{ 'OK' if sync.state == 'ok' else 'FEHLER' if sync.state == 'error' else 'VERALTET' if sync.state == 'stale' else 'noch nicht gemeldet' }}
+              · {{ (sync.interval_seconds // 60)|string ~ ' Min.' if sync.interval_seconds else 'Takt unbekannt' }}
+              · Pi-Abgleich: {{ 'aktiv' if sync.state == 'ok' and sync.auto_publish else 'nicht bestätigt' if sync.auto_publish else 'aus' }}
+            </small>
           {% endfor %}
         </div>
         {% else %}

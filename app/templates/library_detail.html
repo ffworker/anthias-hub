@@ -27,6 +27,16 @@
   <div class="folder-workflow-title"><strong>Automatisch aus dem Netzwerkordner</strong><span class="pill">Zugeordnet: {{ template.folder_source }}</span></div>
   <p>Marketing legt Bilder und Videos wie gewohnt im Netzwerkordner ab. Hier werden <strong>Anzeigedauer</strong> eingestellt. Videos laufen vollständig.</p>
   <p class="muted">Bildzeiten und Reihenfolge werden zuerst in dieser Hub-Vorlage gespeichert. {% if folder_sync_status.auto_publish %}Ein freigegebener Abgleich kann Änderungen auf ausschließlich vom Hub verwaltete Pi-Playlists übernehmen.{% else %}<strong>Automatische Veröffentlichung auf die Pis ist derzeit ausgeschaltet.</strong>{% endif %}</p>
+  <div class="folder-managed-targets" aria-label="Fest zugeordnete Bildschirme">
+    <strong>Playlist-gesteuerte Bildschirme</strong>
+    {% if template.auto_devices|default([]) %}
+      {% for d in devices if d.id in template.auto_devices %}
+      <a href="{{ url_for('playlist', device_id=d.id) }}">{{ d.name }} · Inhalt nur hier verwalten</a>
+      {% endfor %}
+    {% else %}
+      <span>Noch keine festen Zielbildschirme zugeordnet</span>
+    {% endif %}
+  </div>
   <div class="folder-workflow-status" role="status">
     {% if folder_sync_status.state == 'ok' %}
     <strong>Letzter Import: erfolgreich</strong>
@@ -37,7 +47,10 @@
     {% else %}
     <strong>Noch kein Importlauf gemeldet</strong>
     {% endif %}
-    {% if folder_sync_status.checked_at %}<span>Stand: {{ folder_sync_status.checked_at }}</span>{% endif %}
+    {% if folder_sync_status.checked_at %}<span>Letzter Lauf: {{ folder_sync_status.checked_at }}</span>{% endif %}
+    <span>Abgleichintervall: {{ (folder_sync_status.interval_seconds // 60)|string ~ ' Minuten' if folder_sync_status.interval_seconds else 'noch nicht vom Importdienst gemeldet' }}</span>
+    <span>Letzter Lauf: {{ folder_sync_status.added|default(0) }} neu · {{ folder_sync_status.updated|default(0) }} geändert · {{ folder_sync_status.retired|default(0) }} aus der Vorlage genommen · {{ folder_sync_status.published|default(0) }} Pi-Änderungen</span>
+    <span>Fehlende SMB-Dateien bereinigen: {{ 'freigegeben (nach 2 bestätigten Abgleichen)' if folder_sync_status.prune_missing else 'aus Sicherheitsgründen aus' }}</span>
     {% if logged_user.role in ('owner','it') %}
       <span>Automatische Pi-Veröffentlichung: {{ 'serverseitig freigeschaltet' if folder_sync_status.auto_publish else 'serverseitig gesperrt' }}</span>
     {% endif %}

@@ -25,6 +25,15 @@
   {% if problem %}
     <div class="notice error" role="alert">Anthias-Playlist aktuell nicht abrufbar: {{ problem }}. Vorlagen können verwaltet werden; das Zuweisen ist bis zur Verbindung nicht möglich.</div>
   {% endif %}
+  {% if folder_templates %}
+  <section class="schedule-managed-banner" aria-label="Zentral gesteuerte Playlist">
+    <strong>Playlist-gesteuerter Bildschirm · Zeitpläne einzelner Pi-Inhalte hier gesperrt</strong>
+    <p>Dieser Bildschirm wird zentral verwaltet. Inhaltsbezogene Änderungen müssen über die zugeordnete Playlist erfolgen.</p>
+    {% for source in folder_templates %}
+    <a href="{{ url_for('library_detail', template_id=source.id) }}">Playlist „{{ source.name }}“ öffnen →</a>
+    {% endfor %}
+  </section>
+  {% endif %}
 
   <section class="schedule-shortcut" aria-label="Gemeinsame Zeitplan-Vorlagen">
     <div>
@@ -92,7 +101,7 @@
               </div>
             {% endfor %}
           </div>
-          <p class="schedule-hint">Nur Marketing und IT dürfen Zeitpläne ändern.</p>
+          <p class="schedule-hint">{{ 'Direkte Änderungen an Pi-Inhalten sind bei einer fest zugeordneten Ordner-Playlist gesperrt.' if folder_templates else 'Nur Marketing und IT dürfen Zeitpläne ändern.' }}</p>
         </div>
       {% endif %}
     {% else %}

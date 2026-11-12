@@ -2386,8 +2386,9 @@ def test_it_legacy_network_bind_route_stays_safe_after_centralization(env, monke
     assert len(store.list()) == 1
     assert FakeAnthias.changes == []  # Binding cannot mutate a live Pi playlist.
     linked_page = client.get('/devices/lab').get_data(as_text=True)
-    assert 'Dieser Bildschirm wird über eine Playlist verwaltet' in linked_page
-    assert 'Playlist „Bistro“ öffnen' in linked_page
+    assert 'Dieser Bildschirm wird über einen Netzwerkordner verwaltet' in linked_page
+    assert 'Playlist verwalten' in linked_page
+    assert 'Einzelne Pi-Inhalte anzeigen' in linked_page
 
 
 def test_manual_network_folder_import_is_guarded_and_append_only(env, monkeypatch):
@@ -2511,10 +2512,10 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
     response = client.get('/login')
     assert response.status_code == 200
     text = response.get_data(as_text=True)
-    assert 'content="ui-20261112-04"' in text
+    assert 'content="ui-20261112-06"' in text
     assert 'ui-system.css' in text
     assert 'data-hub-build-sha="dev"' in text
-    assert 'UI <code>ui-20261112-04</code>' in text
+    assert 'UI <code>ui-20261112-06</code>' in text
     assert all(f"filename='{name}'" not in text for name in (
         'product-ui.css', 'ui-refinements.css', 'workflow-ui.css'))
 
@@ -2525,7 +2526,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
         result = client.get(path)
         assert result.status_code == 200, path
         text = result.get_data(as_text=True)
-        assert 'content="ui-20261112-04"' in text, path
+        assert 'content="ui-20261112-06"' in text, path
         assert text.count('ui-system.css') == 1, path
         assert 'data-product-theme-toggle' in text, path
         assert 'class="site-main"' not in text or 'id="hauptinhalt"' in text
@@ -2564,7 +2565,7 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert page.index('id="fleet-devices"') < page.index('class="hub-next-steps"')
     assert 'Playlists verwalten' in page
     assert 'Ordner &amp; Quellen' in page
-    assert 'ui-system.css?v=ui-20261112-04' in page
+    assert 'ui-system.css?v=ui-20261112-06' in page
 
     libpage = client.get('/library').get_data(as_text=True)
     assert libpage.index('id="library-page-title"') < libpage.index('class="library-grid library-index-grid"')
@@ -2899,8 +2900,14 @@ def test_bound_folder_playlist_is_visible_and_player_content_is_read_only(env, m
     assert 'Playlist ansehen' in home
     page = client.get('/devices/lab').get_data(as_text=True)
     assert 'data-managed-playlist' in page
-    assert 'Bistro Wochenplan' in page and 'Netzwerkordner: bistro' in page
-    assert 'Automatische Übertragung zum Pi ist noch nicht aktiviert' in page
+    assert 'Bistro Wochenplan' in page
+    assert '<code>bistro</code>' in page
+    assert 'Übertragung auf den Pi:' in page and 'Noch deaktiviert' in page
+    assert 'data-managed-player-assets' in page
+    assert '<details class="managed-player-assets" data-managed-player-assets>' in page
+    assert page.index('data-managed-playlist') < page.index('data-managed-player-assets')
+    assert page.index('data-managed-player-assets') < page.index('id="playlist-items"')
+    assert 'Einzelne Pi-Inhalte anzeigen' in page
     assert 'data-can-edit="no"' in page
     assert 'data-open-composer' not in page
     assert 'data-reorder-url=' not in page
@@ -2940,6 +2947,7 @@ def test_bound_folder_playlist_is_visible_and_player_content_is_read_only(env, m
     store.set_auto_devices(template['id'], [], [{'id': 'lab'}])
     unbound = client.get('/devices/lab').get_data(as_text=True)
     assert 'data-managed-playlist' not in unbound
+    assert 'data-managed-player-assets' not in unbound
     assert 'data-can-edit="yes"' in unbound
     assert 'data-open-composer' in unbound
     assert client.post('/devices/lab/add-url', data={
@@ -2975,3 +2983,49 @@ def test_screen_cannot_have_two_conflicting_folder_playlist_owners(env, monkeypa
     assert refused.status_code == 200
     assert 'Erst Zielbildschirme' in refused.get_data(as_text=True)
     assert store.get(first['id'])['auto_devices'] == ['lab']
+
+
+def test_managed_screens_announce_same_source_on_dashboard_schedule_and_library(env, monkeypatch):
+    app, client, tmp = env
+    from app.library import Library
+    from app.folder_status import write_status
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    source = Path(tmp) / 'sources'
+    (source / 'bistro').mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(source))
+    store = Library(app.config['LIBRARY_DIR'])
+    t = store.create('Bistro Hauptplaylist')
+    store.set_folder_source(t['id'], 'bistro')
+    store.set_auto_devices(t['id'], ['lab'], [{'id': 'lab'}])
+    heartbeat = Path(tmp) / 'folder-sync.json'
+    monkeypatch.setenv('FOLDER_STATUS_FILE', str(heartbeat))
+    write_status({t['id']: {'import': {'added': 1, 'updated': 0},
+                            'devices': {'lab': {'added': 1, 'updated': 0, 'disabled': 0}}}},
+                 True, heartbeat, interval_seconds=1800)
+    login(client, 'it')
+    dashboard = client.get('/').get_data(as_text=True)
+    player = client.get('/devices/lab').get_data(as_text=True)
+    schedules = client.get('/devices/lab/schedules').get_data(as_text=True)
+    index = client.get('/library').get_data(as_text=True)
+    detail = client.get(f"/library/{t['id']}").get_data(as_text=True)
+    for page in (dashboard, player, schedules, index, detail):
+        assert 'Bistro Hauptplaylist' in page
+        assert f"/library/{t['id']}" in page or page == detail
+    assert '30 Min.' in dashboard
+    assert 'Alle 30 Minuten' in player
+    assert '30 Min.' in index
+    assert '30 Minuten' in detail
+    assert 'Pi-Abgleich: aktiv' in dashboard
+    assert 'Pi-Veröffentlichung: aktiv' in index
+    assert 'Zugeordnete Playlist' in player
+    assert 'Playlist-gesteuerter Bildschirm' in schedules
+    assert 'data-schedule-assign' not in schedules  # Read-only.
+    assert client.post('/devices/lab/schedules/apply',
+                       data={'csrf': token(client)}).status_code == 409
+    assert client.post('/devices/lab/schedules/demo/edit',
+                       data={'csrf': token(client),
+                             'sync_assigned': 'yes'}).status_code == 409
+    assert client.post('/schedules/demo/edit',
+                       data={'csrf': token(client),
+                             'sync_device': 'lab'}).status_code == 409
+    assert not FakeAnthias.changes

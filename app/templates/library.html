@@ -32,11 +32,23 @@
     <div class="library-list">
       {% for template in templates %}
       <div class="card library-entry-shell">
+        {% set sync = folder_sync_by_template.get(template.id, {}) %}
         <a class="library-entry" href="{{ url_for('library_detail', template_id=template.id) }}">
           <span class="library-glyph" aria-hidden="true"><svg class="icon"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg></span>
           <span><span class="library-entry-heading"><strong>{{ template.name }}</strong><span class="library-entry-type {{ 'is-automatic' if template.folder_source|default(false) else 'is-manual' }}">{{ 'Netzwerkordner · Import in Hub' if template.folder_source|default(false) else 'Manuelle Vorlage' }}</span></span><small>{% if template.folder_source|default(false) %}Quelle: {{ template.folder_source }} · {% endif %}{{ template['items']|length }} Inhalte{% if template.auto_devices|default([]) %} · {{ template.auto_devices|length }} Zielbildschirm(e){% endif %} · Öffnen und bearbeiten</small></span>
           <span class="library-entry-arrow" aria-hidden="true">→</span>
         </a>
+        {% if template.folder_source %}
+        <div class="library-managed-summary" aria-label="Playlist-Zuordnung und Synchronisierung">
+          <strong>Playlist-gesteuert · {{ template.auto_devices|default([])|length }} Bildschirm(e)</strong>
+          {% if template.auto_devices|default([]) %}
+            <span>Zugeordnet: {% for ident in template.auto_devices %}{{ device_names.get(ident, ident) }}{% if not loop.last %}, {% endif %}{% endfor %}</span>
+          {% else %}<span>Noch kein Zielbildschirm fest zugeordnet</span>{% endif %}
+          <span>Ordnerabgleich: {{ 'OK' if sync.state == 'ok' else 'Fehler' if sync.state == 'error' else 'veraltet' if sync.state == 'stale' else 'noch unbekannt' }}
+          · {{ (sync.interval_seconds // 60)|string ~ ' Min.' if sync.interval_seconds else 'Takt unbekannt' }}
+          · Pi-Veröffentlichung: {{ 'aktiv' if sync.state == 'ok' and sync.auto_publish else 'nicht bestätigt' if sync.auto_publish else 'aus' }}</span>
+        </div>
+        {% endif %}
       </div>
       {% else %}
         <div class="card library-empty" role="status">

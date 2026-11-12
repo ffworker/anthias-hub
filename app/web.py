@@ -148,12 +148,26 @@ def create_app(config=None):
             'apply_library', 'add_url', 'upload',
             'edit_asset', 'move_asset', 'reorder_assets',
             'toggle_asset', 'bulk_delete_assets', 'delete_asset',
-            'asset_schedule',
+            'asset_schedule', 'device_schedule_apply',
         }
         library_routes = {
             'apply_library_from_template', 'append_library_from_template',
             'add_library_item_from_template',
         }
+        if request.endpoint == 'schedule_library_edit':
+            device_id = request.form.get('sync_device', '')
+            if device_id and managed_playlists_for_device(device_id):
+                abort(409, description='Zugeordnete Ordner-Playlist: Zeitpläne einzelner '
+                      'Pi-Inhalte nicht direkt überschreiben.')
+            return
+        if request.endpoint == 'device_schedule_edit':
+            if request.form.get('sync_assigned') != 'yes':
+                return
+            device_id = (request.view_args or {}).get('device_id', '')
+            if device_id and managed_playlists_for_device(device_id):
+                abort(409, description='Zugeordnete Ordner-Playlist: Zeitpläne einzelner '
+                      'Pi-Inhalte nicht direkt überschreiben.')
+            return
         if request.endpoint not in device_routes | library_routes:
             return
         if request.endpoint in library_routes:
@@ -368,7 +382,12 @@ def create_app(config=None):
     @login_required()
     def library_index():
         from .folder_sync import available_sources
-        return render_template('library.html', templates=library().list(),
+        templates = library().list()
+        from .folder_status import read_status
+        return render_template('library.html', templates=templates,
+                               folder_sync_by_template={
+                                   t['id']: read_status(t['id']) for t in templates if t.get('folder_source')},
+                               device_names={d['id']: d['name'] for d in load(app.config['DEVICES_FILE'])},
                                folder_sources=available_sources())
 
     @app.post('/library')
@@ -1037,8 +1056,12 @@ def create_app(config=None):
         templates = library().list()
         managed_by_device = {d['id']: managed_playlists_for_device(d['id'], templates)
                              for d in devices}
+        from .folder_status import read_status
+        sync_status_by_template = {t['id']: read_status(t['id'])
+                                   for t in templates if t.get('folder_source')}
         return render_template('dashboard.html', devices=devices,
                                managed_by_device=managed_by_device,
+                               sync_status_by_template=sync_status_by_template,
                                default_mount_state=default_mount_state)
 
     @app.get('/devices/<device_id>/overview')
@@ -1187,13 +1210,17 @@ def create_app(config=None):
         can_edit_player = (current_user()['role'] in ('marketing', 'owner', 'it')
                            and not error and not folder_templates and not library_unavailable)
         from .folder_status import read_status
-        publish_enabled = any(read_status(t['id'])['auto_publish'] for t in folder_templates)
+        folder_sync_by_template = {t['id']: read_status(t['id']) for t in folder_templates}
+        publish_enabled = bool(folder_templates) and all(
+            row['auto_publish'] and row['state'] == 'ok'
+            for row in folder_sync_by_template.values())
         from .folder_sync import available_sources
         return render_template('playlist.html', device=device, assets=assets,
                                available_folder_sources=available_sources() if current_user()['role'] in ('owner', 'it') else [],
                                folder_templates=folder_templates,
                                folder_managed=bool(folder_templates),
                                folder_publish_enabled=publish_enabled,
+                               folder_sync_by_template=folder_sync_by_template,
                                can_edit_player=can_edit_player,
                                library_templates=templates,
                                library_items_available=any(t.get('items') for t in templates),
@@ -1305,13 +1332,16 @@ def create_app(config=None):
         bindings = assignments_for(app.config['SCHEDULES_FILE'], device_id)
         for asset in assets:
             asset['schedule_label'] = describe_linked_asset(asset, profiles, bindings)
+        folder_templates = managed_playlists_for_device(device_id)
         return render_template('schedules.html', device=device,
+                               folder_templates=folder_templates,
                                profiles=profiles, assets=assets,
                                schedule_default=default_for(app.config['SCHEDULES_FILE'], device_id),
                                schedule_bindings=bindings,
                                gap_warning=weekday_warning(assets) if not problem else '',
                                problem=problem,
-                               can_edit=current_user()['role'] in ('owner', 'it', 'marketing'))
+                               can_edit=current_user()['role'] in ('owner', 'it', 'marketing')
+                                        and not folder_templates)
 
     @app.post('/devices/<device_id>/schedules/default')
     @login_required('it', 'marketing')

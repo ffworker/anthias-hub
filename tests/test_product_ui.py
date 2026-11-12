@@ -156,7 +156,7 @@ def test_device_pages_prioritize_current_task_without_touching_player_actions():
     schedule = (TEMPLATES / 'schedules.html').read_text(encoding='utf-8')
     ui = (STATIC / 'ui-system.css').read_text(encoding='utf-8')
     assert '<span aria-current="page">Playlist</span>' in playlist
-    assert '<h1>Playlist</h1>' in playlist
+    assert "<h1>{{ 'Netzwerkordner-Anzeige' if folder_managed else 'Playlist' }}</h1>" in playlist
     assert '<h1>Zeitpläne</h1>' in schedule
     assert '<span aria-current="page">Zeitpläne</span>' in schedule
     assert 'BILDSCHIRM · {{ device.name }}' in playlist

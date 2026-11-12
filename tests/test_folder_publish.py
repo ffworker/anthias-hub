@@ -349,3 +349,64 @@ def test_reconcile_never_reorders_existing_mixed_manual_playlist(setup):
     perform(env)
     assert not any(event[0] == 'order' for event in player.events)
     assert player.entries['manual']['is_enabled'] is True
+
+
+def test_missing_remote_managed_media_is_restored_from_folder_without_duplicates(setup):
+    """Missing Pi media should be recreated from the cached verified source."""
+    env = setup
+    from app.folder_sync import sync_template
+    sync_template(env['store'], env['template'])
+    assert perform(env)['added'] == 1
+    env['player'].entries.pop('asset1')  # Simulate removed/corrupt Pi asset.
+    restored = perform(env)
+    assert restored['updated'] == 1
+    assert 'asset2' in env['player'].entries
+    assert env['player'].entries['asset2']['is_enabled'] is True
+    assert perform(env)['unchanged'] == 1
+    assert sum(x[0] == 'upload' for x in env['player'].events) == 2
+    assert 'manual' in env['player'].entries  # Unrelated data is never cleared.
+
+
+def test_missing_source_needs_two_nonempty_scans_then_only_owned_asset_disabled(setup):
+    """Source cleanup is opt-in, never DELETEs a Pi medium, and preserves manual."""
+    env = setup
+    from app.folder_sync import sync_template
+    (env['folder'] / 'second.png').write_bytes(PNG + b'second')
+    sync_template(env['store'], env['template'], prune_missing=True)
+    assert perform(env)['added'] == 2
+    (env['folder'] / 'banner.png').unlink()
+    first = sync_template(env['store'], env['template'], prune_missing=True)
+    assert first['retired'] == 0
+    assert len(env['store'].get(env['template'])['items']) == 2
+    assert perform(env, retire_missing=True)['disabled'] == 0
+    second = sync_template(env['store'], env['template'], prune_missing=True)
+    assert second['retired'] == 1
+    template = env['store'].get(env['template'])
+    assert [row['source_file'] for row in template['items']] == ['second.png']
+    result = perform(env, retire_missing=True)
+    assert result['disabled'] == 1
+    assert env['player'].entries['asset1']['is_enabled'] is False
+    assert env['player'].entries['asset2']['is_enabled'] is True
+    assert env['player'].entries['manual']['is_enabled'] is True
+    assert perform(env, retire_missing=True)['disabled'] == 0
+    assert not any(ev[0] == 'remove' for ev in env['player'].events)
+    # Reappearing identical bytes are reactivated, not duplicated or deleted.
+    (env['folder'] / 'banner.png').write_bytes(PNG)
+    assert sync_template(env['store'], env['template'], prune_missing=True)['added'] == 1
+    assert perform(env, retire_missing=True)['added'] == 1
+    assert env['player'].entries['asset1']['is_enabled'] is True
+    assert perform(env, retire_missing=True)['unchanged'] == 2
+
+
+def test_empty_source_never_prunes_even_with_opt_in(setup):
+    env = setup
+    from app.folder_sync import sync_template
+    sync_template(env['store'], env['template'], prune_missing=True)
+    perform(env)
+    (env['folder'] / 'banner.png').unlink()
+    for _ in range(3):
+        result = sync_template(env['store'], env['template'], prune_missing=True)
+        assert result['retired'] == 0
+    assert len(env['store'].get(env['template'])['items']) == 1
+    assert perform(env, retire_missing=True)['disabled'] == 0
+    assert env['player'].entries['asset1']['is_enabled'] is True

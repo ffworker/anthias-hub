@@ -10,7 +10,7 @@ def status_path():
     return Path(os.environ.get('FOLDER_STATUS_FILE', '/data/folder-sync-status.json'))
 
 
-def write_status(reports, enabled, path=None):
+def write_status(reports, enabled, path=None, *, interval_seconds=300, prune_missing=False):
     target = Path(path) if path else status_path()
     target.parent.mkdir(parents=True, exist_ok=True)
     clean = {}
@@ -25,10 +25,16 @@ def write_status(reports, enabled, path=None):
                 'state': 'error' if any('error' in value for value in targets.values()) else 'ok',
                 'added': int(imp.get('added', 0)),
                 'updated': int(imp.get('updated', 0)),
+                'retired': int(imp.get('retired', 0)),
+                'published': sum(int(v.get('added', 0)) + int(v.get('updated', 0))
+                                 for v in targets.values() if isinstance(v, dict)),
+                'disabled': sum(int(v.get('disabled', 0))
+                                for v in targets.values() if isinstance(v, dict)),
                 'device_errors': sum('error' in value for value in targets.values()),
             }
     data = {'checked_at': datetime.now(timezone.utc).isoformat(),
-            'auto_publish': bool(enabled), 'templates': clean}
+            'auto_publish': bool(enabled), 'prune_missing': bool(prune_missing),
+            'interval_seconds': int(interval_seconds), 'templates': clean}
     temp = None
     try:
         with tempfile.NamedTemporaryFile(dir=target.parent, prefix='.folder-status-',
@@ -46,7 +52,10 @@ def write_status(reports, enabled, path=None):
 
 def read_status(template_id, path=None):
     target = Path(path) if path else status_path()
-    fallback = {'state': 'unknown', 'auto_publish': False, 'checked_at': None}
+    fallback = {'state': 'unknown', 'auto_publish': False,
+                'checked_at': None, 'interval_seconds': None,
+                'prune_missing': False, 'added': 0, 'updated': 0,
+                'retired': 0, 'published': 0, 'disabled': 0, 'device_errors': 0}
     try:
         if target.stat().st_size > 65536:
             return fallback
@@ -58,7 +67,10 @@ def read_status(template_id, path=None):
         row = data.get('templates', {}).get(template_id, {})
         if not isinstance(row, dict) or not isinstance(data.get('auto_publish'), bool):
             return fallback
-        if age > 900 or age < -60:
+        interval = data.get('interval_seconds', 300)
+        if not isinstance(interval, int) or not 60 <= interval <= 86400:
+            return fallback
+        if age > max(900, interval * 2.5) or age < -60:
             state = 'stale'
         else:
             state = row.get('state', 'unknown')
@@ -66,7 +78,13 @@ def read_status(template_id, path=None):
             state = 'unknown'
         return {'state': state, 'auto_publish': data['auto_publish'],
                 'checked_at': checked.strftime('%d.%m.%Y %H:%M UTC'),
+                'interval_seconds': interval,
+                'prune_missing': data.get('prune_missing') is True,
                 'added': int(row.get('added', 0)),
-                'updated': int(row.get('updated', 0))}
+                'updated': int(row.get('updated', 0)),
+                'retired': int(row.get('retired', 0)),
+                'published': int(row.get('published', 0)),
+                'disabled': int(row.get('disabled', 0)),
+                'device_errors': int(row.get('device_errors', 0))}
     except (OSError, ValueError, TypeError, KeyError, AttributeError, OverflowError):
         return fallback
