@@ -118,11 +118,12 @@ def available_sources(root=None):
     return standalone + [f'{DEFAULT_LIBRARY_ALIAS}/{folder}'
                          for folder in default_library_folders(base)]
 
-def sync_template(store, template_id, root=None):
-    """Import stable files, never delete on an unavailable or empty share.
+def sync_template(store, template_id, root=None, prune_missing=None):
+    """Import stable files; optionally retire missing media only after two scans.
 
-    Only explicitly folder-managed entries are replaced. Existing manual
-    content stays untouched; device playlists are never modified here.
+    The source must be reachable and nonempty in both successful scans.
+    Never treat an empty/unmounted share as an instruction to erase a screen.
+    Manual template media and webpages are never removed.
     """
     template = store.get(template_id)
     alias = template.get('folder_source')
@@ -130,7 +131,15 @@ def sync_template(store, template_id, root=None):
         return {'added': 0, 'updated': 0, 'skipped': 0}
     folder = source_directory(alias, root)
     entries = sorted(folder.iterdir(), key=lambda p: p.name.casefold())
-    results = {'added': 0, 'updated': 0, 'skipped': 0}
+    if prune_missing is None:
+        prune_missing = os.environ.get('FOLDER_PRUNE_MISSING', '0') == '1'
+    # All present supported filenames count, including files that are still
+    # being written or rejected by the signature checker. Those must never be
+    # mistaken for a deletion.
+    present = {entry.name for entry in entries
+               if entry.suffix.lower() in _MEDIA and not entry.is_symlink()
+               and entry.is_file()}
+    results = {'added': 0, 'updated': 0, 'skipped': 0, 'retired': 0}
     for entry in entries:
         if entry.is_symlink() or not entry.is_file() or entry.suffix.lower() not in _MEDIA:
             continue
@@ -187,6 +196,36 @@ def sync_template(store, template_id, root=None):
             else:
                 results['added'] += 1
             store._save(updated)
+    # Deliberate opt-in only. Two consecutive nonempty, verified successful
+    # scans are required before removing a missing file from the Hub manifest.
+    # Only *source_file* entries qualify. Cached blobs are retained on disk
+    # for recovery; Pi retirement happens in folder_publish and is reversible.
+    if prune_missing and present:
+        with store_lock(store):
+            current = store.get(template_id)
+            stale = []
+            changed = False
+            for item in current['items']:
+                name = item.get('source_file')
+                if not name:
+                    continue
+                if name in present:
+                    if item.pop('source_missing_checks', None) is not None:
+                        changed = True
+                    continue
+                checks = min(2, int(item.get('source_missing_checks', 0)) + 1)
+                if checks >= 2:
+                    stale.append(item['id'])
+                else:
+                    item['source_missing_checks'] = checks
+                    changed = True
+            if stale:
+                current['items'] = [item for item in current['items']
+                                    if item['id'] not in stale]
+                results['retired'] = len(stale)
+                changed = True
+            if changed:
+                store._save(current)
     return results
 
 
@@ -236,7 +275,8 @@ def run_cycle(*, root=None, library_dir=None, devices_file=None, state_root=None
                     results[template_id]['devices'][device_id] = reconcile(
                         store, template_id, device_id, devices_file=devices_file,
                         state_root=state_root, schedules_file=schedules_file,
-                        api_factory=api_factory)
+                        api_factory=api_factory,
+                        retire_missing=os.environ.get('FOLDER_PRUNE_MISSING', '0') == '1')
                 except (PublishError, PlayerError, LibraryError, ScheduleError,
                         OSError, ValueError) as exc:
                     results[template_id]['devices'][device_id] = {'error': str(exc)}
@@ -244,17 +284,20 @@ def run_cycle(*, root=None, library_dir=None, devices_file=None, state_root=None
 
 
 def worker():
-    interval = max(60, int(os.environ.get('FOLDER_SYNC_INTERVAL', '300')))
+    interval = max(60, int(os.environ.get('FOLDER_SYNC_INTERVAL', '1800')))
     while True:
         try:
             reports = run_cycle()
             from .folder_status import write_status
-            write_status(reports, enabled=os.environ.get('FOLDER_AUTO_PUBLISH', '0') == '1')
+            write_status(reports, enabled=os.environ.get('FOLDER_AUTO_PUBLISH', '0') == '1',
+                         interval_seconds=interval,
+                         prune_missing=os.environ.get('FOLDER_PRUNE_MISSING', '0') == '1')
             for template_id, report in reports.items():
                 if 'error' in report:
                     print(f'Folder {template_id}: import unavailable: {report["error"]}', flush=True)
                     continue
-                changed = report['import']['added'] + report['import']['updated']
+                changed = (report['import']['added'] + report['import']['updated']
+                           + report['import'].get('retired', 0))
                 if changed:
                     print(f'Folder {template_id}: imported {report["import"]}', flush=True)
                 for device_id, status in report['devices'].items():
