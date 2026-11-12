@@ -2510,8 +2510,10 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
     response = client.get('/login')
     assert response.status_code == 200
     text = response.get_data(as_text=True)
-    assert 'content="ui-20261109-11"' in text
+    assert 'content="ui-20261112-03"' in text
     assert 'ui-system.css' in text
+    assert 'data-hub-build-sha="dev"' in text
+    assert 'UI <code>ui-20261112-03</code>' in text
     assert all(f"filename='{name}'" not in text for name in (
         'product-ui.css', 'ui-refinements.css', 'workflow-ui.css'))
 
@@ -2522,11 +2524,24 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
         result = client.get(path)
         assert result.status_code == 200, path
         text = result.get_data(as_text=True)
-        assert 'content="ui-20261109-11"' in text, path
+        assert 'content="ui-20261112-03"' in text, path
         assert text.count('ui-system.css') == 1, path
         assert 'data-product-theme-toggle' in text, path
         assert 'class="site-main"' not in text or 'id="hauptinhalt"' in text
     assert client.get('/static/ui-system.css').status_code == 200
+
+
+def test_footer_build_metadata_tracks_the_running_image_not_the_requested_tag(env):
+    app, client, _ = env
+    sha = 'a19b53c47c8b9a1c6317dc34e884760db06aeeaf'
+    # Simulates the exact immutable commit written at Docker build time.
+    app.config['HUB_BUILD_SHA'] = sha
+    page = client.get('/login').get_data(as_text=True)
+    assert f'content="{sha}"' in page
+    assert f'data-hub-build-sha="{sha}"' in page
+    assert f'/ffworker/anthias-hub/commit/{sha}' in page
+    assert sha[:12] in page
+    assert 'lokal/dev' not in page
 
 
 def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env):
@@ -2548,7 +2563,7 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert page.index('id="fleet-devices"') < page.index('class="hub-next-steps"')
     assert 'Playlists verwalten' in page
     assert 'Ordner &amp; Quellen' in page
-    assert 'ui-system.css?v=ui-20261112-02' in page
+    assert 'ui-system.css?v=ui-20261112-03' in page
 
     libpage = client.get('/library').get_data(as_text=True)
     assert libpage.index('id="library-page-title"') < libpage.index('class="library-grid library-index-grid"')
