@@ -21,8 +21,9 @@ services:
       MEDIA_SOURCE_ROOT: /sources
       # 60 seconds only for fast isolated testing. Real default is 1800 seconds.
       FOLDER_SYNC_INTERVAL: "${FOLDER_SYNC_INTERVAL:-60}"
-      FOLDER_AUTO_PUBLISH: "0"
-      FOLDER_PRUNE_MISSING: "0"
+      # Changes to the fresh TEST Pi only when explicitly opted in.
+      FOLDER_AUTO_PUBLISH: "${DEV_AUTO_PUBLISH:-0}"
+      FOLDER_PRUNE_MISSING: "${DEV_PRUNE_MISSING:-0}"
       # A test folder is deliberately not an OS mount. Real SMB requires
       # the normal guarded compose.folder-import.yaml workflow.
       FOLDER_REQUIRE_MOUNT: "0"
