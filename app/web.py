@@ -137,8 +137,11 @@ def create_app(config=None):
         The background folder publisher calls the Anthias API independently,
         so these UI endpoint checks cannot disrupt an approved sync.
         """
-        if request.method != 'POST' or current_user() is None:
+        user = current_user()
+        if request.method != 'POST' or not user or user['role'] == 'viewer':
             return
+        if request.endpoint == 'import_network_folder_once' and user['role'] == 'marketing':
+            return  # Existing IT-only role check still returns HTTP 403.
         device_routes = {
             'player_bulk_media', 'import_network_folder_once',
             'add_library_item_from_player', 'append_library_from_player',
