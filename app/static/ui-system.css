@@ -3109,3 +3109,71 @@ body.studio-drawer-open{overflow:hidden}
   color:var(--ui-fg)
 }
 .site-main .schedule-managed-banner p{margin:0;color:var(--ui-muted);font-size:12px}
+
+/* Network-folder-managed screens show ownership first. The native details
+   surface retains an optional read-only inspection of Pi assets. */
+.site-main .playlist-workspace .managed-playlist-banner{
+  grid-template-columns:minmax(0,1fr) minmax(230px,.75fr);
+  align-items:start;
+}
+.site-main .playlist-workspace .managed-source-summary{
+  display:grid;gap:5px;min-width:0;
+  padding:14px 15px;border-radius:10px;
+  background:var(--ui-surface);border:1px solid var(--ui-line)
+}
+.site-main .playlist-workspace .managed-source-summary>strong{
+  font-size:15px;font-weight:700;color:var(--ui-fg);overflow-wrap:anywhere;
+}
+.site-main .playlist-workspace .managed-source-summary>code{
+  display:block;padding:5px 0;color:var(--ui-fg);
+  font-size:12px;white-space:normal;overflow-wrap:anywhere;
+}
+.site-main .playlist-workspace .managed-source-label{
+  font-size:10px;line-height:1.5;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--ui-muted);font-weight:700
+}
+.site-main .playlist-workspace .managed-source-sync{
+  display:grid;gap:7px;margin:7px 0 10px;
+  padding:12px 0;border-top:1px solid var(--ui-line);
+  color:var(--ui-muted);font-size:12px;line-height:1.5
+}
+.site-main .playlist-workspace .managed-source-sync strong{
+  color:var(--ui-fg);font-weight:650
+}
+.site-main .playlist-workspace .managed-source-sync small{
+  color:var(--ui-muted);font-size:11px
+}
+.site-main .playlist-workspace .managed-player-assets{
+  display:block;min-width:0;margin:16px 0 0;
+  border:1px solid var(--ui-line);border-radius:var(--ui-radius);
+  background:var(--ui-surface)
+}
+.site-main .playlist-workspace .managed-player-assets>summary{
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:5px 18px;padding:16px 20px;
+  cursor:pointer;list-style:revert;color:var(--ui-fg);
+  font-weight:700;font-size:13px;
+}
+.site-main .playlist-workspace .managed-player-assets>summary:hover{
+  background:var(--ui-subtle)
+}
+.site-main .playlist-workspace .managed-player-assets>summary small{
+  font-weight:400;color:var(--ui-muted);font-size:11px;
+}
+.site-main .playlist-workspace .managed-player-assets[open]>summary{
+  border-bottom:1px solid var(--ui-line);
+}
+.site-main .playlist-workspace .managed-player-assets>.editor-layout{
+  margin:0;padding:15px 18px 20px;
+}
+@media(max-width:680px){
+  .site-main .playlist-workspace .managed-playlist-banner{
+    grid-template-columns:minmax(0,1fr)
+  }
+  .site-main .playlist-workspace .managed-player-assets>summary{
+    padding:14px 15px
+  }
+  .site-main .playlist-workspace .managed-player-assets>.editor-layout{
+    padding:10px
+  }
+}
