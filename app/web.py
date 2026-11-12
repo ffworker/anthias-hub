@@ -18,6 +18,7 @@ from werkzeug.exceptions import BadRequest, RequestEntityTooLarge
 from werkzeug.utils import secure_filename
 
 from .upload_disk import DiskRequest, HubStorageFull, validate_temp_directory
+from .version import UI_REVISION, read_build_sha
 
 from .auth import authenticate, current_user, csrf_token, login_required, require_csrf
 from .anthias import ASSET_ID, Anthias, PlayerError, validate_duration, validate_website_url
@@ -50,6 +51,8 @@ def create_app(config=None):
         SCHEDULES_FILE=os.environ.get('SCHEDULES_FILE', '/data/schedules.json'),
         MEDIA_SOURCES_FILE=os.environ.get('MEDIA_SOURCES_FILE', '/data/media-sources.json'),
         MEDIA_MOUNT_STATUS_FILE=os.environ.get('MEDIA_MOUNT_STATUS_FILE', '/sources/.mount-status.json'),
+        UI_REVISION=UI_REVISION,
+        HUB_BUILD_SHA=read_build_sha(),
         SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax',
         SESSION_COOKIE_SECURE=os.environ.get('COOKIE_SECURE', '1') == '1',
         PERMANENT_SESSION_LIFETIME=60 * 60 * 8,
@@ -96,7 +99,9 @@ def create_app(config=None):
 
     @app.context_processor
     def context():
-        return {'csrf': csrf_token, 'logged_user': current_user()}
+        return {'csrf': csrf_token, 'logged_user': current_user(),
+                'ui_revision': app.config['UI_REVISION'],
+                'hub_build_sha': app.config['HUB_BUILD_SHA']}
 
     def audit(action, device_id='', asset_id=''):
         Path(app.config['AUDIT_FILE']).parent.mkdir(parents=True, exist_ok=True)
