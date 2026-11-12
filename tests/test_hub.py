@@ -2548,7 +2548,7 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert page.index('id="fleet-devices"') < page.index('class="hub-next-steps"')
     assert 'Playlists verwalten' in page
     assert 'Ordner &amp; Quellen' in page
-    assert 'ui-system.css?v=ui-20261112-01' in page
+    assert 'ui-system.css?v=ui-20261112-02' in page
 
     libpage = client.get('/library').get_data(as_text=True)
     assert libpage.index('id="library-page-title"') < libpage.index('class="library-grid library-index-grid"')
@@ -2778,6 +2778,15 @@ def test_manual_folder_stream_reports_confirmed_file_counts(env, monkeypatch):
     assert 'data-network-import-form' in page
     assert 'data-network-import-counter' in page
     assert 'network-folder-import.js' in page
+    # A checkbox inside a flex label used to consume 100% of the row and
+    # squeeze the confirmation text into a one-letter-wide column.
+    assert 'class="network-import-ack"' in page
+    assert 'id="network-folder-ack-lab"' in page
+    assert 'for="network-folder-ack-lab"' in page
+    assert 'class="append-confirm"' not in page
+    skin = (Path(__file__).resolve().parents[1] / 'app/static/ui-system.css').read_text(encoding='utf-8')
+    assert '>.network-import-ack>input[type="checkbox"]' in skin
+    assert '>.network-import-ack>label' in skin
 
     response = client.post('/devices/lab/import-network-folder', data={
         'csrf': token(client), 'confirm': 'once', 'ack': 'yes',
