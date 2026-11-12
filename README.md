@@ -98,7 +98,7 @@ Also see [Security](SECURITY.md), [public-repository hygiene](docs/public-repo-h
 **Fresh Pi / new development host tomorrow:** See the [isolated fresh-device test runbook](docs/FRESH_DEVICE_DEV_TEST.md).
 The `dev/fresh-device-workflow-20261112` branch has an explicit sandbox
 mode, local test folder source, and a separate importer. **Do not deploy
-this workflow on an existing GH-PiHub production installation.**
+this workflow on an existing Produktiv-Hub production installation.**
 
 Backend: Python/Flask, server-rendered templates, plain JavaScript and CSS. Base/page-specific rules load first and `ui-system.css` is the **single final design layer**. Keep forms, popovers and grids responsive; do not add a second theme or framework. See [UI design system](docs/ui-design-system.md).
 
