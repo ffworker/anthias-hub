@@ -2548,7 +2548,7 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert page.index('id="fleet-devices"') < page.index('class="hub-next-steps"')
     assert 'Playlists verwalten' in page
     assert 'Ordner &amp; Quellen' in page
-    assert 'ui-system.css?v=ui-20261109-11' in page
+    assert 'ui-system.css?v=ui-20261112-01' in page
 
     libpage = client.get('/library').get_data(as_text=True)
     assert libpage.index('id="library-page-title"') < libpage.index('class="library-grid library-index-grid"')
@@ -2774,7 +2774,7 @@ def test_manual_folder_stream_reports_confirmed_file_counts(env, monkeypatch):
     monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
     app.config['SCHEDULES_FILE'] = str(Path(tmp) / 'schedules.json')
     login(client, 'it')
-    page = client.get('/devices/lab/playlist').get_data(as_text=True)
+    page = client.get('/devices/lab').get_data(as_text=True)
     assert 'data-network-import-form' in page
     assert 'data-network-import-counter' in page
     assert 'network-folder-import.js' in page
@@ -2847,5 +2847,5 @@ def test_manual_folder_stream_preflight_and_native_fallback(env, monkeypatch):
     # JavaScript-free form must still be a normal redirect + flash.
     native = client.post('/devices/lab/import-network-folder', data=data, follow_redirects=False)
     assert native.status_code == 302
-    assert native.location.endswith('/devices/lab/playlist')
+    assert native.location.endswith('/devices/lab')
     assert not FakeAnthias.changes
