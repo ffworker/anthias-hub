@@ -2755,3 +2755,97 @@ def test_smb_ui_displays_existing_and_legacy_sources_before_extra_setup(env, mon
     with patch('app.media_sources.observed_mount_source', return_value='//10.12.0.4/files$'):
         observed = client.get('/media-sources').get_data(as_text=True)
     assert 'CIFS-Mount erkannt' in observed
+
+
+def _manual_folder_events(response):
+    assert response.mimetype == 'text/event-stream'
+    return [json.loads(line[6:]) for line in response.get_data(as_text=True).splitlines()
+            if line.startswith('data: ')]
+
+
+def test_manual_folder_stream_reports_confirmed_file_counts(env, monkeypatch):
+    app, client, tmp = env
+    root = Path(tmp) / 'sources'
+    folder = root / 'bistro'
+    folder.mkdir(parents=True)
+    png = b'\x89PNG\r\n\x1a\n' + b'test image'
+    (folder / 'alpha.png').write_bytes(png)
+    (folder / 'beta.png').write_bytes(png)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    app.config['SCHEDULES_FILE'] = str(Path(tmp) / 'schedules.json')
+    login(client, 'it')
+    page = client.get('/devices/lab/playlist').get_data(as_text=True)
+    assert 'data-network-import-form' in page
+    assert 'data-network-import-counter' in page
+    assert 'network-folder-import.js' in page
+
+    response = client.post('/devices/lab/import-network-folder', data={
+        'csrf': token(client), 'confirm': 'once', 'ack': 'yes',
+        'folder_source': 'bistro', 'duration': '15', 'progress_stream': '1',
+    })
+    assert response.status_code == 200
+    assert response.headers['X-Accel-Buffering'] == 'no'
+    events = _manual_folder_events(response)
+    assert [event['type'] for event in events] == [
+        'preparing', 'start', 'active', 'progress', 'active', 'progress', 'complete'
+    ]
+    assert [(event['done'], event['total']) for event in events
+            if event['type'] == 'progress'] == [(1, 2), (2, 2)]
+    assert events[-1]['done'] == events[-1]['total'] == 2
+    assert sum(action[0] == 'upload' for action in FakeAnthias.changes) == 2
+    assert sum(action[0] == 'create' for action in FakeAnthias.changes) == 2
+
+
+def test_manual_folder_stream_preserves_partial_failure_warning(env, monkeypatch):
+    app, client, tmp = env
+    root = Path(tmp) / 'sources'
+    folder = root / 'bistro'
+    folder.mkdir(parents=True)
+    png = b'\x89PNG\r\n\x1a\n' + b'image'
+    (folder / 'a.png').write_bytes(png)
+    (folder / 'b.png').write_bytes(png)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    app.config['SCHEDULES_FILE'] = str(Path(tmp) / 'schedules.json')
+    original_upload = FakeAnthias.upload
+
+    def second_upload_fails(self, stream, filename, mime):
+        if filename == 'b.png':
+            raise anthias.PlayerError('Geräteübertragung fehlgeschlagen')
+        return original_upload(self, stream, filename, mime)
+
+    monkeypatch.setattr(FakeAnthias, 'upload', second_upload_fails)
+    login(client, 'it')
+    response = client.post('/devices/lab/import-network-folder', data={
+        'csrf': token(client), 'confirm': 'once', 'ack': 'yes',
+        'folder_source': 'bistro', 'duration': '15', 'progress_stream': '1',
+    })
+    events = _manual_folder_events(response)
+    assert events[-1]['type'] == 'error'
+    assert events[-1]['done'] == 1 and events[-1]['total'] == 2
+    assert 'nicht blind wiederholen' in events[-1]['message']
+    assert sum(action[0] == 'create' for action in FakeAnthias.changes) == 1
+
+
+def test_manual_folder_stream_preflight_and_native_fallback(env, monkeypatch):
+    app, client, tmp = env
+    root = Path(tmp) / 'sources'
+    folder = root / 'bistro'
+    folder.mkdir(parents=True)
+    (folder / 'invalid.png').write_bytes(b'not a PNG')
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    app.config['SCHEDULES_FILE'] = str(Path(tmp) / 'schedules.json')
+    login(client, 'it')
+    data = {'csrf': token(client), 'confirm': 'once', 'ack': 'yes',
+            'folder_source': 'bistro', 'duration': '15'}
+    response = client.post('/devices/lab/import-network-folder',
+                           data={**data, 'progress_stream': '1'})
+    events = _manual_folder_events(response)
+    assert events[-1]['type'] == 'error'
+    assert events[-1]['done'] == 0
+    assert 'Dateiformat' in events[-1]['message']
+    assert not FakeAnthias.changes
+    # JavaScript-free form must still be a normal redirect + flash.
+    native = client.post('/devices/lab/import-network-folder', data=data, follow_redirects=False)
+    assert native.status_code == 302
+    assert native.location.endswith('/devices/lab/playlist')
+    assert not FakeAnthias.changes
