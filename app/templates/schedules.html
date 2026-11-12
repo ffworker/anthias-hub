@@ -27,8 +27,8 @@
   {% endif %}
   {% if folder_templates %}
   <section class="schedule-managed-banner" aria-label="Zentral gesteuerte Playlist">
-    <strong>Playlist-gesteuerter Bildschirm · Zeitpläne einzelner Pi-Inhalte hier gesperrt</strong>
-    <p>Dieser Bildschirm wird zentral verwaltet. Inhaltsbezogene Änderungen müssen über die zugeordnete Playlist erfolgen.</p>
+    <strong>{{ 'Playlist-gesteuerter Bildschirm · TESTMODUS: Zeitpläne bearbeiten erlaubt' if development_mode else 'Playlist-gesteuerter Bildschirm · Zeitpläne einzelner Pi-Inhalte hier gesperrt' }}</strong>
+    <p>{{ 'Auf dieser Testinstanz sind direkte Änderungen absichtlich erlaubt. Die automatische Pi-Veröffentlichung bleibt aus.' if development_mode else 'Dieser Bildschirm wird zentral verwaltet. Inhaltsbezogene Änderungen müssen über die zugeordnete Playlist erfolgen.' }}</p>
     {% for source in folder_templates %}
     <a href="{{ url_for('library_detail', template_id=source.id) }}">Playlist „{{ source.name }}“ öffnen →</a>
     {% endfor %}
