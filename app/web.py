@@ -53,6 +53,8 @@ def create_app(config=None):
         MEDIA_MOUNT_STATUS_FILE=os.environ.get('MEDIA_MOUNT_STATUS_FILE', '/sources/.mount-status.json'),
         UI_REVISION=UI_REVISION,
         HUB_BUILD_SHA=read_build_sha(),
+        # Explicit opt-in for isolated fresh-device testing. Never copy into production.
+        HUB_DEVELOPMENT_MODE=os.environ.get('HUB_DEVELOPMENT_MODE', '0') == '1',
         SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax',
         SESSION_COOKIE_SECURE=os.environ.get('COOKIE_SECURE', '1') == '1',
         PERMANENT_SESSION_LIFETIME=60 * 60 * 8,
@@ -101,7 +103,8 @@ def create_app(config=None):
     def context():
         return {'csrf': csrf_token, 'logged_user': current_user(),
                 'ui_revision': app.config['UI_REVISION'],
-                'hub_build_sha': app.config['HUB_BUILD_SHA']}
+                'hub_build_sha': app.config['HUB_BUILD_SHA'],
+                'development_mode': app.config['HUB_DEVELOPMENT_MODE']}
 
     def audit(action, device_id='', asset_id=''):
         Path(app.config['AUDIT_FILE']).parent.mkdir(parents=True, exist_ok=True)
@@ -137,6 +140,11 @@ def create_app(config=None):
         The background folder publisher calls the Anthias API independently,
         so these UI endpoint checks cannot disrupt an approved sync.
         """
+        # Keep role authentication, CSRF, ID/path validation and explicit
+        # confirmations. In a separate test installation, however, a folder
+        # assignment must not hide/forbid all experiment actions on the Pi.
+        if app.config['HUB_DEVELOPMENT_MODE']:
+            return
         user = current_user()
         if request.method != 'POST' or not user or user['role'] == 'viewer':
             return
@@ -482,11 +490,14 @@ def create_app(config=None):
         """Explicit IT opt-in for auto-publishing folder-managed media."""
         try:
             selected = request.form.getlist('devices')
-            library().set_auto_devices(template_id, selected,
-                                       load(app.config['DEVICES_FILE']))
+            library().set_auto_devices(
+                template_id, selected, load(app.config['DEVICES_FILE']),
+                replace_existing=app.config['HUB_DEVELOPMENT_MODE'])
             audit('library.auto-devices', asset_id=template_id)
-            flash('Automatische Bildschirmzuordnung gespeichert. '
-                  'Synchronisation beginnt erst, wenn IT den Publisher aktiviert.', 'success')
+            flash(('Testmodus: Zielzuordnung gespeichert. Bereits anders zugeordnete Geräte '
+                   'wurden automatisch hierher übernommen. ' if app.config['HUB_DEVELOPMENT_MODE']
+                   else 'Automatische Bildschirmzuordnung gespeichert. ')
+                  + 'Der Pi-Publisher bleibt bis zur ausdrücklichen Freigabe ausgeschaltet.', 'success')
         except LibraryError as exc:
             flash(str(exc), 'error')
         return redirect(url_for('library_detail', template_id=template_id))
@@ -1208,7 +1219,8 @@ def create_app(config=None):
             )
         folder_templates = managed_playlists_for_device(device_id, templates)
         can_edit_player = (current_user()['role'] in ('marketing', 'owner', 'it')
-                           and not error and not folder_templates and not library_unavailable)
+                           and not error and (not folder_templates or app.config['HUB_DEVELOPMENT_MODE'])
+                           and not library_unavailable)
         from .folder_status import read_status
         folder_sync_by_template = {t['id']: read_status(t['id']) for t in folder_templates}
         publish_enabled = bool(folder_templates) and all(
@@ -1341,7 +1353,7 @@ def create_app(config=None):
                                gap_warning=weekday_warning(assets) if not problem else '',
                                problem=problem,
                                can_edit=current_user()['role'] in ('owner', 'it', 'marketing')
-                                        and not folder_templates)
+                                        and (not folder_templates or app.config['HUB_DEVELOPMENT_MODE']))
 
     @app.post('/devices/<device_id>/schedules/default')
     @login_required('it', 'marketing')
