@@ -393,7 +393,7 @@
             <p class="eyebrow">MANUELL · EINMALIG</p>
             <h3>Ordnerinhalt jetzt auf den Pi kopieren</h3>
             <p class="muted">Bis zu 20 Bilder/Videos (max. 4 GiB je Medium). Die Dateien werden <strong>jetzt</strong> an die bestehende Playlist angehängt. Keine automatische Synchronisierung.</p>
-            <form method="post" action="{{ url_for('import_network_folder_once', device_id=device.id) }}">
+            <form method="post" data-network-import-form action="{{ url_for('import_network_folder_once', device_id=device.id) }}">
               <input type="hidden" name="csrf" value="{{ csrf() }}">
               <input type="hidden" name="confirm" value="once">
               <label>Freigegebenen Ordner auswählen
@@ -411,8 +411,14 @@
                 <input type="number" name="duration" min="5" max="3600" value="15" required>
               </label>
               {{ schedule_select(schedule_profiles, schedule_default, title='Zeitplanung für neue Medien') }}
-              <label class="append-confirm"><input type="checkbox" name="ack" value="yes" required> Jetzt einmalig übertragen; bei Teilfehlern Playlist prüfen und nicht blind wiederholen.</label>
+              <label class="append-confirm"><input type="checkbox" name="ack" value="yes" required><span>Jetzt einmalig übertragen. Bei Teilfehlern zuerst die Playlist prüfen und nicht blind wiederholen.</span></label>
               <button class="primary full-width" type="submit">Ordnerinhalt einmalig hinzufügen</button>
+               <div class="network-import-progress" data-network-import-feedback role="status" aria-live="polite" hidden>
+                 <strong data-network-import-counter>0 / 0 Dateien übertragen</strong>
+                 <div class="network-import-progress-track" data-network-import-bar role="progressbar" aria-label="Dateien an den Pi übertragen" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0"><span data-network-import-fill></span></div>
+                 <p data-network-import-stage>Netzwerkordner wird geprüft …</p>
+                 <a class="button" href="{{ url_for('playlist', device_id=device.id) }}" data-network-import-reload hidden>Aktualisierte Playlist ansehen</a>
+               </div>
             </form>
           </section>
           <div class="composer-library-central">
@@ -438,6 +444,7 @@
 <script defer src="{{ url_for('static', filename='bulk-upload.js') }}"></script>
 {% if logged_user.role in ('marketing', 'owner', 'it') and not error %}<script defer src="{{ url_for('static', filename='playlist.js') }}"></script>
 <script defer src="{{ url_for('static', filename='playlist-studio.js') }}"></script>
+<script defer src="{{ url_for('static', filename='network-folder-import.js') }}"></script>
 <script defer src="{{ url_for('static', filename='playlist-bulk.js') }}"></script>
 <script defer src="{{ url_for('static', filename='template-transfer.js') }}"></script>{% endif %}
 {% endblock %}
