@@ -1,4 +1,4 @@
-# Isolated fresh-device ONLY. Never include on the production GH-PiHub.
+# Isolated fresh-device ONLY. Never include on the production Produktiv-Hub.
 # Add after compose.yaml: docker compose -f compose.yaml -f compose.dev.yaml ...
 # The test source is a LOCAL directory, not a real SMB mount.
 services:
