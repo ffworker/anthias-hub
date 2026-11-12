@@ -3012,7 +3012,7 @@ def test_managed_screens_announce_same_source_on_dashboard_schedule_and_library(
         assert 'Bistro Hauptplaylist' in page
         assert f"/library/{t['id']}" in page or page == detail
     assert '30 Min.' in dashboard
-    assert '30 Min.' in player
+    assert 'Alle 30 Minuten' in player
     assert '30 Min.' in index
     assert '30 Minuten' in detail
     assert 'Pi-Abgleich: aktiv' in dashboard
