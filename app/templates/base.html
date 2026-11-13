@@ -25,7 +25,18 @@
       <a class="site-nav-link site-nav-primary {{ 'is-active' if request.path == '/' or request.path.startswith('/devices/') else '' }}" {% if request.path == '/' or request.path.startswith('/devices/') %}aria-current="page"{% endif %} href="{{ url_for('dashboard') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg> Bildschirme</a>
       <a class="site-nav-link {{ 'is-active' if request.path.startswith('/library') else '' }}" {% if request.path.startswith('/library') %}aria-current="page"{% endif %} href="{{ url_for('library_index') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#list"></use></svg> Playlists</a>
       <a class="site-nav-link site-nav-schedule {{ 'is-active' if request.path == '/schedules' or request.path.startswith('/schedules/') else '' }}" {% if request.path == '/schedules' or request.path.startswith('/schedules/') %}aria-current="page"{% endif %} href="{{ url_for('schedule_library_page') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg> Zeitpläne</a>
-      {% if logged_user.role in ('it', 'owner') %}
+      {% if workflow_v2 and logged_user.role in ('marketing','it','owner') %}
+      <details class="hub-control-menu" {% if request.path == '/control' %}data-active="true"{% endif %}>
+        <summary {% if request.path == '/control' %}aria-current="page"{% endif %}><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#settings"></use></svg> Steuerzentrale <span class="ui-chevron" aria-hidden="true"></span></summary>
+        <div class="hub-control-menu-panel">
+          <a href="{{ url_for('control_center') }}">Übersicht</a>
+          <a href="{{ url_for('control_center', tab='screens') }}">Bildschirme verwalten</a>
+          <a href="{{ url_for('control_center', tab='playlists') }}">Playlists verwalten</a>
+          <a href="{{ url_for('control_center', tab='schedules') }}">Zeitpläne verwalten</a>
+          {% if logged_user.role in ('it','owner') %}<a href="{{ url_for('control_center', tab='sources') }}">Ordner &amp; Quellen verwalten</a>{% endif %}
+        </div>
+      </details>
+      {% elif logged_user.role in ('it', 'owner') %}
       <a class="site-nav-link site-nav-utility {{ 'is-active' if request.path.startswith('/media-sources') else '' }}" {% if request.path.startswith('/media-sources') %}aria-current="page"{% endif %} href="{{ url_for('media_sources_page') }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#folder"></use></svg> Ordner &amp; Quellen</a>
       {% endif %}
     </nav>
