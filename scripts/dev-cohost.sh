@@ -145,9 +145,9 @@ start() {
   [[ ! -L dev-sources/default ]] || fail 'DEV cache cannot be a symlink'
   mkdir -p dev-sources/default
   if [[ $(id -u) == 0 ]]; then
-    chown "$cache_uid:$cache_gid" dev-sources/default
+    chown "$cache_uid:$cache_gid" dev-sources dev-sources/default
   fi
-  chmod 0750 dev-sources/default
+  chmod 0750 dev-sources dev-sources/default
   dc config --quiet
   dc build anthias-hub
   # Refresh only DEV services, including changes to DEV .env/player allowlist.
