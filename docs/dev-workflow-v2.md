@@ -86,6 +86,32 @@ Das ältere Host-CIFS-Mount-Skript bleibt im Repository für bestehende
 Installationen, ist für diesen DEV-Workflow aber **nicht erforderlich** und
 darf nicht parallel zu `DEV_SMB_UI=1` eingeschaltet werden.
 
+## Kompakte Oberfläche (UI ui-20261113-04)
+
+Die DEV-Ansichten bleiben funktional unverändert, werden aber deutlich
+dichter dargestellt:
+
+- **Bildschirme:** Gerät, Online-Status und Steuerungsart stehen zusammen;
+  sekundäre Bereichslinks sind unter „Weitere Bereiche“ erreichbar.
+- **Playlists:** Die Liste ist sofort sichtbar. „Neue Playlist“ klappt bei
+  Bedarf auf (bei leerer Bibliothek automatisch geöffnet).
+- **Playlist-Detail:** Inhaltsstatus und Medien bleiben immer sichtbar;
+  „Bildschirme zuweisen“ und „Medien hinzufügen“ sind aufklappbar.
+  Ohne bisherige Zuordnung bzw. bei leerer Playlist sind die Formulare
+  initial geöffnet. Medien lassen sich weiterhin sortieren, zeitlich
+  einstellen und über „⋯“ einzeln entfernen.
+- **Ordner & Quellen:** Der Live-SMB-Status und „Jetzt synchronisieren“
+  bleiben sichtbar. Der Credential-Editor öffnet sich über
+  „SMB-Verbindung“ und ist bei erstmaliger Einrichtung automatisch
+  aufgeklappt; „Weitere Quellenaktionen“ enthält Entfernen mit
+  denselben Schutzbestätigungen wie zuvor.
+- **Sicherheit:** Keine CSRF-Prüfung, Gerätezuordnung, Dateibegrenzung,
+  Rechteprüfung oder bestehende API-Route wurde für die Verdichtung
+  entfernt. Die Backend-Logik bleibt die Quelle der Wahrheit.
+
+Die Änderungen gelten ausschließlich mit `HUB_WORKFLOW_V2=1`,
+nicht im normalen Produktiv-Hub.
+
 ## Prüflauf
 
 - [ ] DEV startet separat; Produktion weiterhin unverändert erreichbar.
