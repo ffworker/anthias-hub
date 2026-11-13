@@ -59,7 +59,7 @@
       summary.textContent = (firstIncomplete
         ? 'Nächster Schritt: ' + firstIncomplete.title
         : 'Alle gemeldeten Schritte abgeschlossen.');
-      lastCheck.textContent = 'Letzte bestätigte Hostprüfung: ' +
+      lastCheck.textContent = (source.provider === 'python-smb' ? 'Letzter SMB-Abgleich: ' : 'Letzte bestätigte Hostprüfung: ') +
         (source.last_host_check || 'keine Meldung') +
         (source.report_stale ? ' · Meldung veraltet' : '');
       if (count) count.textContent = String(source.discovered);
