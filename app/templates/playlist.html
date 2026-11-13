@@ -10,7 +10,8 @@
     <div class="playlist-hero-copy">
       <p class="eyebrow">BILDSCHIRM · {{ device.name }} · {{ device.location or 'Ohne Standort' }}</p>
       <h1>{{ 'Netzwerkordner-Anzeige' if folder_managed else 'Playlist' }}</h1>
-      <p class="muted">{{ 'Dieser Bildschirm übernimmt seine Inhalte aus einer zentral verwalteten Ordner-Playlist. Hier erfolgt keine direkte Inhaltsbearbeitung.' if folder_managed else 'Inhalte und Wiedergabereihenfolge dieses Bildschirms bearbeiten.' }}</p>
+      {% if development_mode %}<span class="dev-mode-tag">TESTSYSTEM · Bearbeiten erlaubt</span>{% endif %}
+      <p class="muted">{{ 'Dieser Bildschirm übernimmt seine Inhalte aus einer zentral verwalteten Ordner-Playlist. Im Testmodus darfst du auch direkt am Pi experimentieren.' if folder_managed and development_mode else 'Dieser Bildschirm übernimmt seine Inhalte aus einer zentral verwalteten Ordner-Playlist. Hier erfolgt keine direkte Inhaltsbearbeitung.' if folder_managed else 'Inhalte und Wiedergabereihenfolge dieses Bildschirms bearbeiten.' }}</p>
       {% if can_edit_player %}<p class="live-warning"><span aria-hidden="true">●</span> Änderungen werden sofort auf dem Player gespeichert.</p>{% endif %}
     </div>
     <div class="hero-status">
@@ -28,7 +29,9 @@
       <p class="eyebrow">AUTOMATISCHE NETZWERKORDNER-VERWALTUNG</p>
       <h2>Dieser Bildschirm wird über einen Netzwerkordner verwaltet</h2>
       <p>Bilder und Videos werden im Netzwerkordner gepflegt. Die zugeordnete Hub-Playlist
-         steuert die Reihenfolge und Anzeigedauer. Direkte Inhaltsänderungen auf diesem Pi sind gesperrt.</p>
+         steuert die Reihenfolge und Anzeigedauer.
+         {% if development_mode %}<strong>Testmodus:</strong> Du darfst direkte Pi-Inhalte vorübergehend ausprobieren. Die automatische Veröffentlichung bleibt separat aus; Teständerungen gehören nicht automatisch zur Netzwerkordner-Playlist.
+         {% else %}Direkte Inhaltsänderungen auf diesem Pi sind gesperrt.{% endif %}</p>
     </div>
     <div class="managed-playlist-links">
       {% for source in folder_templates %}
@@ -62,10 +65,10 @@
 
 
   {% if folder_managed %}
-  <details class="managed-player-assets" data-managed-player-assets>
+  <details class="managed-player-assets" data-managed-player-assets{% if development_mode %} open{% endif %}>
     <summary>
-      <span>Einzelne Pi-Inhalte anzeigen <span class="count">{{ assets|length }}</span></span>
-      <small>Nur zur Kontrolle – diese Inhalte werden über die zugeordnete Playlist verwaltet</small>
+      <span>{{ 'Pi-Inhalte testweise bearbeiten' if development_mode else 'Einzelne Pi-Inhalte anzeigen' }} <span class="count">{{ assets|length }}</span></span>
+      <small>{{ 'Testmodus: Direkte Änderungen möglich, aber nicht dauerhaft Teil der SMB-Playlist' if development_mode else 'Nur zur Kontrolle – diese Inhalte werden über die zugeordnete Playlist verwaltet' }}</small>
     </summary>
   {% endif %}
   <div class="editor-layout studio-full-layout">

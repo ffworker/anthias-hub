@@ -108,8 +108,13 @@ class Library:
             self._save(collection)
         return collection
 
-    def set_auto_devices(self, ident, device_ids, known_devices):
-        """Opt-in list of registered Anthias players, never arbitrary URLs."""
+    def set_auto_devices(self, ident, device_ids, known_devices, *, replace_existing=False):
+        """Assign registered devices. Explicit test-mode takeover resolves old bindings.
+
+        A device can still have only one authoritative folder playlist; the test
+        installation can move the assignment instead of presenting an opaque
+        'already managed' error. Nothing is written to the player here.
+        """
         from .devices import ID
         if not isinstance(device_ids, list) or len(device_ids) > 25:
             raise LibraryError('Maximal 25 Bildschirme auswählbar')
@@ -124,19 +129,34 @@ class Library:
             collection = self.get(ident)
             if device_ids and not collection.get('folder_source'):
                 raise LibraryError('Zuerst einen Netzwerkordner konfigurieren')
-            # One authoritative folder playlist per screen. A second binding
-            # would make the player read-only but leave the owner ambiguous.
+            # Never assign one screen to multiple source playlists. On an
+            # isolated test system, explicitly take over an existing mapping by
+            # removing that screen from its previous template first.
+            to_update = []
             if device_ids:
                 for other in self.list():
                     if other['id'] == ident or not other.get('folder_source'):
                         continue
                     conflicted = set(device_ids).intersection(other.get('auto_devices', []))
-                    if conflicted:
+                    if not conflicted:
+                        continue
+                    if not replace_existing:
                         raise LibraryError('Bildschirm bereits der Playlist „'
                                            + other['name'] + '“ zugeordnet. '
-                                           'Bitte zuerst dort die Zielzuordnung entfernen.')
+                                           'Für einen regulären Wechsel dort zuerst die '
+                                           'Zielzuordnung entfernen.')
+                    other['auto_devices'] = [
+                        device for device in other.get('auto_devices', [])
+                        if device not in conflicted
+                    ]
+                    to_update.append(other)
+            # Record destination first; any interrupted move remains
+            # recoverable and the subsequent other-template cleanup follows.
+            # Only the test-mode route requests replace_existing=True.
             collection['auto_devices'] = device_ids
             self._save(collection)
+            for other in to_update:
+                self._save(other)
         return collection
 
     def add_url(self, ident, name, url, duration):

@@ -228,6 +228,9 @@
     </form>
     <hr><h3>Automatische Zielgeräte</h3>
     <p class="muted">Zielgeräte zuweisen aktiviert noch keinen Publisher. IT muss die Hintergrundveröffentlichung serverseitig freigeben.</p>
+    {% if development_mode %}
+    <p class="dev-assignment-note" role="status"><strong>TESTMODUS:</strong> Ist ein Bildschirm bereits einer anderen Playlist zugeordnet, wird er beim Speichern automatisch hierher übernommen. Der Pi bleibt dabei unverändert; der automatische Publisher ist weiterhin ausgeschaltet.</p>
+    {% endif %}
     <form method="post" action="{{ url_for('library_auto_devices', template_id=template.id) }}">
       <input type="hidden" name="csrf" value="{{ csrf() }}">
       {% for device in devices %}
