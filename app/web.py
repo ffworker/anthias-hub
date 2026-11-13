@@ -410,7 +410,8 @@ def create_app(config=None):
         from .folder_sync import available_sources
         templates = library().list()
         from .folder_status import read_status
-        return render_template('library.html', templates=templates,
+        return render_template('library_index_v2.html' if app.config['HUB_WORKFLOW_V2'] else 'library.html',
+                               templates=templates,
                                folder_sync_by_template={
                                    t['id']: read_status(t['id']) for t in templates if t.get('folder_source')},
                                device_names={d['id']: d['name'] for d in load(app.config['DEVICES_FILE'])},
@@ -478,7 +479,8 @@ def create_app(config=None):
         from .folder_sync import available_sources
         from .folder_status import read_status
         return render_template(
-            'library_detail.html', template=item,
+            'library_detail_v2.html' if app.config['HUB_WORKFLOW_V2'] else 'library_detail.html',
+            template=item,
             folder_sources=available_sources(),
             folder_sync_status=read_status(template_id),
             devices=load(app.config['DEVICES_FILE']),
