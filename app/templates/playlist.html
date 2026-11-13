@@ -423,7 +423,8 @@
           <a class="button" href="{{ url_for('library_index') }}">Bibliothek öffnen →</a>
           {% endif %}
         </div>
-        {% if logged_user.role in ('owner', 'it') %}
+        {% endif %}
+        {% if not workflow_v2 and logged_user.role in ('owner', 'it') %}
         <div class="composer-pane" data-add-pane="folder">
           <p class="composer-explainer"><strong>IT-Quelle wählen:</strong> Beide Wege verwenden nur freigegebene, schreibgeschützte Netzwerkordner. Entscheide bewusst zwischen einmaliger Kopie und laufender Verbindung.</p>
           {% if available_folder_sources %}
