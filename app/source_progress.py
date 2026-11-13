@@ -65,11 +65,13 @@ def describe_sources(registry_path, mount_status_path, library_items, root=None)
                       'detail': mount_detail})
 
         discovered = 0
+        names = []
         if mount_state == 'done':
             try:
                 from .folder_sync import default_library_folders, available_sources
                 # Only count folders AFTER confirmed source validation.
-                discovered = (len(default_library_folders(root)) if alias == 'default'
+                names = default_library_folders(root) if alias == 'default' else []
+                discovered = (len(names) if alias == 'default'
                               else int(alias in available_sources(root)))
             except (OSError, ValueError):
                 discovered = 0
@@ -115,7 +117,13 @@ def describe_sources(registry_path, mount_status_path, library_items, root=None)
         result.append({
             'alias': alias, 'state': state, 'stages': stage,
             'last_host_check': report_time, 'report_stale': report_stale,
-            'discovered': discovered, 'template_count': len(templates),
+            'discovered': discovered,
+            'folders': [{
+                'name': name,
+                'template_id': next((t['id'] for t in templates
+                                     if t.get('folder_source') == 'default/' + name), None),
+            } for name in names],
+            'template_count': len(templates),
             'worker_interval_seconds': next(
                 (s['interval_seconds'] for s in status if s.get('interval_seconds')), None),
         })
