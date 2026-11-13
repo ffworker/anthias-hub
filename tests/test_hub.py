@@ -2170,7 +2170,7 @@ def test_it_can_retire_unused_smb_source_but_never_mounted_files(env, monkeypatc
     template = store.create('Bistro')
     store.set_folder_source(template['id'], 'default/Bistro')
     login(client, 'it')
-    page = client.get('/media-sources').get_data(as_text=True)
+    page = client.get('/control?tab=sources').get_data(as_text=True)
     assert 'Quelle aus dem Hub entfernen' in page
     assert 'Entfernen gesperrt' in page
     assert '/library/' + template['id'] in page
@@ -3139,10 +3139,12 @@ def test_v2_single_owner_disables_duplicate_device_editing_even_in_dev(env, monk
 
     index = client.get('/library').get_data(as_text=True)
     detail = client.get(f"/library/{one['id']}").get_data(as_text=True)
-    assert 'ZENTRALE INHALTE' in index
-    assert 'Bildschirme zuweisen' in detail
+    assert 'INHALTSBIBLIOTHEK' in index
+    assert 'Bildschirme zuweisen' not in detail
     assert 'Einmalige Übertragung' not in detail
-    assert f"/library/{one['id']}/auto-devices" in detail
+    control = client.get('/control?tab=playlists').get_data(as_text=True)
+    assert 'Bildschirme zuweisen' in control
+    assert f"/library/{one['id']}/auto-devices" in control
 
 
 def test_v2_manual_empty_network_have_different_only_one_editor(env, monkeypatch):
@@ -3239,8 +3241,11 @@ def test_dev_smb_can_be_connected_and_rechecked_entirely_from_it_ui(env, tmp_pat
     login(client, 'it')
     page = client.get('/media-sources')
     assert page.status_code == 200
-    assert b'name="password"' in page.data
-    assert b'Verbinden &amp; pr' in page.data
+    assert b'name="password"' not in page.data
+    setup = client.get('/control?tab=sources')
+    assert setup.status_code == 200
+    assert b'name="password"' in setup.data
+    assert b'Verbinden &amp; pr' in setup.data
 
     response = client.post('/media-sources', data={
         'csrf': token(client), 'alias': 'default',
@@ -3303,7 +3308,7 @@ def test_v2_network_folder_playlist_creation_form_supplies_csrf_and_submits(env,
     monkeypatch.setenv('FOLDER_REQUIRE_VERIFIED', '0')
     login(client, 'it')
 
-    html = client.get('/library').get_data(as_text=True)
+    html = client.get('/control?tab=playlists').get_data(as_text=True)
     form = re.search(r'<form[^>]+action="/library"[^>]*>(.*?)</form>', html, re.S)
     assert form, 'Playlist-create form missing'
     csrf = re.search(r'<input[^>]+name="csrf"[^>]+value="([^"]+)"', form.group(1))
@@ -3344,10 +3349,12 @@ def test_v2_compact_pages_keep_playlist_forms_and_privileged_actions(env, monkey
 
     overview = client.get('/library').get_data(as_text=True)
     assert 'data-compact-ui="playlists"' in overview
-    assert 'source-v2-create-panel' in overview
-    assert 'Neue Playlist' in overview
-    assert 'name="csrf" value="' + token(client) + '"' in overview
-    assert 'name="folder_source"' in overview
+    assert 'source-v2-create-panel' not in overview
+    assert 'Playlists verwalten' in overview
+    manage = client.get('/control?tab=playlists').get_data(as_text=True)
+    assert 'Playlist anlegen' in manage
+    assert 'name="csrf" value="' + token(client) + '"' in manage
+    assert 'name="folder_source"' in manage
 
     new = client.post('/library', data={
         'csrf': token(client), 'name': 'Test-Playlist', 'folder_source': ''})
@@ -3359,9 +3366,10 @@ def test_v2_compact_pages_keep_playlist_forms_and_privileged_actions(env, monkey
     # These are real POST routes inside the compact UI, not dead buttons.
     detail = client.get('/library/' + item['id']).get_data(as_text=True)
     assert 'data-compact-ui="playlist-detail"' in detail
-    assert 'source-v2-targets' in detail
+    assert 'source-v2-targets' not in detail
     assert 'source-v2-add-media' in detail
-    assert 'name="devices"' in detail
+    manage = client.get('/control?tab=playlists').get_data(as_text=True)
+    assert 'name="devices"' in manage
     assert 'name="media"' in detail
     assert 'name="url"' in detail
     assert 'csrf' in detail
@@ -3377,25 +3385,29 @@ def test_v2_compact_pages_keep_playlist_forms_and_privileged_actions(env, monkey
     assert 'name="direction" value="up"' in detail
     assert 'name="ack" value="yes"' in detail
 
-    # The sources view keeps both user credentials and read-only status.
+    # The sources view reports status; the central menu owns credentials.
     save_source('default', '//10.11.12.13/media$/Screens',
                 path=app.config['MEDIA_SOURCES_FILE'])
     sources = client.get('/media-sources').get_data(as_text=True)
     assert 'data-compact-ui="sources"' in sources
-    assert 'source-v2-connection' in sources
-    assert 'name="unc"' in sources
-    assert 'name="csrf"' in sources
+    assert 'source-v2-connection' not in sources
+    assert 'name="unc"' not in sources
     assert 'data-progress-stages' in sources
     assert 'data-source-check-now' in sources
     assert 'data-source-folders' in sources
-    assert 'Quelle aus dem Hub entfernen' in sources
-    assert '/media-sources/remove' in sources
+    assert '/media-sources/remove' not in sources
+    source_manage = client.get('/control?tab=sources').get_data(as_text=True)
+    assert 'name="unc"' in source_manage
+    assert 'name="csrf"' in source_manage
+    assert 'Quelle aus dem Hub entfernen' in source_manage
+    assert '/media-sources/remove' in source_manage
 
     dashboard = client.get('/').get_data(as_text=True)
     assert 'data-compact-ui="screens"' in dashboard
     assert 'source-v2-secondary-nav' in dashboard
     assert 'Bildschirm öffnen' in dashboard
-    assert 'device-setup' in dashboard
+    assert 'device-setup' not in dashboard
+    assert 'Steuerzentrale' in dashboard
 
 
 def test_v2_playlist_sequence_is_primary_and_reorders_without_losing_actions(env):
@@ -3414,7 +3426,7 @@ def test_v2_playlist_sequence_is_primary_and_reorders_without_losing_actions(env
     url = '/library/' + template['id']
     html = client.get(url).get_data(as_text=True)
     assert html.index('id="inhalte"') < html.index('id="quelle-und-status"')
-    assert html.index('id="inhalte"') < html.index('id="zielbildschirme"')
+    assert 'id="zielbildschirme"' not in html
     assert 'source-v2-sequence-panel' in html
     assert 'Wiedergabereihenfolge' in html
     assert html.index('Alpha') < html.index('Beta') < html.index('Gamma')
