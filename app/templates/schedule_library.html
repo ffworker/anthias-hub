@@ -34,7 +34,7 @@
         </div>
         {% if can_edit %}
         <details class="schedule-rule-edit">
-          <summary>Zeitfenster bearbeiten <span aria-hidden="true">⌄</span></summary>
+          <summary>Zeitfenster bearbeiten <span class="ui-chevron" aria-hidden="true"></span></summary>
           <form method="post" action="{{ url_for('schedule_library_edit', profile_id=rule.id) }}" data-schedule-form>
             <input type="hidden" name="csrf" value="{{ csrf() }}">
             <label>Name<input name="name" maxlength="60" required value="{{ rule.name }}"></label>
@@ -79,7 +79,7 @@
   </section>
   {% if can_edit %}
   <details class="card schedule-new schedule-library-new" id="new-schedule"{% if not profiles %} open{% endif %}>
-    <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Neuen gemeinsamen Zeitplan erstellen <span aria-hidden="true">⌄</span></summary>
+    <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Neuen gemeinsamen Zeitplan erstellen <span class="ui-chevron" aria-hidden="true"></span></summary>
     <form method="post" action="{{ url_for('schedule_library_add') }}" data-schedule-form>
       <input type="hidden" name="csrf" value="{{ csrf() }}">
       <div class="schedule-quick"><span>Beispiele:</span><button type="button" data-schedule-example="weekday">Mo–Fr · 08–18 Uhr</button><button type="button" data-schedule-example="event">Samstag · 10–14 Uhr</button></div>
