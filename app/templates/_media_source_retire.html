@@ -1,7 +1,7 @@
 {# Shared IT-only retire action for the default parent and optional single mounts. #}
 {% macro retire_control(source) -%}
 <details class="media-retire-control">
-  <summary>Quelle aus dem Hub entfernen <span class="media-retire-chevron" aria-hidden="true">⌄</span></summary>
+  <summary>Quelle aus dem Hub entfernen <span class="media-retire-chevron ui-chevron" aria-hidden="true"></span></summary>
   <div class="media-retire-body">
     {% if source.dependents %}
     <p class="media-dependency-warning" role="status"><strong>Entfernen gesperrt:</strong> {{ source.dependents|length }} Playlist(s) verwenden diese Quelle. Zuerst die Zuordnung in den betroffenen Vorlagen entfernen oder die Vorlagen bewusst migrieren.</p>
