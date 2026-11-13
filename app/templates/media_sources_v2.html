@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Netzwerkordner · Anthias Hub{% endblock %}
+{% block content %}
+<div class="source-v2-workspace source-v2-compact" data-compact-ui="sources"
+     data-source-monitor data-status-url="{{ url_for('media_sources_status') }}">
+  <header class="source-v2-head source-v2-head-compact">
+    <div><p class="eyebrow">QUELLENSTATUS</p><h1>Netzwerkordner</h1>
+      <p class="muted">Hier siehst du die tatsächlich gemeldeten Importe. Verbindung und Quellenregistrierung erfolgen zentral.</p>
+    </div>
+    <a class="button primary" href="{{ url_for('control_center', tab='sources') }}">Quelle verwalten</a>
+  </header>
+  <div class="source-v2-playlist-identity">
+    <span class="source-v2-source-chip">{{ 'Quelle hinterlegt' if default_source else 'Nicht eingerichtet' }}</span>
+    <span class="source-v2-source-id">{{ default_source.unc if default_source else 'Noch kein SMB-Pfad' }}</span>
+    <span class="source-v2-publish-hint">Import ist nicht Pi-Veröffentlichung</span>
+  </div>
+  <section class="source-v2-mode source-v2-status-panel" aria-label="Einrichtungs- und Synchronisierungsstatus">
+    <div class="source-v2-mode-top">
+      <div><p class="eyebrow">LIVE</p><h2>Synchronisierung</h2></div>
+    </div>
+    <div data-source-progress="default" role="status" aria-live="polite">
+      <p data-progress-summary>Prüfstatus wird gelesen …</p>
+      {% if dev_smb_ui %}
+      <div class="source-v2-transfer" data-transfer hidden>
+        <div class="source-v2-transfer-heading">
+          <strong data-transfer-files>Medien werden geprüft …</strong>
+          <span data-transfer-bytes>0 GiB</span>
+        </div>
+        <progress data-transfer-bar value="0" max="1" aria-label="SMB-Medienübernahme"></progress>
+        <p class="muted" data-transfer-hint>Große Medienbibliotheken werden automatisch in Abschnitten übertragen.</p>
+      </div>
+      {% endif %}
+      <ol class="source-v2-steps" data-progress-stages></ol>
+      <p class="muted" data-progress-check>Letzter Abgleich noch nicht bekannt</p>
+    </div>
+    <div class="source-v2-actions">
+      <button type="button" class="button" data-source-check-now>Status aktualisieren</button>
+    </div>
+    <p class="source-v2-small-note">Statusabfrage alle 3 Sekunden. Bereits erfolgreich kopierte Dateien bleiben bei Verbindungsfehlern erhalten.</p>
+  </section>
+  <section class="source-v2-mode source-v2-folders-panel">
+    <div class="source-v2-mode-top">
+      <div><p class="eyebrow">ERKANNT</p><h2>Bildschirmordner <span class="source-v2-head-count" data-folder-count>{{ default_folders|length }}</span></h2></div>
+      <a href="{{ url_for('library_index') }}">Playlists ansehen</a>
+    </div>
+    <div data-source-folders>
+    {% if default_folders %}
+      <ul class="source-v2-folder-list">{% for folder in default_folders %}
+        <li><span>{{ folder.name }}</span>
+        {% if folder.template %}<a href="{{ url_for('library_detail', template_id=folder.template.id) }}">Playlist öffnen</a>
+        {% else %}<a href="{{ url_for('control_center', tab='playlists') }}">Playlist erstellen</a>{% endif %}</li>
+      {% endfor %}</ul>
+    {% else %}
+      <p class="muted">Nach erfolgreichem Import erscheinen hier die erkannten Unterordner.</p>
+    {% endif %}
+    </div>
+  </section>
+</div>
+<script defer src="{{ url_for('static', filename='source-progress.js') }}"></script>
+{% endblock %}
