@@ -52,6 +52,14 @@
     {% else %}
       <p class="source-v2-small-note">Speichern allein startet keinen Host-Mount. Der Mountdienst muss die Verbindung bestätigen.</p>
     {% endif %}
+    {% if default_source %}
+    <details class="source-v2-optional source-v2-source-admin">
+      <summary>Weitere Quellenaktionen</summary>
+      <div class="source-v2-optional-body">
+        {{ retire_control(default_source) }}
+      </div>
+    </details>
+    {% endif %}
     </div>
   </details>
 
@@ -115,10 +123,16 @@
     <summary>Zusätzliche Quellen ({{ sources|length - (1 if default_source else 0) + unmanaged|length }})</summary>
     <div class="source-v2-optional-body">
       {% for source in sources if source.alias != 'default' %}
-      <p><strong>{{ source.alias }}</strong> · <code>{{ source.unc }}</code> · {{ source.status }}</p>
+      <div class="source-v2-extra-source">
+        <p><strong>{{ source.alias }}</strong> · <code>{{ source.unc }}</code> · {{ source.status }}</p>
+        {{ retire_control(source) }}
+      </div>
       {% endfor %}
       {% for source in unmanaged %}
-      <p><strong>{{ source.alias }}</strong> · älterer Mount · nicht als verwaltete Quelle bestätigt</p>
+      <div class="source-v2-extra-source">
+        <p><strong>{{ source.alias }}</strong> · älterer Mount · nicht als verwaltete Quelle bestätigt</p>
+        {{ retire_control(source) }}
+      </div>
       {% endfor %}
     </div>
   </details>
