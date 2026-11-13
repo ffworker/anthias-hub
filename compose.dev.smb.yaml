@@ -1,0 +1,17 @@
+# Additional, explicit DEV-only SMB source bind mounts.
+# Only enable after the DEV host mount coordinator is configured and the
+# target filesystem has been independently verified (findmnt).
+services:
+  anthias-hub:
+    environment:
+      MEDIA_MOUNT_STATUS_FILE: /sources/.mount-status.json
+    volumes:
+      - /srv/anthias-dev-sources:/sources:ro
+
+  anthias-folder-import:
+    environment:
+      MEDIA_MOUNT_STATUS_FILE: /sources/.mount-status.json
+      FOLDER_REQUIRE_MOUNT: "1"
+      FOLDER_REQUIRE_VERIFIED: "1"
+    volumes:
+      - /srv/anthias-dev-sources:/sources:ro
