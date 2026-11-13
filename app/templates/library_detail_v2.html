@@ -1,38 +1,38 @@
 {% extends 'base.html' %}
 {% block title %}{{ template.name }} · Playlists · Anthias Hub{% endblock %}
 {% block content %}
-<div class="source-v2-workspace">
+<div class="source-v2-workspace source-v2-compact" data-compact-ui="playlist-detail">
   <nav class="breadcrumbs" aria-label="Pfad">
     <a href="{{ url_for('library_index') }}">Playlists</a>
     <span aria-hidden="true">›</span>{{ template.name }}
   </nav>
-  <header class="source-v2-head">
-    <p class="eyebrow">{{ 'NETZWERKORDNER-PLAYLIST' if template.folder_source else 'ZENTRALE PLAYLIST' }}</p>
-    <h1>{{ template.name }}</h1>
-    <p class="muted">Hier werden die Inhalte für alle fest zugeordneten Bildschirme verwaltet – nicht zusätzlich auf jedem Pi.</p>
+  <header class="source-v2-head source-v2-head-compact">
+    <div>
+      <p class="eyebrow">{{ 'NETZWERKORDNER-PLAYLIST' if template.folder_source else 'ZENTRALE PLAYLIST' }}</p>
+      <h1>{{ template.name }}</h1>
+    </div>
+    <span class="source-v2-head-count">{{ template['items']|length }} Medien · {{ template.auto_devices|default([])|length }} Bildschirme</span>
   </header>
 
-  <section class="source-v2-mode">
+  <section class="source-v2-mode source-v2-status-panel">
     <div class="source-v2-mode-top">
-      <span class="source-v2-icon" aria-hidden="true">{{ '▣' if template.folder_source else '≡' }}</span>
-      <div><p class="eyebrow">QUELLE &amp; STATUS</p><h2>{{ 'Netzwerkordner' if template.folder_source else 'Playlist' }}</h2></div>
+      <div><p class="eyebrow">QUELLE &amp; STATUS</p><h2>{{ 'Netzwerkordner' if template.folder_source else 'Manuelle Playlist' }}</h2></div>
+      {% if template.folder_source and logged_user.role in ('owner','it') %}
+      <a class="button" href="{{ url_for('media_sources_page') }}">SMB prüfen ↗</a>
+      {% endif %}
     </div>
     {% if template.folder_source %}
-      <p>Der Netzwerkordner liefert die Medien. Die Playlist bestimmt ihre Reihenfolge und Bilddauer.</p>
       <dl class="source-v2-facts">
         <div><dt>Quelle</dt><dd><code>{{ template.folder_source }}</code></dd></div>
         <div><dt>Letzter Import</dt><dd>{{ folder_sync_status.checked_at or 'Nicht gemeldet' }}</dd></div>
         <div><dt>Intervall</dt><dd>{{ (folder_sync_status.interval_seconds // 60)|string ~ ' Min.' if folder_sync_status.interval_seconds else 'Unbekannt' }}</dd></div>
         <div><dt>Status</dt><dd>{{ 'Erfolgreich' if folder_sync_status.state == 'ok' else 'Fehlerhaft' if folder_sync_status.state == 'error' else 'Veraltet' if folder_sync_status.state == 'stale' else 'Noch nicht bestätigt' }}</dd></div>
       </dl>
-      {% if logged_user.role in ('owner','it') %}
-        <a class="button" href="{{ url_for('media_sources_page') }}">Netzwerkordner prüfen →</a>
-      {% endif %}
     {% else %}
-      <p>Die Inhalte dieser Playlist werden direkt hier gepflegt. Keine zusätzlichen Pi-Editoren auf zugeordneten Bildschirmen.</p>
+      <p class="source-v2-small-note">Inhalte und Bilddauer werden hier zentral gepflegt.</p>
     {% endif %}
-    <p class="source-v2-note" role="status">
-      <strong>Automatisch auf den Pi:</strong>
+    <p class="source-v2-inline-state" role="status">
+      <strong>Pi-Veröffentlichung:</strong>
       {{ 'Aktiv – letzte Rückmeldung erfolgreich' if folder_sync_status.state == 'ok' and folder_sync_status.auto_publish
          else 'Konfiguriert, aber derzeit nicht bestätigt' if folder_sync_status.auto_publish
          else 'Aus. Eine Zuordnung allein ändert den Pi noch nicht.' }}
@@ -40,11 +40,14 @@
   </section>
 
   {% if logged_user.role in ('owner','it') %}
-  <section class="source-v2-mode">
-    <div class="source-v2-mode-top"><span class="source-v2-icon" aria-hidden="true">▣</span>
-      <div><p class="eyebrow">ZIELBILDSCHIRME</p><h2>Playlist zuordnen</h2></div></div>
-    <p>Zuordnung und Inhaltsbearbeitung sind getrennt. Pro Bildschirm darf nur eine zentrale Playlist aktiv sein; bei einem Wechsel wird die bisherige Zuordnung gelöst.</p>
-    <form class="source-v2-form" action="{{ url_for('library_auto_devices', template_id=template.id) }}" method="post">
+  <details class="source-v2-expand source-v2-targets" id="zielbildschirme"
+           {% if not template.auto_devices %}open{% endif %}>
+    <summary><span class="source-v2-summary-title">Bildschirme zuweisen</span>
+      <span class="source-v2-summary-meta">{{ template.auto_devices|default([])|length }} zugeordnet</span>
+    </summary>
+    <div class="source-v2-expand-body">
+      <p class="source-v2-small-note">Eine feste Playlist pro Bildschirm. Beim Zuweisen wird eine frühere Playlist-Zuordnung ersetzt.</p>
+      <form class="source-v2-form" action="{{ url_for('library_auto_devices', template_id=template.id) }}" method="post">
       <input type="hidden" name="csrf" value="{{ csrf() }}">
       {% for d in devices %}
       <label class="source-v2-checkbox">
@@ -56,17 +59,17 @@
         <p class="muted">Noch kein Bildschirm registriert. Zuerst unter „Bildschirme“ ein Gerät hinzufügen.</p>
       {% endfor %}
       <button type="submit" class="primary" {% if not devices %}disabled{% endif %}>Zuordnung speichern</button>
-    </form>
-  </section>
+      </form>
+    </div>
+  </details>
   {% endif %}
 
-  <section class="source-v2-mode" id="inhalte">
+  <section class="source-v2-mode source-v2-items-panel" id="inhalte">
     <div class="source-v2-mode-top">
-      <span class="source-v2-icon" aria-hidden="true">≡</span>
       <div><p class="eyebrow">INHALTE</p><h2>{{ template['items']|length }} Inhalte</h2></div>
     </div>
     {% if template.folder_source %}
-      <p class="source-v2-note">Bilder und Videos werden im Netzwerkordner hinzugefügt oder entfernt. Hier können die Bilddauer und Reihenfolge angepasst werden.</p>
+      <p class="source-v2-small-note">Medien aus dem SMB-Ordner · Hier Reihenfolge und Anzeigedauer anpassen.</p>
     {% endif %}
     {% if template['items'] %}
       <ol class="source-v2-item-list">
@@ -91,12 +94,17 @@
               <button type="submit" name="direction" value="down" aria-label="{{ item.name }} nach unten">↓</button>
             </form>
             {% if not template.folder_source or not item.source_file|default(false) %}
-            <form method="post" action="{{ url_for('library_remove_item', template_id=template.id, item_id=item.id) }}">
+            <details class="source-v2-item-more">
+              <summary aria-label="Weitere Aktionen für {{ item.name }}">⋯</summary>
+              <div class="source-v2-item-more-body">
+              <form method="post" action="{{ url_for('library_remove_item', template_id=template.id, item_id=item.id) }}">
               <input type="hidden" name="csrf" value="{{ csrf() }}">
               <input type="hidden" name="confirm" value="{{ item.id }}">
               <label class="source-v2-checkbox"><input type="checkbox" name="ack" value="yes" required> Entfernen bestätigen</label>
               <button type="submit">Entfernen</button>
-            </form>
+              </form>
+              </div>
+            </details>
             {% endif %}
           </div>
           {% endif %}
@@ -110,11 +118,12 @@
 
   {% if logged_user.role in ('marketing','owner','it') %}
   {% if not template.folder_source %}
-  <section class="source-v2-mode" id="neu">
-    <div class="source-v2-mode-top">
-      <span class="source-v2-icon" aria-hidden="true">＋</span>
-      <div><p class="eyebrow">HINZUFÜGEN</p><h2>Inhalte in Playlist speichern</h2></div>
-    </div>
+  <details class="source-v2-expand source-v2-add-media" id="neu"
+           {% if not template['items'] %}open{% endif %}>
+    <summary><span class="source-v2-summary-title">＋ Medien hinzufügen</span>
+      <span class="source-v2-summary-meta">Datei, ZIP oder Webseite</span>
+    </summary>
+    <div class="source-v2-expand-body">
     <form class="source-v2-form" method="post" enctype="multipart/form-data" action="{{ url_for('library_add_media', template_id=template.id) }}">
       <input type="hidden" name="csrf" value="{{ csrf() }}">
       <label>Bild oder Video<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label>
@@ -142,7 +151,8 @@
         </form>
       </div>
     </details>
-  </section>
+    </div>
+  </details>
   {% else %}
   <details class="source-v2-optional">
     <summary>Optional: Webseite / RSS zusätzlich aufnehmen</summary>
