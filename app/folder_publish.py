@@ -148,7 +148,7 @@ def _confirm_schedule(api, asset_id, fields):
         raise PublishError('Anthias-Zeitplan-API inkompatibel') from exc
 
 
-def _sync_playlist_order(api, template, doc, existing):
+def _sync_playlist_order(api, template, doc, existing, *, allow_manual=False):
     """Order a fully Hub-owned player, never mix/rearrange manual content.
 
     The template is the order of active managed slides. Old disabled Hub
@@ -158,6 +158,9 @@ def _sync_playlist_order(api, template, doc, existing):
     for item in template['items']:
         if item.get('kind') == 'media' and item.get('source_file'):
             record = doc['assets'].get(item['source_file'])
+        elif (item.get('kind') == 'media' and allow_manual
+              and not template.get('folder_source')):
+            record = doc['assets'].get('manual:' + item['id'])
         elif item.get('kind') == 'url':
             record = doc.get('web_assets', {}).get(item['id'])
         else:
@@ -223,7 +226,7 @@ def _retire(doc, old, target):
 def reconcile(store, template_id, device_id, *,
               devices_file='/data/devices.json', state_root='/data/folder-publications',
               schedules_file='/data/schedules.json', api_factory=Anthias,
-              retire_missing=False):
+              retire_missing=False, allow_manual=False):
     """Reconcile one explicitly opted-in pair; raises and leaves other devices alone.
 
     No remote DELETE calls, no global reordering, and no automatic retries of
@@ -231,7 +234,8 @@ def reconcile(store, template_id, device_id, *,
     but retained for manual recovery.
     """
     template = store.get(template_id)
-    if not template.get('folder_source') or device_id not in template.get('auto_devices', []):
+    if (device_id not in template.get('auto_devices', [])
+            or (not template.get('folder_source') and not allow_manual)):
         return {'added': 0, 'updated': 0, 'disabled': 0, 'unchanged': 0}
     device = get(devices_file, device_id)
     if device is None:
@@ -242,14 +246,23 @@ def reconcile(store, template_id, device_id, *,
     existing = _remote_assets(api)
     stats = {'added': 0, 'updated': 0, 'disabled': 0, 'unchanged': 0}
 
-    # Import-only entries from a folder source; manual Hub media/URLs are
-    # never implicitly sent or changed by this worker.
+    # Network mode publishes only verified folder imports; manual playlist
+    # mode (explicit v2 opt-in) publishes its own saved media by stable item ID.
     for item in template['items']:
-        if item.get('kind') != 'media' or not item.get('source_file'):
+        if item.get('kind') != 'media':
             continue
-        source = item['source_file']
-        if not isinstance(source, str) or '/' in source or '\\' in source or not source:
-            raise PublishError('Ungültiger Quelldateiname')
+        if template.get('folder_source'):
+            if not item.get('source_file'):
+                continue
+            source = item['source_file']
+            if not isinstance(source, str) or '/' in source or '\\' in source or not source:
+                raise PublishError('Ungültiger Quelldateiname')
+        elif allow_manual:
+            if not TEMPLATE_ID.fullmatch(str(item.get('id', ''))):
+                raise PublishError('Ungültige Medien-ID')
+            source = 'manual:' + item['id']
+        else:
+            continue
         record = doc['assets'].get(source)
         if record is not None and not isinstance(record, dict):
             raise PublishError('Ungültiger Medienstatus; keine Änderungen')
@@ -398,9 +411,16 @@ def reconcile(store, template_id, device_id, *,
     # journal AND still bearing the exact Hub-owned marker. Never delete media
     # from a Pi and never affect manual or unknown assets. An all-empty folder
     # is not trusted: import refuses to prune that case as well.
-    if retire_missing and any(item.get('source_file') for item in template['items']):
-        active_sources = {item['source_file'] for item in template['items']
-                          if item.get('source_file') and item.get('kind') == 'media'}
+    if ((retire_missing and template.get('folder_source')
+         and any(item.get('source_file') for item in template['items']))
+            or (allow_manual and not template.get('folder_source'))):
+        active_sources = ({
+            item['source_file'] for item in template['items']
+            if item.get('source_file') and item.get('kind') == 'media'
+        } if template.get('folder_source') else {
+            'manual:' + item['id'] for item in template['items']
+            if item.get('kind') == 'media'
+        })
         for source, record in list(doc['assets'].items()):
             if source in active_sources:
                 continue
@@ -424,7 +444,7 @@ def reconcile(store, template_id, device_id, *,
             del doc['assets'][source]
             _save(path, doc)
 
-    _sync_playlist_order(api, template, doc, existing)
+    _sync_playlist_order(api, template, doc, existing, allow_manual=allow_manual)
     return stats
 
 
