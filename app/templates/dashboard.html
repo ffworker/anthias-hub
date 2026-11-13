@@ -106,7 +106,7 @@
 
         {% if logged_user.role in ('owner', 'it') %}
           <details class="fleet-settings">
-            <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#settings"></use></svg> Einstellungen <svg class="icon settings-chevron" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#chevron-down"></use></svg></summary>
+            <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#settings"></use></svg> Einstellungen <span class="settings-chevron ui-chevron" aria-hidden="true"></span></summary>
             <div class="fleet-settings-content">
               <div class="fleet-panel-head"><p class="fleet-panel-title">Gerät verwalten <span>{{ device.name }}</span></p><button type="button" class="fleet-panel-close" data-close-fleet-menu aria-label="Geräteverwaltung schließen"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#close"></use></svg></button></div>
               <p class="code fleet-device-address">{{ device.url }}</p>
@@ -198,7 +198,7 @@
           <strong>{{ 'Ersten Bildschirm verbinden' if not devices else 'Weiteren Bildschirm verbinden' }}</strong>
           <span>Anthias-Player mit einer Verwaltungsadresse im Hub registrieren.</span>
         </span>
-        <span class="fleet-setup-toggle-action"><span data-fleet-setup-action>Formular {{ 'schließen' if not devices else 'öffnen' }}</span> <span aria-hidden="true">⌄</span></span>
+        <span class="fleet-setup-toggle-action"><span data-fleet-setup-action>Formular {{ 'schließen' if not devices else 'öffnen' }}</span> <span class="ui-chevron" aria-hidden="true"></span></span>
       </summary>
       <div class="fleet-setup-body">
         <div class="fleet-setup-intro">
