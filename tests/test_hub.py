@@ -2512,10 +2512,10 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
     response = client.get('/login')
     assert response.status_code == 200
     text = response.get_data(as_text=True)
-    assert 'content="ui-20261113-05"' in text
+    assert 'content="ui-20261113-06"' in text
     assert 'ui-system.css' in text
     assert 'data-hub-build-sha="dev"' in text
-    assert 'UI <code>ui-20261113-05</code>' in text
+    assert 'UI <code>ui-20261113-06</code>' in text
     assert all(f"filename='{name}'" not in text for name in (
         'product-ui.css', 'ui-refinements.css', 'workflow-ui.css'))
 
@@ -2526,7 +2526,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
         result = client.get(path)
         assert result.status_code == 200, path
         text = result.get_data(as_text=True)
-        assert 'content="ui-20261113-05"' in text, path
+        assert 'content="ui-20261113-06"' in text, path
         assert text.count('ui-system.css') == 1, path
         assert 'data-product-theme-toggle' in text, path
         assert 'class="site-main"' not in text or 'id="hauptinhalt"' in text
@@ -2565,7 +2565,7 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert page.index('id="fleet-devices"') < page.index('class="hub-next-steps"')
     assert 'Playlists verwalten' in page
     assert 'Ordner &amp; Quellen' in page
-    assert 'ui-system.css?v=ui-20261113-05' in page
+    assert 'ui-system.css?v=ui-20261113-06' in page
 
     libpage = client.get('/library').get_data(as_text=True)
     assert libpage.index('id="library-page-title"') < libpage.index('class="library-grid library-index-grid"')
