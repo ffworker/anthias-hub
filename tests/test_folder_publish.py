@@ -418,8 +418,8 @@ def test_v2_manual_playlist_publishes_only_owned_media_when_explicitly_enabled(
     monkeypatch.setenv('HUB_WORKFLOW_V2', '1')
     store = Library(tmp_path / 'library')
     template = store.create('Zentrale Playlist')
-    media = store.add_media(template['id'], 'Logo',
-                            io.BytesIO(PNG), 'logo.png', 15)
+    store.add_media(template['id'], 'Logo', io.BytesIO(PNG), 'logo.png', 15)
+    media_id = store.get(template['id'])['items'][0]['id']
     devices = tmp_path / 'devices.json'
     devices.write_text(json.dumps({'devices': [
         {'id': 'lab', 'name': 'Test Pi', 'url': 'http://10.10.0.21', 'location': ''}
@@ -447,7 +447,7 @@ def test_v2_manual_playlist_publishes_only_owned_media_when_explicitly_enabled(
     repeat = run_cycle(auto_publish=True, **options)
     assert repeat[template['id']]['devices']['lab']['unchanged'] == 1
 
-    store.remove(template['id'], media['id'])
+    store.remove(template['id'], media_id)
     clean = run_cycle(auto_publish=True, **options)
     assert clean[template['id']]['devices']['lab']['disabled'] == 1
     assert player.entries['outside']['is_enabled'] is True
