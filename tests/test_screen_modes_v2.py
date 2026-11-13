@@ -34,7 +34,7 @@ def test_source_progress_refuses_to_claim_mount_without_host_report(tmp_path, mo
     assert waiting['state'] == 'pending'
     assert waiting['discovered'] == 0  # Local directory alone is NOT a mounted SMB source.
     assert waiting['stages'][1]['state'] == 'waiting'
-    assert 'kein Host-Mountdienst' in waiting['stages'][1]['detail']
+    assert 'kein host-mountdienst' in waiting['stages'][1]['detail'].lower()
     assert waiting['last_host_check'] is None
 
     from app.media_sources import mount_statuses
