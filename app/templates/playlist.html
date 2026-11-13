@@ -379,7 +379,7 @@
         </section>
           <p class="muted">ZIP-<strong>Export / Wiederherstellung</strong> einer kompletten Vorlage ist ein anderer Vorgang: in der <a href="{{ url_for('library_index') }}">Playlist-Bibliothek</a> unter „Vorlagen-Backup“.</p>
         </div>
-        <div class="composer-pane" data-add-pane="library">
+        {% if not workflow_v2 %}<div class="composer-pane" data-add-pane="library">
           <p class="composer-explainer"><strong>Einzelnen Inhalt übernehmen:</strong> Wähle einen gespeicherten Inhalt aus einer Hub-Vorlage. Dieser wird sofort zur aktuellen Bildschirm-Playlist ergänzt.</p>
           {% if library_items_available %}
           <form method="post" action="{{ url_for('add_library_item_from_player', device_id=device.id) }}">
