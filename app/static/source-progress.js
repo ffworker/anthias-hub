@@ -97,5 +97,5 @@
 
   refresh.addEventListener('click', () => { void check(); });
   void check();
-  window.setInterval(() => { if (!document.hidden) void check(); }, 10000);
+  window.setInterval(() => { if (!document.hidden) void check(); }, 3000);
 })();
