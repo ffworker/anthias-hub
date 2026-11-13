@@ -8,6 +8,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import secrets
 import tempfile
 import time
@@ -220,7 +221,7 @@ def request_sync():
 
 def _safe_local_dir(base, name):
     target = base / name
-    if not valid_child_name(name):
+    if not valid_child_name(name) and not re.fullmatch(r'\.default-stage-[a-f0-9]{32}', name):
         raise SMBSetupError('Ungültiger Medienordnername')
     if base.is_symlink() or target.is_symlink() or base.resolve() == target.resolve():
         raise SMBSetupError('Unsicherer lokaler Medienpfad')
