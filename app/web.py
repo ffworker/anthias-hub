@@ -312,13 +312,13 @@ def create_app(config=None):
             default_source = next((entry for entry in registered if entry['alias'] == 'default'), None)
             mounted_count = sum(s['status'] in ('mounted', 'already-mounted') for s in registered)
             attention_count = len(registered) - mounted_count
-            return render_template('media_sources.html', sources=registered,
+            return render_template('media_sources_v2.html' if app.config['HUB_WORKFLOW_V2'] else 'media_sources.html', sources=registered,
                                    unmanaged=unmanaged, default_folders=default_folders,
                                    default_source=default_source, retired=retired,
                                    mounted_count=mounted_count, attention_count=attention_count)
         except SourceError as exc:
             flash(str(exc), 'error')
-            return render_template('media_sources.html', sources=[], unmanaged=[],
+            return render_template('media_sources_v2.html' if app.config['HUB_WORKFLOW_V2'] else 'media_sources.html', sources=[], unmanaged=[],
                                    default_folders=[], default_source=None, retired=[],
                                    mounted_count=0, attention_count=0)
 
@@ -477,6 +477,8 @@ def create_app(config=None):
         if tab not in ('overview', 'screens', 'playlists', 'sources', 'schedules'):
             abort(404)
         role = current_user()['role']
+        if tab == 'sources' and role not in ('it', 'owner'):
+            abort(403)
         devices = load(app.config['DEVICES_FILE'])
         templates = library().list()
         profiles = []
@@ -1419,7 +1421,7 @@ def create_app(config=None):
             profiles = []
             flash(str(exc), 'error')
         return render_template(
-            'schedule_library.html', profiles=profiles,
+            'schedule_library_v2.html' if app.config['HUB_WORKFLOW_V2'] else 'schedule_library.html', profiles=profiles,
             devices=load(app.config['DEVICES_FILE']),
             can_edit=current_user()['role'] in ('owner', 'it', 'marketing'),
         )
