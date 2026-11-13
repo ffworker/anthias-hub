@@ -1,6 +1,6 @@
 # PROD v2 – Freigabe und umschaltbarer Rollout
 
-> **Noch nicht freigegeben.** Die Änderungen liegen im DEV-Branch und werden zunächst in Draft-PR **#73** gesammelt. Die produktive Installation auf GH-PiHub darf erst nach persönlicher Prüfung/Freigabe, Merge von #73 nach `main` und erfolgreichem Build umgestellt werden.
+> **Noch nicht freigegeben.** Die Änderungen liegen im DEV-Branch und werden zunächst in Draft-PR **#73** gesammelt. Die produktive Installation auf Produktivserver darf erst nach persönlicher Prüfung/Freigabe, Merge von #73 nach `main` und erfolgreichem Build umgestellt werden.
 
 ## Vor dem Merge
 
