@@ -46,3 +46,19 @@ def test_cohosted_readme_requires_explicit_test_player():
     assert "ANTHIAS_ALLOWED_CIDRS=127.0.0.0/8" in instructions
     assert "DEV_AUTO_PUBLISH=1" in instructions
     assert "anthias-hub-dev" in instructions
+
+
+def test_dev_first_install_does_not_reference_deleted_branch_or_strand_partial_init():
+    helper = SCRIPT.read_text(encoding="utf-8")
+    cohost = (ROOT / "docs" / "cohosted-development.md").read_text(encoding="utf-8")
+    workflow = (ROOT / "docs" / "dev-workflow-v2.md").read_text(encoding="utf-8")
+    deleted = "dev/cohosted-staging-isolation-20261113"
+    branch = "dev/screen-source-of-truth-v2-20261113"
+    assert all(deleted not in text for text in (helper, cohost, workflow))
+    assert all(branch in text for text in (helper, cohost, workflow))
+    assert "git switch --track origin/" + branch in helper
+    assert "DEV setup incomplete" in helper
+    assert 'if [[ -f .env && ! -s config/users.json ]]' in helper
+    assert "run bash scripts/dev-cohost.sh init" in helper
+    assert "Direct editing on managed test screens is allowed." not in cohost
+    assert "read-only in DEV v2" in cohost

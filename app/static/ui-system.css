@@ -3405,6 +3405,14 @@ body.hub-compact-v2 .site-foot{margin-top:16px}
 .site-main .source-v2-compact .source-v2-list-row>div{gap:2px}
 .site-main .source-v2-compact .source-v2-list-row strong{font-size:13px}
 .site-main .source-v2-compact .source-v2-list-meta strong{font-size:12px}
+/* Quiet on healthy/initial imports; only actionable import states get emphasis. */
+.site-main .source-v2-compact .source-v2-import-state{white-space:nowrap;color:var(--ui-muted)}
+.site-main .source-v2-compact .source-v2-import-state[data-import-state="error"]{
+  color:var(--ui-error);font-weight:750
+}
+.site-main .source-v2-compact .source-v2-import-state[data-import-state="stale"]{
+  color:var(--ui-warn);font-weight:700
+}
 .site-main .source-v2-list-arrow{font-size:20px;color:var(--ui-muted);line-height:1}
 .site-main .source-v2-compact .source-v2-list-row:hover .source-v2-list-arrow{color:var(--ui-accent)}
 .site-main .source-v2-compact .source-v2-checkbox{
