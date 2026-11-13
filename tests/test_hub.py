@@ -3462,3 +3462,98 @@ def test_v2_playlist_sequence_is_primary_and_reorders_without_losing_actions(env
         'direction': 'down',
     })
     assert bad.status_code == 400  # CSRF remains required.
+
+
+def test_v2_central_control_is_the_only_management_entrypoint_and_role_safe(env):
+    app, client, tmp = env
+    from app.library import Library
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'center-library')
+    app.config['MEDIA_SOURCES_FILE'] = str(Path(tmp) / 'center-sources.json')
+    app.config['SCHEDULES_FILE'] = str(Path(tmp) / 'center-schedules.json')
+    Library(app.config['LIBRARY_DIR']).create('Test löschen')
+
+    login(client, 'viewer')
+    assert client.get('/control').status_code == 403
+    assert client.get('/control?tab=sources').status_code == 403
+
+    login(client, 'marketing')
+    page = client.get('/control?tab=playlists').get_data(as_text=True)
+    assert 'Steuerzentrale' in page
+    assert 'Test löschen' in page
+    assert 'Vorlage löschen' in page
+    assert 'name="name_confirmation"' in page
+    assert 'name="csrf"' in page
+    assert 'href="/control?tab=sources"' not in page
+    assert client.get('/control?tab=sources').status_code == 403
+    for path in ('/library', '/schedules'):
+        view = client.get(path).get_data(as_text=True)
+        assert 'Steuerzentrale' in view
+        assert 'name="name_confirmation"' not in view
+    assert client.get('/control?tab=unrecognized').status_code == 404
+    assert client.get('/control?tab=overview').status_code == 200
+
+    login(client, 'it')
+    manage_sources = client.get('/control?tab=sources').get_data(as_text=True)
+    assert 'SMB-Verbindung' in manage_sources and 'name="unc"' in manage_sources
+    assert 'Quelle verwalten' in client.get('/media-sources').get_data(as_text=True)
+    assert 'source-v2-connection' not in client.get('/media-sources').get_data(as_text=True)
+    assert 'Verbindung bearbeiten' in client.get('/control?tab=screens').get_data(as_text=True)
+    assert 'device-setup' not in client.get('/').get_data(as_text=True)
+
+
+def test_v2_playlist_delete_restored_in_central_control_without_pi_writes(env):
+    app, client, tmp = env
+    from app.library import Library
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['HUB_DEVELOPMENT_MODE'] = True
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'delete-library')
+    store = Library(app.config['LIBRARY_DIR'])
+    free = store.create('Nur Test')
+    bound = store.create('Aktiv Test')
+    store.set_auto_devices(bound['id'], ['lab'], [{'id': 'lab'}],
+                           replace_existing=True, allow_manual=True)
+    login(client, 'it')
+    url = '/library/' + free['id'] + '/delete'
+    payload = {'csrf': token(client), 'control_tab': 'playlists',
+               'confirm': free['id'], 'name_confirmation': 'Nur Test', 'ack': 'yes'}
+    assert 'Vorlage endgültig löschen' in client.get('/control?tab=playlists').get_data(as_text=True)
+    assert client.post(url, data={k:v for k,v in payload.items() if k != 'csrf'}).status_code == 400
+    wrong = client.post(url, data={**payload, 'name_confirmation': 'Anders'})
+    assert wrong.status_code == 302
+    assert wrong.headers['Location'].endswith('/control?tab=playlists')
+    assert store.get(free['id'])['id'] == free['id']
+    refused = client.post('/library/' + bound['id'] + '/delete', data={
+        **payload, 'confirm': bound['id'], 'name_confirmation': 'Aktiv Test'
+    }, follow_redirects=True)
+    assert refused.status_code == 200
+    assert 'Erst Zielbildschirme' in refused.get_data(as_text=True)
+    assert store.get(bound['id'])['id'] == bound['id']
+    assert FakeAnthias.changes == []
+    removed = client.post(url, data=payload, follow_redirects=True)
+    assert removed.status_code == 200
+    assert 'Nur Test' not in [item['name'] for item in store.list()]
+    assert store.get(bound['id'])['id'] == bound['id']
+    assert FakeAnthias.changes == []
+
+
+def test_v2_central_schedule_forms_and_post_redirect_are_real(env):
+    app, client, tmp = env
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['SCHEDULES_FILE'] = str(Path(tmp) / 'center-schedules.json')
+    login(client, 'marketing')
+    control = client.get('/control?tab=schedules').get_data(as_text=True)
+    assert 'name="start"' in control and 'name="days"' in control
+    result = client.post('/schedules/add', data={
+        'csrf': token(client), 'control_tab': 'schedules',
+        'name': 'Montag bis Freitag', 'days': ['1','2','3','4','5'],
+        'start': '08:00', 'end': '18:00'
+    })
+    assert result.status_code == 302
+    assert result.headers['Location'].endswith('/control?tab=schedules')
+    assert 'Montag bis Freitag' in client.get(result.headers['Location']).get_data(as_text=True)
+    overview = client.get('/schedules').get_data(as_text=True)
+    assert 'Montag bis Freitag' in overview
+    assert 'schedule-library-new' not in overview
+    assert 'schedule_library_add' not in overview
+    assert FakeAnthias.changes == []
