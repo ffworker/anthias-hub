@@ -21,6 +21,12 @@ wurde mit diesem Branch aktualisiert. Produktion bleibt unberührt.
    Der separate DEV-Importer liest den Ordner ein, kopiert JPG/PNG/WebP/MP4
    in seinen DEV-Speicher und stellt die Unterordner als Playlist-Quellen
    bereit. Der Status aktualisiert sich alle drei Sekunden.
+   **Große Freigaben werden automatisch in Abschnitten mit höchstens 4 GiB
+   übertragen.** Das ist eine Grenze pro Abschnitt, nicht für die gesamte
+   Bibliothek. Weitere Abschnitte folgen ohne erneuten Klick. Jeder
+   erfolgreich vollständig kopierte Datensatz wird als Checkpoint
+   gespeichert und bei einem Neustart nicht erneut übertragen.
+   Im UI erscheinen `X von Y Medien` sowie die bestätigten GiB.
 6. Später **Jetzt synchronisieren** drücken, um einen weiteren Import
    anzustoßen, oder automatisch alle 60 Sekunden synchronisieren lassen.
 7. **Playlists** öffnen und eine Ordner-Playlist aus einem bestätigten
@@ -55,6 +61,14 @@ Synchronisierung und Pi-Veröffentlichung werden nicht fälschlich als
 erfolgreich markiert. Wechsel auf eine andere SMB-Quelle wird zuerst
 in einen gesonderten Zwischenspeicher kopiert, statt die Inhalte
 zweier Quellen zu vermischen.
+
+Ein unvollständiger Teilimport bleibt als „Medienübernahme läuft“
+sichtbar. Bis alle Dateien geprüft sind, wird die neue SMB-Quelle
+nicht als fertig synchronisiert oder veröffentlichungsbereit dargestellt.
+Neue Quellen werden in einem separaten versteckten Zwischenspeicher
+geladen und erst vollständig gegen den bestehenden DEV-Spiegel getauscht.
+Bei zu wenig DEV-Speicherplatz (pro Datei mindestens 256 MiB Reserve)
+erscheint ein konkreter Fehler, ohne die Hostplatte vollzuschreiben.
 
 **Dateientfernung ist bewusst konservativ:** Wenn eine Datei auf SMB
 verschwindet, wird sie im lokalen DEV-Cache vorläufig behalten.
