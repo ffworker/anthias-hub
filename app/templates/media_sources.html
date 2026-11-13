@@ -3,6 +3,82 @@
 {% block title %}Ordner & Quellen · IT · Anthias Hub{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">{% endblock %}
 {% block content %}
+{% if workflow_v2 %}
+<div class="source-v2-workspace" data-source-monitor data-status-url="{{ url_for('media_sources_status') }}">
+  <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Bildschirme</a><span aria-hidden="true">›</span>Ordner &amp; Quellen</nav>
+  <header class="source-v2-head">
+    <p class="eyebrow">EINRICHTUNG / QUELLEN</p>
+    <h1>Netzwerkordner</h1>
+    <p class="muted">Ein Stammordner genügt. Dessen Unterordner werden als Medienquellen für deine Playlists angeboten.</p>
+  </header>
+
+  <section class="source-v2-mode">
+    <div class="source-v2-mode-top">
+      <span class="source-v2-icon" aria-hidden="true">▣</span>
+      <div><p class="eyebrow">01 / QUELLE</p><h2>SMB-Pfad hinterlegen</h2></div>
+    </div>
+    <form class="source-v2-form" method="post" action="{{ url_for('media_sources_save') }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <input type="hidden" name="alias" value="default">
+      <label>Gemeinsamer Bildschirmordner
+        <input name="unc" maxlength="650" placeholder="//10.0.0.5/media$/Marketing/Bildschirme"
+               value="{{ default_source.unc if default_source else '' }}" required>
+      </label>
+      <button class="primary" type="submit">{{ 'Pfad aktualisieren' if default_source else 'Pfad speichern' }}</button>
+    </form>
+    <p class="source-v2-note">Speichern merkt sich nur den Pfad. Ein Host-Mountdienst stellt die tatsächliche SMB-Verbindung her. Ohne diesen Dienst wird **kein** Scan gestartet.</p>
+  </section>
+
+  <section class="source-v2-mode" aria-label="Einrichtungs- und Synchronisierungsstatus">
+    <div class="source-v2-mode-top">
+      <span class="source-v2-icon" aria-hidden="true">↻</span>
+      <div><p class="eyebrow">02 / STATUS</p><h2>Was passiert gerade?</h2></div>
+    </div>
+    <div data-source-progress="default" role="status" aria-live="polite">
+      <p data-progress-summary>Prüfstatus wird gelesen …</p>
+      <ol class="source-v2-steps" data-progress-stages></ol>
+      <p class="muted" data-progress-check>Letzte Hostprüfung: noch nicht bekannt</p>
+    </div>
+    <button type="button" class="button" data-source-check-now>Aktuellen Status prüfen</button>
+    <p class="source-v2-note">Diese Ansicht aktualisiert den Status automatisch etwa alle 10 Sekunden. „Prüfen“ liest den momentanen Zustand erneut; der Browser kann keinen Root-Mount starten. Ohne Host-Dienst gibt es deshalb keinen laufenden Verbindungsvorgang.</p>
+  </section>
+
+  <section class="source-v2-mode">
+    <div class="source-v2-mode-top">
+      <span class="source-v2-icon" aria-hidden="true">≡</span>
+      <div><p class="eyebrow">03 / INHALTE</p><h2>Erkannte Bildschirmordner</h2></div>
+    </div>
+    <p><strong data-folder-count>{{ default_folders|length }}</strong> Unterordner derzeit im Hub sichtbar.</p>
+    {% if default_folders %}
+      <ul class="source-v2-folder-list">
+      {% for folder in default_folders %}
+        <li><span>{{ folder.name }}</span>
+          {% if folder.template %}<a href="{{ url_for('library_detail', template_id=folder.template.id) }}">Playlist öffnen</a>
+          {% else %}<a href="{{ url_for('library_index') }}">Playlist zuordnen</a>{% endif %}</li>
+      {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">Nach erfolgreichem Mount erscheinen hier die direkten Unterordner. Erst dann können sie als Playlist-Quelle ausgewählt werden.</p>
+    {% endif %}
+    <a class="button primary" href="{{ url_for('library_index') }}">Playlists öffnen →</a>
+  </section>
+
+  {% if sources|length > (1 if default_source else 0) or unmanaged %}
+  <details class="source-v2-optional">
+    <summary>Zusätzliche Quellen ({{ sources|length - (1 if default_source else 0) + unmanaged|length }})</summary>
+    <div class="source-v2-optional-body">
+      {% for source in sources if source.alias != 'default' %}
+      <p><strong>{{ source.alias }}</strong> · <code>{{ source.unc }}</code> · {{ source.status }}</p>
+      {% endfor %}
+      {% for source in unmanaged %}
+      <p><strong>{{ source.alias }}</strong> · älterer Mount · nicht als verwaltete Quelle bestätigt</p>
+      {% endfor %}
+    </div>
+  </details>
+  {% endif %}
+</div>
+<script defer src="{{ url_for('static', filename='source-progress.js') }}"></script>
+{% else %}
 <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Bildschirme</a><span aria-hidden="true">›</span><span>Ordner &amp; Quellen (IT)</span></nav>
 
 <section class="library-intro media-page-intro" aria-labelledby="media-page-title">
@@ -223,5 +299,6 @@
     <p class="muted">Bei Bedarf kannst du den Alias mit seinem ursprünglichen SMB-Pfad erneut registrieren. Zuerst den echten Host-Mount kontrollieren.</p>
   </div>
 </details>
+{% endif %}
 {% endif %}
 {% endblock %}
