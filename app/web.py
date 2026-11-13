@@ -249,6 +249,19 @@ def create_app(config=None):
         return request.form.get('ignore_storage_check') == 'manual-confirmed'
 
 
+    @app.get('/media-sources/status')
+    @login_required('it')
+    def media_sources_status():
+        """Status-only refresh. Never mounts SMB or handles credentials."""
+        from .source_progress import describe_sources
+        from .media_sources import SourceError
+        try:
+            return jsonify(ok=True, sources=describe_sources(
+                app.config['MEDIA_SOURCES_FILE'],
+                app.config['MEDIA_MOUNT_STATUS_FILE'], library().list()))
+        except (SourceError, OSError, ValueError) as exc:
+            return jsonify(ok=False, message=str(exc)), 503
+
     @app.get('/media-sources')
     @login_required('it')
     def media_sources_page():
@@ -311,9 +324,12 @@ def create_app(config=None):
             unc = request.form.get('unc', '')
             result = save_source(alias, unc, path=app.config['MEDIA_SOURCES_FILE'])
             audit('media-source.' + result, asset_id=alias.strip().lower())
-            flash('SMB-Quelle gespeichert. Der Root-Mountdienst prüft die Freigabe '
-                  'und bindet neue Ordner automatisch ein; bei einem geänderten '
-                  'bereits eingebundenen Pfad ist ein kontrollierter Host-Wechsel nötig.',
+            flash(('SMB-Pfad gespeichert. Die Anzeige „Verbindungsstatus“ zeigt, '
+                   'ob ein Host-Mountdienst tatsächlich läuft. Speichern allein '
+                   'startet noch keinen SMB-Mount.' if app.config['HUB_WORKFLOW_V2']
+                   else 'SMB-Quelle gespeichert. Der Root-Mountdienst prüft die Freigabe '
+                        'und bindet neue Ordner automatisch ein; bei einem geänderten '
+                        'bereits eingebundenen Pfad ist ein kontrollierter Host-Wechsel nötig.'),
                   'success')
         except (SourceError, OSError) as exc:
             flash(str(exc), 'error')
