@@ -19,6 +19,7 @@ services:
     user: "${HUB_UID:-1000}:${HUB_GID:-1000}"
     environment:
       LIBRARY_DIR: /data/library
+      HUB_WORKFLOW_V2: "1"
       MEDIA_SOURCE_ROOT: /sources
       # 60 seconds only for fast isolated testing. Real default is 1800 seconds.
       FOLDER_SYNC_INTERVAL: "${FOLDER_SYNC_INTERVAL:-60}"
