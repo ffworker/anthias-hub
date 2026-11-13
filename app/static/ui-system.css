@@ -3303,3 +3303,243 @@ body.studio-drawer-open{overflow:hidden}
 .site-main .source-v2-transfer-heading span{color:var(--ui-muted);font-size:12px}
 .site-main .source-v2-transfer progress{display:block;width:100%;height:11px;accent-color:var(--ui-accent)}
 .site-main .source-v2-transfer .muted{font-size:12px;margin:0}
+
+/* Workflow v2 density pass: tighter hierarchy, never hidden functionality.
+   Native details retain keyboard/touch access to every secondary action. */
+body.hub-compact-v2 main.wrap.site-main{padding-top:16px}
+body.hub-compact-v2 .site-header{min-height:66px;gap:15px}
+body.hub-compact-v2 .site-nav-link{padding:10px 13px}
+body.hub-compact-v2 .site-foot{margin-top:16px}
+
+.site-main .source-v2-compact{max-width:1100px;padding:0 0 24px}
+.site-main .source-v2-compact .breadcrumbs{margin-bottom:8px}
+.site-main .source-v2-compact .source-v2-head,
+.site-main .source-v2-head.source-v2-head-compact{
+  display:flex;align-items:end;justify-content:space-between;gap:12px 22px;
+  margin-bottom:13px;padding:5px 0 14px
+}
+.site-main .source-v2-head-compact .eyebrow{margin:0 0 5px}
+.site-main .source-v2-head-compact h1{font-size:clamp(27px,3vw,35px)}
+.site-main .source-v2-head-count{
+  font:650 11px/1.5 var(--ui-sans);color:var(--ui-muted);white-space:nowrap
+}
+.site-main .source-v2-compact .source-v2-mode{
+  padding:16px 18px;gap:10px;margin-bottom:12px;border-radius:10px
+}
+.site-main .source-v2-compact .source-v2-mode-top{
+  gap:10px;justify-content:space-between;flex-wrap:wrap
+}
+.site-main .source-v2-compact .source-v2-mode-top .eyebrow{margin:0 0 3px}
+.site-main .source-v2-compact .source-v2-mode-top h2{font-size:18px}
+.site-main .source-v2-compact .source-v2-icon{
+  width:34px;height:34px;flex-basis:34px;font-size:17px;border-radius:8px
+}
+.site-main .source-v2-compact .source-v2-facts{
+  grid-template-columns:repeat(4,minmax(0,1fr));gap:7px
+}
+.site-main .source-v2-compact .source-v2-facts>div{
+  padding:9px 11px;gap:3px;border-radius:7px
+}
+.site-main .source-v2-compact .source-v2-facts dt{font-size:9px}
+.site-main .source-v2-compact .source-v2-facts dd{font-size:12px;font-weight:600}
+.site-main .source-v2-compact .source-v2-facts code{font-size:11px}
+.site-main .source-v2-compact .source-v2-mode>p{
+  font-size:12px;line-height:1.5
+}
+.site-main .source-v2-compact .source-v2-small-note{
+  margin:0;color:var(--ui-muted);font-size:11px;line-height:1.55
+}
+.site-main .source-v2-compact .source-v2-inline-state{
+  padding:8px 11px;margin:0;background:var(--ui-subtle);
+  border-left:2px solid var(--ui-line-strong);border-radius:3px;
+  font-size:12px;line-height:1.5
+}
+
+/* Collapsible inputs are easy to discover but do not dominate the page. */
+.site-main .source-v2-expand{
+  min-width:0;margin:0 0 12px;border:1px solid var(--ui-line);
+  border-radius:10px;background:var(--ui-surface)
+}
+.site-main .source-v2-expand>summary{
+  display:flex;gap:9px 14px;align-items:center;flex-wrap:wrap;
+  padding:11px 15px;min-height:45px;list-style:none;
+  cursor:pointer;font-size:13px;font-weight:700;overflow-wrap:anywhere
+}
+.site-main .source-v2-expand>summary::-webkit-details-marker{display:none}
+.site-main .source-v2-expand>summary::after{
+  content:'⌄';font-size:17px;font-weight:500;color:var(--ui-muted);
+  margin-left:auto;line-height:1
+}
+.site-main .source-v2-expand[open]>summary::after{content:'⌃'}
+.site-main .source-v2-expand>summary:hover,
+.site-main .source-v2-expand>summary:focus-visible{background:var(--ui-subtle)}
+.site-main .source-v2-expand[open]>summary{
+  border-bottom:1px solid var(--ui-line)
+}
+.site-main .source-v2-expand .source-v2-summary-title{
+  font-size:13px;font-weight:750;color:var(--ui-fg)
+}
+.site-main .source-v2-expand .source-v2-summary-meta{
+  font-size:11px;color:var(--ui-muted);font-weight:500;min-width:0
+}
+.site-main .source-v2-expand .source-v2-summary-meta code{
+  font-size:11px;white-space:normal;overflow-wrap:anywhere
+}
+.site-main .source-v2-expand .source-v2-summary-action{
+  color:var(--ui-accent);font-size:11px;font-weight:700
+}
+.site-main .source-v2-expand-body{padding:14px 16px;display:grid;gap:11px}
+.site-main .source-v2-expand .source-v2-form{max-width:none}
+.site-main .source-v2-form-inline{
+  display:grid;grid-template-columns:minmax(175px,1fr) minmax(235px,1.25fr) auto;
+  gap:10px 13px;align-items:end
+}
+.site-main .source-v2-form-inline>button{white-space:nowrap}
+.site-main .source-v2-compact .source-v2-form>label{gap:5px}
+.site-main .source-v2-compact .source-v2-list-row{
+  padding:11px 13px;gap:12px;min-height:54px
+}
+.site-main .source-v2-compact .source-v2-list-row>div{gap:2px}
+.site-main .source-v2-compact .source-v2-list-row strong{font-size:13px}
+.site-main .source-v2-compact .source-v2-list-meta strong{font-size:12px}
+.site-main .source-v2-list-arrow{font-size:20px;color:var(--ui-muted);line-height:1}
+.site-main .source-v2-compact .source-v2-list-row:hover .source-v2-list-arrow{color:var(--ui-accent)}
+.site-main .source-v2-compact .source-v2-checkbox{
+  padding:5px 0;font-size:12px;min-height:36px
+}
+.site-main .source-v2-compact .source-v2-checkbox input[type=checkbox]{
+  width:17px;height:17px;flex-basis:17px
+}
+.site-main .source-v2-compact .source-v2-item-list>li{
+  padding:9px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;gap:7px 16px;position:relative
+}
+.site-main .source-v2-compact .source-v2-item-heading{
+  gap:3px 10px;min-width:0;overflow-wrap:anywhere
+}
+.site-main .source-v2-compact .source-v2-item-controls{
+  align-items:center;justify-content:flex-end;gap:6px;margin:0;flex-wrap:wrap
+}
+.site-main .source-v2-compact .source-v2-item-controls form{gap:5px}
+.site-main .source-v2-compact .source-v2-item-controls form label{
+  font-size:10px;color:var(--ui-muted)
+}
+.site-main .source-v2-compact .source-v2-item-controls input[type=number]{
+  width:65px;min-height:36px;padding:5px
+}
+.site-main .source-v2-compact .source-v2-item-controls :is(button,.button){
+  min-height:36px;padding:6px 10px;font-size:11px
+}
+.site-main .source-v2-item-more{position:relative;margin:0}
+.site-main .source-v2-item-more>summary{
+  display:grid;place-items:center;width:36px;height:36px;cursor:pointer;
+  list-style:none;border:1px solid var(--ui-line);border-radius:7px;
+  font-size:19px;line-height:1
+}
+.site-main .source-v2-item-more>summary::-webkit-details-marker{display:none}
+.site-main .source-v2-item-more>summary:hover{background:var(--ui-subtle)}
+.site-main .source-v2-item-more-body{
+  position:absolute;right:0;top:40px;z-index:4;
+  width:min(320px,calc(100vw - 60px));padding:13px;
+  border:1px solid var(--ui-line-strong);border-radius:9px;
+  background:var(--ui-surface);box-shadow:0 10px 28px rgba(0,0,0,.16)
+}
+.site-main .source-v2-item-more-body form{
+  display:grid;gap:10px;justify-items:start
+}
+.site-main .source-v2-compact .source-v2-item-list{overflow:visible}
+.site-main .source-v2-compact .source-v2-item-list>li:last-child{border-radius:0 0 10px 10px}
+.site-main .source-v2-compact .source-v2-folder-list{
+  max-height:360px;overflow:auto
+}
+.site-main .source-v2-compact .source-v2-folder-list>li{padding:8px 11px;gap:9px}
+.site-main .source-v2-compact .source-v2-steps{gap:0}
+.site-main .source-v2-compact .source-v2-step{
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 9px;
+  padding:7px 9px 7px 20px;line-height:1.4
+}
+.site-main .source-v2-compact .source-v2-step::before{
+  width:8px;height:8px;top:12px;left:-5px
+}
+.site-main .source-v2-compact .source-v2-step strong{font-size:12px}
+.site-main .source-v2-compact .source-v2-step span{font-size:11px}
+.site-main .source-v2-compact .source-v2-transfer{padding:10px 12px;gap:6px}
+.site-main .source-v2-compact .source-v2-transfer progress{height:9px}
+.site-main .source-v2-compact .source-v2-credentials{padding:12px;gap:9px 13px}
+.site-main .source-v2-compact .source-v2-actions{gap:8px}
+.site-main .source-v2-compact .source-v2-optional{margin:8px 0}
+.site-main .source-v2-compact .source-v2-optional>summary{padding:10px 13px}
+.site-main .source-v2-compact .source-v2-optional-body{padding:12px;gap:12px}
+
+/* Screens: retain live connectivity, owner, count and the primary action,
+   but reduce stacked card and redundant cross-navigation spacing. */
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-hero{
+  padding:10px 0 12px;margin-bottom:9px;gap:9px
+}
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-hero h1{
+  font-size:clamp(27px,3vw,36px);margin-bottom:4px
+}
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-hero .muted{
+  margin:4px 0;font-size:12px
+}
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-summary{
+  margin:0 0 9px;gap:7px
+}
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-stat{padding:10px 12px;gap:7px}
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-stat-icon{
+  width:30px;height:30px;min-width:30px
+}
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-stat-value{
+  font-size:21px;line-height:1
+}
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-section-heading{
+  padding:8px 0 9px;margin:6px 0 10px
+}
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-section-heading h2{
+  font-size:21px
+}
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-grid{gap:12px}
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-device{padding:14px 16px}
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-device-top{margin-bottom:6px}
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-device h3{
+  font-size:19px;margin:4px 0 6px
+}
+.site-main .fleet-workspace[data-compact-ui="screens"] .source-v2-card-owner{
+  gap:2px;padding:7px 0
+}
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-device-line{margin:6px 0}
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-device-primary-actions{margin:7px 0}
+.site-main .fleet-workspace[data-compact-ui="screens"] .source-v2-secondary-nav{margin-top:14px}
+.site-main .fleet-workspace[data-compact-ui="screens"] .source-v2-secondary-nav .hub-next-steps-grid{
+  margin:0
+}
+.site-main .fleet-workspace[data-compact-ui="screens"] .fleet-setup{margin-top:12px}
+@media(max-width:950px){
+  .site-main .source-v2-form-inline{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .site-main .source-v2-form-inline>button{grid-column:1/-1}
+  .site-main .source-v2-compact .source-v2-facts{
+    grid-template-columns:repeat(2,minmax(0,1fr))
+  }
+}
+@media(max-width:680px){
+  body.hub-compact-v2 .site-header{min-height:0}
+  .site-main .source-v2-head.source-v2-head-compact{align-items:start}
+  .site-main .source-v2-head-compact h1{font-size:27px}
+  .site-main .source-v2-compact .source-v2-mode{padding:12px}
+  .site-main .source-v2-expand>summary{padding:10px 12px}
+  .site-main .source-v2-expand-body{padding:12px}
+  .site-main .source-v2-form-inline{grid-template-columns:1fr}
+  .site-main .source-v2-form-inline>button{grid-column:auto}
+  .site-main .source-v2-compact .source-v2-facts{grid-template-columns:1fr}
+  .site-main .source-v2-compact .source-v2-item-list>li{
+    grid-template-columns:minmax(0,1fr)
+  }
+  .site-main .source-v2-compact .source-v2-item-controls{
+    justify-content:flex-start
+  }
+  .site-main .source-v2-compact .source-v2-item-more-body{
+    right:auto;left:0
+  }
+  .site-main .source-v2-compact .source-v2-list-row{padding:10px 11px}
+  .site-main .source-v2-compact .source-v2-list-meta{font-size:11px}
+}
