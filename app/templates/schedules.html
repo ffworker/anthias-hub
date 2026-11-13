@@ -35,6 +35,15 @@
   </section>
   {% endif %}
 
+  {% if workflow_v2 and folder_templates %}
+  <section class="source-v2-mode" aria-label="Zentrale Zeitplanung">
+    <h2>Zentrale Playlist steuert die Inhalte</h2>
+    <p>Zugeordnete Bildschirme werden nicht mehr hier pro Pi-Inhalt bearbeitet. Öffne die Playlist, um Inhalte und Bildzeiten zentral zu ändern.</p>
+    {% for source in folder_templates %}
+    <a class="button primary" href="{{ url_for('library_detail', template_id=source.id) }}">„{{ source.name }}“ bearbeiten →</a>
+    {% endfor %}
+  </section>
+  {% else %}
   <section class="schedule-shortcut" aria-label="Gemeinsame Zeitplan-Vorlagen">
     <div>
       <strong>Gemeinsame Zeitpläne</strong>
