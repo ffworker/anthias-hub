@@ -13,8 +13,9 @@ say() { printf '%s\n' "$*"; }
 usage() {
   cat <<'HELP'
 On the existing Docker host, clone into a NEW directory:
-  git clone -b dev/cohosted-staging-isolation-20261113 \
-    https://github.com/ffworker/anthias-hub.git /root/apps/anthias-hub-dev
+  git clone https://github.com/ffworker/anthias-hub.git /root/apps/anthias-hub-dev
+  # Optionally make a LOCAL work branch after cloning:
+  # cd /root/apps/anthias-hub-dev && git switch -c dev/local-test
   cd /root/apps/anthias-hub-dev
   bash scripts/dev-cohost.sh init
   bash scripts/dev-cohost.sh start
@@ -27,8 +28,11 @@ HELP
 guard() {
   [[ "$(basename "$root")" == anthias-hub-dev ]] ||
     fail 'Run only from a separate directory named anthias-hub-dev.'
-  [[ "$(git branch --show-current)" == dev/cohosted-staging-isolation-20261113 ]] ||
-    fail 'Wrong branch: use the cohosted dev branch in this separate checkout.'
+  # GitHub deletes merged feature branches. Do not depend on a named
+  # remote branch to run the isolated DEV instance; the directory, Compose
+  # project, env/image/port checks below are the actual safety boundaries.
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1 ||
+    fail 'This must be a separate Git checkout.'
   for file in .env config data dev-sources; do
     [[ ! -L "$file" ]] || fail "Symlink at $file is not permitted."
   done
