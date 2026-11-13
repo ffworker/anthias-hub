@@ -38,6 +38,7 @@
       <div><p class="eyebrow">NEU</p><h2>Playlist erstellen</h2></div>
     </div>
     <form class="source-v2-form" method="post" action="{{ url_for('library_create') }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
       <label>Name<input type="text" name="name" maxlength="100" required placeholder="z. B. Bistro"></label>
       {% if logged_user.role in ('owner','it') %}
       <label>Quelle
