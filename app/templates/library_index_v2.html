@@ -1,59 +1,72 @@
 {% extends 'base.html' %}
 {% block title %}Playlists · Anthias Hub{% endblock %}
 {% block content %}
-<div class="source-v2-workspace">
-  <header class="source-v2-head">
-    <p class="eyebrow">ZENTRALE INHALTE</p>
-    <h1>Playlists</h1>
-    <p class="muted">Eine Playlist bestimmt die Inhalte und Anzeigedauern der zugeordneten Bildschirme.</p>
+<div class="source-v2-workspace source-v2-compact" data-compact-ui="playlists">
+  <header class="source-v2-head source-v2-head-compact">
+    <div>
+      <p class="eyebrow">ZENTRALE INHALTE</p>
+      <h1>Playlists</h1>
+    </div>
+    <span class="source-v2-head-count">{{ templates|length }} vorhanden</span>
   </header>
-  <section class="source-v2-mode">
-    <div class="source-v2-mode-top"><span class="source-v2-icon" aria-hidden="true">≡</span>
-      <div><p class="eyebrow">ÜBERSICHT</p><h2>{{ templates|length }} Playlists</h2></div>
+
+  {% if logged_user.role in ('marketing', 'owner', 'it') %}
+  <details class="source-v2-expand source-v2-create-panel" id="neue-playlist"
+           {% if not templates %}open{% endif %}>
+    <summary><span class="source-v2-summary-title">＋ Neue Playlist</span>
+      <span class="source-v2-summary-meta">Manuell oder aus Netzwerkordner</span>
+    </summary>
+    <div class="source-v2-expand-body">
+      <form class="source-v2-form source-v2-form-inline" method="post" action="{{ url_for('library_create') }}">
+        <input type="hidden" name="csrf" value="{{ csrf() }}">
+        <label>Name<input type="text" name="name" maxlength="100" required placeholder="z. B. Bistro"></label>
+        {% if logged_user.role in ('owner','it') %}
+        <label>Quelle
+          <select name="folder_source">
+            <option value="">Manuelle Playlist</option>
+            {% for folder in folder_sources %}
+            <option value="{{ folder }}">Netzwerkordner · {{ folder }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        {% endif %}
+        <button class="primary" type="submit">Erstellen →</button>
+      </form>
+      {% if not folder_sources and logged_user.role in ('owner','it') %}
+      <p class="muted source-v2-small-note">Noch kein Netzwerkordner bestätigt. Manuelle Playlists können bereits erstellt werden.</p>
+      {% endif %}
+    </div>
+  </details>
+  {% endif %}
+
+  <section class="source-v2-mode source-v2-list-panel">
+    <div class="source-v2-mode-top">
+      <div>
+        <p class="eyebrow">ÜBERSICHT</p>
+        <h2>{{ templates|length }} Playlists</h2>
+      </div>
     </div>
     {% if templates %}
     <div class="source-v2-list">
       {% for source in templates %}
       {% set sync = folder_sync_by_template.get(source.id, {}) %}
       <a href="{{ url_for('library_detail', template_id=source.id) }}" class="source-v2-list-row">
-        <div>
+        <div class="source-v2-list-label">
           <strong>{{ source.name }}</strong>
-          <span>{{ 'Netzwerkordner · ' ~ source.folder_source if source.folder_source else 'Manuell gepflegte Playlist' }}</span>
+          <span>{{ 'Netzwerkordner · ' ~ source.folder_source if source.folder_source else 'Manuell gepflegt' }}</span>
         </div>
         <div class="source-v2-list-meta">
           <strong>{{ source['items']|length }} Medien</strong>
           <small>{{ source.auto_devices|default([])|length }} Bildschirme
           {% if source.folder_source %} · {{ 'Import OK' if sync.state == 'ok' else 'Import prüfen' }}{% endif %}</small>
         </div>
+        <span class="source-v2-list-arrow" aria-hidden="true">›</span>
       </a>
       {% endfor %}
     </div>
     {% else %}
-      <p>Du hast noch keine Playlist erstellt. Lege eine an und ordne sie anschließend einem Bildschirm zu.</p>
+      <p class="muted">Noch keine Playlists. Oben eine neue Playlist anlegen.</p>
     {% endif %}
   </section>
-  {% if logged_user.role in ('marketing', 'owner', 'it') %}
-  <section class="source-v2-mode">
-    <div class="source-v2-mode-top"><span class="source-v2-icon" aria-hidden="true">＋</span>
-      <div><p class="eyebrow">NEU</p><h2>Playlist erstellen</h2></div>
-    </div>
-    <form class="source-v2-form" method="post" action="{{ url_for('library_create') }}">
-      <input type="hidden" name="csrf" value="{{ csrf() }}">
-      <label>Name<input type="text" name="name" maxlength="100" required placeholder="z. B. Bistro"></label>
-      {% if logged_user.role in ('owner','it') %}
-      <label>Quelle
-        <select name="folder_source">
-          <option value="">Manuelle Playlist (Inhalte hier hochladen)</option>
-          {% for folder in folder_sources %}
-          <option value="{{ folder }}">Netzwerkordner · {{ folder }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      {% endif %}
-      {% if not folder_sources %}<p class="muted">Noch keine bestätigten Netzwerkordner verfügbar. Manuelle Playlists funktionieren sofort.</p>{% endif %}
-      <button class="primary" type="submit">Playlist erstellen →</button>
-    </form>
-  </section>
-  {% endif %}
 </div>
 {% endblock %}
