@@ -31,6 +31,14 @@
       badge.classList.remove('off', 'bad');
       badge.classList.add('ok');
       count.textContent = String(data.count);
+      const modeLabel = card.querySelector('[data-screen-mode-label]');
+      const unassigned = card.querySelector('[data-unassigned-mode]');
+      if (modeLabel && unassigned) {
+        modeLabel.textContent = data.count > 0 ? 'Manuell' : 'Leer';
+        unassigned.textContent = data.count > 0
+          ? 'Medien direkt auf dem Pi · keine zentrale Playlist'
+          : 'Keine Inhalte oder Playlist-Zuordnung';
+      }
       card.classList.remove('fleet-device-offline');
     } catch (_) {
       card.dataset.overviewState = 'offline';
@@ -38,6 +46,10 @@
       badge.classList.remove('off', 'ok');
       badge.classList.add('bad');
       count.textContent = '–';
+      const modeLabel = card.querySelector('[data-screen-mode-label]');
+      if (modeLabel && card.querySelector('[data-unassigned-mode]')) {
+        modeLabel.textContent = 'Nicht erreichbar';
+      }
       card.classList.add('fleet-device-offline');
     }
     totals();
