@@ -65,94 +65,26 @@ Den Browser über den vorhandenen SSH-Tunnel auf
 `http://127.0.0.1:8766` öffnen. Der Footer zeigt die neue UI-Kennung und
 `Build lokal/dev`.
 
-## Netzwerkverbindung – warum „gespeichert“ nicht „gemountet“ heißt
+## SMB-Verbindung vollständig über den DEV-Browser
 
-Das Web-UI hat absichtlich keine Root-Rechte und verarbeitet **keine**
-SMB-Passwörter. Es führt lediglich ein Statusprotokoll:
+**Neu:** Der DEV-Hub verbindet SMB-Freigaben direkt über einen unprivilegierten
+SMB3-Client. Weder ein Host-Mount noch ein systemd-Timer oder eine
+Credentials-Datei am Host muss eingerichtet werden.
 
-**Pfad gespeichert → Host-Mount bestätigt → Ordner sichtbar → Playlist
-importiert → auf Pi veröffentlicht**.
+1. Im DEV-Hub **Ordner & Quellen** öffnen.
+2. SMB-Pfad, Benutzer, Kennwort und ggf. Domäne eingeben.
+3. **Verbinden & prüfen**: echte Prüfung, sofort sichtbarer Fehler oder Erfolg.
+4. Der DEV-Importer kopiert Medien in seinen separaten DEV-Spiegel. Die
+   Statusanzeige zeigt Verbindung, erkannte Ordner, Dateikopien und Import.
+5. **Jetzt synchronisieren** stößt einen neuen Importlauf an.
+6. Unter **Playlists** einen erkannten Bildschirmordner auswählen.
+   Veröffentlichung auf Test-Pis ist weiterhin separat und standardmäßig aus.
 
-Unter „Ordner & Quellen“ aktualisiert sich der Status automatisch etwa
-**alle 10 Sekunden**. `Aktuellen Status prüfen` liest den Zustand erneut.
-Das ist keine erneute Root-Mount-Anforderung und **keine animierte
-Pseudo-Fortschrittsanzeige**.
+Für alle Details siehe [SMB nur per Browser](dev-smb-browser-only.md).
 
-Wenn kein DEV-Host-Mountdienst eingerichtet ist, lautet die Meldung
-ausdrücklich **„kein Host-Mountdienst meldet einen Versuch“** – egal wie
-lange du wartest. Erst ein eingerichteter Root-Timer prüft neue Pfade
-automatisch. Bei eingerichteten Timer-Skripten folgt normalerweise binnen
-ca. einer Minute ein Host-Prüflauf; danach prüft der unabhängige Importer
-standardmäßig alle 60 Sekunden. Je nach Ablauf kann es also mehr als
-einen Takt dauern.
-
-## Optional: echte SMB-Quelle für DEV einrichten
-
-**Nicht nötig** zum Testen des lokalen Ordners `dev-sources/demo`.
-
-Diesen Abschnitt nur verwenden, wenn du absichtlich einen **separaten,
-read-only DEV-CIFS-Mount** testen möchtest. Keine Mounts der produktiven
-Instanz wiederverwenden. Die neue Datei
-`compose.dev.smb.yaml` bindet ausschließlich
-`/srv/anthias-dev-sources:/sources:ro` in DEV ein.
-
-1. Im DEV-Hub den gewünschten SMB-Stammordner speichern
-   (`Ordner & Quellen`). Es wird nur die DEV-Registry geändert.
-2. Auf dem **Host** als Root `/etc/anthias-hub-dev/secrets/` (Modus 0700)
-   erstellen. Eine neue Credentials-Datei (Modus 0600, Owner Root) mit
-   `username=...`, `password=...` und ggf. `domain=...` anlegen.
-   Zugangsdaten niemals in Chat, Git oder Hub-UI schreiben.
-3. Unter `/etc/anthias-hub-dev/smb-allowlist.json` (Root, 0600)
-   eine **separate** Freigabeliste erstellen; `server` und `share`
-   müssen exakt zur DEV-Registry passen. Beispiel mit fiktiven Werten:
-
-```json
-{
-  "allowed_shares": [
-    {
-      "server": "10.0.0.10",
-      "share": "media$",
-      "credentials": "/etc/anthias-hub-dev/secrets/marketing.smb"
-    }
-  ]
-}
-```
-
-4. Den gesonderten DEV-Root-Timer installieren und den ersten
-   Prüfbericht abwarten:
-
-```bash
-cd /root/apps/anthias-hub-dev
-bash scripts/install-dev-smb-mounts.sh
-systemctl --no-pager status anthias-hub-dev-smb-mounts.service
-findmnt -M /srv/anthias-dev-sources/default -o TARGET,SOURCE,FSTYPE,OPTIONS
-```
-
-5. **Erst nachdem `findmnt` tatsächlich CIFS zeigt**, in der separaten
-   `/root/apps/anthias-hub-dev/.env` eintragen:
-
-```dotenv
-DEV_SMB_MODE=1
-```
-
-   Danach `bash scripts/dev-cohost.sh start`. Es baut ausschließlich
-   DEV neu und bindet die DEV-Mounts ein. Das Recreate ist wichtig:
-   Docker sieht einen nachträglich hinzugekommenen CIFS-Submount sonst
-   möglicherweise nicht (Bind-Propagation).
-
-Die GUI zeigt nun die Host-Bestätigung, erkannte Unterordner, den
-Import-Heartbeat und – wenn später aktiv – die Pi-Veröffentlichung.
-Bei Fehlern die Dienst-Logs auf dem Host auswerten:
-
-```bash
-journalctl -u anthias-hub-dev-smb-mounts.service -n 80 --no-pager
-bash scripts/dev-cohost.sh logs
-```
-
-**Kein automatisches Umhängen bestehender Quellen.** Wenn am DEV-Mountpunkt
-ein anderer Pfad liegt, meldet der Koordinator `conflict` und verändert
-den Mount nicht. Wenn du den UNC-Pfad änderst, muss der bestehende DEV-Mount
-kontrolliert behandelt werden. Nie den produktiven Mount anfassen.
+Das ältere Host-CIFS-Mount-Skript bleibt im Repository für bestehende
+Installationen, ist für diesen DEV-Workflow aber **nicht erforderlich** und
+darf nicht parallel zu `DEV_SMB_UI=1` eingeschaltet werden.
 
 ## Prüflauf
 
