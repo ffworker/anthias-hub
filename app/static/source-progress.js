@@ -10,6 +10,7 @@
   const lastCheck = dest.querySelector('[data-progress-check]');
   const refresh = root.querySelector('[data-source-check-now]');
   const count = root.querySelector('[data-folder-count]');
+  const folderList = root.querySelector('[data-source-folders]');
   let busy = false;
   let lastFingerprint = '';
   const messages = {
@@ -62,6 +63,29 @@
         (source.last_host_check || 'keine Meldung') +
         (source.report_stale ? ' · Meldung veraltet' : '');
       if (count) count.textContent = String(source.discovered);
+      if (folderList && Array.isArray(source.folders)) {
+        const entries = document.createElement('ul');
+        entries.className = 'source-v2-folder-list';
+        for (const folder of source.folders) {
+          const item = document.createElement('li');
+          const label = document.createElement('span');
+          label.textContent = folder.name;
+          const link = document.createElement('a');
+          const ident = folder.template_id;
+          link.href = typeof ident === 'string' && /^[a-f0-9]{32}$/.test(ident)
+            ? '/library/' + ident : '/library';
+          link.textContent = ident ? 'Playlist öffnen' : 'Playlist zuordnen';
+          item.append(label, link);
+          entries.append(item);
+        }
+        if (source.folders.length) folderList.replaceChildren(entries);
+        else {
+          const info = document.createElement('p');
+          info.className = 'muted';
+          info.textContent = 'Keine bestätigten Unterordner. Host-Mount und Berechtigungen prüfen.';
+          folderList.replaceChildren(info);
+        }
+      }
     } catch (error) {
       summary.textContent = 'Statusabfrage fehlgeschlagen: ' +
         (error instanceof Error ? error.message : 'unbekannt');
