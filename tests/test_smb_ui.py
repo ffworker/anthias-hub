@@ -158,3 +158,89 @@ def test_share_outage_preserves_last_good_files_and_blocks_new_publication(sandb
     assert mount_statuses().get('default') == 'error'
     with pytest.raises(Exception):
         source_directory('default/Bistro')
+
+
+def test_large_share_moves_in_multiple_automatic_batches_without_redownloading(
+        sandbox, monkeypatch):
+    """A share larger than the 4GiB *batch budget* must not fail."""
+    from app.source_progress import describe_sources
+    root, smb, work = sandbox
+    budget = len(PNG) * 2
+    monkeypatch.setattr(smb_ui, 'MAX_BYTES_PER_CYCLE', budget)
+
+    @contextmanager
+    def many_scandir(path, **options):
+        assert options['encrypt'] is True
+        if path.endswith(chr(92) + 'Bistro'):
+            yield iter([Entry('a.png', content=PNG),
+                        Entry('b.png', content=PNG),
+                        Entry('c.png', content=PNG)])
+        else:
+            yield iter([Entry('Bistro', directory=True)])
+
+    smb.scandir = many_scandir
+    unc = '//10.10.0.4/files$/Marketing/Large'
+    record, _ = connect(unc)
+
+    first = smb_ui.mirror_cycle()
+    assert first['copied'] == 2
+    assert first['pending'] == 1
+    state = smb_ui.safe_status()['sources']['default']
+    assert state['state'] == 'syncing'
+    assert state['files'] == 3
+    assert state['done'] == 2
+    assert state['total_bytes'] == len(PNG) * 3
+    assert not (root / 'default' / 'Bistro' / 'a.png').exists()
+    assert (root / ('.default-stage-' + record['revision']) /
+            'Bistro' / 'a.png').exists()
+    assert not (work / 'mirror-index.json').exists()
+    assert (work / 'mirror-index.json.pending').exists()
+    assert mount_statuses().get('default') == 'syncing'
+    display = describe_sources(
+        work / 'sources.json', work / 'smb-status.json', [], root)[0]
+    assert '2 von 3 Medien' in display['stages'][2]['detail']
+    assert display['stages'][2]['state'] == 'waiting'
+    assert display['stages'][3]['state'] == 'waiting'
+    assert '10000' not in display['stages'][2]['detail']
+
+    # Fresh function invocation uses only persisted state, emulating a
+    # container restart. Already downloaded media are not transferred again.
+    second = smb_ui.mirror_cycle()
+    assert second['copied'] == 1
+    assert second['pending'] == 0
+    assert (root / 'default' / 'Bistro' / 'a.png').read_bytes() == PNG
+    assert (root / 'default' / 'Bistro' / 'b.png').read_bytes() == PNG
+    assert (root / 'default' / 'Bistro' / 'c.png').read_bytes() == PNG
+    assert not (work / 'mirror-index.json.pending').exists()
+    assert smb_ui.safe_status()['sources']['default']['state'] == 'connected'
+    assert smb_ui.mirror_cycle()['copied'] == 0
+
+    # Re-entering valid credentials for the *same UNC* does not trigger a
+    # full 4GiB re-download or duplicate the mirror.
+    connect(unc)
+    assert smb_ui.mirror_cycle()['copied'] == 0
+
+
+def test_source_switch_preserves_previous_active_share_until_full_batch_sync(
+        sandbox, monkeypatch):
+    root, smb, _ = sandbox
+    connect('//10.10.0.4/files$/Original')
+    assert smb_ui.mirror_cycle()['pending'] == 0
+    assert (root / 'default' / 'Bistro' / 'banner.png').exists()
+    monkeypatch.setattr(smb_ui, 'MAX_BYTES_PER_CYCLE', len(PNG))
+    @contextmanager
+    def many_scandir(path, **options):
+        if path.endswith(chr(92) + 'Andere'):
+            yield iter([Entry('a.png', content=PNG), Entry('b.png', content=PNG)])
+        else:
+            yield iter([Entry('Andere', directory=True)])
+    smb.scandir = many_scandir
+    record, _ = connect('//10.10.0.4/files$/Changed')
+    first = smb_ui.mirror_cycle()
+    assert first['pending'] == 1
+    assert (root / 'default' / 'Bistro' / 'banner.png').exists()
+    assert not (root / 'default' / 'Andere').exists()
+    assert (root / ('.default-stage-' + record['revision']) / 'Andere' / 'a.png').exists()
+    assert smb_ui.mirror_cycle()['pending'] == 0
+    assert (root / 'default' / 'Andere' / 'b.png').exists()
+    assert not (root / 'default' / 'Bistro').exists()
