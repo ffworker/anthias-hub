@@ -69,7 +69,7 @@ def source_directory(alias, root=None):
         from .media_sources import SourceError, load_sources, mount_statuses
         try:
             registry = {entry['alias'] for entry in load_sources()}
-            if parent_alias in registry and mount_statuses().get(parent_alias) not in ('mounted', 'already-mounted'):
+            if parent_alias in registry and mount_statuses().get(parent_alias) not in ('mounted', 'already-mounted', 'connected'):
                 raise LibraryError('SMB-Pfad noch nicht durch den Host bestätigt; Import gestoppt')
         except SourceError as exc:
             raise LibraryError(str(exc)) from exc
@@ -293,6 +293,9 @@ def worker():
     interval = max(60, int(os.environ.get('FOLDER_SYNC_INTERVAL', '1800')))
     while True:
         try:
+            if os.environ.get('DEV_SMB_UI', '0') == '1':
+                from .smb_ui import mirror_cycle
+                mirror_cycle()
             reports = run_cycle()
             from .folder_status import write_status
             write_status(reports, enabled=os.environ.get('FOLDER_AUTO_PUBLISH', '0') == '1',
@@ -313,7 +316,24 @@ def worker():
                         print(f'Folder {template_id}, device {device_id}: {status}', flush=True)
         except (LibraryError, OSError, ValueError) as exc:
             print(f'Folder cycle failed, keeping existing media: {exc}', flush=True)
-        time.sleep(interval)
+        if os.environ.get('DEV_SMB_UI', '0') == '1':
+            # The UI queues a sync through the shared /data directory. Wake up
+            # quickly rather than making the operator wait a full 60 seconds.
+            trigger = Path(os.environ.get('DEV_SMB_TRIGGER_FILE', '/data/dev-smb-trigger'))
+            try:
+                seen = trigger.stat().st_mtime_ns
+            except OSError:
+                seen = 0
+            for _ in range(interval):
+                time.sleep(1)
+                try:
+                    changed = trigger.stat().st_mtime_ns
+                except OSError:
+                    changed = 0
+                if changed != seen:
+                    break
+        else:
+            time.sleep(interval)
 
 
 if __name__ == '__main__':
