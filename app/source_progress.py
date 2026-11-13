@@ -100,9 +100,18 @@ def describe_sources(registry_path, mount_status_path, library_items, root=None)
                 discovered = 0
         if python_smb and state == 'syncing':
             folder_state = 'waiting'
-            folder_detail = ('Medien werden kopiert: ' + str(int(live.get('done', 0))) +
-                             ' Datei(en) heruntergeladen, ' +
-                             str(int(live.get('files', 0))) + ' geprüft.')
+            copied_count = max(0, int(live.get('done', 0)))
+            total_count = max(0, int(live.get('files', 0)))
+            completed_gib = max(0, int(live.get('completed_bytes', 0))) / (1024 ** 3)
+            total_gib = max(0, int(live.get('total_bytes', 0))) / (1024 ** 3)
+            if total_count:
+                folder_detail = (
+                    f'Automatischer Teilimport: {copied_count} von {total_count} Medien '
+                    f'({completed_gib:.2f} von {total_gib:.2f} GiB). '
+                    'Die nächsten Abschnitte starten selbstständig.'
+                )
+            else:
+                folder_detail = 'Medienliste wird ermittelt; Kopieren startet automatisch.'
         elif python_smb and state == 'tested':
             folder_state = 'waiting'
             folder_detail = ('Verbindung erfolgreich – ' +
@@ -122,12 +131,19 @@ def describe_sources(registry_path, mount_status_path, library_items, root=None)
             folder_detail = ('Mount bestätigt, aber keine direkten Bildschirmordner gefunden.'
                              if alias == 'default' else
                              'Mount bestätigt, Quelle im Hub noch nicht sichtbar.')
-        stage.append({'title': 'Ordner im Hub sichtbar', 'state': folder_state,
+        stage.append({'title': ('Medien automatisch übernehmen'
+                                if python_smb and state == 'syncing'
+                                else 'Ordner im Hub sichtbar'), 'state': folder_state,
                       'detail': folder_detail})
 
         status = [read_status(t['id']) for t in templates]
         imported_ok = bool(status) and all(s['state'] == 'ok' for s in status)
         imported_error = any(s['state'] in ('error', 'stale') for s in status)
+        # Ignore stale template heartbeat while the protected SMB stage is
+        # incomplete: the worker has intentionally not published it yet.
+        if python_smb and state in ('syncing', 'tested'):
+            imported_ok = False
+            imported_error = False
         stage.append({
             'title': 'Playlist-Import',
             'state': 'done' if imported_ok else 'error' if imported_error else 'waiting',
@@ -143,6 +159,8 @@ def describe_sources(registry_path, mount_status_path, library_items, root=None)
         targets = sum(len(t.get('auto_devices', [])) for t in templates)
         auto_publish = bool(status) and all(s['auto_publish'] for s in status)
         published_errors = any(s.get('device_errors', 0) for s in status)
+        if python_smb and state in ('syncing', 'tested'):
+            published_errors = False
         publish_ready = (imported_ok and targets > 0 and auto_publish
                          and not published_errors)
         stage.append({
@@ -175,6 +193,9 @@ def describe_sources(registry_path, mount_status_path, library_items, root=None)
                 'done': int(live.get('done', 0)),
                 'files': int(live.get('files', 0)),
                 'bytes': int(live.get('bytes', 0)),
+                'total_bytes': int(live.get('total_bytes', 0)),
+                'completed_bytes': int(live.get('completed_bytes', 0)),
+                'pending': int(live.get('pending', 0)),
                 'state': state,
             } if python_smb else None,
         })
