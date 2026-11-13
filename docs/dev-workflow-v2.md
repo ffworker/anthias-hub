@@ -98,7 +98,7 @@ Das ältere Host-CIFS-Mount-Skript bleibt im Repository für bestehende
 Installationen, ist für diesen DEV-Workflow aber **nicht erforderlich** und
 darf nicht parallel zu `DEV_SMB_UI=1` eingeschaltet werden.
 
-## Kompakte Oberfläche (UI ui-20261113-06)
+## Kompakte Oberfläche (UI ui-20261113-07)
 
 Die DEV-Ansichten bleiben funktional unverändert, werden aber deutlich
 dichter dargestellt:
