@@ -105,14 +105,23 @@ def describe_sources(registry_path, mount_status_path, library_items, root=None)
             ),
         })
 
+        targets = sum(len(t.get('auto_devices', [])) for t in templates)
         auto_publish = bool(status) and all(s['auto_publish'] for s in status)
+        published_errors = any(s.get('device_errors', 0) for s in status)
+        publish_ready = (imported_ok and targets > 0 and auto_publish
+                         and not published_errors)
         stage.append({
             'title': 'Automatisch auf Pi veröffentlichen',
-            'state': ('done' if imported_ok and auto_publish
-                      else 'waiting'),
-            'detail': ('Publisher für zugeordnete Playlists aktiv.'
-                       if imported_ok and auto_publish else
-                       'Der Pi-Publisher ist nicht aktiv oder wurde noch nicht bestätigt.'),
+            'state': ('done' if publish_ready
+                      else 'error' if published_errors else 'waiting'),
+            'detail': ('Publisher mit ' + str(targets) +
+                       ' zugeordneten Bildschirm(en) zuletzt erfolgreich gemeldet.'
+                       if publish_ready else
+                       'Fehler beim Veröffentlichen auf mindestens einem Pi.'
+                       if published_errors else
+                       'Noch kein Zielbildschirm fest zugeordnet.'
+                       if targets == 0 else
+                       'Pi-Publisher ist deaktiviert oder noch nicht bestätigt.'),
         })
         result.append({
             'alias': alias, 'state': state, 'stages': stage,
