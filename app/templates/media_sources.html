@@ -49,6 +49,7 @@
       <div><p class="eyebrow">03 / INHALTE</p><h2>Erkannte Bildschirmordner</h2></div>
     </div>
     <p><strong data-folder-count>{{ default_folders|length }}</strong> Unterordner derzeit im Hub sichtbar.</p>
+    <div data-source-folders>
     {% if default_folders %}
       <ul class="source-v2-folder-list">
       {% for folder in default_folders %}
@@ -60,6 +61,7 @@
     {% else %}
       <p class="muted">Nach erfolgreichem Mount erscheinen hier die direkten Unterordner. Erst dann können sie als Playlist-Quelle ausgewählt werden.</p>
     {% endif %}
+    </div>
     <a class="button primary" href="{{ url_for('library_index') }}">Playlists öffnen →</a>
   </section>
 
