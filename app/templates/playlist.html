@@ -304,7 +304,7 @@
           <p class="composer-choice-label composer-choice-extra-label">Weitere Quellen</p>
           <div class="add-type-extra" role="group" aria-label="Weitere Inhaltsquellen">
             <button type="button" class="add-mode" data-add-mode="website" aria-pressed="false">Webseite</button>
-            {% if logged_user.role in ('owner', 'it') %}
+            {% if not workflow_v2 and logged_user.role in ('owner', 'it') %}
             <button type="button" class="add-mode" data-add-mode="folder" aria-pressed="false">Netzwerkordner</button>
             {% endif %}
           </div>
