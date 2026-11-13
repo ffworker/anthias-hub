@@ -26,7 +26,7 @@
       {% endif %}
     </div>
     {% if logged_user.role in ('owner', 'it') %}
-      <a class="button {{ 'primary' if not devices else '' }} fleet-add-button" href="#device-setup"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Bildschirm verbinden</a>
+      <a class="button {{ 'primary' if not devices else '' }} fleet-add-button" href="{{ url_for('control_center', tab='screens') if workflow_v2 else '#device-setup' }}"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#plus"></use></svg> Bildschirm verbinden</a>
     {% endif %}
   </section>
 
@@ -104,7 +104,7 @@
           {{ device_control(device, logged_user.role) }}
         {% endif %}
 
-        {% if logged_user.role in ('owner', 'it') %}
+        {% if logged_user.role in ('owner', 'it') and not workflow_v2 %}
           <details class="fleet-settings">
             <summary><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#settings"></use></svg> Einstellungen <span class="settings-chevron ui-chevron" aria-hidden="true"></span></summary>
             <div class="fleet-settings-content">
@@ -156,7 +156,7 @@
         <div class="fleet-empty-icon" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#screen"></use></svg></div>
         <h3>Noch keine Bildschirme verbunden</h3>
         <p class="muted">{% if logged_user.role in ('owner', 'it') %}Registriere deinen ersten Anthias-Player. Vorhandene Inhalte auf dem Gerät bleiben dabei unverändert.{% else %}Sobald die IT einen Bildschirm registriert, erscheint er hier.{% endif %}</p>
-        {% if logged_user.role in ('owner', 'it') %}<a class="button primary" href="#device-setup">Ersten Bildschirm verbinden →</a>{% endif %}
+        {% if logged_user.role in ('owner', 'it') %}<a class="button primary" href="{{ url_for('control_center', tab='screens') if workflow_v2 else '#device-setup' }}">Ersten Bildschirm verbinden →</a>{% endif %}
       </div>
     {% endfor %}
   </div>
@@ -190,7 +190,7 @@
     </div>
   {% if workflow_v2 %}</div></details>{% else %}</section>{% endif %}
 
-  {% if logged_user.role in ('owner', 'it') %}
+  {% if logged_user.role in ('owner', 'it') and not workflow_v2 %}
     <details id="device-setup" class="fleet-setup fleet-setup-collapsible"{% if not devices %} open{% endif %}>
       <summary class="fleet-setup-toggle">
         <span class="fleet-setup-toggle-text">
