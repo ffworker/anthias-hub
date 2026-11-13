@@ -4,19 +4,23 @@
 {% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">{% endblock %}
 {% block content %}
 {% if workflow_v2 %}
-<div class="source-v2-workspace" data-source-monitor data-status-url="{{ url_for('media_sources_status') }}">
+<div class="source-v2-workspace source-v2-compact" data-compact-ui="sources" data-source-monitor data-status-url="{{ url_for('media_sources_status') }}">
   <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Bildschirme</a><span aria-hidden="true">›</span>Ordner &amp; Quellen</nav>
-  <header class="source-v2-head">
-    <p class="eyebrow">EINRICHTUNG / QUELLEN</p>
-    <h1>Netzwerkordner</h1>
-    <p class="muted">Ein Stammordner genügt. Dessen Unterordner werden als Medienquellen für deine Playlists angeboten.</p>
+  <header class="source-v2-head source-v2-head-compact">
+    <div><p class="eyebrow">QUELLEN</p><h1>Netzwerkordner</h1></div>
+    <span class="source-v2-head-count">{{ default_folders|length }} Ordner erkannt</span>
   </header>
 
-  <section class="source-v2-mode">
-    <div class="source-v2-mode-top">
-      <span class="source-v2-icon" aria-hidden="true">▣</span>
-      <div><p class="eyebrow">01 / QUELLE</p><h2>SMB-Pfad hinterlegen</h2></div>
-    </div>
+  <details class="source-v2-expand source-v2-connection" id="smb-verbindung"
+           {% if not default_source %}open{% endif %}>
+    <summary>
+      <span class="source-v2-summary-title">SMB-Verbindung</span>
+      <span class="source-v2-summary-meta">
+        {% if default_source %}<code>{{ default_source.unc }}</code>{% else %}Noch keine Freigabe{% endif %}
+      </span>
+      <span class="source-v2-summary-action">{{ 'Verbindung ändern' if default_source else 'Verbinden' }}</span>
+    </summary>
+    <div class="source-v2-expand-body">
     <form class="source-v2-form" method="post" action="{{ url_for('media_sources_save') }}">
       <input type="hidden" name="csrf" value="{{ csrf() }}">
       <input type="hidden" name="alias" value="default">
@@ -44,16 +48,16 @@
       {% endif %}
     </form>
     {% if dev_smb_ui %}
-      <p class="source-v2-note">Der DEV-Hub prüft die SMB-Verbindung <strong>sofort</strong> und speichert die Zugangsdaten verschlüsselt in seinem separaten DEV-Speicher. Er liest die Dateien direkt über SMB3 – ohne Linux-Mount und ohne Zugriff auf Produktion. Verwende möglichst ein eigenes SMB-Konto mit ausschließlich Leserechten.</p>
+      <p class="source-v2-small-note">SMB3-Test beim Speichern · Zugangsdaten verschlüsselt im DEV-Hub · möglichst ein Lesekonto verwenden.</p>
     {% else %}
-      <p class="source-v2-note">Speichern merkt sich nur den Pfad. Ein Host-Mountdienst stellt die tatsächliche SMB-Verbindung her. Ohne diesen Dienst wird <strong>kein</strong> Scan gestartet.</p>
+      <p class="source-v2-small-note">Speichern allein startet keinen Host-Mount. Der Mountdienst muss die Verbindung bestätigen.</p>
     {% endif %}
-  </section>
+    </div>
+  </details>
 
-  <section class="source-v2-mode" aria-label="Einrichtungs- und Synchronisierungsstatus">
+  <section class="source-v2-mode source-v2-status-panel" aria-label="Einrichtungs- und Synchronisierungsstatus">
     <div class="source-v2-mode-top">
-      <span class="source-v2-icon" aria-hidden="true">↻</span>
-      <div><p class="eyebrow">02 / STATUS</p><h2>Was passiert gerade?</h2></div>
+      <div><p class="eyebrow">AUTOMATIK</p><h2>Synchronisierung</h2></div>
     </div>
     <div data-source-progress="default" role="status" aria-live="polite">
       <p data-progress-summary>Prüfstatus wird gelesen …</p>
@@ -80,18 +84,17 @@
       {% endif %}
     </div>
     {% if dev_smb_ui %}
-      <p class="source-v2-note">Verbindung und Dateikopien werden durch den eigenen DEV-Importer ausgeführt. Die Anzeige aktualisiert sich alle 3 Sekunden mit tatsächlich erledigten Dateien. Wenn der SMB-Server ausfällt, bleiben die zuletzt importierten Medien erhalten.</p>
+      <p class="source-v2-small-note">Status alle 3 Sekunden · Dateien bleiben bei Verbindungsfehlern erhalten · Pi-Veröffentlichung separat.</p>
     {% else %}
-      <p class="source-v2-note">Diese Ansicht aktualisiert den Status automatisch etwa alle 10 Sekunden. „Prüfen“ liest den momentanen Zustand erneut; der Browser kann keinen Root-Mount starten.</p>
+      <p class="source-v2-small-note">Statusabfrage ohne Root-Rechte. Der Host-Mountdienst muss separat laufen.</p>
     {% endif %}
   </section>
 
-  <section class="source-v2-mode">
+  <section class="source-v2-mode source-v2-folders-panel">
     <div class="source-v2-mode-top">
-      <span class="source-v2-icon" aria-hidden="true">≡</span>
-      <div><p class="eyebrow">03 / INHALTE</p><h2>Erkannte Bildschirmordner</h2></div>
+      <div><p class="eyebrow">BIBLIOTHEK</p><h2>Bildschirmordner <span class="source-v2-head-count" data-folder-count>{{ default_folders|length }}</span></h2></div>
+      <a class="button" href="{{ url_for('library_index') }}">Playlists →</a>
     </div>
-    <p><strong data-folder-count>{{ default_folders|length }}</strong> Unterordner derzeit im Hub sichtbar.</p>
     <div data-source-folders>
     {% if default_folders %}
       <ul class="source-v2-folder-list">
@@ -102,10 +105,9 @@
       {% endfor %}
       </ul>
     {% else %}
-      <p class="muted">Nach erfolgreichem Mount erscheinen hier die direkten Unterordner. Erst dann können sie als Playlist-Quelle ausgewählt werden.</p>
+      <p class="muted">Nach erfolgreicher Verbindung erscheinen hier die Unterordner als Playlist-Quellen.</p>
     {% endif %}
     </div>
-    <a class="button primary" href="{{ url_for('library_index') }}">Playlists öffnen →</a>
   </section>
 
   {% if sources|length > (1 if default_source else 0) or unmanaged %}
