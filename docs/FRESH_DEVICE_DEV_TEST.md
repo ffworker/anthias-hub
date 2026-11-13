@@ -1,5 +1,7 @@
 # Anthias Hub – frischer Testaufbau (separat vom Live-Hub)
 
+> For the easier, preferred option of running a separate DEV stack **on the existing host**, use [cohosted development](cohosted-development.md) instead. This historical fresh-host guide refers to a merged and deleted test branch; use the newer cohosted branch when possible.
+
 > **Entwicklungsstand, nicht produktiv deployen.** Der bestehende Produktiv-Hub,
 > seine `.env`, sein Compose-Override, der Folder-Importer, die Pis und
 > RSS2Slideshow werden **nicht** geändert. Hier wird auf einem **neuen
