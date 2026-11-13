@@ -51,15 +51,27 @@ Wichtig: Das ist ein **nicht gemergter Entwicklungsbranch**. Nur im bereits
 vorhandenen separaten Checkout arbeiten:
 
 ```bash
-cd /root/apps/anthias-hub-dev
-git fetch origin dev/screen-source-of-truth-v2-20261113
-git switch -c dev/screen-source-of-truth-v2-20261113 \
-  --track origin/dev/screen-source-of-truth-v2-20261113
+(
+  set -e
+  cd /root/apps/anthias-hub-dev
+  git fetch origin dev/screen-source-of-truth-v2-20261113
+  if git show-ref --verify --quiet refs/heads/dev/screen-source-of-truth-v2-20261113; then
+    git switch dev/screen-source-of-truth-v2-20261113
+  else
+    git switch --track origin/dev/screen-source-of-truth-v2-20261113
+  fi
+  git pull --ff-only
 
-# Baut und aktualisiert ausschließlich anthias-hub-dev auf Port 8766.
-bash scripts/dev-cohost.sh start
-bash scripts/dev-cohost.sh status
+  # Baut und aktualisiert ausschließlich anthias-hub-dev auf Port 8766.
+  bash scripts/dev-cohost.sh start
+  bash scripts/dev-cohost.sh status
+)
 ```
+
+Falls der DEV-Account beim ersten Passwortdialog nicht fertig angelegt wurde
+(`start` meldet `DEV setup incomplete`), zuvor im DEV-Checkout noch einmal
+`bash scripts/dev-cohost.sh init` aufrufen. Das setzt die vorhandenen
+DEV-Secrets nicht zurück und greift nicht auf die Produktion zu.
 
 Den Browser über den vorhandenen SSH-Tunnel auf
 `http://127.0.0.1:8766` öffnen. Der Footer zeigt die neue UI-Kennung und
@@ -86,7 +98,7 @@ Das ältere Host-CIFS-Mount-Skript bleibt im Repository für bestehende
 Installationen, ist für diesen DEV-Workflow aber **nicht erforderlich** und
 darf nicht parallel zu `DEV_SMB_UI=1` eingeschaltet werden.
 
-## Kompakte Oberfläche (UI ui-20261113-04)
+## Kompakte Oberfläche (UI ui-20261113-06)
 
 Die DEV-Ansichten bleiben funktional unverändert, werden aber deutlich
 dichter dargestellt:
@@ -98,8 +110,9 @@ dichter dargestellt:
 - **Playlist-Detail:** Inhaltsstatus und Medien bleiben immer sichtbar;
   „Bildschirme zuweisen“ und „Medien hinzufügen“ sind aufklappbar.
   Ohne bisherige Zuordnung bzw. bei leerer Playlist sind die Formulare
-  initial geöffnet. Medien lassen sich weiterhin sortieren, zeitlich
-  einstellen und über „⋯“ einzeln entfernen.
+  initial geöffnet. Die Wiedergabereihenfolge steht oben als nummerierte Liste. Medien lassen
+  sich direkt per Auf/Ab sortieren; Dauer und sicheres Entfernen liegen in
+  „⋯“.
 - **Ordner & Quellen:** Der Live-SMB-Status und „Jetzt synchronisieren“
   bleiben sichtbar. Der Credential-Editor öffnet sich über
   „SMB-Verbindung“ und ist bei erstmaliger Einrichtung automatisch
@@ -109,7 +122,8 @@ dichter dargestellt:
   Rechteprüfung oder bestehende API-Route wurde für die Verdichtung
   entfernt. Die Backend-Logik bleibt die Quelle der Wahrheit.
 
-Die Änderungen gelten ausschließlich mit `HUB_WORKFLOW_V2=1`,
+Alle Aufklapppfeile sind einheitlich. Die Änderungen gelten ausschließlich
+mit `HUB_WORKFLOW_V2=1`,
 nicht im normalen Produktiv-Hub.
 
 ## Prüflauf
