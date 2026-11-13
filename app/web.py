@@ -483,6 +483,7 @@ def create_app(config=None):
         templates = library().list()
         profiles = []
         sources = []
+        unmanaged = []
         folder_sources = []
         try:
             if tab in ('overview', 'schedules'):
@@ -490,12 +491,17 @@ def create_app(config=None):
             if role in ('it', 'owner') and tab in ('overview', 'sources', 'playlists'):
                 from .folder_sync import available_sources
                 folder_sources = available_sources()
-                from .media_sources import load_sources
+                from .media_sources import load_sources, observed_mount_source
                 sources = load_sources(app.config['MEDIA_SOURCES_FILE'])
+                visible = {alias for alias in folder_sources if '/' not in alias}
+                registered = {row['alias'] for row in sources}
+                unmanaged = [
+                    {'alias': alias, 'observed': observed_mount_source(alias)}
+                    for alias in sorted(visible - registered)
+                ]
         except (ScheduleError, LibraryError, OSError, ValueError) as exc:
             flash(str(exc), 'error')
-        source_dependents = {}
-        for source in sources:
+        for source in sources + unmanaged:
             source['dependents'] = [
                 {'id': row['id'], 'name': row['name']} for row in templates
                 if row.get('folder_source') == source['alias'] or
@@ -505,7 +511,7 @@ def create_app(config=None):
         return render_template(
             'control_center.html', control_tab=tab,
             templates=templates, devices=devices, profiles=profiles,
-            sources=sources, folder_sources=folder_sources,
+            sources=sources, unmanaged=unmanaged, folder_sources=folder_sources,
             default_source=next((row for row in sources if row['alias'] == 'default'), None),
             can_manage_sources=role in ('owner', 'it'),
         )
