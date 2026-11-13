@@ -107,7 +107,8 @@ start() {
   mkdir -p dev-sources/demo
   dc config --quiet
   dc build anthias-hub
-  dc up -d --no-build --no-deps anthias-hub anthias-folder-import
+  # Refresh only DEV services, including changes to DEV .env/player allowlist.
+  dc up -d --no-build --no-deps --force-recreate anthias-hub anthias-folder-import
   after=$(prod_id)
   [[ "$before" == "$after" ]] || fail 'Production ID changed unexpectedly; inspect both projects.'
   say "DEV only: http://127.0.0.1:$port"
