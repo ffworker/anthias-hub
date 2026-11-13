@@ -748,7 +748,11 @@ def create_app(config=None):
             audit('library.move-item', asset_id=template_id)
         except LibraryError as exc:
             flash(str(exc), 'error')
-        return redirect(url_for('library_detail', template_id=template_id))
+        # Return directly to the ordered items, not to the page heading.
+        # This is a visible, navigation-only v2 improvement; data handling,
+        # CSRF and legacy behavior are unchanged.
+        return redirect(url_for('library_detail', template_id=template_id,
+                                _anchor='inhalte' if app.config['HUB_WORKFLOW_V2'] else None))
 
     @app.post('/library/<template_id>/remove/<item_id>')
     @login_required('marketing')
