@@ -410,3 +410,45 @@ def test_empty_source_never_prunes_even_with_opt_in(setup):
     assert len(env['store'].get(env['template'])['items']) == 1
     assert perform(env, retire_missing=True)['disabled'] == 0
     assert env['player'].entries['asset1']['is_enabled'] is True
+
+
+def test_v2_manual_playlist_publishes_only_owned_media_when_explicitly_enabled(
+        tmp_path, monkeypatch):
+    """A fixed manual playlist is a real publisher, not just an info badge."""
+    monkeypatch.setenv('HUB_WORKFLOW_V2', '1')
+    store = Library(tmp_path / 'library')
+    template = store.create('Zentrale Playlist')
+    media = store.add_media(template['id'], 'Logo',
+                            io.BytesIO(PNG), 'logo.png', 15)
+    devices = tmp_path / 'devices.json'
+    devices.write_text(json.dumps({'devices': [
+        {'id': 'lab', 'name': 'Test Pi', 'url': 'http://10.10.0.21', 'location': ''}
+    ]}))
+    store.set_auto_devices(template['id'], ['lab'],
+                           json.loads(devices.read_text())['devices'],
+                           allow_manual=True)
+    player = FakePlayer()
+    player.entries['outside'] = {
+        'asset_id': 'outside', 'name': 'Manually added Pi content',
+        'uri': 'https://example.org', 'is_enabled': True,
+    }
+    options = dict(library_dir=str(tmp_path / 'library'),
+                   devices_file=str(devices), state_root=str(tmp_path / 'publications'),
+                   schedules_file=str(tmp_path / 'schedules.json'),
+                   api_factory=lambda d: player)
+    off = run_cycle(auto_publish=False, **options)
+    assert off[template['id']]['devices'] == {}
+    assert not player.events
+
+    on = run_cycle(auto_publish=True, **options)
+    assert on[template['id']]['devices']['lab']['added'] == 1
+    assert player.entries['outside']['is_enabled'] is True
+    assert len([event for event in player.events if event[0] == 'upload']) == 1
+    repeat = run_cycle(auto_publish=True, **options)
+    assert repeat[template['id']]['devices']['lab']['unchanged'] == 1
+
+    store.remove(template['id'], media['id'])
+    clean = run_cycle(auto_publish=True, **options)
+    assert clean[template['id']]['devices']['lab']['disabled'] == 1
+    assert player.entries['outside']['is_enabled'] is True
+    assert not any(event[0] == 'remove' for event in player.events)
