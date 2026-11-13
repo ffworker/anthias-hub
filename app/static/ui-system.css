@@ -3266,3 +3266,26 @@ body.studio-drawer-open{overflow:hidden}
   .site-main .source-v2-item-controls{display:grid;justify-items:start}
   .site-main .source-v2-mode-top h2{font-size:20px}
 }
+
+/* One compact read-only SMB connection form in the isolated DEV UI. */
+.site-main .source-v2-credentials {
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:13px 17px;padding:16px 18px;
+  border:1px solid var(--ui-line);
+  border-radius:10px;background:var(--ui-subtle);
+}
+.site-main .source-v2-credentials label {
+  display:grid;gap:7px;min-width:0;
+  font-size:12px;font-weight:650;color:var(--ui-fg);
+}
+.site-main .source-v2-credentials input {
+  width:100%;min-width:0;max-width:100%;background:var(--ui-surface);
+}
+.site-main .source-v2-credentials label:last-child {
+  grid-column:1/-1;max-width:360px;
+}
+.site-main .source-v2-actions form{display:inline-flex;margin:0}
+@media(max-width:640px){
+ .site-main .source-v2-credentials{grid-template-columns:1fr;padding:12px}
+ .site-main .source-v2-credentials label:last-child{grid-column:auto}
+}
