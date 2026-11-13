@@ -159,7 +159,10 @@ def create_app(config=None):
             'edit_asset', 'move_asset', 'reorder_assets',
             'toggle_asset', 'bulk_delete_assets', 'delete_asset',
             'asset_schedule', 'device_schedule_apply', 'device_schedule_default',
+            'device_schedule_add', 'device_schedule_delete',
         }
+        if app.config['HUB_WORKFLOW_V2']:
+            device_routes.add('attach_folder_playlist_to_device')
         library_routes = {
             'apply_library_from_template', 'append_library_from_template',
             'add_library_item_from_template',
@@ -171,7 +174,9 @@ def create_app(config=None):
                       'Pi-Inhalte nicht direkt überschreiben.')
             return
         if request.endpoint == 'device_schedule_edit':
-            if request.form.get('sync_assigned') != 'yes':
+            # In the v2 single-owner model, legacy forms may not opt out of
+            # the protection by omitting their old sync_assigned flag.
+            if request.form.get('sync_assigned') != 'yes' and not app.config['HUB_WORKFLOW_V2']:
                 return
             device_id = (request.view_args or {}).get('device_id', '')
             if device_id and managed_playlists_for_device(device_id):
