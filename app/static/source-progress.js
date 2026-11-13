@@ -11,6 +11,11 @@
   const refresh = root.querySelector('[data-source-check-now]');
   const count = root.querySelector('[data-folder-count]');
   const folderList = root.querySelector('[data-source-folders]');
+  const transfer = root.querySelector('[data-transfer]');
+  const transferBar = root.querySelector('[data-transfer-bar]');
+  const transferFiles = root.querySelector('[data-transfer-files]');
+  const transferBytes = root.querySelector('[data-transfer-bytes]');
+  const transferHint = root.querySelector('[data-transfer-hint]');
   let busy = false;
   let lastFingerprint = '';
   const messages = {
@@ -40,6 +45,31 @@
         if (count) count.textContent = '0';
         return;
       }
+      if (transfer) {
+        const p = source.copy_progress || {};
+        const total = Number(p.files || 0);
+        const done = Math.min(total, Math.max(0, Number(p.done || 0)));
+        const fullBytes = Math.max(0, Number(p.total_bytes || 0));
+        const doneBytes = Math.min(fullBytes, Math.max(0, Number(p.completed_bytes || 0)));
+        transfer.hidden = !(total || p.state === 'syncing');
+        if (!transfer.hidden) {
+          transferBar.max = Math.max(total, 1);
+          transferBar.value = done;
+          transferFiles.textContent = total
+            ? done + ' von ' + total + ' Medien übernommen'
+            : 'SMB-Dateiliste wird gelesen …';
+          const gib = n => (n / (1024 ** 3)).toLocaleString('de-DE',
+            {minimumFractionDigits: 1, maximumFractionDigits: 2});
+          transferBytes.textContent = fullBytes
+            ? gib(doneBytes) + ' / ' + gib(fullBytes) + ' GiB'
+            : 'Dateigröße wird ermittelt';
+          transferHint.textContent = p.state === 'connected'
+            ? 'Alle Medien geprüft. Die Playlists können übernommen werden.'
+            : p.state === 'error'
+            ? 'Import unterbrochen. Bereits kopierte Medien bleiben gespeichert.'
+            : 'Teilimport läuft automatisch weiter – keine erneute Verbindung nötig.';
+        }
+      }
       const fingerprint = JSON.stringify(source);
       if (fingerprint === lastFingerprint) return;
       lastFingerprint = fingerprint;
@@ -56,9 +86,11 @@
       }
       stages.replaceChildren(list);
       const firstIncomplete = source.stages.find(step => step.state !== 'done');
-      summary.textContent = (firstIncomplete
-        ? 'Nächster Schritt: ' + firstIncomplete.title
-        : 'Alle gemeldeten Schritte abgeschlossen.');
+      summary.textContent = source.state === 'syncing'
+        ? 'Automatischer SMB-Import läuft'
+        : (firstIncomplete
+          ? 'Nächster Schritt: ' + firstIncomplete.title
+          : 'Alle gemeldeten Schritte abgeschlossen.');
       lastCheck.textContent = (source.provider === 'python-smb' ? 'Letzter SMB-Abgleich: ' : 'Letzte bestätigte Hostprüfung: ') +
         (source.last_host_check || 'keine Meldung') +
         (source.report_stale ? ' · Meldung veraltet' : '');
