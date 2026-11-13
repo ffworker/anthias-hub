@@ -150,7 +150,7 @@
                   <span class="muted clip" title="{{ asset.uri or 'Lokales Medium' }}">{{ asset.uri or 'Lokales Medium' }}</span>
                   <span class="asset-schedule-summary"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg>{{ asset.schedule_label }}</span>
               {% if can_edit_player %}
-                  <span class="asset-edit-hint" aria-hidden="true">Bearbeiten <span class="asset-chevron">⌄</span></span>
+                  <span class="asset-edit-hint" aria-hidden="true">Bearbeiten <span class="asset-chevron ui-chevron"></span></span>
                 </button>
               {% else %}
                 </div>
