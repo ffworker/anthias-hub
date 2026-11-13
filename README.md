@@ -95,7 +95,7 @@ Also see [Security](SECURITY.md), [public-repository hygiene](docs/public-repo-h
 
 ## Development
 
-**Fresh Pi / new development host tomorrow:** See the [isolated fresh-device test runbook](docs/FRESH_DEVICE_DEV_TEST.md).
+**Development on the same server as production:** See [cohosted development](docs/cohosted-development.md) (separate checkout, port 8766, image and data). For a fully separate host see the [fresh-device test runbook](docs/FRESH_DEVICE_DEV_TEST.md).
 The `dev/fresh-device-workflow-20261112` branch has an explicit sandbox
 mode, local test folder source, and a separate importer. **Do not deploy
 this workflow on an existing Produktiv-Hub production installation.**
