@@ -15,7 +15,7 @@
   <script src="{{ url_for('static', filename='product-theme.js') }}"></script>
   <script defer src="{{ url_for('static', filename='ui-navigation.js') }}"></script>
 </head>
-<body>
+<body class="{{ 'hub-compact-v2' if workflow_v2 else '' }}">
 <a class="skip-link" href="#hauptinhalt">Zum Inhalt springen</a>
 <header class="top site-top">
   <div class="wrap top-inner site-header">
