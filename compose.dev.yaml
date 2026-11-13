@@ -5,6 +5,7 @@ services:
   anthias-hub:
     environment:
       HUB_DEVELOPMENT_MODE: "1"
+      HUB_WORKFLOW_V2: "1"
       FOLDER_AUTO_PUBLISH: "0"
       MEDIA_SOURCE_ROOT: /sources
     volumes:
