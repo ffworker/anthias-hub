@@ -11,7 +11,11 @@
       {% endfor %}
     </ul>
     {% else %}
+    {% if workflow_v2 and dev_smb_ui and source.alias == 'default' %}
+    <p>Die DEV-Registrierung und die verschlüsselt gespeicherten SMB-Zugangsdaten werden entfernt. <strong>Bereits kopierte DEV-Medien und Pi-Inhalte bleiben unverändert.</strong></p>
+    {% else %}
     <p>Die Registrierung wird entfernt und die Quelle verschwindet aus der Playlist-Auswahl. <strong>Kein SMB-Mount wird automatisch ausgehängt, keine SMB-Datei und kein Pi-Inhalt gelöscht.</strong> Den Host-Mount danach kontrolliert bereinigen.</p>
+    {% endif %}
     <form method="post" action="{{ url_for('media_sources_remove') }}" class="media-retire-form">
       <input type="hidden" name="csrf" value="{{ csrf() }}">
       <input type="hidden" name="alias" value="{{ source.alias }}">
