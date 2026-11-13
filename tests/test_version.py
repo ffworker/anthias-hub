@@ -16,4 +16,4 @@ def test_read_build_sha_accepts_real_commit_and_normalizes_case(tmp_path):
     valid = "aB2C" * 10
     path.write_text(valid + "\n", encoding="utf-8")
     assert read_build_sha(path) == valid.lower()
-    assert UI_REVISION == "ui-20261113-03"
+    assert UI_REVISION == "ui-20261113-04"
