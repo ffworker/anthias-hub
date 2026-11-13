@@ -1,10 +1,10 @@
 services:
   anthias-hub:
     build: .
-    image: anthias-hub:pilot
+    image: ${HUB_LOCAL_IMAGE:-anthias-hub:pilot}
     env_file: .env
     ports:
-      - "127.0.0.1:8765:8765"
+      - "127.0.0.1:${HUB_BIND_PORT:-8765}:8765"
     user: "${HUB_UID:-1000}:${HUB_GID:-1000}"
     volumes:
       - ./config:/config:ro
