@@ -3202,3 +3202,77 @@ def test_v2_source_live_status_endpoint_shows_no_fake_scan(env, monkeypatch):
     assert source['stages'][0]['state'] == 'done'
     assert source['stages'][1]['state'] == 'waiting'
     assert source['discovered'] == 0
+
+
+def test_dev_smb_can_be_connected_and_rechecked_entirely_from_it_ui(env, tmp_path, monkeypatch):
+    import app.smb_ui as smb_ui
+    from contextlib import contextmanager
+
+    app, client, tmp = env
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['MEDIA_SOURCES_FILE'] = str(Path(tmp) / 'dev-media-sources.json')
+    app.config['MEDIA_MOUNT_STATUS_FILE'] = str(Path(tmp) / 'dev-smb-report.json')
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'dev-library')
+    monkeypatch.setenv('MEDIA_SOURCES_FILE', app.config['MEDIA_SOURCES_FILE'])
+    monkeypatch.setenv('MEDIA_MOUNT_STATUS_FILE', app.config['MEDIA_MOUNT_STATUS_FILE'])
+    monkeypatch.setenv('DEV_SMB_UI', '1')
+    monkeypatch.setenv('APP_SECRET_KEY', 'S' * 48)
+    monkeypatch.setenv('DEV_SMB_CREDENTIALS_FILE', str(Path(tmp) / 'dev-credentials.bin'))
+    monkeypatch.setenv('DEV_SMB_TRIGGER_FILE', str(Path(tmp) / 'dev-trigger'))
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(Path(tmp) / 'dev-sources'))
+    (Path(tmp) / 'dev-sources').mkdir()
+
+    class Screen:
+        name = 'Bistro'
+        def is_dir(self): return True
+        def is_symlink(self): return False
+
+    class SMB:
+        @contextmanager
+        def scandir(self, path, **kwargs):
+            if kwargs['password'] != 'testsecret':
+                raise PermissionError('STATUS_LOGON_FAILURE')
+            yield iter([Screen()])
+        def reset_connection_cache(self): pass
+
+    monkeypatch.setattr(smb_ui, '_smb', lambda: SMB())
+    login(client, 'it')
+    page = client.get('/media-sources')
+    assert page.status_code == 200
+    assert b'name="password"' in page.data
+    assert b'Verbinden &amp; pr' in page.data
+
+    response = client.post('/media-sources', data={
+        'csrf': token(client), 'alias': 'default',
+        'unc': '//10.11.12.13/media$/Bildschirme',
+        'username': 'reader', 'password': 'testsecret', 'domain': 'DOMAIN',
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert 'SMB verbunden:' in response.get_data(as_text=True)
+    assert b'testsecret' not in response.data
+    assert b'testsecret' not in (Path(tmp) / 'dev-credentials.bin').read_bytes()
+    assert (Path(tmp) / 'dev-trigger').exists()
+
+    state = client.get('/media-sources/status')
+    assert state.status_code == 200
+    assert state.json['sources'][0]['stages'][1]['state'] == 'done'
+    assert state.json['sources'][0]['copy_progress']['state'] == 'tested'
+    assert 'testsecret' not in json.dumps(state.json)
+
+    refreshed = client.post('/media-sources/sync-now', data={'csrf': token(client)})
+    assert refreshed.status_code == 302
+
+    denied = client.post('/media-sources', data={
+        'csrf': token(client), 'alias': 'default',
+        'unc': '//10.11.12.13/media$/Other',
+        'username': 'reader', 'password': 'wrong', 'domain': '',
+    }, follow_redirects=True)
+    assert denied.status_code == 200
+    assert 'Anmeldung/Berechtigung fehlgeschlagen' in denied.get_data(as_text=True)
+    from app.media_sources import load_sources
+    assert load_sources(app.config['MEDIA_SOURCES_FILE'])[0]['unc'].endswith('/Bildschirme')
+
+    login(client, 'viewer')
+    assert client.get('/media-sources/status').status_code == 403
+    assert client.post('/media-sources/sync-now',
+                       data={'csrf': token(client)}).status_code == 403
