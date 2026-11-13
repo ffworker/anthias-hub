@@ -299,7 +299,7 @@
           <div class="add-type-switch" role="group" aria-label="Häufige Aktionen">
             <button type="button" class="add-mode selected" data-add-mode="media" aria-pressed="true">Datei</button>
             <button type="button" class="add-mode" data-add-mode="zip" aria-pressed="false">ZIP / Mehrere</button>
-            <button type="button" class="add-mode" data-add-mode="library" aria-pressed="false">Bibliothek</button>
+            {% if not workflow_v2 %}<button type="button" class="add-mode" data-add-mode="library" aria-pressed="false">Bibliothek</button>{% endif %}
           </div>
           <p class="composer-choice-label composer-choice-extra-label">Weitere Quellen</p>
           <div class="add-type-extra" role="group" aria-label="Weitere Inhaltsquellen">
