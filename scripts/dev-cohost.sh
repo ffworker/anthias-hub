@@ -134,14 +134,20 @@ start() {
   before=$(prod_id)
   mkdir -p dev-sources/demo
   if grep -qx 'DEV_SMB_MODE=1' .env; then
-    # Docker's default bind propagation can hide CIFS submounts added after
-    # container startup. Require an actual mounted test source FIRST, then
-    # force-recreate only the DEV services below.
-    local fstype
-    fstype=$(findmnt -n -M /srv/anthias-dev-sources/default -o FSTYPE 2>/dev/null || true)
-    [[ "$fstype" == cifs ]] ||
-      fail 'DEV_SMB_MODE=1 needs a verified DEV CIFS mount at /srv/anthias-dev-sources/default.'
+    fail 'Do not combine the older root-mounted SMB mode with the new browser-only DEV SMB connector.'
   fi
+  # Only the DEV importer may write its own SMB media cache.
+  local cache_uid cache_gid
+  cache_uid=$(sed -n 's/^HUB_UID=//p' .env)
+  cache_gid=$(sed -n 's/^HUB_GID=//p' .env)
+  [[ "$cache_uid" =~ ^[0-9]+$ && "$cache_gid" =~ ^[0-9]+$ ]] ||
+    fail 'Invalid DEV UID/GID'
+  [[ ! -L dev-sources/default ]] || fail 'DEV cache cannot be a symlink'
+  mkdir -p dev-sources/default
+  if [[ $(id -u) == 0 ]]; then
+    chown "$cache_uid:$cache_gid" dev-sources/default
+  fi
+  chmod 0750 dev-sources/default
   dc config --quiet
   dc build anthias-hub
   # Refresh only DEV services, including changes to DEV .env/player allowlist.
