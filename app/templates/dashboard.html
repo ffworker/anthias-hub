@@ -175,7 +175,7 @@
     </div>
   {% endif %}
     <div class="hub-next-steps-grid">
-      <a class="hub-task-link" href="{{ url_for('library_index') }}">
+      <a class="hub-task-link" href="{{ url_for('control_center', tab='playlists') if workflow_v2 else url_for('library_index') }}">
         <span><strong>Playlists verwalten</strong><small>Vorlagen vorbereiten, Inhalte sortieren und gezielt übertragen</small></span>
         <span class="hub-task-arrow" aria-hidden="true">→</span>
       </a>
