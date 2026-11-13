@@ -2,7 +2,8 @@
 {% block title %}Netzwerkordner · Anthias Hub{% endblock %}
 {% block content %}
 <div class="source-v2-workspace source-v2-compact" data-compact-ui="sources"
-     data-source-monitor data-status-url="{{ url_for('media_sources_status') }}">
+     data-source-monitor data-status-url="{{ url_for('media_sources_status') }}"
+     data-control-url="{{ url_for('control_center', tab='playlists') }}">
   <header class="source-v2-head source-v2-head-compact">
     <div><p class="eyebrow">QUELLENSTATUS</p><h1>Netzwerkordner</h1>
       <p class="muted">Hier siehst du die tatsächlich gemeldeten Importe. Verbindung und Quellenregistrierung erfolgen zentral.</p>
