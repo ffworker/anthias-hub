@@ -12,7 +12,7 @@ services:
 
   anthias-folder-import:
     build: .
-    image: anthias-hub:pilot
+    image: ${HUB_LOCAL_IMAGE:-anthias-hub:pilot}
     env_file: .env
     command: ["python", "-m", "app.folder_sync"]
     user: "${HUB_UID:-1000}:${HUB_GID:-1000}"
