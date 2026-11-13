@@ -3140,7 +3140,7 @@ def test_v2_single_owner_disables_duplicate_device_editing_even_in_dev(env, monk
     index = client.get('/library').get_data(as_text=True)
     detail = client.get(f"/library/{one['id']}").get_data(as_text=True)
     assert 'ZENTRALE INHALTE' in index
-    assert 'Playlist zuordnen' in detail
+    assert 'Bildschirme zuweisen' in detail
     assert 'Einmalige Übertragung' not in detail
     assert f"/library/{one['id']}/auto-devices" in detail
 
