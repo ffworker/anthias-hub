@@ -2170,7 +2170,7 @@ def test_it_can_retire_unused_smb_source_but_never_mounted_files(env, monkeypatc
     template = store.create('Bistro')
     store.set_folder_source(template['id'], 'default/Bistro')
     login(client, 'it')
-    page = client.get('/control?tab=sources').get_data(as_text=True)
+    page = client.get('/media-sources').get_data(as_text=True)
     assert 'Quelle aus dem Hub entfernen' in page
     assert 'Entfernen gesperrt' in page
     assert '/library/' + template['id'] in page
@@ -3277,9 +3277,9 @@ def test_dev_smb_can_be_connected_and_rechecked_entirely_from_it_ui(env, tmp_pat
     from app.media_sources import load_sources
     assert load_sources(app.config['MEDIA_SOURCES_FILE'])[0]['unc'].endswith('/Bildschirme')
 
-    # Compact source editor still exposes the existing guarded retirement
-    # action and removes the encrypted DEV-only credentials.
-    page = client.get('/media-sources').get_data(as_text=True)
+    # Retirement now lives only in central management, retaining the existing
+    # guarded backend and encrypted DEV credential cleanup.
+    page = client.get('/control?tab=sources').get_data(as_text=True)
     assert 'Quelle aus dem Hub entfernen' in page
     removed = client.post('/media-sources/remove', data={
         'csrf': token(client), 'alias': 'default',
