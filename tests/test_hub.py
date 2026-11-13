@@ -2512,10 +2512,10 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
     response = client.get('/login')
     assert response.status_code == 200
     text = response.get_data(as_text=True)
-    assert 'content="ui-20261112-07"' in text
+    assert 'content="ui-20261113-08"' in text
     assert 'ui-system.css' in text
     assert 'data-hub-build-sha="dev"' in text
-    assert 'UI <code>ui-20261112-07</code>' in text
+    assert 'UI <code>ui-20261113-08</code>' in text
     assert all(f"filename='{name}'" not in text for name in (
         'product-ui.css', 'ui-refinements.css', 'workflow-ui.css'))
 
@@ -2526,7 +2526,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
         result = client.get(path)
         assert result.status_code == 200, path
         text = result.get_data(as_text=True)
-        assert 'content="ui-20261112-07"' in text, path
+        assert 'content="ui-20261113-08"' in text, path
         assert text.count('ui-system.css') == 1, path
         assert 'data-product-theme-toggle' in text, path
         assert 'class="site-main"' not in text or 'id="hauptinhalt"' in text
@@ -2565,7 +2565,7 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert page.index('id="fleet-devices"') < page.index('class="hub-next-steps"')
     assert 'Playlists verwalten' in page
     assert 'Ordner &amp; Quellen' in page
-    assert 'ui-system.css?v=ui-20261112-07' in page
+    assert 'ui-system.css?v=ui-20261113-08' in page
 
     libpage = client.get('/library').get_data(as_text=True)
     assert libpage.index('id="library-page-title"') < libpage.index('class="library-grid library-index-grid"')
@@ -3100,4 +3100,460 @@ def test_development_mode_reassigns_already_managed_screen_without_touching_pi(e
     assert 'Testmodus: Zielzuordnung gespeichert' in changed.get_data(as_text=True)
     assert store.get(first['id'])['auto_devices'] == []
     assert store.get(second['id'])['auto_devices'] == ['lab']
+    assert FakeAnthias.changes == []
+
+
+def test_v2_single_owner_disables_duplicate_device_editing_even_in_dev(env, monkeypatch):
+    app, client, tmp = env
+    from app.library import Library
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    app.config['HUB_DEVELOPMENT_MODE'] = True
+    app.config['HUB_WORKFLOW_V2'] = True
+    store = Library(app.config['LIBRARY_DIR'])
+    one = store.create('Zentrale Playlist')
+    store.set_auto_devices(one['id'], ['lab'], [{'id':'lab'}],
+                           replace_existing=True, allow_manual=True)
+    login(client, 'it')
+    page = client.get('/devices/lab').get_data(as_text=True)
+    assert 'data-screen-mode="playlist"' in page
+    assert 'Zentrale Playlist' in page
+    assert 'data-open-composer' not in page
+    assert 'Einzelne Pi-Inhalte anzeigen' not in page
+
+    guessed = client.get('/devices/lab?editor=1').get_data(as_text=True)
+    assert 'data-screen-mode="playlist"' in guessed
+    assert 'data-open-composer' not in guessed
+    assert 'add-content' not in guessed
+
+    for path, params in [
+        ('/devices/lab/add-url', {'name': 'Verboten', 'url': 'https://example.org',
+                                  'duration': '30'}),
+        ('/devices/lab/schedules/apply', {'profile_id': 'always'}),
+        ('/devices/lab/schedules/default', {'profile_id': 'always'}),
+        ('/devices/lab/reorder', {}),
+        (f"/library/{one['id']}/append-to-device",
+         {'device': 'lab', 'confirm': 'append', 'ack': 'yes'}),
+    ]:
+        assert client.post(path, data={'csrf': token(client), **params}).status_code == 409, path
+    assert not FakeAnthias.changes
+
+    index = client.get('/library').get_data(as_text=True)
+    detail = client.get(f"/library/{one['id']}").get_data(as_text=True)
+    assert 'INHALTSBIBLIOTHEK' in index
+    assert 'Bildschirme zuweisen' not in detail
+    assert 'Einmalige Übertragung' not in detail
+    control = client.get('/control?tab=playlists').get_data(as_text=True)
+    assert 'Bildschirme zuweisen' in control
+    assert f"/library/{one['id']}/auto-devices" in control
+
+
+def test_v2_manual_empty_network_have_different_only_one_editor(env, monkeypatch):
+    app, client, tmp = env
+    from app.library import Library
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['HUB_DEVELOPMENT_MODE'] = True
+    login(client, 'it')
+
+    page = client.get('/devices/lab').get_data(as_text=True)
+    assert 'data-screen-mode="manual"' in page
+    assert 'Manuelle Inhalte bearbeiten' in page
+    assert 'Netzwerkordner-Anzeige' not in page
+    assert client.get('/devices/lab?editor=1').status_code == 200
+
+    monkeypatch.setattr(FakeAnthias, 'assets_data', [])
+    empty = client.get('/devices/lab').get_data(as_text=True)
+    assert 'data-screen-mode="empty"' in empty
+    assert 'Manuellen Inhalt hinzufügen' in empty
+
+    root = Path(tmp) / 'sources'
+    (root / 'bistro').mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    store = Library(app.config['LIBRARY_DIR'])
+    folder = store.create('Bistro Ordner')
+    store.set_folder_source(folder['id'], 'bistro')
+    store.set_auto_devices(folder['id'], ['lab'], [{'id': 'lab'}],
+                           allow_manual=True)
+    network = client.get('/devices/lab').get_data(as_text=True)
+    assert 'data-screen-mode="network"' in network
+    assert '<code>bistro</code>' in network
+    assert 'Manuellen Inhalt hinzufügen' not in network
+    assert 'data-open-composer' not in network
+    assert 'data-screen-mode="network"' in client.get('/devices/lab?editor=1').get_data(as_text=True)
+
+
+def test_v2_source_live_status_endpoint_shows_no_fake_scan(env, monkeypatch):
+    app, client, tmp = env
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['MEDIA_SOURCES_FILE'] = str(Path(tmp) / 'media-sources.json')
+    app.config['MEDIA_MOUNT_STATUS_FILE'] = str(Path(tmp) / 'mount-status.json')
+    login(client, 'it')
+    unconfigured = client.get('/media-sources').get_data(as_text=True)
+    assert 'Synchronisierung' in unconfigured
+    assert 'data-source-monitor' in unconfigured
+    assert 'source-progress.js' in unconfigured
+    result = client.post('/media-sources', data={
+        'csrf': token(client), 'alias': 'default',
+        'unc': '//10.12.13.14/media$/Bildschirme',
+    }, follow_redirects=True)
+    assert result.status_code == 200
+    assert 'Speichern allein' in result.get_data(as_text=True)
+    status = client.get('/media-sources/status')
+    assert status.status_code == 200
+    source = status.json['sources'][0]
+    assert source['stages'][0]['state'] == 'done'
+    assert source['stages'][1]['state'] == 'waiting'
+    assert source['discovered'] == 0
+
+
+def test_dev_smb_can_be_connected_and_rechecked_entirely_from_it_ui(env, tmp_path, monkeypatch):
+    import app.smb_ui as smb_ui
+    from contextlib import contextmanager
+
+    app, client, tmp = env
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['MEDIA_SOURCES_FILE'] = str(Path(tmp) / 'dev-media-sources.json')
+    app.config['MEDIA_MOUNT_STATUS_FILE'] = str(Path(tmp) / 'dev-smb-report.json')
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'dev-library')
+    monkeypatch.setenv('MEDIA_SOURCES_FILE', app.config['MEDIA_SOURCES_FILE'])
+    monkeypatch.setenv('MEDIA_MOUNT_STATUS_FILE', app.config['MEDIA_MOUNT_STATUS_FILE'])
+    monkeypatch.setenv('DEV_SMB_UI', '1')
+    monkeypatch.setenv('APP_SECRET_KEY', 'S' * 48)
+    monkeypatch.setenv('DEV_SMB_CREDENTIALS_FILE', str(Path(tmp) / 'dev-credentials.bin'))
+    monkeypatch.setenv('DEV_SMB_TRIGGER_FILE', str(Path(tmp) / 'dev-trigger'))
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(Path(tmp) / 'dev-sources'))
+    (Path(tmp) / 'dev-sources').mkdir()
+
+    class Screen:
+        name = 'Bistro'
+        def is_dir(self): return True
+        def is_symlink(self): return False
+
+    class SMB:
+        @contextmanager
+        def scandir(self, path, **kwargs):
+            if kwargs['password'] != 'testsecret':
+                raise PermissionError('STATUS_LOGON_FAILURE')
+            yield iter([Screen()])
+        def reset_connection_cache(self): pass
+
+    monkeypatch.setattr(smb_ui, '_smb', lambda: SMB())
+    login(client, 'it')
+    page = client.get('/media-sources')
+    assert page.status_code == 200
+    assert b'name="password"' not in page.data
+    setup = client.get('/control?tab=sources')
+    assert setup.status_code == 200
+    assert b'name="password"' in setup.data
+    assert b'Verbinden &amp; pr' in setup.data
+
+    response = client.post('/media-sources', data={
+        'csrf': token(client), 'alias': 'default',
+        'unc': '//10.11.12.13/media$/Bildschirme',
+        'username': 'reader', 'password': 'testsecret', 'domain': 'DOMAIN',
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert 'SMB verbunden:' in response.get_data(as_text=True)
+    assert b'testsecret' not in response.data
+    assert b'testsecret' not in (Path(tmp) / 'dev-credentials.bin').read_bytes()
+    assert (Path(tmp) / 'dev-trigger').exists()
+
+    state = client.get('/media-sources/status')
+    assert state.status_code == 200
+    assert state.json['sources'][0]['stages'][1]['state'] == 'done'
+    assert state.json['sources'][0]['copy_progress']['state'] == 'tested'
+    assert 'testsecret' not in json.dumps(state.json)
+
+    refreshed = client.post('/media-sources/sync-now', data={'csrf': token(client)})
+    assert refreshed.status_code == 302
+
+    denied = client.post('/media-sources', data={
+        'csrf': token(client), 'alias': 'default',
+        'unc': '//10.11.12.13/media$/Other',
+        'username': 'reader', 'password': 'wrong', 'domain': '',
+    }, follow_redirects=True)
+    assert denied.status_code == 200
+    assert 'Anmeldung/Berechtigung fehlgeschlagen' in denied.get_data(as_text=True)
+    from app.media_sources import load_sources
+    assert load_sources(app.config['MEDIA_SOURCES_FILE'])[0]['unc'].endswith('/Bildschirme')
+
+    # Retirement now lives only in central management, retaining the existing
+    # guarded backend and encrypted DEV credential cleanup.
+    page = client.get('/control?tab=sources').get_data(as_text=True)
+    assert 'Quelle aus dem Hub entfernen' in page
+    removed = client.post('/media-sources/remove', data={
+        'csrf': token(client), 'alias': 'default',
+        'confirm': 'default', 'ack': 'yes',
+    }, follow_redirects=True)
+    assert removed.status_code == 200
+    assert not (Path(tmp) / 'dev-credentials.bin').exists()
+    assert not load_sources(app.config['MEDIA_SOURCES_FILE'])
+
+    login(client, 'viewer')
+    assert client.get('/media-sources/status').status_code == 403
+    assert client.post('/media-sources/sync-now',
+                       data={'csrf': token(client)}).status_code == 403
+
+
+def test_v2_network_folder_playlist_creation_form_supplies_csrf_and_submits(env, monkeypatch):
+    """Reproduce the exact browser failure: POST /library without hidden csrf."""
+    app, client, tmp = env
+    from app.library import Library
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'v2-library')
+    root = Path(tmp) / 'dev-sources'
+    (root / 'default' / 'demo-screen-01').mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    monkeypatch.setenv('FOLDER_REQUIRE_MOUNT', '0')
+    monkeypatch.setenv('FOLDER_REQUIRE_VERIFIED', '0')
+    login(client, 'it')
+
+    html = client.get('/control?tab=playlists').get_data(as_text=True)
+    form = re.search(r'<form[^>]+action="/library"[^>]*>(.*?)</form>', html, re.S)
+    assert form, 'Playlist-create form missing'
+    csrf = re.search(r'<input[^>]+name="csrf"[^>]+value="([^"]+)"', form.group(1))
+    assert csrf, 'Playlist-create form did not include csrf: would return HTTP 400'
+    assert csrf.group(1) == token(client)
+    assert 'default/demo-screen-01' in form.group(1)
+
+    # Still reject forged or omitted tokens; never weaken the global CSRF check.
+    assert client.post('/library', data={
+        'name': 'Bad Submission', 'folder_source': 'default/demo-screen-01',
+    }).status_code == 400
+
+    created = client.post('/library', data={
+        'csrf': csrf.group(1), 'name': 'Service-Center',
+        'folder_source': 'default/demo-screen-01',
+    })
+    assert created.status_code == 302
+    playlists = Library(app.config['LIBRARY_DIR']).list()
+    assert len(playlists) == 1
+    assert playlists[0]['name'] == 'Service-Center'
+    assert playlists[0]['folder_source'] == 'default/demo-screen-01'
+    assert client.get(created.headers['Location']).status_code == 200
+
+
+def test_v2_compact_pages_keep_playlist_forms_and_privileged_actions(env, monkeypatch):
+    """Density is presentation-only: existing routes and CSRF stay functional."""
+    app, client, tmp = env
+    from app.library import Library
+    from app.media_sources import save_source
+
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'compact-library')
+    app.config['MEDIA_SOURCES_FILE'] = str(Path(tmp) / 'compact-sources.json')
+    app.config['MEDIA_MOUNT_STATUS_FILE'] = str(Path(tmp) / 'compact-smb-status.json')
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(Path(tmp) / 'sources'))
+    (Path(tmp) / 'sources').mkdir()
+    login(client, 'it')
+
+    overview = client.get('/library').get_data(as_text=True)
+    assert 'data-compact-ui="playlists"' in overview
+    assert 'source-v2-create-panel' not in overview
+    assert 'Playlists verwalten' in overview
+    manage = client.get('/control?tab=playlists').get_data(as_text=True)
+    assert 'Playlist anlegen' in manage
+    assert 'name="csrf" value="' + token(client) + '"' in manage
+    assert 'name="folder_source"' in manage
+
+    new = client.post('/library', data={
+        'csrf': token(client), 'name': 'Test-Playlist', 'folder_source': ''})
+    assert new.status_code == 302
+    library = Library(app.config['LIBRARY_DIR'])
+    item = library.list()[0]
+    assert item['name'] == 'Test-Playlist'
+
+    # These are real POST routes inside the compact UI, not dead buttons.
+    detail = client.get('/library/' + item['id']).get_data(as_text=True)
+    assert 'data-compact-ui="playlist-detail"' in detail
+    assert 'source-v2-targets' not in detail
+    assert 'source-v2-add-media' in detail
+    manage = client.get('/control?tab=playlists').get_data(as_text=True)
+    assert 'name="devices"' in manage
+    assert 'name="media"' in detail
+    assert 'name="url"' in detail
+    assert 'csrf' in detail
+
+    # Existing upload/webpage, duration and order actions remain available.
+    created = client.post('/library/' + item['id'] + '/url', data={
+        'csrf': token(client), 'name': 'Infoseite',
+        'url': 'https://example.org', 'duration': '20'})
+    assert created.status_code in (302, 303)
+    detail = client.get('/library/' + item['id']).get_data(as_text=True)
+    assert 'source-v2-item-more' in detail
+    assert 'name="duration"' in detail
+    assert 'name="direction" value="up"' in detail
+    assert 'name="ack" value="yes"' in detail
+
+    # The sources view reports status; the central menu owns credentials.
+    save_source('default', '//10.11.12.13/media$/Screens',
+                path=app.config['MEDIA_SOURCES_FILE'])
+    sources = client.get('/media-sources').get_data(as_text=True)
+    assert 'data-compact-ui="sources"' in sources
+    assert 'source-v2-connection' not in sources
+    assert 'name="unc"' not in sources
+    assert 'data-progress-stages' in sources
+    assert 'data-source-check-now' in sources
+    assert 'data-source-folders' in sources
+    assert '/media-sources/remove' not in sources
+    source_manage = client.get('/control?tab=sources').get_data(as_text=True)
+    assert 'name="unc"' in source_manage
+    assert 'name="csrf"' in source_manage
+    assert 'Quelle aus dem Hub entfernen' in source_manage
+    assert '/media-sources/remove' in source_manage
+
+    dashboard = client.get('/').get_data(as_text=True)
+    assert 'data-compact-ui="screens"' in dashboard
+    assert 'source-v2-secondary-nav' in dashboard
+    assert 'Bildschirm öffnen' in dashboard
+    assert 'device-setup' not in dashboard
+    assert 'Steuerzentrale' in dashboard
+
+
+def test_v2_playlist_sequence_is_primary_and_reorders_without_losing_actions(env):
+    """Sequence-first UI keeps CSRF, ordering, duration and safe removal."""
+    app, client, tmp = env
+    from app.library import Library
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'sequence-playlists')
+    store = Library(app.config['LIBRARY_DIR'])
+    template = store.create('Order Testing')
+    store.add_url(template['id'], 'Alpha', 'https://example.org/one', 15)
+    store.add_url(template['id'], 'Beta', 'https://example.org/two', 30)
+    store.add_url(template['id'], 'Gamma', 'https://example.org/three', 45)
+    login(client, 'it')
+
+    url = '/library/' + template['id']
+    html = client.get(url).get_data(as_text=True)
+    assert html.index('id="inhalte"') < html.index('id="quelle-und-status"')
+    assert 'id="zielbildschirme"' not in html
+    assert 'source-v2-sequence-panel' in html
+    assert 'Wiedergabereihenfolge' in html
+    assert html.index('Alpha') < html.index('Beta') < html.index('Gamma')
+    assert 'aria-label="Position 1"' in html
+    assert 'aria-label="Position 2"' in html
+    assert 'source-v2-sequence-move' in html
+    assert 'source-v2-sequence-more' in html
+    assert 'Dauer speichern' in html
+    assert 'Medium entfernen' in html
+    assert 'name="ack" value="yes"' in html
+    assert 'name="duration"' in html
+    assert 'name="csrf" value="' + token(client) + '"' in html
+    assert 'title="Eine Position nach oben"' in html
+    assert 'title="Eine Position nach unten"' in html
+
+    first_two = store.get(template['id'])['items']
+    moved = client.post('/library/' + template['id'] + '/move/' + first_two[1]['id'], data={
+        'csrf': token(client), 'direction': 'up',
+    })
+    assert moved.status_code == 302
+    assert moved.headers['Location'].endswith('#inhalte')
+    ordered = store.get(template['id'])['items']
+    assert [item['name'] for item in ordered] == ['Beta', 'Alpha', 'Gamma']
+
+    # The compact settings still genuinely change the item duration.
+    saved = client.post('/library/' + template['id'] + '/items/' + first_two[1]['id'] + '/duration', data={
+        'csrf': token(client), 'duration': '42',
+    })
+    assert saved.status_code == 302
+    assert store.get(template['id'])['items'][0]['duration'] == 42
+
+    bad = client.post('/library/' + template['id'] + '/move/' + first_two[0]['id'], data={
+        'direction': 'down',
+    })
+    assert bad.status_code == 400  # CSRF remains required.
+
+
+def test_v2_central_control_is_the_only_management_entrypoint_and_role_safe(env):
+    app, client, tmp = env
+    from app.library import Library
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'center-library')
+    app.config['MEDIA_SOURCES_FILE'] = str(Path(tmp) / 'center-sources.json')
+    app.config['SCHEDULES_FILE'] = str(Path(tmp) / 'center-schedules.json')
+    Library(app.config['LIBRARY_DIR']).create('Test löschen')
+
+    login(client, 'viewer')
+    assert client.get('/control').status_code == 403
+    assert client.get('/control?tab=sources').status_code == 403
+
+    login(client, 'marketing')
+    page = client.get('/control?tab=playlists').get_data(as_text=True)
+    assert 'Steuerzentrale' in page
+    assert 'Test löschen' in page
+    assert 'Vorlage löschen' in page
+    assert 'name="name_confirmation"' in page
+    assert 'name="csrf"' in page
+    assert 'href="/control?tab=sources"' not in page
+    assert client.get('/control?tab=sources').status_code == 403
+    for path in ('/library', '/schedules'):
+        view = client.get(path).get_data(as_text=True)
+        assert 'Steuerzentrale' in view
+        assert 'name="name_confirmation"' not in view
+    assert client.get('/control?tab=unrecognized').status_code == 404
+    assert client.get('/control?tab=overview').status_code == 200
+
+    login(client, 'it')
+    manage_sources = client.get('/control?tab=sources').get_data(as_text=True)
+    assert 'SMB-Verbindung' in manage_sources and 'name="unc"' in manage_sources
+    assert 'Quelle verwalten' in client.get('/media-sources').get_data(as_text=True)
+    assert 'source-v2-connection' not in client.get('/media-sources').get_data(as_text=True)
+    assert 'Verbindung bearbeiten' in client.get('/control?tab=screens').get_data(as_text=True)
+    assert 'device-setup' not in client.get('/').get_data(as_text=True)
+
+
+def test_v2_playlist_delete_restored_in_central_control_without_pi_writes(env):
+    app, client, tmp = env
+    from app.library import Library
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['HUB_DEVELOPMENT_MODE'] = True
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'delete-library')
+    store = Library(app.config['LIBRARY_DIR'])
+    free = store.create('Nur Test')
+    bound = store.create('Aktiv Test')
+    store.set_auto_devices(bound['id'], ['lab'], [{'id': 'lab'}],
+                           replace_existing=True, allow_manual=True)
+    login(client, 'it')
+    url = '/library/' + free['id'] + '/delete'
+    payload = {'csrf': token(client), 'control_tab': 'playlists',
+               'confirm': free['id'], 'name_confirmation': 'Nur Test', 'ack': 'yes'}
+    assert 'Vorlage endgültig löschen' in client.get('/control?tab=playlists').get_data(as_text=True)
+    assert client.post(url, data={k:v for k,v in payload.items() if k != 'csrf'}).status_code == 400
+    wrong = client.post(url, data={**payload, 'name_confirmation': 'Anders'})
+    assert wrong.status_code == 302
+    assert wrong.headers['Location'].endswith('/control?tab=playlists')
+    assert store.get(free['id'])['id'] == free['id']
+    refused = client.post('/library/' + bound['id'] + '/delete', data={
+        **payload, 'confirm': bound['id'], 'name_confirmation': 'Aktiv Test'
+    }, follow_redirects=True)
+    assert refused.status_code == 200
+    assert 'Erst Zielbildschirme' in refused.get_data(as_text=True)
+    assert store.get(bound['id'])['id'] == bound['id']
+    assert FakeAnthias.changes == []
+    removed = client.post(url, data=payload, follow_redirects=True)
+    assert removed.status_code == 200
+    assert 'Nur Test' not in [item['name'] for item in store.list()]
+    assert store.get(bound['id'])['id'] == bound['id']
+    assert FakeAnthias.changes == []
+
+
+def test_v2_central_schedule_forms_and_post_redirect_are_real(env):
+    app, client, tmp = env
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['SCHEDULES_FILE'] = str(Path(tmp) / 'center-schedules.json')
+    login(client, 'marketing')
+    control = client.get('/control?tab=schedules').get_data(as_text=True)
+    assert 'name="start"' in control and 'name="days"' in control
+    result = client.post('/schedules/add', data={
+        'csrf': token(client), 'control_tab': 'schedules',
+        'name': 'Montag bis Freitag', 'days': ['1','2','3','4','5'],
+        'start': '08:00', 'end': '18:00'
+    })
+    assert result.status_code == 302
+    assert result.headers['Location'].endswith('/control?tab=schedules')
+    assert 'Montag bis Freitag' in client.get(result.headers['Location']).get_data(as_text=True)
+    overview = client.get('/schedules').get_data(as_text=True)
+    assert 'Montag bis Freitag' in overview
+    assert 'schedule-library-new' not in overview
+    assert 'schedule_library_add' not in overview
     assert FakeAnthias.changes == []

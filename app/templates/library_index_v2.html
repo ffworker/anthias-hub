@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Playlists · Anthias Hub{% endblock %}
+{% block content %}
+<div class="source-v2-workspace source-v2-compact" data-compact-ui="playlists">
+  <header class="source-v2-head source-v2-head-compact">
+    <div><p class="eyebrow">INHALTSBIBLIOTHEK</p><h1>Playlists</h1>
+      <p class="muted">Inhalte und Wiedergabereihenfolge ansehen. Neue Playlists, Zuordnungen und Löschen liegen in der Steuerzentrale.</p>
+    </div>
+    {% if logged_user.role in ('marketing','owner','it') %}
+    <a class="button primary" href="{{ url_for('control_center', tab='playlists') }}">Playlists verwalten</a>
+    {% endif %}
+  </header>
+  <section class="source-v2-mode source-v2-list-panel">
+    <div class="source-v2-mode-top">
+      <div><p class="eyebrow">ÜBERSICHT</p><h2>{{ templates|length }} Playlists</h2></div>
+    </div>
+    {% if templates %}
+    <div class="source-v2-list">
+      {% for source in templates %}
+      {% set sync = folder_sync_by_template.get(source.id, {}) %}
+      <a href="{{ url_for('library_detail', template_id=source.id) }}" class="source-v2-list-row">
+        <div class="source-v2-list-label">
+          <strong>{{ source.name }}</strong>
+          <span>{{ 'Netzwerkordner · ' ~ source.folder_source if source.folder_source else 'Manuell gepflegt' }}</span>
+        </div>
+        <div class="source-v2-list-meta">
+          <strong>{{ source['items']|length }} Medien</strong>
+          <small>{{ source.auto_devices|default([])|length }} Bildschirme
+          {% if source.folder_source %}
+            <span class="source-v2-import-state" data-import-state="{{ sync.state|default('pending') }}">
+              · {{ 'Import OK' if sync.state == 'ok' else 'Importfehler' if sync.state == 'error' else 'Import veraltet' if sync.state == 'stale' else 'Import offen' }}
+            </span>
+          {% endif %}</small>
+        </div>
+        <span class="source-v2-list-arrow" aria-hidden="true">›</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+      <div class="control-center-empty"><p>Noch keine Playlists vorhanden.</p>
+        {% if logged_user.role in ('marketing','owner','it') %}
+        <a href="{{ url_for('control_center', tab='playlists') }}#playlist-neu">Erste Playlist erstellen</a>{% endif %}
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

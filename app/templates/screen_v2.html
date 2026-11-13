@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}{{ device.name }} · Anthias Hub{% endblock %}
+{% block content %}
+<div class="source-v2-workspace" data-screen-mode="{{ mode.key }}">
+  <nav class="breadcrumbs" aria-label="Pfad">
+    <a href="{{ url_for('dashboard') }}">Bildschirme</a>
+    <span aria-hidden="true">›</span>
+    <span aria-current="page">{{ device.name }}</span>
+  </nav>
+  <header class="source-v2-head">
+    <p class="eyebrow">BILDSCHIRM · {{ device.location or 'OHNE STANDORT' }}</p>
+    <h1>{{ device.name }}</h1>
+    <p class="muted">Eine Anzeige. Eine zentrale Stelle für ihre Inhalte.</p>
+  </header>
+
+  <section class="source-v2-mode" aria-label="Aktuelle Inhaltssteuerung">
+    <div class="source-v2-mode-top">
+      <span class="source-v2-icon" aria-hidden="true">{{ '◈' if mode.key == 'network' else '≡' if mode.key == 'playlist' else '▣' if mode.key == 'manual' else '○' }}</span>
+      <div>
+        <p class="eyebrow">AKTUELLE STEUERUNG</p>
+        <h2>{{ mode.label }}</h2>
+      </div>
+    </div>
+
+    {% if mode.key == 'network' %}
+      {% set source = mode.template %}
+      {% set sync = folder_sync_by_template.get(source.id, {}) %}
+      <p>Dieser Bildschirm gehört zur Playlist <strong>{{ source.name }}</strong>.
+         Deren Medien kommen aus dem Netzwerkordner. Hier gibt es bewusst
+         <strong>keinen zusätzlichen Editor für einzelne Pi-Inhalte</strong>.</p>
+      <dl class="source-v2-facts">
+        <div><dt>Netzwerkordner</dt><dd><code>{{ source.folder_source }}</code></dd></div>
+        <div><dt>Ordner-Abgleich</dt><dd>
+          {% if sync.state == 'ok' %}Erfolgreich · {{ (sync.interval_seconds // 60)|string ~ ' Min.' if sync.interval_seconds else 'Takt unbekannt' }}
+          {% elif sync.state == 'error' %}Fehler – Import prüfen
+          {% elif sync.state == 'stale' %}Veralteter Importstatus
+          {% else %}Noch nicht bestätigt{% endif %}
+        </dd></div>
+        <div><dt>Automatisch zum Pi</dt><dd>
+          {{ 'Aktiv' if sync.state == 'ok' and sync.auto_publish else 'Nicht bestätigt' if sync.auto_publish else 'Aus' }}
+        </dd></div>
+        <div><dt>Letzter Import</dt><dd>{{ sync.checked_at or 'Keine Meldung' }}</dd></div>
+      </dl>
+      <div class="source-v2-actions">
+        <a class="button primary" href="{{ url_for('library_detail', template_id=source.id) }}">Playlist „{{ source.name }}“ öffnen →</a>
+        {% if logged_user.role in ('owner','it') %}
+          <a class="button" href="{{ url_for('media_sources_page') }}">Netzwerkquelle prüfen</a>
+        {% endif %}
+      </div>
+      {% if not sync.auto_publish %}
+      <p class="source-v2-note" role="status">Die Ordnerübernahme und die automatische Pi-Veröffentlichung sind getrennte Funktionen. Der Pi-Abgleich ist noch ausgeschaltet.</p>
+      {% endif %}
+    {% elif mode.key == 'playlist' %}
+      {% set source = mode.template %}
+      <p>Die Playlist <strong>{{ source.name }}</strong> ist diesem Bildschirm fest zugeordnet.
+         Bilder, Webseiten, Reihenfolge und Anzeigedauer werden ausschließlich
+         dort gepflegt. Kein zweiter Inhaltseditor am Bildschirm.</p>
+      <dl class="source-v2-facts">
+        <div><dt>Quelle</dt><dd>Zentrale Playlist · keine Netzwerkordnerquelle</dd></div>
+        <div><dt>Inhalte in der Playlist</dt><dd>{{ source['items']|length }}</dd></div>
+        <div><dt>Übertragung auf den Pi</dt><dd>{{ 'Nur bei aktivem Publisher' if not publisher_ready else 'Automatisch freigeschaltet' }}</dd></div>
+      </dl>
+      <a class="button primary" href="{{ url_for('library_detail', template_id=source.id) }}">Playlist „{{ source.name }}“ verwalten →</a>
+    {% elif mode.key == 'manual' %}
+      <p>Dieser Bildschirm hat {{ assets|length }} direkt auf dem Pi gespeicherte Inhalte.
+         Es gibt keine zugeordnete zentrale Playlist oder Netzwerkordnersteuerung.</p>
+      {% if logged_user.role in ('owner','it','marketing') %}
+        <a class="button primary" href="{{ url_for('playlist', device_id=device.id, editor=1) }}">Manuelle Inhalte bearbeiten →</a>
+      {% else %}
+        <span>Ansicht ohne Bearbeitungsrechte</span>
+      {% endif %}
+    {% elif mode.key == 'empty' %}
+      <p>Der Bildschirm ist leer. Es gibt weder eine Netzwerkordner-Zuordnung,
+         noch eine Playlist-Zuordnung, noch einzelne Medien auf dem Pi.</p>
+      {% if logged_user.role in ('owner','it','marketing') %}
+      <div class="source-v2-actions">
+        <a class="button primary" href="{{ url_for('playlist', device_id=device.id, editor=1) }}">Manuellen Inhalt hinzufügen →</a>
+        <a class="button" href="{{ url_for('library_index') }}">Playlist erstellen oder zuweisen</a>
+      </div>
+      {% endif %}
+    {% elif mode.key == 'conflict' %}
+      <p role="alert">Mehrere zentrale Playlists beanspruchen diesen Bildschirm.
+         Bis zur Korrektur wird keine direkte Bearbeitung angeboten.</p>
+      <a class="button" href="{{ url_for('library_index') }}">Zuordnungen prüfen</a>
+    {% else %}
+      <p role="status">Der Pi ist aktuell nicht erreichbar. Ohne API-Antwort
+         können wir nicht bestimmen, ob seine Playlist leer oder manuell befüllt ist.</p>
+      <a class="button" href="{{ url_for('playlist', device_id=device.id) }}">Erneut prüfen</a>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

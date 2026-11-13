@@ -69,7 +69,7 @@ def source_directory(alias, root=None):
         from .media_sources import SourceError, load_sources, mount_statuses
         try:
             registry = {entry['alias'] for entry in load_sources()}
-            if parent_alias in registry and mount_statuses().get(parent_alias) not in ('mounted', 'already-mounted'):
+            if parent_alias in registry and mount_statuses().get(parent_alias) not in ('mounted', 'already-mounted', 'connected'):
                 raise LibraryError('SMB-Pfad noch nicht durch den Host bestätigt; Import gestoppt')
         except SourceError as exc:
             raise LibraryError(str(exc)) from exc
@@ -255,14 +255,19 @@ def run_cycle(*, root=None, library_dir=None, devices_file=None, state_root=None
         auto_publish = os.environ.get('FOLDER_AUTO_PUBLISH', '0') == '1'
     if api_factory is None:
         api_factory = Anthias
+    v2 = os.environ.get('HUB_WORKFLOW_V2', '0') == '1'
     results = {}
     for template in store.list():
-        if not template.get('folder_source'):
+        folder = bool(template.get('folder_source'))
+        # A manual template is only part of the synchronization loop when
+        # source-of-truth v2 is enabled AND a device is explicitly assigned.
+        if not folder and not (v2 and template.get('auto_devices')):
             continue
         template_id = template['id']
         try:
-            results[template_id] = {'import': sync_template(store, template_id, root),
-                                    'devices': {}}
+            imported = sync_template(store, template_id, root) if folder else {
+                'added': 0, 'updated': 0, 'retired': 0, 'skipped': 0}
+            results[template_id] = {'import': imported, 'devices': {}}
         except (OSError, LibraryError, ValueError) as exc:
             results[template_id] = {'error': str(exc)}
             continue
@@ -276,7 +281,8 @@ def run_cycle(*, root=None, library_dir=None, devices_file=None, state_root=None
                         store, template_id, device_id, devices_file=devices_file,
                         state_root=state_root, schedules_file=schedules_file,
                         api_factory=api_factory,
-                        retire_missing=os.environ.get('FOLDER_PRUNE_MISSING', '0') == '1')
+                        retire_missing=os.environ.get('FOLDER_PRUNE_MISSING', '0') == '1',
+                        allow_manual=v2 and not folder)
                 except (PublishError, PlayerError, LibraryError, ScheduleError,
                         OSError, ValueError) as exc:
                     results[template_id]['devices'][device_id] = {'error': str(exc)}
@@ -285,8 +291,27 @@ def run_cycle(*, root=None, library_dir=None, devices_file=None, state_root=None
 
 def worker():
     interval = max(60, int(os.environ.get('FOLDER_SYNC_INTERVAL', '1800')))
+    trigger = Path(os.environ.get('DEV_SMB_TRIGGER_FILE', '/data/dev-smb-trigger'))
     while True:
+        # Capture before work: a new UI request arriving during a scan must
+        # trigger another scan instead of being swallowed by the sleep timer.
         try:
+            at_start = trigger.stat().st_mtime_ns
+        except OSError:
+            at_start = 0
+        try:
+            smb_result = None
+            if os.environ.get('DEV_SMB_UI', '0') == '1':
+                from .smb_ui import mirror_cycle
+                smb_result = mirror_cycle()
+                if smb_result and smb_result.get('pending'):
+                    # Never publish a half-built mirror as if the SMB scan
+                    # were complete. Continue with the next bounded batch
+                    # automatically; no extra UI click is required.
+                    print('DEV SMB: ' + str(smb_result['pending']) +
+                          ' Medien verbleiben; nächster Teilimport folgt.', flush=True)
+                    time.sleep(3)
+                    continue
             reports = run_cycle()
             from .folder_status import write_status
             write_status(reports, enabled=os.environ.get('FOLDER_AUTO_PUBLISH', '0') == '1',
@@ -307,7 +332,19 @@ def worker():
                         print(f'Folder {template_id}, device {device_id}: {status}', flush=True)
         except (LibraryError, OSError, ValueError) as exc:
             print(f'Folder cycle failed, keeping existing media: {exc}', flush=True)
-        time.sleep(interval)
+        if os.environ.get('DEV_SMB_UI', '0') == '1':
+            # The UI queues a sync through the shared /data directory. Wake up
+            # quickly rather than making the operator wait a full 60 seconds.
+            for _ in range(interval):
+                time.sleep(1)
+                try:
+                    changed = trigger.stat().st_mtime_ns
+                except OSError:
+                    changed = 0
+                if changed != at_start:
+                    break
+        else:
+            time.sleep(interval)
 
 
 if __name__ == '__main__':

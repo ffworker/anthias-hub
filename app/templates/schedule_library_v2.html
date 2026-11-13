@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Zeitpläne · Anthias Hub{% endblock %}
+{% block content %}
+<div class="source-v2-workspace source-v2-compact" data-compact-ui="schedules">
+  <header class="source-v2-head source-v2-head-compact">
+    <div><p class="eyebrow">ZEITÜBERSICHT</p><h1>Zeitpläne</h1>
+      <p class="muted">Gemeinsame Zeitfenster ansehen. Anlegen, Ändern und Entfernen finden in der Steuerzentrale statt.</p>
+    </div>
+    {% if can_edit %}<a href="{{ url_for('control_center', tab='schedules') }}" class="button primary">Zeitpläne verwalten</a>{% endif %}
+  </header>
+  <section class="source-v2-mode source-v2-list-panel">
+    <div class="source-v2-mode-top">
+      <div><p class="eyebrow">HUBWEIT</p><h2>{{ profiles|length }} gemeinsame Zeitpläne</h2></div>
+    </div>
+    {% if profiles %}
+    <div class="source-v2-list">
+      {% for rule in profiles %}
+      <div class="source-v2-list-row control-center-readout">
+        <div class="source-v2-list-label"><strong>{{ rule.name }}</strong>
+          <span>{% for day, label in [(1,'Mo'),(2,'Di'),(3,'Mi'),(4,'Do'),(5,'Fr'),(6,'Sa'),(7,'So')] %}{% if day in rule.days %}{{ label }} {% endif %}{% endfor %}</span>
+        </div>
+        <div class="source-v2-list-meta"><strong>{{ rule.start }} – {{ rule.end }}</strong><small>Pi-Zuweisungen separat</small></div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="control-center-empty"><p>Es sind noch keine Zeitpläne hinterlegt.</p>
+      {% if can_edit %}<a href="{{ url_for('control_center', tab='schedules') }}#zeitplan-neu">Ersten Zeitplan erstellen</a>{% endif %}
+    </div>
+    {% endif %}
+  </section>
+  <section class="source-v2-mode source-v2-folders-panel">
+    <div class="source-v2-mode-top"><div><p class="eyebrow">BILDSCHIRME</p><h2>Zuweisungen ansehen</h2></div></div>
+    <div class="control-center-links">
+    {% for device in devices %}
+      <a href="{{ url_for('device_schedules', device_id=device.id) }}">{{ device.name }}</a>
+    {% else %}<p class="muted">Noch keine Bildschirme verbunden.</p>{% endfor %}
+    </div>
+  </section>
+  <p class="source-v2-small-note">Ein Hub-Zeitplan ist eine Vorlage. Die tatsächliche Wiedergabe auf dem Pi ändert sich nur nach einer ausdrücklich bestätigten Zuweisung.</p>
+</div>
+{% endblock %}

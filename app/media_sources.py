@@ -224,7 +224,8 @@ def mount_statuses(path=None, registry_path=None):
             state = value.get('state', 'pending')
             if value.get('fingerprint') != expected:
                 state = 'pending'
-            if state in ('mounted', 'already-mounted', 'blocked', 'pending', 'conflict', 'error'):
+            if state in ('mounted', 'already-mounted', 'blocked', 'pending', 'conflict', 'error',
+                         'tested', 'syncing', 'connected'):
                 result[key] = state
         return result
     except (OSError, ValueError, TypeError, AttributeError):

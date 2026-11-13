@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% block title %}{{ template.name }} · Playlists · Anthias Hub{% endblock %}
+{% block content %}
+<div class="source-v2-workspace source-v2-compact" data-compact-ui="playlist-detail">
+  <nav class="breadcrumbs" aria-label="Pfad">
+    <a href="{{ url_for('library_index') }}">Playlists</a>
+    <span aria-hidden="true">›</span>{{ template.name }}
+  </nav>
+  <header class="source-v2-head source-v2-head-compact">
+    <div>
+      <p class="eyebrow">{{ 'NETZWERKORDNER-PLAYLIST' if template.folder_source else 'ZENTRALE PLAYLIST' }}</p>
+      <h1>{{ template.name }}</h1>
+    </div>
+    <div class="control-center-header-actions"><span class="source-v2-head-count">{{ template['items']|length }} Medien · {{ template.auto_devices|default([])|length }} Bildschirme</span>
+      {% if logged_user.role in ('marketing','owner','it') %}
+      <a href="{{ url_for('control_center', tab='playlists') }}#playlist-{{ template.id }}">Verwalten</a>
+      {% endif %}
+    </div>
+  </header>
+  <div class="source-v2-playlist-identity">
+    <span class="source-v2-source-chip">{{ 'Netzwerkordner' if template.folder_source else 'Manuelle Playlist' }}</span>
+    {% if template.folder_source %}<span class="source-v2-source-id">{{ template.folder_source }}</span>{% endif %}
+    <span class="source-v2-publish-hint">{{ 'Pi-Sync aktiviert' if folder_sync_status.auto_publish else 'Pi-Sync aus' }}</span>
+  </div>
+
+  <section class="source-v2-mode source-v2-items-panel source-v2-sequence-panel" id="inhalte" aria-labelledby="playlist-sequence-heading">
+    <div class="source-v2-mode-top source-v2-sequence-head">
+      <div>
+        <p class="eyebrow">PLAYLIST · WIEDERGABE</p>
+        <h2 id="playlist-sequence-heading">Reihenfolge <span class="source-v2-sequence-total">{{ template['items']|length }}</span></h2>
+      </div>
+      <span class="source-v2-sequence-hint">Oben beginnt die Wiedergabe</span>
+    </div>
+    {% if template['items'] %}
+    <ol class="source-v2-item-list source-v2-sequence-list" aria-label="Medien in Wiedergabereihenfolge">
+      {% for item in template['items'] %}
+      {% set video = item.kind != 'url' and item.file.endswith('.mp4') %}
+      <li class="source-v2-sequence-row" id="item-{{ item.id }}">
+        <span class="source-v2-sequence-position" aria-label="Position {{ loop.index }}">{{ '%02d'|format(loop.index) }}</span>
+        <div class="source-v2-sequence-info">
+          <strong class="source-v2-sequence-name">{{ item.name }}</strong>
+          <div class="source-v2-sequence-meta">
+            <span>{{ 'Webseite' if item.kind == 'url' else 'Video' if video else 'Bild' }}</span>
+            <span aria-hidden="true">·</span>
+            <span>{{ 'Volle Länge' if video else (item.duration|string ~ ' Sek.') }}</span>
+            {% if item.source_file|default(false) %}<span aria-hidden="true">·</span><span>SMB</span>{% endif %}
+          </div>
+        </div>
+        {% if logged_user.role in ('marketing','owner','it') %}
+        <div class="source-v2-sequence-actions">
+          <form class="source-v2-sequence-move" method="post"
+                action="{{ url_for('library_move_item', template_id=template.id, item_id=item.id) }}"
+                aria-label="Reihenfolge von {{ item.name }} ändern">
+            <input type="hidden" name="csrf" value="{{ csrf() }}">
+            <button type="submit" name="direction" value="up" title="Eine Position nach oben"
+                    aria-label="{{ item.name }} nach oben" {% if loop.first %}disabled{% endif %}>
+              <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#arrow-up"></use></svg>
+            </button>
+            <button type="submit" name="direction" value="down" title="Eine Position nach unten"
+                    aria-label="{{ item.name }} nach unten" {% if loop.last %}disabled{% endif %}>
+              <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#arrow-down"></use></svg>
+            </button>
+          </form>
+          <details class="source-v2-item-more source-v2-sequence-more">
+            <summary aria-label="Einstellungen für {{ item.name }}" title="Dauer und weitere Aktionen">
+              <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#ellipsis"></use></svg>
+            </summary>
+            <div class="source-v2-item-more-body source-v2-sequence-options">
+              <strong>Medieneinstellungen</strong>
+              {% if not video %}
+              <form method="post" action="{{ url_for('library_item_duration', template_id=template.id, item_id=item.id) }}">
+                <input type="hidden" name="csrf" value="{{ csrf() }}">
+                <label>Anzeigedauer (Sekunden)
+                  <input type="number" name="duration" min="5" max="3600" value="{{ item.duration }}" required>
+                </label>
+                <button type="submit">Dauer speichern</button>
+              </form>
+              {% else %}
+              <p class="muted">Videos spielen automatisch in voller Länge.</p>
+              {% endif %}
+              {% if not template.folder_source or not item.source_file|default(false) %}
+              <details class="source-v2-sequence-remove">
+                <summary>Medium entfernen</summary>
+                <form method="post" action="{{ url_for('library_remove_item', template_id=template.id, item_id=item.id) }}">
+                  <input type="hidden" name="csrf" value="{{ csrf() }}">
+                  <input type="hidden" name="confirm" value="{{ item.id }}">
+                  <label class="source-v2-checkbox"><input type="checkbox" name="ack" value="yes" required> Entfernen bestätigen</label>
+                  <button type="submit" class="danger-btn">Entfernen</button>
+                </form>
+              </details>
+              {% endif %}
+            </div>
+          </details>
+        </div>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+      <p class="source-v2-sequence-empty">{{ 'Der Ordnerimport liefert noch keine Medien. Unter „Ordner & Quellen“ kannst du den Status prüfen.' if template.folder_source else 'Noch keine Medien. Öffne „Medien hinzufügen“, um die Playlist zu füllen.' }}</p>
+    {% endif %}
+  </section>
+
+  <details class="source-v2-expand source-v2-playlist-source" id="quelle-und-status">
+    <summary>
+      <span class="source-v2-summary-title">Quelle &amp; Synchronisierung</span>
+      <span class="source-v2-summary-meta">{{ 'SMB · ' ~ template.folder_source if template.folder_source else 'Manuell gepflegt' }}</span>
+    </summary>
+    <div class="source-v2-expand-body">
+      {% if template.folder_source and logged_user.role in ('owner','it') %}
+      <a class="source-v2-source-link" href="{{ url_for('media_sources_page') }}">SMB-Verbindung prüfen →</a>
+      {% endif %}
+    {% if template.folder_source %}
+      <dl class="source-v2-facts">
+        <div><dt>Quelle</dt><dd><code>{{ template.folder_source }}</code></dd></div>
+        <div><dt>Letzter Import</dt><dd>{{ folder_sync_status.checked_at or 'Nicht gemeldet' }}</dd></div>
+        <div><dt>Intervall</dt><dd>{{ (folder_sync_status.interval_seconds // 60)|string ~ ' Min.' if folder_sync_status.interval_seconds else 'Unbekannt' }}</dd></div>
+        <div><dt>Status</dt><dd>{{ 'Erfolgreich' if folder_sync_status.state == 'ok' else 'Fehlerhaft' if folder_sync_status.state == 'error' else 'Veraltet' if folder_sync_status.state == 'stale' else 'Noch nicht bestätigt' }}</dd></div>
+      </dl>
+    {% else %}
+      <p class="source-v2-small-note">Inhalte und Bilddauer werden hier zentral gepflegt.</p>
+    {% endif %}
+    <p class="source-v2-inline-state" role="status">
+      <strong>Pi-Veröffentlichung:</strong>
+      {{ 'Aktiv – letzte Rückmeldung erfolgreich' if folder_sync_status.state == 'ok' and folder_sync_status.auto_publish
+         else 'Konfiguriert, aber derzeit nicht bestätigt' if folder_sync_status.auto_publish
+         else 'Aus. Eine Zuordnung allein ändert den Pi noch nicht.' }}
+    </p>
+    </div>
+  </details>
+
+  {% if logged_user.role in ('marketing','owner','it') %}
+  {% if not template.folder_source %}
+  <details class="source-v2-expand source-v2-add-media" id="neu"
+           {% if not template['items'] %}open{% endif %}>
+    <summary><span class="source-v2-summary-title">＋ Medien hinzufügen</span>
+      <span class="source-v2-summary-meta">Datei, ZIP oder Webseite</span>
+    </summary>
+    <div class="source-v2-expand-body">
+    <form class="source-v2-form" method="post" enctype="multipart/form-data" action="{{ url_for('library_add_media', template_id=template.id) }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <label>Bild oder Video<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label>
+      <label>Titel (optional)<input name="name" maxlength="100"></label>
+      <label>Bilddauer (Sekunden)<input type="number" name="duration" min="5" max="3600" value="15" required></label>
+      <button type="submit" class="primary">Datei hinzufügen</button>
+    </form>
+    <details class="source-v2-optional">
+      <summary>Mehrere Dateien / ZIP oder Webseite hinzufügen</summary>
+      <div class="source-v2-optional-body">
+        <h3>Mehrere Medien</h3>
+        <form class="source-v2-form" method="post" enctype="multipart/form-data" action="{{ url_for('library_bulk_media', template_id=template.id) }}">
+          <input type="hidden" name="csrf" value="{{ csrf() }}">
+          <label>Dateien oder ZIP<input type="file" name="media" accept=".zip,.png,.jpg,.jpeg,.webp,.mp4" multiple required></label>
+          <label>Bilddauer<input type="number" name="duration" min="5" max="3600" value="15" required></label>
+          <button type="submit">Importieren</button>
+        </form>
+        <h3>Webseite / RSS</h3>
+        <form class="source-v2-form" method="post" action="{{ url_for('library_add_url', template_id=template.id) }}">
+          <input type="hidden" name="csrf" value="{{ csrf() }}">
+          <label>Titel<input name="name" required maxlength="100"></label>
+          <label>URL<input type="url" name="url" required></label>
+          <label>Bilddauer<input type="number" name="duration" min="5" max="3600" value="30" required></label>
+          <button type="submit">Webseite speichern</button>
+        </form>
+      </div>
+    </details>
+    </div>
+  </details>
+  {% else %}
+  <details class="source-v2-optional">
+    <summary>Optional: Webseite / RSS zusätzlich aufnehmen</summary>
+    <div class="source-v2-optional-body">
+      <form class="source-v2-form" method="post" action="{{ url_for('library_add_url', template_id=template.id) }}">
+        <input type="hidden" name="csrf" value="{{ csrf() }}">
+        <label>Titel<input name="name" required maxlength="100"></label>
+        <label>URL<input name="url" type="url" required></label>
+        <label>Dauer<input type="number" name="duration" min="5" max="3600" value="30" required></label>
+        <button type="submit">Webseite hinzufügen</button>
+      </form>
+    </div>
+  </details>
+  {% endif %}
+  {% endif %}
+
+</div>
+{% endblock %}

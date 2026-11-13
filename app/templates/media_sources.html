@@ -3,6 +3,143 @@
 {% block title %}Ordner & Quellen · IT · Anthias Hub{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='library.css') }}">{% endblock %}
 {% block content %}
+{% if workflow_v2 %}
+<div class="source-v2-workspace source-v2-compact" data-compact-ui="sources" data-source-monitor data-status-url="{{ url_for('media_sources_status') }}">
+  <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Bildschirme</a><span aria-hidden="true">›</span>Ordner &amp; Quellen</nav>
+  <header class="source-v2-head source-v2-head-compact">
+    <div><p class="eyebrow">QUELLEN</p><h1>Netzwerkordner</h1></div>
+    <span class="source-v2-head-count">{{ default_folders|length }} Ordner erkannt</span>
+  </header>
+
+  <details class="source-v2-expand source-v2-connection" id="smb-verbindung"
+           {% if not default_source %}open{% endif %}>
+    <summary>
+      <span class="source-v2-summary-title">SMB-Verbindung</span>
+      <span class="source-v2-summary-meta">
+        {% if default_source %}<code>{{ default_source.unc }}</code>{% else %}Noch keine Freigabe{% endif %}
+      </span>
+      <span class="source-v2-summary-action">{{ 'Verbindung ändern' if default_source else 'Verbinden' }}</span>
+    </summary>
+    <div class="source-v2-expand-body">
+    <form class="source-v2-form" method="post" action="{{ url_for('media_sources_save') }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <input type="hidden" name="alias" value="default">
+      <label>Gemeinsamer Bildschirmordner
+        <input name="unc" maxlength="650" placeholder="//10.0.0.5/media$/Marketing/Bildschirme"
+               value="{{ default_source.unc if default_source else '' }}" required>
+      </label>
+      {% if dev_smb_ui %}
+        <div class="source-v2-credentials">
+          <label>SMB-Benutzername
+            <input name="username" autocomplete="username" maxlength="128" required
+                   placeholder="z. B. service-smb">
+          </label>
+          <label>SMB-Kennwort
+            <input name="password" type="password" autocomplete="new-password"
+                   maxlength="512" required placeholder="Kennwort der SMB-Freigabe">
+          </label>
+          <label>Domäne (optional)
+            <input name="domain" maxlength="128" placeholder="z. B. FIRMA">
+          </label>
+        </div>
+        <button class="primary" type="submit">Verbinden &amp; prüfen →</button>
+      {% else %}
+        <button class="primary" type="submit">{{ 'Pfad aktualisieren' if default_source else 'Pfad speichern' }}</button>
+      {% endif %}
+    </form>
+    {% if dev_smb_ui %}
+      <p class="source-v2-small-note">SMB3-Test beim Speichern · Zugangsdaten verschlüsselt im DEV-Hub · möglichst ein Lesekonto verwenden.</p>
+    {% else %}
+      <p class="source-v2-small-note">Speichern allein startet keinen Host-Mount. Der Mountdienst muss die Verbindung bestätigen.</p>
+    {% endif %}
+    {% if default_source %}
+    <details class="source-v2-optional source-v2-source-admin">
+      <summary>Weitere Quellenaktionen</summary>
+      <div class="source-v2-optional-body">
+        {{ retire_control(default_source) }}
+      </div>
+    </details>
+    {% endif %}
+    </div>
+  </details>
+
+  <section class="source-v2-mode source-v2-status-panel" aria-label="Einrichtungs- und Synchronisierungsstatus">
+    <div class="source-v2-mode-top">
+      <div><p class="eyebrow">AUTOMATIK</p><h2>Synchronisierung</h2></div>
+    </div>
+    <div data-source-progress="default" role="status" aria-live="polite">
+      <p data-progress-summary>Prüfstatus wird gelesen …</p>
+      {% if dev_smb_ui %}
+      <div class="source-v2-transfer" data-transfer hidden>
+        <div class="source-v2-transfer-heading">
+          <strong data-transfer-files>Medien werden geprüft …</strong>
+          <span data-transfer-bytes>0 GiB</span>
+        </div>
+        <progress data-transfer-bar value="0" max="1" aria-label="SMB-Medienübernahme"></progress>
+        <p class="muted" data-transfer-hint>Der Importer übernimmt die Dateien automatisch in mehreren Durchläufen.</p>
+      </div>
+      {% endif %}
+      <ol class="source-v2-steps" data-progress-stages></ol>
+      <p class="muted" data-progress-check>Letzte Hostprüfung: noch nicht bekannt</p>
+    </div>
+    <div class="source-v2-actions">
+      <button type="button" class="button" data-source-check-now>Status aktualisieren</button>
+      {% if dev_smb_ui and default_source %}
+      <form method="post" action="{{ url_for('media_sources_sync_now') }}">
+        <input type="hidden" name="csrf" value="{{ csrf() }}">
+        <button type="submit" class="button primary">Jetzt synchronisieren ↻</button>
+      </form>
+      {% endif %}
+    </div>
+    {% if dev_smb_ui %}
+      <p class="source-v2-small-note">Status alle 3 Sekunden · Dateien bleiben bei Verbindungsfehlern erhalten · Pi-Veröffentlichung separat.</p>
+    {% else %}
+      <p class="source-v2-small-note">Statusabfrage ohne Root-Rechte. Der Host-Mountdienst muss separat laufen.</p>
+    {% endif %}
+  </section>
+
+  <section class="source-v2-mode source-v2-folders-panel">
+    <div class="source-v2-mode-top">
+      <div><p class="eyebrow">BIBLIOTHEK</p><h2>Bildschirmordner <span class="source-v2-head-count" data-folder-count>{{ default_folders|length }}</span></h2></div>
+      <a class="button" href="{{ url_for('library_index') }}">Playlists →</a>
+    </div>
+    <div data-source-folders>
+    {% if default_folders %}
+      <ul class="source-v2-folder-list">
+      {% for folder in default_folders %}
+        <li><span>{{ folder.name }}</span>
+          {% if folder.template %}<a href="{{ url_for('library_detail', template_id=folder.template.id) }}">Playlist öffnen</a>
+          {% else %}<a href="{{ url_for('library_index') }}">Playlist zuordnen</a>{% endif %}</li>
+      {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">Nach erfolgreicher Verbindung erscheinen hier die Unterordner als Playlist-Quellen.</p>
+    {% endif %}
+    </div>
+  </section>
+
+  {% if sources|length > (1 if default_source else 0) or unmanaged %}
+  <details class="source-v2-optional">
+    <summary>Zusätzliche Quellen ({{ sources|length - (1 if default_source else 0) + unmanaged|length }})</summary>
+    <div class="source-v2-optional-body">
+      {% for source in sources if source.alias != 'default' %}
+      <div class="source-v2-extra-source">
+        <p><strong>{{ source.alias }}</strong> · <code>{{ source.unc }}</code> · {{ source.status }}</p>
+        {{ retire_control(source) }}
+      </div>
+      {% endfor %}
+      {% for source in unmanaged %}
+      <div class="source-v2-extra-source">
+        <p><strong>{{ source.alias }}</strong> · älterer Mount · nicht als verwaltete Quelle bestätigt</p>
+        {{ retire_control(source) }}
+      </div>
+      {% endfor %}
+    </div>
+  </details>
+  {% endif %}
+</div>
+<script defer src="{{ url_for('static', filename='source-progress.js') }}"></script>
+{% else %}
 <nav class="breadcrumbs" aria-label="Pfad"><a href="{{ url_for('dashboard') }}">Bildschirme</a><span aria-hidden="true">›</span><span>Ordner &amp; Quellen (IT)</span></nav>
 
 <section class="library-intro media-page-intro" aria-labelledby="media-page-title">
@@ -99,7 +236,7 @@
 
   {% if default_source %}
   <details class="media-source-manage">
-    <summary><span><strong>Gespeicherten Pfad bearbeiten &amp; weitere Aktionen</strong><small>Nur IT · Änderungen am Host bewusst separat durchführen</small></span><span class="media-disclosure-chevron" aria-hidden="true">⌄</span></summary>
+    <summary><span><strong>Gespeicherten Pfad bearbeiten &amp; weitere Aktionen</strong><small>Nur IT · Änderungen am Host bewusst separat durchführen</small></span><span class="media-disclosure-chevron ui-chevron" aria-hidden="true"></span></summary>
     <div class="media-source-manage-body">
       <form method="post" action="{{ url_for('media_sources_save') }}" class="media-default-form">
         <input type="hidden" name="csrf" value="{{ csrf() }}">
@@ -153,7 +290,7 @@
       <div><dt>Playlist-Verwendung</dt><dd>{{ source.dependents|length }} Vorlage(n)</dd></div>
     </dl>
     <details class="media-source-manage">
-      <summary><span><strong>Quelle verwalten</strong><small>Pfad bearbeiten oder Registrierung entfernen</small></span><span class="media-disclosure-chevron" aria-hidden="true">⌄</span></summary>
+      <summary><span><strong>Quelle verwalten</strong><small>Pfad bearbeiten oder Registrierung entfernen</small></span><span class="media-disclosure-chevron ui-chevron" aria-hidden="true"></span></summary>
       <div class="media-source-manage-body">
         <form method="post" action="{{ url_for('media_sources_save') }}" class="media-source-form">
           <input type="hidden" name="csrf" value="{{ csrf() }}">
@@ -184,7 +321,7 @@
       <div><dt>Playlist-Verwendung</dt><dd>{{ source.dependents|length }} Vorlage(n)</dd></div>
     </dl>
     <details class="media-source-manage">
-      <summary><span><strong>Alten Ordner prüfen &amp; austragen</strong><small>Kein automatisches Aushängen</small></span><span class="media-disclosure-chevron" aria-hidden="true">⌄</span></summary>
+      <summary><span><strong>Alten Ordner prüfen &amp; austragen</strong><small>Kein automatisches Aushängen</small></span><span class="media-disclosure-chevron ui-chevron" aria-hidden="true"></span></summary>
       <div class="media-source-manage-body">
         <p class="muted">Bereits am Host eingebundene Ordner werden nur zur Bestandsaufnahme angezeigt. Die CIFS-Quelle kann nur den Freigabestamm enthalten. Vor Änderungen am Host mit <code>findmnt -M /srv/anthias-sources/{{ source.alias }} -o SOURCE,FSTYPE</code> prüfen.</p>
         <p class="muted">Die Umstellung auf <code>default/Unterordner</code> geschieht nicht automatisch.</p>
@@ -199,7 +336,7 @@
 </section>
 
 <details class="media-advanced-sources">
-  <summary><span class="library-action-label"><strong>Weitere SMB-Quelle hinzufügen</strong><small>Erweitert · nur wenn der gemeinsame Stammordner nicht genügt</small></span><span class="library-action-chevron" aria-hidden="true">⌄</span></summary>
+  <summary><span class="library-action-label"><strong>Weitere SMB-Quelle hinzufügen</strong><small>Erweitert · nur wenn der gemeinsame Stammordner nicht genügt</small></span><span class="library-action-chevron ui-chevron" aria-hidden="true"></span></summary>
   <div class="media-advanced-body">
     <section class="card library-panel media-sources-admin">
       <h2>Neue Medienquelle hinzufügen</h2>
@@ -216,12 +353,13 @@
 
 {% if retired %}
 <details class="media-retired-disclosure">
-  <summary><span><strong>Ausgetragene Quellen <span class="count">{{ retired|length }}</span></strong><small>Im Hub nicht mehr wählbar · Host-Mounts gegebenenfalls noch vorhanden</small></span><span class="media-disclosure-chevron" aria-hidden="true">⌄</span></summary>
+  <summary><span><strong>Ausgetragene Quellen <span class="count">{{ retired|length }}</span></strong><small>Im Hub nicht mehr wählbar · Host-Mounts gegebenenfalls noch vorhanden</small></span><span class="media-disclosure-chevron ui-chevron" aria-hidden="true"></span></summary>
   <div class="media-retired-list">
     <p class="muted">Diese Aliase sind im Hub deaktiviert. <strong>Ein CIFS-Mount bleibt auf dem Host bestehen, bis IT ihn separat aushängt.</strong></p>
     <ul>{% for alias in retired %}<li><code>{{ alias }}</code> · Host prüfen: <code>findmnt -M /srv/anthias-sources/{{ alias }}</code></li>{% endfor %}</ul>
     <p class="muted">Bei Bedarf kannst du den Alias mit seinem ursprünglichen SMB-Pfad erneut registrieren. Zuerst den echten Host-Mount kontrollieren.</p>
   </div>
 </details>
+{% endif %}
 {% endif %}
 {% endblock %}

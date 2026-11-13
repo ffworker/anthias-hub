@@ -7,15 +7,22 @@ project=anthias-hub-dev
 image=anthias-hub:dev-cohost
 port=8766
 root=$(pwd -P)
-dc() { docker compose -p "$project" -f compose.yaml -f compose.dev.yaml "$@"; }
+dc() {
+  local -a files=(-f compose.yaml -f compose.dev.yaml)
+  if [[ -f .env ]] && grep -qx 'DEV_SMB_MODE=1' .env; then
+    files+=(-f compose.dev.smb.yaml)
+  fi
+  docker compose -p "$project" "${files[@]}" "$@"
+}
 fail() { printf 'STOP: %s\n' "$*" >&2; exit 1; }
 say() { printf '%s\n' "$*"; }
 usage() {
   cat <<'HELP'
 On the existing Docker host, clone into a NEW directory:
-  git clone -b dev/cohosted-staging-isolation-20261113 \
-    https://github.com/ffworker/anthias-hub.git /root/apps/anthias-hub-dev
+  git clone https://github.com/ffworker/anthias-hub.git /root/apps/anthias-hub-dev
   cd /root/apps/anthias-hub-dev
+  git fetch origin dev/screen-source-of-truth-v2-20261113
+  git switch --track origin/dev/screen-source-of-truth-v2-20261113
   bash scripts/dev-cohost.sh init
   bash scripts/dev-cohost.sh start
   bash scripts/dev-cohost.sh status
@@ -27,8 +34,9 @@ HELP
 guard() {
   [[ "$(basename "$root")" == anthias-hub-dev ]] ||
     fail 'Run only from a separate directory named anthias-hub-dev.'
-  [[ "$(git branch --show-current)" == dev/cohosted-staging-isolation-20261113 ]] ||
-    fail 'Wrong branch: use the cohosted dev branch in this separate checkout.'
+  # The DEV checkout may switch feature branches. The real safety boundary
+  # is the dedicated checkout, Compose project, port, image and storage.
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1 || fail 'Missing Git checkout.'
   for file in .env config data dev-sources; do
     [[ ! -L "$file" ]] || fail "Symlink at $file is not permitted."
   done
@@ -52,8 +60,29 @@ guard() {
   fi
 }
 init() {
+  # A password typo may interrupt a first run AFTER the dev-only .env was
+  # written but BEFORE config/users.json exists. Resume safely instead of
+  # trapping the operator between "already initialized" and "run init".
+  if [[ -f .env && ! -s config/users.json ]]; then
+    [[ -t 0 && -t 1 ]] || fail 'Account recovery needs an interactive terminal.'
+    local resume_uid resume_gid
+    resume_uid=$(sed -n 's/^HUB_UID=//p' .env)
+    resume_gid=$(sed -n 's/^HUB_GID=//p' .env)
+    [[ "$resume_uid" =~ ^[0-9]+$ && "$resume_gid" =~ ^[0-9]+$ ]] ||
+      fail 'Invalid DEV UID/GID in existing .env; refusing changes.'
+    [[ -d config && ! -L config ]] || fail 'DEV config directory missing or unsafe.'
+    dc build anthias-hub
+    say 'Resuming missing DEV owner account; your existing .env stays unchanged.'
+    docker run --rm -it --user "$resume_uid:$resume_gid" \
+      --mount "type=bind,source=$root/config,target=/config" \
+      --entrypoint python "$image" \
+      -m scripts.create_user /config/users.json owner owner
+    [[ -s config/users.json ]] || fail 'DEV account still missing; retry init.'
+    say 'DEV owner created successfully. Run bash scripts/dev-cohost.sh start.'
+    return
+  fi
   [[ ! -e .env && ! -e config/users.json ]] ||
-    fail 'Already initialized. Do not reinitialize and overwrite accounts.'
+    fail 'Already initialized. Existing account and secrets were preserved.'
   command -v openssl >/dev/null || fail 'OpenSSL missing.'
   [[ -t 0 && -t 1 ]] || fail 'Initialize interactively to set a private dev password.'
   docker info >/dev/null 2>&1 || fail 'Docker daemon inaccessible.'
@@ -100,11 +129,29 @@ EOF
 }
 prod_id() { docker inspect anthias-hub-anthias-hub-1 --format '{{.Id}}' 2>/dev/null || true; }
 start() {
-  [[ -f .env && -s config/users.json ]] || fail 'Run init first.'
+  if [[ -f .env && ! -s config/users.json ]]; then
+    fail 'DEV setup incomplete: run bash scripts/dev-cohost.sh init to finish creating the owner account.'
+  fi
+  [[ -f .env && -s config/users.json ]] || fail 'Run bash scripts/dev-cohost.sh init first.'
   docker info >/dev/null 2>&1 || fail 'Docker daemon unavailable.'
   local before after
   before=$(prod_id)
   mkdir -p dev-sources/demo
+  if grep -qx 'DEV_SMB_MODE=1' .env; then
+    fail 'Do not combine the older root-mounted SMB mode with the new browser-only DEV SMB connector.'
+  fi
+  # Only the DEV importer may write its own SMB media cache.
+  local cache_uid cache_gid
+  cache_uid=$(sed -n 's/^HUB_UID=//p' .env)
+  cache_gid=$(sed -n 's/^HUB_GID=//p' .env)
+  [[ "$cache_uid" =~ ^[0-9]+$ && "$cache_gid" =~ ^[0-9]+$ ]] ||
+    fail 'Invalid DEV UID/GID'
+  [[ ! -L dev-sources/default ]] || fail 'DEV cache cannot be a symlink'
+  mkdir -p dev-sources/default
+  if [[ $(id -u) == 0 ]]; then
+    chown "$cache_uid:$cache_gid" dev-sources dev-sources/default
+  fi
+  chmod 0750 dev-sources dev-sources/default
   dc config --quiet
   dc build anthias-hub
   # Refresh only DEV services, including changes to DEV .env/player allowlist.

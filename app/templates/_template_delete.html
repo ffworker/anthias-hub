@@ -1,5 +1,5 @@
 {# Shared, JS-optional removal confirmation for a Hub-local library template. #}
-{% macro delete_control(item, detailed=false) %}
+{% macro delete_control(item, detailed=false, return_to_control=false) %}
 <details class="template-delete-control {{ 'template-delete-detail' if detailed else 'template-delete-list' }}" data-template-delete>
   <summary aria-label="Vorlage {{ item.name }} löschen" title="Vorlage löschen">
     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v7M14 10v7"/></svg>
@@ -10,6 +10,7 @@
     <p>„{{ item.name }}“ und {{ item['items']|length }} hier gespeicherte Inhalte werden aus der Hub-Bibliothek entfernt. Bereits auf Bildschirme übertragene Inhalte bleiben erhalten.</p>
     <form method="post" action="{{ url_for('library_delete_template', template_id=item.id) }}" data-delete-form data-expected-name="{{ item.name }}">
       <input type="hidden" name="csrf" value="{{ csrf() }}">
+      {% if return_to_control %}<input type="hidden" name="control_tab" value="playlists">{% endif %}
       <input type="hidden" name="confirm" value="{{ item.id }}">
       <label for="delete-name-{{ item.id }}">Zum Bestätigen den exakten Vorlagennamen eingeben
         <input id="delete-name-{{ item.id }}" name="name_confirmation" type="text" required

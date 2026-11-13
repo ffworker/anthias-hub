@@ -1,7 +1,7 @@
 {# Shared IT-only retire action for the default parent and optional single mounts. #}
-{% macro retire_control(source) -%}
+{% macro retire_control(source, return_to_control=false) -%}
 <details class="media-retire-control">
-  <summary>Quelle aus dem Hub entfernen <span class="media-retire-chevron" aria-hidden="true">⌄</span></summary>
+  <summary>Quelle aus dem Hub entfernen <span class="media-retire-chevron ui-chevron" aria-hidden="true"></span></summary>
   <div class="media-retire-body">
     {% if source.dependents %}
     <p class="media-dependency-warning" role="status"><strong>Entfernen gesperrt:</strong> {{ source.dependents|length }} Playlist(s) verwenden diese Quelle. Zuerst die Zuordnung in den betroffenen Vorlagen entfernen oder die Vorlagen bewusst migrieren.</p>
@@ -11,9 +11,14 @@
       {% endfor %}
     </ul>
     {% else %}
+    {% if workflow_v2 and dev_smb_ui and source.alias == 'default' %}
+    <p>Die DEV-Registrierung und die verschlüsselt gespeicherten SMB-Zugangsdaten werden entfernt. <strong>Bereits kopierte DEV-Medien und Pi-Inhalte bleiben unverändert.</strong></p>
+    {% else %}
     <p>Die Registrierung wird entfernt und die Quelle verschwindet aus der Playlist-Auswahl. <strong>Kein SMB-Mount wird automatisch ausgehängt, keine SMB-Datei und kein Pi-Inhalt gelöscht.</strong> Den Host-Mount danach kontrolliert bereinigen.</p>
+    {% endif %}
     <form method="post" action="{{ url_for('media_sources_remove') }}" class="media-retire-form">
       <input type="hidden" name="csrf" value="{{ csrf() }}">
+      {% if return_to_control %}<input type="hidden" name="control_tab" value="sources">{% endif %}
       <input type="hidden" name="alias" value="{{ source.alias }}">
       <input type="hidden" name="confirm" value="{{ source.alias }}">
       <label><input type="checkbox" name="ack" value="yes" required> Ich habe geprüft, dass diese Quelle nicht mehr benötigt wird.</label>

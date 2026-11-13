@@ -1,0 +1,314 @@
+{% extends 'base.html' %}
+{% from '_template_delete.html' import delete_control with context %}
+{% from '_media_source_retire.html' import retire_control with context %}
+{% from '_device_controls.html' import device_control with context %}
+{% block title %}Steuerzentrale · Anthias Hub{% endblock %}
+{% block content %}
+<script defer src="{{ url_for('static', filename='control-storage.js') }}"></script>
+<div class="control-center source-v2-workspace source-v2-compact" data-central-control data-control-tab="{{ control_tab }}">
+  <header class="control-center-hero">
+    <div>
+      <p class="eyebrow">ANTHIAS HUB · VERWALTUNG</p>
+      <h1>Steuerzentrale</h1>
+      <p>Ein Ort zum Einrichten und Ändern. Die einzelnen Ansichten bleiben für Inhalte, Zeitpläne und Status.</p>
+    </div>
+    <span class="control-center-test">DEV · Testsystem</span>
+  </header>
+
+  <nav class="control-center-tabs" aria-label="Verwaltungsbereiche">
+    {% for key, title in [('overview','Übersicht'),('screens','Bildschirme'),('playlists','Playlists'),('sources','Ordner & Quellen'),('schedules','Zeitpläne')] %}
+    {% if key != 'sources' or can_manage_sources %}
+    <a href="{{ url_for('control_center', tab=key) }}"
+       {% if control_tab == key %}aria-current="page"{% endif %}>{{ title }}</a>
+    {% endif %}
+    {% endfor %}
+  </nav>
+
+  {% if control_tab == 'overview' %}
+  <section class="control-center-intro">
+    <h2>Was möchtest du verwalten?</h2>
+    <p class="muted">Alle Änderungen erfolgen erst nach Speichern und mit den vorhandenen Rechte- und Bestätigungsprüfungen.</p>
+  </section>
+  <div class="control-center-grid">
+    <a class="control-center-tile" href="{{ url_for('control_center', tab='screens') }}">
+      <span class="control-center-tile-label">GERÄTE</span><strong>Bildschirme</strong>
+      <span>{{ devices|length }} registriert · Verbindung, Neustart und Zuordnung</span>
+    </a>
+    <a class="control-center-tile" href="{{ url_for('control_center', tab='playlists') }}">
+      <span class="control-center-tile-label">INHALTE</span><strong>Playlists</strong>
+      <span>{{ templates|length }} vorhanden · Anlegen, zuweisen, exportieren und löschen</span>
+    </a>
+    <a class="control-center-tile" href="{{ url_for('control_center', tab='schedules') }}">
+      <span class="control-center-tile-label">ZEITEN</span><strong>Zeitpläne</strong>
+      <span>{{ profiles|length }} Vorlagen · Anlegen, bearbeiten und entfernen</span>
+    </a>
+    {% if can_manage_sources %}
+    <a class="control-center-tile" href="{{ url_for('control_center', tab='sources') }}">
+      <span class="control-center-tile-label">QUELLEN</span><strong>Ordner &amp; SMB</strong>
+      <span>{{ sources|length }} registriert · Prüfen, verbinden, synchronisieren</span>
+    </a>
+    {% endif %}
+  </div>
+  <p class="control-center-footnote">Es wird nichts automatisch an einen Pi übertragen. SMB-Import und Pi-Veröffentlichung sind getrennte Funktionen.</p>
+
+  {% elif control_tab == 'screens' %}
+  <div class="control-center-heading"><div><p class="eyebrow">GERÄTEVERWALTUNG</p><h2>Bildschirme <span class="count">{{ devices|length }}</span></h2></div>
+    <a href="{{ url_for('dashboard') }}" class="button">Status ansehen</a></div>
+  {% if can_manage_sources %}
+  <details class="control-center-new" id="bildschirm-neu" {% if not devices %}open{% endif %}>
+    <summary>＋ Bildschirm registrieren</summary>
+    <div class="control-center-body">
+      <form class="source-v2-form" method="post" action="{{ url_for('add_device') }}">
+        <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="control_tab" value="screens">
+        <label>Geräte-ID<input type="text" name="id" required maxlength="80" placeholder="rpi-bistro"></label>
+        <label>Anzeigename<input type="text" name="name" required maxlength="80" placeholder="Bistro"></label>
+        <label>Geräteadresse<input type="url" name="url" required placeholder="Anthias-URL des Testgeräts"></label>
+        <label>Standort<input type="text" name="location" maxlength="80"></label>
+        <button class="primary" type="submit">Bildschirm registrieren</button>
+      </form>
+    </div>
+  </details>
+  {% endif %}
+  <div class="control-center-stack">
+  {% for device in devices %}
+    <article class="control-center-object" id="screen-{{ device.id }}">
+      <div class="control-center-object-head">
+        <div><strong>{{ device.name }}</strong><small>{{ device.location or 'Ohne Standort' }} · {{ device.id }}</small></div>
+        <a href="{{ url_for('playlist', device_id=device.id) }}">Inhalte ansehen</a>
+      </div>
+      <div class="control-center-object-actions">
+      <a href="{{ url_for('device_schedules', device_id=device.id) }}">Zeitplan am Bildschirm</a>
+      {% if logged_user.role in ('it','owner') %}
+      <details class="control-center-action">
+        <summary>Verbindung bearbeiten</summary>
+        <div class="control-center-body">
+          <form class="source-v2-form" method="post" action="{{ url_for('edit_device', device_id=device.id) }}">
+            <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="control_tab" value="screens">
+            <label>Anzeigename<input name="name" maxlength="80" required value="{{ device.name }}"></label>
+            <label>URL<input name="url" type="url" required value="{{ device.url }}"></label>
+            <label>Standort<input name="location" maxlength="80" value="{{ device.location }}"></label>
+            <button type="submit">Verbindung aktualisieren</button>
+          </form>
+        </div>
+      </details>
+      {% endif %}
+      {{ device_control(device, logged_user.role, return_to_control=true) }}
+      <details class="control-center-action" data-control-storage data-storage-url="{{ url_for('device_storage', device_id=device.id) }}">
+        <summary>Speicher prüfen</summary>
+        <p class="control-center-storage-note" data-storage-feedback role="status">Beim Öffnen wird der aktuelle Pi-Speicher abgefragt.</p>
+      </details>
+      {% if logged_user.role in ('it','owner') %}
+      <details class="control-center-action control-center-danger">
+        <summary>Registrierung entfernen</summary>
+        <div class="control-center-body">
+          <p>Nur der Hub-Eintrag wird entfernt; Pi-Inhalte bleiben erhalten.</p>
+          <form method="post" action="{{ url_for('remove_device', device_id=device.id) }}">
+            <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="control_tab" value="screens">
+            <input type="hidden" name="confirm" value="{{ device.id }}">
+            <label><input type="checkbox" name="ack" value="yes" required> Entfernen ausdrücklich bestätigen</label>
+            <button type="submit" class="danger-btn">Registrierung entfernen</button>
+          </form>
+        </div>
+      </details>
+      {% endif %}
+      </div>
+    </article>
+  {% else %}
+    <p class="muted">Noch keine Bildschirme registriert.</p>
+  {% endfor %}
+  </div>
+
+  {% elif control_tab == 'playlists' %}
+  <div class="control-center-heading">
+    <div><p class="eyebrow">ZENTRALE INHALTE</p><h2>Playlists <span class="count">{{ templates|length }}</span></h2></div>
+    <a href="{{ url_for('library_index') }}">Inhaltsübersicht</a>
+  </div>
+  <div class="control-center-creation">
+    <details id="playlist-neu" class="control-center-new" {% if not templates %}open{% endif %}>
+      <summary>＋ Playlist anlegen</summary>
+      <div class="control-center-body">
+        <form class="source-v2-form" method="post" action="{{ url_for('library_create') }}">
+          <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="control_tab" value="playlists">
+          <label>Name<input name="name" required maxlength="100" placeholder="z. B. Bistro"></label>
+          {% if can_manage_sources %}
+          <label>Inhaltsquelle<select name="folder_source">
+            <option value="">Manuelle Playlist</option>
+            {% for source in folder_sources %}<option value="{{ source }}">Netzwerkordner · {{ source }}</option>{% endfor %}
+          </select></label>
+          {% endif %}
+          <button type="submit" class="primary">Playlist erstellen</button>
+        </form>
+      </div>
+    </details>
+    <details class="control-center-new">
+      <summary>Vorlagenbackup importieren</summary>
+      <div class="control-center-body">
+        <form class="source-v2-form" method="post" enctype="multipart/form-data" action="{{ url_for('library_import') }}">
+          <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="control_tab" value="playlists">
+          <label>Anthias-Hub-Backup-ZIP<input type="file" name="archive" accept=".zip" required></label>
+          <button type="submit">Backup importieren</button>
+        </form>
+      </div>
+    </details>
+  </div>
+  <div class="control-center-stack">
+  {% for item in templates %}
+  <article class="control-center-object" id="playlist-{{ item.id }}">
+    <div class="control-center-object-head">
+      <div><strong>{{ item.name }}</strong>
+        <small>{{ item['items']|length }} Medien · {{ item.auto_devices|default([])|length }} Bildschirme · {{ item.folder_source or 'Manuelle Playlist' }}</small>
+      </div>
+      <a href="{{ url_for('library_detail', template_id=item.id) }}">Inhalte öffnen</a>
+    </div>
+    <div class="control-center-object-actions">
+      <a href="{{ url_for('library_export', template_id=item.id) }}">Backup-ZIP</a>
+      {% if can_manage_sources %}
+      <details class="control-center-action">
+        <summary>Bildschirme zuweisen</summary>
+        <div class="control-center-body">
+          <p class="muted">Feste Zuordnung; noch keine Pi-Veröffentlichung. Andere Zuordnungen werden bei DEV-Testbetrieb ersetzt.</p>
+          <form class="source-v2-form" method="post" action="{{ url_for('library_auto_devices', template_id=item.id) }}">
+            <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="control_tab" value="playlists">
+            {% for device in devices %}
+            <label class="source-v2-checkbox"><input type="checkbox" name="devices" value="{{ device.id }}" {% if device.id in item.auto_devices|default([]) %}checked{% endif %}>{{ device.name }}</label>
+            {% else %}<p class="muted">Zuerst einen Bildschirm registrieren.</p>{% endfor %}
+            <button type="submit" {% if not devices %}disabled{% endif %}>Zuordnungen speichern</button>
+          </form>
+        </div>
+      </details>
+      {% if not item['items'] %}
+      <details class="control-center-action">
+        <summary>Netzwerkquelle wählen</summary>
+        <div class="control-center-body">
+          <form class="source-v2-form" method="post" action="{{ url_for('library_folder_source', template_id=item.id) }}">
+            <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="control_tab" value="playlists">
+            <label>Quelle<select name="folder_source"><option value="">Manuell</option>
+            {% for source in folder_sources %}<option value="{{ source }}" {% if item.folder_source == source %}selected{% endif %}>{{ source }}</option>{% endfor %}
+            </select></label><button type="submit">Quelle speichern</button>
+          </form>
+        </div>
+      </details>
+      {% endif %}
+      {% endif %}
+      {{ delete_control(item, return_to_control=true) }}
+    </div>
+  </article>
+  {% else %}
+  <p class="muted">Noch keine Playlists vorhanden. Lege die erste oben an.</p>
+  {% endfor %}
+  </div>
+
+  {% elif control_tab == 'sources' and can_manage_sources %}
+  <div class="control-center-heading">
+    <div><p class="eyebrow">NETZWERKVERBINDUNG</p><h2>Ordner &amp; Quellen</h2></div>
+    <a href="{{ url_for('media_sources_page') }}">Live-Importstatus ansehen</a>
+  </div>
+  <section class="control-center-object">
+    <div class="control-center-object-head"><div><strong>SMB-Verbindung</strong><small>{{ default_source.unc if default_source else 'Noch kein Stammordner hinterlegt' }}</small></div></div>
+    <div class="control-center-body">
+      <form class="source-v2-form" method="post" action="{{ url_for('media_sources_save') }}">
+        <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="control_tab" value="sources">
+        <input type="hidden" name="alias" value="default">
+        <label>Netzwerkfreigabe (UNC)<input name="unc" required maxlength="650" value="{{ default_source.unc if default_source else '' }}" placeholder="//10.0.0.5/media$/Marketing"></label>
+        {% if dev_smb_ui %}
+        <div class="source-v2-credentials">
+          <label>SMB-Benutzername<input name="username" required autocomplete="username" maxlength="128"></label>
+          <label>SMB-Kennwort<input name="password" type="password" required autocomplete="new-password" maxlength="512"></label>
+          <label>Domäne (optional)<input name="domain" maxlength="128"></label>
+        </div>
+        {% endif %}
+        <button type="submit" class="primary">{{ 'Verbinden & prüfen' if dev_smb_ui else 'Pfad speichern' }}</button>
+      </form>
+      <p class="muted">{{ 'SMB3 verschlüsselt, nur lesender DEV-Zugriff. Zugangsdaten werden nicht im HTML angezeigt.' if dev_smb_ui else 'Nur der Pfad wird gespeichert. Ein Host-Mount erfolgt separat.' }}</p>
+    </div>
+  </section>
+  {% if dev_smb_ui and default_source %}
+  <form class="control-center-quick-form" method="post" action="{{ url_for('media_sources_sync_now') }}">
+    <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="control_tab" value="sources">
+    <button type="submit">Jetzt synchronisieren</button>
+    <span>Nur der Medienimport; Veröffentlichung auf Pis bleibt separat.</span>
+  </form>
+  {% endif %}
+  {% if sources or unmanaged %}
+  <div class="control-center-stack">
+    {% for source in sources + unmanaged %}
+    <article class="control-center-object" id="quelle-{{ source.alias }}">
+      <div class="control-center-object-head">
+        <div><strong>{{ source.alias }}</strong><small>{{ source.unc|default('Nicht im Hub registrierter Mount', true) }} · {{ source.dependents|length }} abhängige Playlists</small></div>
+      </div>
+      {{ retire_control(source, return_to_control=true) }}
+    </article>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% elif control_tab == 'schedules' %}
+  <div class="control-center-heading"><div><p class="eyebrow">ZEITSTEUERUNG</p><h2>Zeitpläne <span class="count">{{ profiles|length }}</span></h2></div>
+    <a href="{{ url_for('schedule_library_page') }}">Zeitplan-Übersicht</a></div>
+  <details class="control-center-new" id="zeitplan-neu" {% if not profiles %}open{% endif %}>
+    <summary>＋ Zeitplan erstellen</summary>
+    <div class="control-center-body">
+      <form class="source-v2-form" method="post" action="{{ url_for('schedule_library_add') }}" data-schedule-form>
+        <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="control_tab" value="schedules">
+        <label>Name<input name="name" maxlength="60" required></label>
+        <div class="control-center-time"><label>Von<input name="start" type="time" required value="08:00"></label><label>Bis<input name="end" type="time" required value="18:00"></label></div>
+        <fieldset class="control-center-days"><legend>Wochentage</legend>
+          {% for day, label in [(1,'Mo'),(2,'Di'),(3,'Mi'),(4,'Do'),(5,'Fr'),(6,'Sa'),(7,'So')] %}
+          <label><input type="checkbox" name="days" value="{{ day }}" {% if day < 6 %}checked{% endif %}>{{ label }}</label>
+          {% endfor %}
+        </fieldset>
+        <button type="submit" class="primary">Zeitplan speichern</button>
+      </form>
+    </div>
+  </details>
+  <div class="control-center-stack">
+  {% for rule in profiles %}
+  <article class="control-center-object" id="zeitplan-{{ rule.id }}">
+    <div class="control-center-object-head">
+      <div><strong>{{ rule.name }}</strong><small>{{ rule.start }}–{{ rule.end }} · {% for day, label in [(1,'Mo'),(2,'Di'),(3,'Mi'),(4,'Do'),(5,'Fr'),(6,'Sa'),(7,'So')] %}{% if day in rule.days %}{{ label }} {% endif %}{% endfor %}</small></div>
+    </div>
+    <div class="control-center-object-actions">
+      <details class="control-center-action">
+        <summary>Bearbeiten</summary>
+        <div class="control-center-body">
+          <form class="source-v2-form" method="post" action="{{ url_for('schedule_library_edit', profile_id=rule.id) }}" data-schedule-form>
+            <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="control_tab" value="schedules">
+            <label>Name<input name="name" maxlength="60" required value="{{ rule.name }}"></label>
+            <div class="control-center-time"><label>Von<input name="start" type="time" required value="{{ rule.start }}"></label><label>Bis<input name="end" type="time" required value="{{ rule.end }}"></label></div>
+            <fieldset class="control-center-days"><legend>Wochentage</legend>
+              {% for day, label in [(1,'Mo'),(2,'Di'),(3,'Mi'),(4,'Do'),(5,'Fr'),(6,'Sa'),(7,'So')] %}
+              <label><input type="checkbox" name="days" value="{{ day }}" {% if day in rule.days %}checked{% endif %}>{{ label }}</label>{% endfor %}
+            </fieldset>
+            <label>Optional bereits verknüpfte Pi-Zeitfenster aktualisieren<select name="sync_device">
+              <option value="">Kein Gerät aktualisieren</option>
+              {% for device in devices %}<option value="{{ device.id }}">{{ device.name }}</option>{% endfor %}
+            </select></label>
+            <p class="muted">Die Pi-Ausgabe wird nur mit explizit ausgewähltem Ziel synchronisiert.</p>
+            <button type="submit">Änderungen speichern</button>
+          </form>
+        </div>
+      </details>
+      <details class="control-center-action control-center-danger">
+        <summary>Zeitplan entfernen</summary>
+        <div class="control-center-body">
+          <form class="source-v2-form" method="post" action="{{ url_for('schedule_library_delete', profile_id=rule.id) }}">
+            <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="control_tab" value="schedules">
+            <input type="hidden" name="confirm" value="{{ rule.id }}">
+            <p>Entfernt nur die Hub-Vorlage und ihre Zuordnungen. Bereits gesetzte Uhrzeiten auf Pis bleiben erhalten.</p>
+            <label><input type="checkbox" name="confirm_global" value="yes" required> Hubweites Entfernen bestätigen</label>
+            <button type="submit" class="danger-btn">Zeitplan entfernen</button>
+          </form>
+        </div>
+      </details>
+    </div>
+  </article>
+  {% else %}<p class="muted">Noch keine gemeinsamen Zeitpläne vorhanden.</p>{% endfor %}
+  </div>
+  {% if devices %}
+  <section class="control-center-assign"><h3>Auf Bildschirminhalte anwenden</h3>
+    <div class="control-center-links">{% for device in devices %}<a href="{{ url_for('device_schedules', device_id=device.id) }}#schedule-assign">{{ device.name }}</a>{% endfor %}</div>
+  </section>
+  {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

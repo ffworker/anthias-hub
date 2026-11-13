@@ -5,6 +5,10 @@ services:
   anthias-hub:
     environment:
       HUB_DEVELOPMENT_MODE: "1"
+      HUB_WORKFLOW_V2: "1"
+      DEV_SMB_UI: "1"
+      MEDIA_MOUNT_STATUS_FILE: /data/smb-sync-status.json
+      FOLDER_REQUIRE_VERIFIED: "1"
       FOLDER_AUTO_PUBLISH: "0"
       MEDIA_SOURCE_ROOT: /sources
     volumes:
@@ -18,6 +22,9 @@ services:
     user: "${HUB_UID:-1000}:${HUB_GID:-1000}"
     environment:
       LIBRARY_DIR: /data/library
+      HUB_WORKFLOW_V2: "1"
+      DEV_SMB_UI: "1"
+      MEDIA_MOUNT_STATUS_FILE: /data/smb-sync-status.json
       MEDIA_SOURCE_ROOT: /sources
       # 60 seconds only for fast isolated testing. Real default is 1800 seconds.
       FOLDER_SYNC_INTERVAL: "${FOLDER_SYNC_INTERVAL:-60}"
@@ -27,13 +34,13 @@ services:
       # A test folder is deliberately not an OS mount. Real SMB requires
       # the normal guarded compose.folder-import.yaml workflow.
       FOLDER_REQUIRE_MOUNT: "0"
-      FOLDER_REQUIRE_VERIFIED: "0"
+      FOLDER_REQUIRE_VERIFIED: "1"
       DEVICES_FILE: /data/devices.json
       SCHEDULES_FILE: /data/schedules.json
       FOLDER_PUBLICATIONS_DIR: /data/folder-publications
     volumes:
       - ./data:/data
-      - ./dev-sources:/sources:ro
+      - ./dev-sources:/sources:rw
     read_only: true
     tmpfs:
       - /tmp

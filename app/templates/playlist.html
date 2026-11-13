@@ -150,7 +150,7 @@
                   <span class="muted clip" title="{{ asset.uri or 'Lokales Medium' }}">{{ asset.uri or 'Lokales Medium' }}</span>
                   <span class="asset-schedule-summary"><svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons.svg') }}#clock"></use></svg>{{ asset.schedule_label }}</span>
               {% if can_edit_player %}
-                  <span class="asset-edit-hint" aria-hidden="true">Bearbeiten <span class="asset-chevron">⌄</span></span>
+                  <span class="asset-edit-hint" aria-hidden="true">Bearbeiten <span class="asset-chevron ui-chevron"></span></span>
                 </button>
               {% else %}
                 </div>
@@ -299,12 +299,12 @@
           <div class="add-type-switch" role="group" aria-label="Häufige Aktionen">
             <button type="button" class="add-mode selected" data-add-mode="media" aria-pressed="true">Datei</button>
             <button type="button" class="add-mode" data-add-mode="zip" aria-pressed="false">ZIP / Mehrere</button>
-            <button type="button" class="add-mode" data-add-mode="library" aria-pressed="false">Bibliothek</button>
+            {% if not workflow_v2 %}<button type="button" class="add-mode" data-add-mode="library" aria-pressed="false">Bibliothek</button>{% endif %}
           </div>
           <p class="composer-choice-label composer-choice-extra-label">Weitere Quellen</p>
           <div class="add-type-extra" role="group" aria-label="Weitere Inhaltsquellen">
             <button type="button" class="add-mode" data-add-mode="website" aria-pressed="false">Webseite</button>
-            {% if logged_user.role in ('owner', 'it') %}
+            {% if not workflow_v2 and logged_user.role in ('owner', 'it') %}
             <button type="button" class="add-mode" data-add-mode="folder" aria-pressed="false">Netzwerkordner</button>
             {% endif %}
           </div>
@@ -379,7 +379,7 @@
         </section>
           <p class="muted">ZIP-<strong>Export / Wiederherstellung</strong> einer kompletten Vorlage ist ein anderer Vorgang: in der <a href="{{ url_for('library_index') }}">Playlist-Bibliothek</a> unter „Vorlagen-Backup“.</p>
         </div>
-        <div class="composer-pane" data-add-pane="library">
+        {% if not workflow_v2 %}<div class="composer-pane" data-add-pane="library">
           <p class="composer-explainer"><strong>Einzelnen Inhalt übernehmen:</strong> Wähle einen gespeicherten Inhalt aus einer Hub-Vorlage. Dieser wird sofort zur aktuellen Bildschirm-Playlist ergänzt.</p>
           {% if library_items_available %}
           <form method="post" action="{{ url_for('add_library_item_from_player', device_id=device.id) }}">
@@ -423,7 +423,8 @@
           <a class="button" href="{{ url_for('library_index') }}">Bibliothek öffnen →</a>
           {% endif %}
         </div>
-        {% if logged_user.role in ('owner', 'it') %}
+        {% endif %}
+        {% if not workflow_v2 and logged_user.role in ('owner', 'it') %}
         <div class="composer-pane" data-add-pane="folder">
           <p class="composer-explainer"><strong>IT-Quelle wählen:</strong> Beide Wege verwenden nur freigegebene, schreibgeschützte Netzwerkordner. Entscheide bewusst zwischen einmaliger Kopie und laufender Verbindung.</p>
           {% if available_folder_sources %}

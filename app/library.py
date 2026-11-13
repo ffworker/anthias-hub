@@ -108,7 +108,8 @@ class Library:
             self._save(collection)
         return collection
 
-    def set_auto_devices(self, ident, device_ids, known_devices, *, replace_existing=False):
+    def set_auto_devices(self, ident, device_ids, known_devices, *,
+                         replace_existing=False, allow_manual=False):
         """Assign registered devices. Explicit test-mode takeover resolves old bindings.
 
         A device can still have only one authoritative folder playlist; the test
@@ -127,7 +128,7 @@ class Library:
             raise LibraryError('Bildschirm nicht mehr registriert')
         with _lock:
             collection = self.get(ident)
-            if device_ids and not collection.get('folder_source'):
+            if device_ids and not collection.get('folder_source') and not allow_manual:
                 raise LibraryError('Zuerst einen Netzwerkordner konfigurieren')
             # Never assign one screen to multiple source playlists. On an
             # isolated test system, explicitly take over an existing mapping by
@@ -135,7 +136,7 @@ class Library:
             to_update = []
             if device_ids:
                 for other in self.list():
-                    if other['id'] == ident or not other.get('folder_source'):
+                    if other['id'] == ident or (not allow_manual and not other.get('folder_source')):
                         continue
                     conflicted = set(device_ids).intersection(other.get('auto_devices', []))
                     if not conflicted:

@@ -55,6 +55,7 @@ def create_app(config=None):
         HUB_BUILD_SHA=read_build_sha(),
         # Explicit opt-in for isolated fresh-device testing. Never copy into production.
         HUB_DEVELOPMENT_MODE=os.environ.get('HUB_DEVELOPMENT_MODE', '0') == '1',
+        HUB_WORKFLOW_V2=os.environ.get('HUB_WORKFLOW_V2', '0') == '1',
         SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax',
         SESSION_COOKIE_SECURE=os.environ.get('COOKIE_SECURE', '1') == '1',
         PERMANENT_SESSION_LIFETIME=60 * 60 * 8,
@@ -104,7 +105,10 @@ def create_app(config=None):
         return {'csrf': csrf_token, 'logged_user': current_user(),
                 'ui_revision': app.config['UI_REVISION'],
                 'hub_build_sha': app.config['HUB_BUILD_SHA'],
-                'development_mode': app.config['HUB_DEVELOPMENT_MODE']}
+                'development_mode': app.config['HUB_DEVELOPMENT_MODE'],
+                'workflow_v2': app.config['HUB_WORKFLOW_V2'],
+                'dev_smb_ui': app.config['HUB_WORKFLOW_V2'] and
+                              os.environ.get('DEV_SMB_UI', '0') == '1'}
 
     def audit(action, device_id='', asset_id=''):
         Path(app.config['AUDIT_FILE']).parent.mkdir(parents=True, exist_ok=True)
@@ -130,7 +134,7 @@ def create_app(config=None):
         """
         collections = templates if templates is not None else library().list()
         return [item for item in collections
-                if item.get('folder_source')
+                if (app.config['HUB_WORKFLOW_V2'] or item.get('folder_source'))
                 and device_id in item.get('auto_devices', [])]
 
     @app.before_request
@@ -143,7 +147,7 @@ def create_app(config=None):
         # Keep role authentication, CSRF, ID/path validation and explicit
         # confirmations. In a separate test installation, however, a folder
         # assignment must not hide/forbid all experiment actions on the Pi.
-        if app.config['HUB_DEVELOPMENT_MODE']:
+        if app.config['HUB_DEVELOPMENT_MODE'] and not app.config['HUB_WORKFLOW_V2']:
             return
         user = current_user()
         if request.method != 'POST' or not user or user['role'] == 'viewer':
@@ -156,8 +160,11 @@ def create_app(config=None):
             'apply_library', 'add_url', 'upload',
             'edit_asset', 'move_asset', 'reorder_assets',
             'toggle_asset', 'bulk_delete_assets', 'delete_asset',
-            'asset_schedule', 'device_schedule_apply',
+            'asset_schedule', 'device_schedule_apply', 'device_schedule_default',
+            'device_schedule_add', 'device_schedule_delete',
         }
+        if app.config['HUB_WORKFLOW_V2']:
+            device_routes.add('attach_folder_playlist_to_device')
         library_routes = {
             'apply_library_from_template', 'append_library_from_template',
             'add_library_item_from_template',
@@ -169,7 +176,9 @@ def create_app(config=None):
                       'Pi-Inhalte nicht direkt überschreiben.')
             return
         if request.endpoint == 'device_schedule_edit':
-            if request.form.get('sync_assigned') != 'yes':
+            # In the v2 single-owner model, legacy forms may not opt out of
+            # the protection by omitting their old sync_assigned flag.
+            if request.form.get('sync_assigned') != 'yes' and not app.config['HUB_WORKFLOW_V2']:
                 return
             device_id = (request.view_args or {}).get('device_id', '')
             if device_id and managed_playlists_for_device(device_id):
@@ -247,6 +256,19 @@ def create_app(config=None):
         return request.form.get('ignore_storage_check') == 'manual-confirmed'
 
 
+    @app.get('/media-sources/status')
+    @login_required('it')
+    def media_sources_status():
+        """Status-only refresh. Never mounts SMB or handles credentials."""
+        from .source_progress import describe_sources
+        from .media_sources import SourceError
+        try:
+            return jsonify(ok=True, sources=describe_sources(
+                app.config['MEDIA_SOURCES_FILE'],
+                app.config['MEDIA_MOUNT_STATUS_FILE'], library().list()))
+        except (SourceError, OSError, ValueError) as exc:
+            return jsonify(ok=False, message=str(exc)), 503
+
     @app.get('/media-sources')
     @login_required('it')
     def media_sources_page():
@@ -290,15 +312,32 @@ def create_app(config=None):
             default_source = next((entry for entry in registered if entry['alias'] == 'default'), None)
             mounted_count = sum(s['status'] in ('mounted', 'already-mounted') for s in registered)
             attention_count = len(registered) - mounted_count
-            return render_template('media_sources.html', sources=registered,
+            return render_template('media_sources_v2.html' if app.config['HUB_WORKFLOW_V2'] else 'media_sources.html', sources=registered,
                                    unmanaged=unmanaged, default_folders=default_folders,
                                    default_source=default_source, retired=retired,
                                    mounted_count=mounted_count, attention_count=attention_count)
         except SourceError as exc:
             flash(str(exc), 'error')
-            return render_template('media_sources.html', sources=[], unmanaged=[],
+            return render_template('media_sources_v2.html' if app.config['HUB_WORKFLOW_V2'] else 'media_sources.html', sources=[], unmanaged=[],
                                    default_folders=[], default_source=None, retired=[],
                                    mounted_count=0, attention_count=0)
+
+    @app.post('/media-sources/sync-now')
+    @login_required('it')
+    def media_sources_sync_now():
+        """Queue a DEV-only rescan. The isolated worker performs the network IO."""
+        from .smb_ui import enabled, _get_credentials, request_sync, SMBSetupError
+        if not enabled() or not app.config['HUB_WORKFLOW_V2']:
+            abort(404)
+        try:
+            if not _get_credentials():
+                raise SMBSetupError('Bitte zuerst über „Verbinden & prüfen“ anmelden')
+            request_sync()
+            audit('dev-smb.sync-requested')
+            flash('SMB-Abgleich angefordert. Fortschritt erscheint im Statusbereich.', 'success')
+        except (SMBSetupError, OSError) as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('media_sources_page'))
 
     @app.post('/media-sources')
     @login_required('it')
@@ -307,13 +346,40 @@ def create_app(config=None):
         try:
             alias = request.form.get('alias', '')
             unc = request.form.get('unc', '')
+            if app.config['HUB_WORKFLOW_V2'] and os.environ.get('DEV_SMB_UI', '0') == '1':
+                # Test BEFORE persistence. SMB secrets never appear in the
+                # source registry, URL, audit or status endpoint.
+                if alias != 'default':
+                    raise SourceError('Im vereinfachten DEV-Workflow gibt es eine Stammquelle')
+                from .smb_ui import (
+                    SMBSetupError, test_connection, store_credentials,
+                    write_status, request_sync,
+                )
+                record, folders = test_connection(
+                    unc, request.form.get('username', ''),
+                    request.form.get('password', ''),
+                    request.form.get('domain', ''))
+                result = save_source(alias, record['unc'],
+                                     path=app.config['MEDIA_SOURCES_FILE'])
+                store_credentials(record)
+                write_status('tested', record['unc'], record['revision'],
+                             detail='Anmeldung und Ordnerliste erfolgreich geprüft',
+                             folders=len(folders))
+                request_sync()
+                audit('dev-smb.connected', asset_id='default')
+                flash(f'SMB verbunden: {len(folders)} Unterordner erkannt. '
+                      'Der DEV-Importer übernimmt jetzt die Medien.', 'success')
+                return redirect(url_for('media_sources_page'))
             result = save_source(alias, unc, path=app.config['MEDIA_SOURCES_FILE'])
             audit('media-source.' + result, asset_id=alias.strip().lower())
-            flash('SMB-Quelle gespeichert. Der Root-Mountdienst prüft die Freigabe '
-                  'und bindet neue Ordner automatisch ein; bei einem geänderten '
-                  'bereits eingebundenen Pfad ist ein kontrollierter Host-Wechsel nötig.',
+            flash(('SMB-Pfad gespeichert. Die Anzeige „Verbindungsstatus“ zeigt, '
+                   'ob ein Host-Mountdienst tatsächlich läuft. Speichern allein '
+                   'startet noch keinen SMB-Mount.' if app.config['HUB_WORKFLOW_V2']
+                   else 'SMB-Quelle gespeichert. Der Root-Mountdienst prüft die Freigabe '
+                        'und bindet neue Ordner automatisch ein; bei einem geänderten '
+                        'bereits eingebundenen Pfad ist ein kontrollierter Host-Wechsel nötig.'),
                   'success')
-        except (SourceError, OSError) as exc:
+        except (SourceError, OSError, ValueError) as exc:
             flash(str(exc), 'error')
         return redirect(url_for('media_sources_page'))
 
@@ -348,6 +414,13 @@ def create_app(config=None):
                 registered = {item['alias'] for item in load_sources(app.config['MEDIA_SOURCES_FILE'])}
                 if alias in registered:
                     remove_source(alias, path=app.config['MEDIA_SOURCES_FILE'])
+                    if (alias == 'default' and app.config['HUB_WORKFLOW_V2']
+                            and os.environ.get('DEV_SMB_UI', '0') == '1'):
+                        # Never leave a password behind when the browser-only
+                        # source is intentionally unregistered. The importer
+                        # will fail closed on the missing registry/credentials.
+                        from .smb_ui import credentials_file
+                        credentials_file().unlink(missing_ok=True)
                 elif alias in {a for a in available_sources() if '/' not in a}:
                     # Only a genuinely visible, non-registered legacy directory
                     # may be hidden. Never accept arbitrary tombstone requests.
@@ -355,9 +428,13 @@ def create_app(config=None):
                 else:
                     raise SourceError('Keine registrierte oder bekannte alte Quelle mit diesem Alias')
             audit('media-source.retired', asset_id=alias)
-            flash('Quelle „' + alias + '“ im Hub ausgetragen. Kein SMB-Mount wurde '
-                  'ausgehängt und keine Dateien wurden gelöscht. Den alten Host-Mount '
-                  'nach Prüfung separat kontrolliert entfernen.', 'success')
+            flash(('Quelle „' + alias + '“ im DEV-Hub ausgetragen. '
+                   'Gespeicherte SMB-Zugangsdaten entfernt. Kopierte Medien bleiben erhalten.'
+                   if app.config['HUB_WORKFLOW_V2'] and os.environ.get('DEV_SMB_UI') == '1'
+                      and alias == 'default'
+                   else 'Quelle „' + alias + '“ im Hub ausgetragen. Kein SMB-Mount wurde '
+                        'ausgehängt und keine Dateien wurden gelöscht. Den alten Host-Mount '
+                        'nach Prüfung separat kontrolliert entfernen.'), 'success')
         except (SourceError, LibraryError, OSError) as exc:
             flash(str(exc), 'error')
         return redirect(url_for('media_sources_page'))
@@ -386,13 +463,94 @@ def create_app(config=None):
             flash(str(exc), 'error')
             return redirect(url_for('media_sources_page'))
 
+    @app.get('/control')
+    @login_required('marketing')
+    def control_center():
+        """Single DEV-only workspace for changing Hub settings.
+
+        The device, playlist, source and schedule APIs remain the authoritative
+        POST handlers. Switching tabs never writes to a Pi or SMB share.
+        """
+        if not app.config['HUB_WORKFLOW_V2']:
+            abort(404)
+        tab = request.args.get('tab', 'overview')
+        if tab not in ('overview', 'screens', 'playlists', 'sources', 'schedules'):
+            abort(404)
+        role = current_user()['role']
+        if tab == 'sources' and role not in ('it', 'owner'):
+            abort(403)
+        devices = load(app.config['DEVICES_FILE'])
+        templates = library().list()
+        profiles = []
+        sources = []
+        unmanaged = []
+        folder_sources = []
+        try:
+            if tab in ('overview', 'schedules'):
+                profiles = profiles_for(app.config['SCHEDULES_FILE'])
+            if role in ('it', 'owner') and tab in ('overview', 'sources', 'playlists'):
+                from .folder_sync import available_sources
+                folder_sources = available_sources()
+                from .media_sources import load_sources, observed_mount_source
+                sources = load_sources(app.config['MEDIA_SOURCES_FILE'])
+                visible = {alias for alias in folder_sources if '/' not in alias}
+                registered = {row['alias'] for row in sources}
+                unmanaged = [
+                    {'alias': alias, 'observed': observed_mount_source(alias)}
+                    for alias in sorted(visible - registered)
+                ]
+        except (ScheduleError, LibraryError, OSError, ValueError) as exc:
+            flash(str(exc), 'error')
+        for source in sources + unmanaged:
+            source['dependents'] = [
+                {'id': row['id'], 'name': row['name']} for row in templates
+                if row.get('folder_source') == source['alias'] or
+                (source['alias'] == 'default' and
+                 str(row.get('folder_source') or '').startswith('default/'))
+            ]
+        return render_template(
+            'control_center.html', control_tab=tab,
+            templates=templates, devices=devices, profiles=profiles,
+            sources=sources, unmanaged=unmanaged, folder_sources=folder_sources,
+            default_source=next((row for row in sources if row['alias'] == 'default'), None),
+            can_manage_sources=role in ('owner', 'it'),
+        )
+
+    @app.after_request
+    def stay_in_control_center(response):
+        """Form submissions from DEV control return to the same tab.
+
+        This changes the destination of a successful redirect, never the
+        permission checks, CSRF validation or the underlying POST operation.
+        """
+        allowed = {
+            'library_create': 'playlists', 'library_import': 'playlists',
+            'library_delete_template': 'playlists', 'library_auto_devices': 'playlists',
+            'library_folder_source': 'playlists', 'library_add_url': 'playlists',
+            'library_add_media': 'playlists', 'library_bulk_media': 'playlists',
+            'add_device': 'screens', 'edit_device': 'screens',
+            'remove_device': 'screens', 'control_device': 'screens',
+            'media_sources_save': 'sources', 'media_sources_remove': 'sources',
+            'media_sources_sync_now': 'sources',
+            'schedule_library_add': 'schedules',
+            'schedule_library_edit': 'schedules',
+            'schedule_library_delete': 'schedules',
+        }
+        tab = allowed.get(request.endpoint)
+        if (app.config['HUB_WORKFLOW_V2'] and tab and
+                request.method == 'POST' and response.status_code in (302, 303)
+                and request.form.get('control_tab') == tab):
+            return redirect(url_for('control_center', tab=tab))
+        return response
+
     @app.get('/library')
     @login_required()
     def library_index():
         from .folder_sync import available_sources
         templates = library().list()
         from .folder_status import read_status
-        return render_template('library.html', templates=templates,
+        return render_template('library_index_v2.html' if app.config['HUB_WORKFLOW_V2'] else 'library.html',
+                               templates=templates,
                                folder_sync_by_template={
                                    t['id']: read_status(t['id']) for t in templates if t.get('folder_source')},
                                device_names={d['id']: d['name'] for d in load(app.config['DEVICES_FILE'])},
@@ -460,7 +618,8 @@ def create_app(config=None):
         from .folder_sync import available_sources
         from .folder_status import read_status
         return render_template(
-            'library_detail.html', template=item,
+            'library_detail_v2.html' if app.config['HUB_WORKFLOW_V2'] else 'library_detail.html',
+            template=item,
             folder_sources=available_sources(),
             folder_sync_status=read_status(template_id),
             devices=load(app.config['DEVICES_FILE']),
@@ -492,7 +651,8 @@ def create_app(config=None):
             selected = request.form.getlist('devices')
             library().set_auto_devices(
                 template_id, selected, load(app.config['DEVICES_FILE']),
-                replace_existing=app.config['HUB_DEVELOPMENT_MODE'])
+                replace_existing=app.config['HUB_DEVELOPMENT_MODE'],
+                allow_manual=app.config['HUB_WORKFLOW_V2'])
             audit('library.auto-devices', asset_id=template_id)
             flash(('Testmodus: Zielzuordnung gespeichert. Bereits anders zugeordnete Geräte '
                    'wurden automatisch hierher übernommen. ' if app.config['HUB_DEVELOPMENT_MODE']
@@ -668,7 +828,11 @@ def create_app(config=None):
             audit('library.move-item', asset_id=template_id)
         except LibraryError as exc:
             flash(str(exc), 'error')
-        return redirect(url_for('library_detail', template_id=template_id))
+        # Return directly to the ordered items, not to the page heading.
+        # This is a visible, navigation-only v2 improvement; data handling,
+        # CSRF and legacy behavior are unchanged.
+        return redirect(url_for('library_detail', template_id=template_id,
+                                _anchor='inhalte' if app.config['HUB_WORKFLOW_V2'] else None))
 
     @app.post('/library/<template_id>/remove/<item_id>')
     @login_required('marketing')
@@ -1219,7 +1383,9 @@ def create_app(config=None):
             )
         folder_templates = managed_playlists_for_device(device_id, templates)
         can_edit_player = (current_user()['role'] in ('marketing', 'owner', 'it')
-                           and not error and (not folder_templates or app.config['HUB_DEVELOPMENT_MODE'])
+                           and not error and
+                           (not folder_templates or
+                            (app.config['HUB_DEVELOPMENT_MODE'] and not app.config['HUB_WORKFLOW_V2']))
                            and not library_unavailable)
         from .folder_status import read_status
         folder_sync_by_template = {t['id']: read_status(t['id']) for t in folder_templates}
@@ -1227,6 +1393,16 @@ def create_app(config=None):
             row['auto_publish'] and row['state'] == 'ok'
             for row in folder_sync_by_template.values())
         from .folder_sync import available_sources
+        if app.config['HUB_WORKFLOW_V2']:
+            from .screen_modes import resolve_mode
+            mode = resolve_mode(device_id, templates, assets=assets, error=error)
+            # A guessed editor URL may never expose duplicate managed controls.
+            if request.args.get('editor') != '1' or mode['key'] not in ('manual', 'empty'):
+                return render_template(
+                'screen_v2.html', device=device, mode=mode, assets=assets,
+                folder_sync_by_template=folder_sync_by_template,
+                publisher_ready=publish_enabled,
+                templates=templates, error=error)
         return render_template('playlist.html', device=device, assets=assets,
                                available_folder_sources=available_sources() if current_user()['role'] in ('owner', 'it') else [],
                                folder_templates=folder_templates,
@@ -1251,7 +1427,7 @@ def create_app(config=None):
             profiles = []
             flash(str(exc), 'error')
         return render_template(
-            'schedule_library.html', profiles=profiles,
+            'schedule_library_v2.html' if app.config['HUB_WORKFLOW_V2'] else 'schedule_library.html', profiles=profiles,
             devices=load(app.config['DEVICES_FILE']),
             can_edit=current_user()['role'] in ('owner', 'it', 'marketing'),
         )
@@ -1353,7 +1529,9 @@ def create_app(config=None):
                                gap_warning=weekday_warning(assets) if not problem else '',
                                problem=problem,
                                can_edit=current_user()['role'] in ('owner', 'it', 'marketing')
-                                        and (not folder_templates or app.config['HUB_DEVELOPMENT_MODE']))
+                                        and (not folder_templates or
+                                             (app.config['HUB_DEVELOPMENT_MODE'] and
+                                              not app.config['HUB_WORKFLOW_V2'])))
 
     @app.post('/devices/<device_id>/schedules/default')
     @login_required('it', 'marketing')
