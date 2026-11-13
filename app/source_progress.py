@@ -42,7 +42,9 @@ def describe_sources(registry_path, mount_status_path, library_items, root=None)
         ]
         stage = []
         stage.append({'title': 'Pfad gespeichert', 'state': 'done',
-                      'detail': 'Gespeichert, aber noch nicht automatisch eingehängt.'})
+                      'detail': ('Im DEV-Hub registriert. Der SMB-Client prüft die Verbindung direkt; kein Linux-Mount erforderlich.'
+                                 if python_smb else
+                                 'Gespeichert, aber noch nicht automatisch eingehängt.')})
         live = raw_states.get(alias, {})
         if not isinstance(live, dict) or live.get('fingerprint') != __import__('hashlib').sha256(
                 row['unc'].encode('utf-8')).hexdigest() or report_stale:
