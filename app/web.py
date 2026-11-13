@@ -55,6 +55,7 @@ def create_app(config=None):
         HUB_BUILD_SHA=read_build_sha(),
         # Explicit opt-in for isolated fresh-device testing. Never copy into production.
         HUB_DEVELOPMENT_MODE=os.environ.get('HUB_DEVELOPMENT_MODE', '0') == '1',
+        HUB_WORKFLOW_V2=os.environ.get('HUB_WORKFLOW_V2', '0') == '1',
         SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax',
         SESSION_COOKIE_SECURE=os.environ.get('COOKIE_SECURE', '1') == '1',
         PERMANENT_SESSION_LIFETIME=60 * 60 * 8,
@@ -104,7 +105,8 @@ def create_app(config=None):
         return {'csrf': csrf_token, 'logged_user': current_user(),
                 'ui_revision': app.config['UI_REVISION'],
                 'hub_build_sha': app.config['HUB_BUILD_SHA'],
-                'development_mode': app.config['HUB_DEVELOPMENT_MODE']}
+                'development_mode': app.config['HUB_DEVELOPMENT_MODE'],
+                'workflow_v2': app.config['HUB_WORKFLOW_V2']}
 
     def audit(action, device_id='', asset_id=''):
         Path(app.config['AUDIT_FILE']).parent.mkdir(parents=True, exist_ok=True)
@@ -130,7 +132,7 @@ def create_app(config=None):
         """
         collections = templates if templates is not None else library().list()
         return [item for item in collections
-                if item.get('folder_source')
+                if (app.config['HUB_WORKFLOW_V2'] or item.get('folder_source'))
                 and device_id in item.get('auto_devices', [])]
 
     @app.before_request
@@ -143,7 +145,7 @@ def create_app(config=None):
         # Keep role authentication, CSRF, ID/path validation and explicit
         # confirmations. In a separate test installation, however, a folder
         # assignment must not hide/forbid all experiment actions on the Pi.
-        if app.config['HUB_DEVELOPMENT_MODE']:
+        if app.config['HUB_DEVELOPMENT_MODE'] and not app.config['HUB_WORKFLOW_V2']:
             return
         user = current_user()
         if request.method != 'POST' or not user or user['role'] == 'viewer':
@@ -492,7 +494,8 @@ def create_app(config=None):
             selected = request.form.getlist('devices')
             library().set_auto_devices(
                 template_id, selected, load(app.config['DEVICES_FILE']),
-                replace_existing=app.config['HUB_DEVELOPMENT_MODE'])
+                replace_existing=app.config['HUB_DEVELOPMENT_MODE'],
+                allow_manual=app.config['HUB_WORKFLOW_V2'])
             audit('library.auto-devices', asset_id=template_id)
             flash(('Testmodus: Zielzuordnung gespeichert. Bereits anders zugeordnete Geräte '
                    'wurden automatisch hierher übernommen. ' if app.config['HUB_DEVELOPMENT_MODE']
@@ -1219,7 +1222,9 @@ def create_app(config=None):
             )
         folder_templates = managed_playlists_for_device(device_id, templates)
         can_edit_player = (current_user()['role'] in ('marketing', 'owner', 'it')
-                           and not error and (not folder_templates or app.config['HUB_DEVELOPMENT_MODE'])
+                           and not error and
+                           (not folder_templates or
+                            (app.config['HUB_DEVELOPMENT_MODE'] and not app.config['HUB_WORKFLOW_V2']))
                            and not library_unavailable)
         from .folder_status import read_status
         folder_sync_by_template = {t['id']: read_status(t['id']) for t in folder_templates}
@@ -1227,6 +1232,14 @@ def create_app(config=None):
             row['auto_publish'] and row['state'] == 'ok'
             for row in folder_sync_by_template.values())
         from .folder_sync import available_sources
+        if app.config['HUB_WORKFLOW_V2'] and request.args.get('editor') != '1':
+            from .screen_modes import resolve_mode
+            mode = resolve_mode(device_id, templates, assets=assets, error=error)
+            return render_template(
+                'screen_v2.html', device=device, mode=mode, assets=assets,
+                folder_sync_by_template=folder_sync_by_template,
+                publisher_ready=publish_enabled,
+                templates=templates, error=error)
         return render_template('playlist.html', device=device, assets=assets,
                                available_folder_sources=available_sources() if current_user()['role'] in ('owner', 'it') else [],
                                folder_templates=folder_templates,
@@ -1353,7 +1366,9 @@ def create_app(config=None):
                                gap_warning=weekday_warning(assets) if not problem else '',
                                problem=problem,
                                can_edit=current_user()['role'] in ('owner', 'it', 'marketing')
-                                        and (not folder_templates or app.config['HUB_DEVELOPMENT_MODE']))
+                                        and (not folder_templates or
+                                             (app.config['HUB_DEVELOPMENT_MODE'] and
+                                              not app.config['HUB_WORKFLOW_V2'])))
 
     @app.post('/devices/<device_id>/schedules/default')
     @login_required('it', 'marketing')
