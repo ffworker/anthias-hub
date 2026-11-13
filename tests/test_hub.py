@@ -3285,7 +3285,7 @@ def test_v2_network_folder_playlist_creation_form_supplies_csrf_and_submits(env,
     app.config['HUB_WORKFLOW_V2'] = True
     app.config['LIBRARY_DIR'] = str(Path(tmp) / 'v2-library')
     root = Path(tmp) / 'dev-sources'
-    (root / 'default' / 'GH-Wie5-SC').mkdir(parents=True)
+    (root / 'default' / 'demo-screen-01').mkdir(parents=True)
     monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
     monkeypatch.setenv('FOLDER_REQUIRE_MOUNT', '0')
     monkeypatch.setenv('FOLDER_REQUIRE_VERIFIED', '0')
@@ -3297,20 +3297,20 @@ def test_v2_network_folder_playlist_creation_form_supplies_csrf_and_submits(env,
     csrf = re.search(r'<input[^>]+name="csrf"[^>]+value="([^"]+)"', form.group(1))
     assert csrf, 'Playlist-create form did not include csrf: would return HTTP 400'
     assert csrf.group(1) == token(client)
-    assert 'default/GH-Wie5-SC' in form.group(1)
+    assert 'default/demo-screen-01' in form.group(1)
 
     # Still reject forged or omitted tokens; never weaken the global CSRF check.
     assert client.post('/library', data={
-        'name': 'Bad Submission', 'folder_source': 'default/GH-Wie5-SC',
+        'name': 'Bad Submission', 'folder_source': 'default/demo-screen-01',
     }).status_code == 400
 
     created = client.post('/library', data={
         'csrf': csrf.group(1), 'name': 'Service-Center',
-        'folder_source': 'default/GH-Wie5-SC',
+        'folder_source': 'default/demo-screen-01',
     })
     assert created.status_code == 302
     playlists = Library(app.config['LIBRARY_DIR']).list()
     assert len(playlists) == 1
     assert playlists[0]['name'] == 'Service-Center'
-    assert playlists[0]['folder_source'] == 'default/GH-Wie5-SC'
+    assert playlists[0]['folder_source'] == 'default/demo-screen-01'
     assert client.get(created.headers['Location']).status_code == 200
