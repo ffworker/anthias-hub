@@ -236,7 +236,7 @@
 
   {% if default_source %}
   <details class="media-source-manage">
-    <summary><span><strong>Gespeicherten Pfad bearbeiten &amp; weitere Aktionen</strong><small>Nur IT · Änderungen am Host bewusst separat durchführen</small></span><span class="media-disclosure-chevron" aria-hidden="true">⌄</span></summary>
+    <summary><span><strong>Gespeicherten Pfad bearbeiten &amp; weitere Aktionen</strong><small>Nur IT · Änderungen am Host bewusst separat durchführen</small></span><span class="media-disclosure-chevron ui-chevron" aria-hidden="true"></span></summary>
     <div class="media-source-manage-body">
       <form method="post" action="{{ url_for('media_sources_save') }}" class="media-default-form">
         <input type="hidden" name="csrf" value="{{ csrf() }}">
@@ -290,7 +290,7 @@
       <div><dt>Playlist-Verwendung</dt><dd>{{ source.dependents|length }} Vorlage(n)</dd></div>
     </dl>
     <details class="media-source-manage">
-      <summary><span><strong>Quelle verwalten</strong><small>Pfad bearbeiten oder Registrierung entfernen</small></span><span class="media-disclosure-chevron" aria-hidden="true">⌄</span></summary>
+      <summary><span><strong>Quelle verwalten</strong><small>Pfad bearbeiten oder Registrierung entfernen</small></span><span class="media-disclosure-chevron ui-chevron" aria-hidden="true"></span></summary>
       <div class="media-source-manage-body">
         <form method="post" action="{{ url_for('media_sources_save') }}" class="media-source-form">
           <input type="hidden" name="csrf" value="{{ csrf() }}">
@@ -321,7 +321,7 @@
       <div><dt>Playlist-Verwendung</dt><dd>{{ source.dependents|length }} Vorlage(n)</dd></div>
     </dl>
     <details class="media-source-manage">
-      <summary><span><strong>Alten Ordner prüfen &amp; austragen</strong><small>Kein automatisches Aushängen</small></span><span class="media-disclosure-chevron" aria-hidden="true">⌄</span></summary>
+      <summary><span><strong>Alten Ordner prüfen &amp; austragen</strong><small>Kein automatisches Aushängen</small></span><span class="media-disclosure-chevron ui-chevron" aria-hidden="true"></span></summary>
       <div class="media-source-manage-body">
         <p class="muted">Bereits am Host eingebundene Ordner werden nur zur Bestandsaufnahme angezeigt. Die CIFS-Quelle kann nur den Freigabestamm enthalten. Vor Änderungen am Host mit <code>findmnt -M /srv/anthias-sources/{{ source.alias }} -o SOURCE,FSTYPE</code> prüfen.</p>
         <p class="muted">Die Umstellung auf <code>default/Unterordner</code> geschieht nicht automatisch.</p>
@@ -336,7 +336,7 @@
 </section>
 
 <details class="media-advanced-sources">
-  <summary><span class="library-action-label"><strong>Weitere SMB-Quelle hinzufügen</strong><small>Erweitert · nur wenn der gemeinsame Stammordner nicht genügt</small></span><span class="library-action-chevron" aria-hidden="true">⌄</span></summary>
+  <summary><span class="library-action-label"><strong>Weitere SMB-Quelle hinzufügen</strong><small>Erweitert · nur wenn der gemeinsame Stammordner nicht genügt</small></span><span class="library-action-chevron ui-chevron" aria-hidden="true"></span></summary>
   <div class="media-advanced-body">
     <section class="card library-panel media-sources-admin">
       <h2>Neue Medienquelle hinzufügen</h2>
@@ -353,7 +353,7 @@
 
 {% if retired %}
 <details class="media-retired-disclosure">
-  <summary><span><strong>Ausgetragene Quellen <span class="count">{{ retired|length }}</span></strong><small>Im Hub nicht mehr wählbar · Host-Mounts gegebenenfalls noch vorhanden</small></span><span class="media-disclosure-chevron" aria-hidden="true">⌄</span></summary>
+  <summary><span><strong>Ausgetragene Quellen <span class="count">{{ retired|length }}</span></strong><small>Im Hub nicht mehr wählbar · Host-Mounts gegebenenfalls noch vorhanden</small></span><span class="media-disclosure-chevron ui-chevron" aria-hidden="true"></span></summary>
   <div class="media-retired-list">
     <p class="muted">Diese Aliase sind im Hub deaktiviert. <strong>Ein CIFS-Mount bleibt auf dem Host bestehen, bis IT ihn separat aushängt.</strong></p>
     <ul>{% for alias in retired %}<li><code>{{ alias }}</code> · Host prüfen: <code>findmnt -M /srv/anthias-sources/{{ alias }}</code></li>{% endfor %}</ul>
