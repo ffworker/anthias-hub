@@ -112,6 +112,15 @@ start() {
   local before after
   before=$(prod_id)
   mkdir -p dev-sources/demo
+  if grep -qx 'DEV_SMB_MODE=1' .env; then
+    # Docker's default bind propagation can hide CIFS submounts added after
+    # container startup. Require an actual mounted test source FIRST, then
+    # force-recreate only the DEV services below.
+    local fstype
+    fstype=$(findmnt -n -M /srv/anthias-dev-sources/default -o FSTYPE 2>/dev/null || true)
+    [[ "$fstype" == cifs ]] ||
+      fail 'DEV_SMB_MODE=1 needs a verified DEV CIFS mount at /srv/anthias-dev-sources/default.'
+  fi
   dc config --quiet
   dc build anthias-hub
   # Refresh only DEV services, including changes to DEV .env/player allowlist.
