@@ -158,7 +158,7 @@ def create_app(config=None):
             'apply_library', 'add_url', 'upload',
             'edit_asset', 'move_asset', 'reorder_assets',
             'toggle_asset', 'bulk_delete_assets', 'delete_asset',
-            'asset_schedule', 'device_schedule_apply',
+            'asset_schedule', 'device_schedule_apply', 'device_schedule_default',
         }
         library_routes = {
             'apply_library_from_template', 'append_library_from_template',
@@ -1232,10 +1232,12 @@ def create_app(config=None):
             row['auto_publish'] and row['state'] == 'ok'
             for row in folder_sync_by_template.values())
         from .folder_sync import available_sources
-        if app.config['HUB_WORKFLOW_V2'] and request.args.get('editor') != '1':
+        if app.config['HUB_WORKFLOW_V2']:
             from .screen_modes import resolve_mode
             mode = resolve_mode(device_id, templates, assets=assets, error=error)
-            return render_template(
+            # A guessed editor URL may never expose duplicate managed controls.
+            if request.args.get('editor') != '1' or mode['key'] not in ('manual', 'empty'):
+                return render_template(
                 'screen_v2.html', device=device, mode=mode, assets=assets,
                 folder_sync_by_template=folder_sync_by_template,
                 publisher_ready=publish_enabled,
