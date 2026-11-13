@@ -59,8 +59,29 @@ guard() {
   fi
 }
 init() {
+  # A password typo may interrupt a first run AFTER the dev-only .env was
+  # written but BEFORE config/users.json exists. Resume safely instead of
+  # trapping the operator between "already initialized" and "run init".
+  if [[ -f .env && ! -s config/users.json ]]; then
+    [[ -t 0 && -t 1 ]] || fail 'Account recovery needs an interactive terminal.'
+    local resume_uid resume_gid
+    resume_uid=$(sed -n 's/^HUB_UID=//p' .env)
+    resume_gid=$(sed -n 's/^HUB_GID=//p' .env)
+    [[ "$resume_uid" =~ ^[0-9]+$ && "$resume_gid" =~ ^[0-9]+$ ]] ||
+      fail 'Invalid DEV UID/GID in existing .env; refusing changes.'
+    [[ -d config && ! -L config ]] || fail 'DEV config directory missing or unsafe.'
+    dc build anthias-hub
+    say 'Resuming missing DEV owner account; your existing .env stays unchanged.'
+    docker run --rm -it --user "$resume_uid:$resume_gid" \
+      --mount "type=bind,source=$root/config,target=/config" \
+      --entrypoint python "$image" \
+      -m scripts.create_user /config/users.json owner owner
+    [[ -s config/users.json ]] || fail 'DEV account still missing; retry init.'
+    say 'DEV owner created successfully. Run bash scripts/dev-cohost.sh start.'
+    return
+  fi
   [[ ! -e .env && ! -e config/users.json ]] ||
-    fail 'Already initialized. Do not reinitialize and overwrite accounts.'
+    fail 'Already initialized. Existing account and secrets were preserved.'
   command -v openssl >/dev/null || fail 'OpenSSL missing.'
   [[ -t 0 && -t 1 ]] || fail 'Initialize interactively to set a private dev password.'
   docker info >/dev/null 2>&1 || fail 'Docker daemon inaccessible.'
