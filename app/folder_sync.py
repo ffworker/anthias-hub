@@ -255,14 +255,19 @@ def run_cycle(*, root=None, library_dir=None, devices_file=None, state_root=None
         auto_publish = os.environ.get('FOLDER_AUTO_PUBLISH', '0') == '1'
     if api_factory is None:
         api_factory = Anthias
+    v2 = os.environ.get('HUB_WORKFLOW_V2', '0') == '1'
     results = {}
     for template in store.list():
-        if not template.get('folder_source'):
+        folder = bool(template.get('folder_source'))
+        # A manual template is only part of the synchronization loop when
+        # source-of-truth v2 is enabled AND a device is explicitly assigned.
+        if not folder and not (v2 and template.get('auto_devices')):
             continue
         template_id = template['id']
         try:
-            results[template_id] = {'import': sync_template(store, template_id, root),
-                                    'devices': {}}
+            imported = sync_template(store, template_id, root) if folder else {
+                'added': 0, 'updated': 0, 'retired': 0, 'skipped': 0}
+            results[template_id] = {'import': imported, 'devices': {}}
         except (OSError, LibraryError, ValueError) as exc:
             results[template_id] = {'error': str(exc)}
             continue
@@ -276,7 +281,8 @@ def run_cycle(*, root=None, library_dir=None, devices_file=None, state_root=None
                         store, template_id, device_id, devices_file=devices_file,
                         state_root=state_root, schedules_file=schedules_file,
                         api_factory=api_factory,
-                        retire_missing=os.environ.get('FOLDER_PRUNE_MISSING', '0') == '1')
+                        retire_missing=os.environ.get('FOLDER_PRUNE_MISSING', '0') == '1',
+                        allow_manual=v2 and not folder)
                 except (PublishError, PlayerError, LibraryError, ScheduleError,
                         OSError, ValueError) as exc:
                     results[template_id]['devices'][device_id] = {'error': str(exc)}
