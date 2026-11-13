@@ -3189,3 +3189,80 @@ body.studio-drawer-open{overflow:hidden}
   padding:12px 14px;border-left:3px solid var(--ui-accent);
   background:var(--ui-subtle);font-size:12px;line-height:1.6
 }
+
+/* Source-of-truth v2: one content owner per screen, one compact editor. */
+.site-main .source-v2-workspace{max-width:1020px;margin:0 auto;padding:6px 0 56px}
+.site-main .source-v2-head{padding:26px 0 25px;border-bottom:1px solid var(--ui-line);margin-bottom:24px}
+.site-main .source-v2-head .eyebrow{margin-bottom:9px}
+.site-main .source-v2-head h1{margin:0;font-size:clamp(29px,3vw,42px);line-height:1.1;letter-spacing:-.03em}
+.site-main .source-v2-head .muted{margin:10px 0 0;font-size:13px}
+.site-main .source-v2-mode{padding:26px 29px;margin:0 0 20px;background:var(--ui-surface);
+  border:1px solid var(--ui-line);border-radius:var(--ui-radius);display:grid;gap:17px;min-width:0}
+.site-main .source-v2-mode-top{display:flex;align-items:center;gap:15px}
+.site-main .source-v2-mode-top .eyebrow{margin:0 0 4px}
+.site-main .source-v2-mode-top h2{margin:0;font-size:23px;line-height:1.2}
+.site-main .source-v2-icon{width:50px;height:50px;flex:0 0 50px;border:1px solid var(--ui-line);
+  border-radius:12px;display:grid;place-items:center;font-size:24px;color:var(--ui-fg);background:var(--ui-subtle)}
+.site-main .source-v2-mode>p{margin:0;line-height:1.65;font-size:13px}
+.site-main .source-v2-mode strong{color:var(--ui-fg)}
+.site-main .source-v2-facts{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:11px}
+.site-main .source-v2-facts>div{display:grid;gap:5px;padding:13px 15px;background:var(--ui-subtle);
+  border:1px solid var(--ui-line);border-radius:8px;min-width:0}
+.site-main .source-v2-facts dt{font-size:10px;text-transform:uppercase;letter-spacing:.07em;font-weight:700;color:var(--ui-muted)}
+.site-main .source-v2-facts dd{font-size:13px;color:var(--ui-fg);font-weight:600;margin:0;overflow-wrap:anywhere}
+.site-main .source-v2-facts code{font-size:12px;white-space:normal;overflow-wrap:anywhere}
+.site-main .source-v2-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.site-main .source-v2-note{padding:12px 15px;border-left:3px solid var(--ui-line-strong);
+  background:var(--ui-subtle);border-radius:0 7px 7px 0;color:var(--ui-muted);line-height:1.6}
+.site-main .source-v2-form{display:grid;gap:12px;max-width:740px}
+.site-main .source-v2-form>label{display:grid;gap:7px;font-size:12px;font-weight:600}
+.site-main .source-v2-form input:not([type=checkbox]),
+.site-main .source-v2-form select{width:100%;min-width:0}
+.site-main .source-v2-form button{justify-self:start}
+.site-main .source-v2-checkbox{display:flex!important;align-items:center;gap:12px;
+  padding:9px 0;font-size:13px;font-weight:500}
+.site-main .source-v2-checkbox input[type=checkbox]{width:18px;height:18px;flex:0 0 18px;min-width:18px}
+.site-main .source-v2-list{display:grid;gap:0;border:1px solid var(--ui-line);border-radius:9px;overflow:hidden}
+.site-main .source-v2-list-row{display:flex;align-items:center;justify-content:space-between;gap:15px;
+  padding:15px 18px;text-decoration:none;color:inherit;border-bottom:1px solid var(--ui-line)}
+.site-main .source-v2-list-row:last-child{border-bottom:0}
+.site-main .source-v2-list-row:hover{background:var(--ui-subtle)}
+.site-main .source-v2-list-row>div{display:grid;gap:5px;min-width:0}
+.site-main .source-v2-list-row span,.site-main .source-v2-list-meta small{font-size:11px;color:var(--ui-muted);overflow-wrap:anywhere}
+.site-main .source-v2-list-meta{text-align:right}
+.site-main .source-v2-item-list,.site-main .source-v2-folder-list{list-style:none;padding:0;margin:0;
+  border:1px solid var(--ui-line);border-radius:10px;overflow:hidden}
+.site-main .source-v2-item-list>li,.site-main .source-v2-folder-list>li{
+  padding:14px 16px;border-bottom:1px solid var(--ui-line)}
+.site-main .source-v2-item-list>li:last-child,.site-main .source-v2-folder-list>li:last-child{border-bottom:0}
+.site-main .source-v2-folder-list>li{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.site-main .source-v2-item-heading{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px}
+.site-main .source-v2-item-heading>span{font-size:11px;color:var(--ui-muted)}
+.site-main .source-v2-item-controls{display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin-top:10px}
+.site-main .source-v2-item-controls form{display:flex;align-items:end;gap:7px;flex-wrap:wrap}
+.site-main .source-v2-item-controls form label{font-size:11px}
+.site-main .source-v2-item-controls input[type=number]{width:95px;display:block}
+.site-main .source-v2-optional{margin:15px 0;border:1px solid var(--ui-line);border-radius:10px;
+  background:var(--ui-surface)}
+.site-main .source-v2-optional>summary{padding:14px 18px;cursor:pointer;font-weight:650;font-size:13px}
+.site-main .source-v2-optional-body{display:grid;gap:16px;padding:18px;border-top:1px solid var(--ui-line)}
+.site-main .source-v2-steps{display:grid;gap:0;margin:0;padding:0;list-style:none}
+.site-main .source-v2-step{display:grid;gap:5px;padding:12px 12px 12px 27px;
+  margin:0;border-left:2px solid var(--ui-line);position:relative}
+.site-main .source-v2-step:before{content:'';width:10px;height:10px;border-radius:100%;
+  position:absolute;left:-6px;top:17px;background:var(--ui-subtle);border:2px solid var(--ui-line-strong)}
+.site-main .source-v2-step-done:before{background:var(--ui-accent)}
+.site-main .source-v2-step-error:before{border-color:var(--ui-accent)}
+.site-main .source-v2-step strong{font-size:13px}
+.site-main .source-v2-step span{font-size:12px;color:var(--ui-muted);line-height:1.5}
+.site-main .source-v2-card-owner{display:grid;gap:4px;padding:10px 0;font-size:12px}
+.site-main .source-v2-card-owner strong{font-size:14px}
+.site-main .source-v2-card-owner small{font-size:11px;color:var(--ui-muted)}
+@media(max-width:680px){
+  .site-main .source-v2-mode{padding:18px 16px}
+  .site-main .source-v2-facts{grid-template-columns:1fr}
+  .site-main .source-v2-list-row{align-items:flex-start}
+  .site-main .source-v2-item-controls{display:grid;justify-items:start}
+  .site-main .source-v2-mode-top h2{font-size:20px}
+}
