@@ -106,7 +106,9 @@ def create_app(config=None):
                 'ui_revision': app.config['UI_REVISION'],
                 'hub_build_sha': app.config['HUB_BUILD_SHA'],
                 'development_mode': app.config['HUB_DEVELOPMENT_MODE'],
-                'workflow_v2': app.config['HUB_WORKFLOW_V2']}
+                'workflow_v2': app.config['HUB_WORKFLOW_V2'],
+                'dev_smb_ui': app.config['HUB_WORKFLOW_V2'] and
+                              os.environ.get('DEV_SMB_UI', '0') == '1'}
 
     def audit(action, device_id='', asset_id=''):
         Path(app.config['AUDIT_FILE']).parent.mkdir(parents=True, exist_ok=True)
