@@ -3276,3 +3276,41 @@ def test_dev_smb_can_be_connected_and_rechecked_entirely_from_it_ui(env, tmp_pat
     assert client.get('/media-sources/status').status_code == 403
     assert client.post('/media-sources/sync-now',
                        data={'csrf': token(client)}).status_code == 403
+
+
+def test_v2_network_folder_playlist_creation_form_supplies_csrf_and_submits(env, monkeypatch):
+    """Reproduce the exact browser failure: POST /library without hidden csrf."""
+    app, client, tmp = env
+    from app.library import Library
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'v2-library')
+    root = Path(tmp) / 'dev-sources'
+    (root / 'default' / 'GH-Wie5-SC').mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    monkeypatch.setenv('FOLDER_REQUIRE_MOUNT', '0')
+    monkeypatch.setenv('FOLDER_REQUIRE_VERIFIED', '0')
+    login(client, 'it')
+
+    html = client.get('/library').get_data(as_text=True)
+    form = re.search(r'<form[^>]+action="/library"[^>]*>(.*?)</form>', html, re.S)
+    assert form, 'Playlist-create form missing'
+    csrf = re.search(r'<input[^>]+name="csrf"[^>]+value="([^"]+)"', form.group(1))
+    assert csrf, 'Playlist-create form did not include csrf: would return HTTP 400'
+    assert csrf.group(1) == token(client)
+    assert 'default/GH-Wie5-SC' in form.group(1)
+
+    # Still reject forged or omitted tokens; never weaken the global CSRF check.
+    assert client.post('/library', data={
+        'name': 'Bad Submission', 'folder_source': 'default/GH-Wie5-SC',
+    }).status_code == 400
+
+    created = client.post('/library', data={
+        'csrf': csrf.group(1), 'name': 'Service-Center',
+        'folder_source': 'default/GH-Wie5-SC',
+    })
+    assert created.status_code == 302
+    playlists = Library(app.config['LIBRARY_DIR']).list()
+    assert len(playlists) == 1
+    assert playlists[0]['name'] == 'Service-Center'
+    assert playlists[0]['folder_source'] == 'default/GH-Wie5-SC'
+    assert client.get(created.headers['Location']).status_code == 200
