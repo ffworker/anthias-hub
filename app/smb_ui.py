@@ -199,7 +199,7 @@ def test_connection(unc, username, password, domain=''):
     try:
         folders = _scan_directories(record)
         return record, folders
-    except (OSError, RuntimeError, ValueError, TimeoutError) as exc:
+    except Exception as exc:
         raise SMBSetupError(_error_description(exc)) from None
     finally:
         try:
@@ -220,6 +220,8 @@ def request_sync():
 
 def _safe_local_dir(base, name):
     target = base / name
+    if not valid_child_name(name):
+        raise SMBSetupError('Ungültiger Medienordnername')
     if base.is_symlink() or target.is_symlink() or base.resolve() == target.resolve():
         raise SMBSetupError('Unsicherer lokaler Medienpfad')
     target.mkdir(parents=True, exist_ok=True)
@@ -284,8 +286,16 @@ def mirror_cycle(root=None):
     mirror = root / 'default'
     manifest_path = Path(os.environ.get('DEV_SMB_MIRROR_INDEX', '/data/dev-smb-mirror-index.json'))
     old = _read_manifest(manifest_path)
-    if old.get('revision') != record['revision'] or old.get('unc') != record['unc']:
+    new_revision = old.get('revision') != record['revision'] or old.get('unc') != record['unc']
+    if new_revision:
         old = {}
+    # On source/credential replacement, download into a new hidden cache.
+    # Do not mix old UNC media with a new source or take down a good mirror
+    # before the new source has been fully checked.
+    stage = root / ('.default-stage-' + record['revision'])
+    if new_revision and stage.is_symlink():
+        raise SMBSetupError('Unsicherer DEV-Zwischenspeicher')
+    target_root = stage if new_revision else mirror
     current = {}
     copied = 0
     files = 0
@@ -293,13 +303,16 @@ def mirror_cycle(root=None):
     folders = []
     try:
         folders = _scan_directories(record)
-        _safe_local_dir(root, 'default')
+        if new_revision:
+            _safe_local_dir(root, stage.name)
+        else:
+            _safe_local_dir(root, 'default')
         write_status('syncing', record['unc'], record['revision'],
                      detail='Ordner entdeckt, Dateien werden geprüft', folders=len(folders))
         smbclient = _smb()
         remote_root, _ = _unc_path(record['unc'])
         for name in folders:
-            local = _safe_local_dir(mirror, name)
+            local = _safe_local_dir(target_root, name)
             with smbclient.scandir(remote_root + chr(92) + name,
                                    **_options(record)) as directory:
                 for entry in directory:
@@ -338,6 +351,22 @@ def mirror_cycle(root=None):
                                  files=files, done=copied, bytes_copied=transferred)
         if not credential_is_current(record):
             raise SMBSetupError('SMB-Zuordnung geändert; Ergebnis nicht übernommen')
+        if new_revision:
+            previous = root / ('.default-previous-' + record['revision'])
+            if previous.exists() or previous.is_symlink():
+                raise SMBSetupError('Alter DEV-Zwischenspeicher muss geprüft werden')
+            renamed = False
+            try:
+                if mirror.exists():
+                    if mirror.is_symlink():
+                        raise SMBSetupError('Unsicherer DEV-Medienspiegel')
+                    mirror.rename(previous)
+                    renamed = True
+                stage.rename(mirror)
+            except Exception:
+                if renamed and not mirror.exists():
+                    previous.rename(mirror)
+                raise
         manifest = {'unc': record['unc'], 'revision': record['revision'],
                     'files': current, 'checked_at': time.time()}
         _atomic_write(manifest_path, json.dumps(manifest).encode('utf-8'))
@@ -347,7 +376,7 @@ def mirror_cycle(root=None):
                      bytes_copied=transferred)
         return {'folders': len(folders), 'files': files, 'copied': copied,
                 'bytes': transferred}
-    except (OSError, RuntimeError, ValueError, TimeoutError) as exc:
+    except Exception as exc:
         if credential_is_current(record):
             write_status('error', record['unc'], record['revision'],
                          detail=(str(exc)[:160] if isinstance(exc, SMBSetupError)
