@@ -10,6 +10,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import tempfile
 import time
 from pathlib import Path
@@ -21,7 +22,7 @@ from .folder_sync import valid_child_name
 from .library import _MEDIA, MAX_MEDIA
 
 MAX_FOLDERS = 150
-MAX_FILES = 1500
+MAX_FILES = 10000
 # Safety boundary for EACH batch, not for the entire network library.
 MAX_BYTES_PER_CYCLE = 4 * 1024 ** 3
 CHUNK = 256 * 1024
@@ -77,7 +78,8 @@ def _fingerprint(unc):
 
 
 def _public_status(state, unc, revision, *, detail='', folders=0, files=0,
-                   done=0, bytes_copied=0, pending=0):
+                   done=0, bytes_copied=0, pending=0,
+                   total_bytes=0, completed_bytes=0):
     return {
         'checked_at': time.time(),
         'provider': 'python-smb',
@@ -92,6 +94,8 @@ def _public_status(state, unc, revision, *, detail='', folders=0, files=0,
                 'done': done,
                 'pending': pending,
                 'bytes': bytes_copied,
+                'total_bytes': total_bytes,
+                'completed_bytes': completed_bytes,
             }
         },
     }
@@ -268,7 +272,7 @@ def _copy_file(smbclient, source, dest, record, expected, progress=None):
 
 def _read_manifest(path):
     try:
-        if path.stat().st_size > 262144:
+        if path.stat().st_size > 2 * 1024 * 1024:
             return {}
         result = json.loads(path.read_text(encoding='utf-8'))
         return result if isinstance(result, dict) else {}
@@ -277,47 +281,72 @@ def _read_manifest(path):
 
 
 def mirror_cycle(root=None):
-    """Probe, stage and copy recognized media; never delete the last good mirror.
+    """Incremental, bounded SMB import into a private DEV mirror.
 
-    Only the worker writes to /sources. Local removed-media cleanup is not
-    performed: DEV_PRUNE_MISSING remains a separate, explicit policy.
+    4 GiB is a batch budget, never a total library limit. A checkpoint is
+    atomically saved after each verified media file, so next cycles (and
+    restarts) skip already copied files. Source changes stay in hidden staging
+    until all files are verified; a partially staged share is never published.
     """
     if not enabled():
         return None
     record = _get_credentials()
-    if not record:
-        return None
-    if not credential_is_current(record):
+    if not record or not credential_is_current(record):
         return None
     root = Path(root or os.environ.get('MEDIA_SOURCE_ROOT', '/sources'))
     mirror = root / 'default'
-    manifest_path = Path(os.environ.get('DEV_SMB_MIRROR_INDEX', '/data/dev-smb-mirror-index.json'))
+    manifest_path = Path(os.environ.get('DEV_SMB_MIRROR_INDEX',
+                                         '/data/dev-smb-mirror-index.json'))
+    pending_path = manifest_path.with_name(manifest_path.name + '.pending')
     old = _read_manifest(manifest_path)
-    new_revision = old.get('revision') != record['revision'] or old.get('unc') != record['unc']
-    if new_revision:
-        old = {}
-    # On source/credential replacement, download into a new hidden cache.
-    # Do not mix old UNC media with a new source or take down a good mirror
-    # before the new source has been fully checked.
+    previous = root / ('.default-previous-' + record['revision'])
     stage = root / ('.default-stage-' + record['revision'])
-    if new_revision and stage.is_symlink():
-        raise SMBSetupError('Unsicherer DEV-Zwischenspeicher')
-    target_root = stage if new_revision else mirror
-    current = {}
-    copied = 0
-    files = 0
-    transferred = 0
+    # Re-authentication of the same UNC must not force downloading everything
+    # again. Only a different source path needs an isolated staging directory.
+    needs_swap = old.get('unc') != record['unc']
+    if stage.is_symlink() or previous.is_symlink() or mirror.is_symlink():
+        raise SMBSetupError('Unsicherer DEV-Medienspiegel')
+    # Recover an interrupted stage -> active rename transaction. The
+    # checkpoint still contains all verified files and will be revalidated.
+    swapped = False
+    if needs_swap and previous.exists():
+        if stage.exists() and not mirror.exists():
+            stage.rename(mirror)
+        if mirror.exists() and not stage.exists():
+            swapped = True
+        else:
+            raise SMBSetupError('DEV-Quellenwechsel konnte nicht sicher fortgesetzt werden')
+    target_root = (stage if needs_swap and not swapped else mirror)
+    pending_doc = _read_manifest(pending_path)
+    if (pending_doc.get('unc') == record['unc'] and
+            pending_doc.get('revision') == record['revision']):
+        known = dict(pending_doc.get('files', {}))
+    else:
+        known = {}
+    if not needs_swap:
+        # Include previous completed scans when the same UNC is reauthorized.
+        known.update(old.get('files', {}))
+        if (pending_doc.get('unc') == record['unc'] and
+                pending_doc.get('revision') == record['revision']):
+            known.update(pending_doc.get('files', {}))
+
     folders = []
+    candidates = []
+    copied = 0
+    transferred = 0
+    current = {}
+    completed_bytes = 0
+    total_bytes = 0
+    completed = 0
     try:
         folders = _scan_directories(record)
-        if new_revision:
-            _safe_local_dir(root, stage.name)
-        else:
-            _safe_local_dir(root, 'default')
-        write_status('syncing', record['unc'], record['revision'],
-                     detail='Ordner entdeckt, Dateien werden geprüft', folders=len(folders))
+        _safe_local_dir(root, target_root.name)
         smbclient = _smb()
         remote_root, _ = _unc_path(record['unc'])
+        write_status('syncing', record['unc'], record['revision'],
+                     detail='Medienliste wird gelesen', folders=len(folders))
+        # Preflight first, so the UI can display a real denominator and not
+        # confuse files scanned so far with the entire share size.
         for name in folders:
             local = _safe_local_dir(target_root, name)
             with smbclient.scandir(remote_root + chr(92) + name,
@@ -332,41 +361,84 @@ def mirror_cycle(root=None):
                     size = int(info.st_size)
                     if size <= 0 or size > MAX_MEDIA:
                         continue
-                    files += 1
-                    if files > MAX_FILES:
-                        raise SMBSetupError('Zu viele Medien in einem Abgleich (max. 1500)')
-                    revision = str(size) + ':' + str(getattr(info, 'st_mtime_ns', int(info.st_mtime * 1e9)))
-                    key = name + '/' + filename
-                    destination = local / filename
-                    if destination.is_symlink():
+                    if len(candidates) >= MAX_FILES:
+                        raise SMBSetupError('Mehr als 10000 Medien: bitte Ordner aufteilen')
+                    revision = str(size) + ':' + str(getattr(
+                        info, 'st_mtime_ns', int(info.st_mtime * 1e9)))
+                    dest = local / filename
+                    if dest.is_symlink():
                         raise SMBSetupError('Unsicherer lokaler Medienpfad')
-                    if (old.get('files', {}).get(key) == revision and destination.is_file()
-                            and destination.stat().st_size == size):
-                        current[key] = revision
-                        continue
-                    if transferred + size > MAX_BYTES_PER_CYCLE:
-                        raise SMBSetupError('Transfer-Limit dieses Abgleichs erreicht (4 GiB)')
-                    copied_bytes = _copy_file(smbclient, remote_root + chr(92) + name +
-                                              chr(92) + filename, destination, record, size)
-                    transferred += copied_bytes
-                    copied += 1
-                    current[key] = revision
-                    if not credential_is_current(record):
-                        raise SMBSetupError('SMB-Zuordnung wurde geändert; alten Abgleich gestoppt')
-                    write_status('syncing', record['unc'], record['revision'],
-                                 detail='Medien werden heruntergeladen', folders=len(folders),
-                                 files=files, done=copied, bytes_copied=transferred)
+                    candidates.append((name + '/' + filename, revision, size,
+                                       remote_root + chr(92) + name + chr(92) + filename,
+                                       dest))
+                    total_bytes += size
+
+        total = len(candidates)
+        write_status('syncing', record['unc'], record['revision'],
+                     detail='Medien werden in mehreren Durchläufen übernommen',
+                     folders=len(folders), files=total, pending=total,
+                     total_bytes=total_bytes)
+        for key, revision, size, remote, dest in candidates:
+            if (known.get(key) == revision and dest.is_file()
+                    and dest.stat().st_size == size):
+                current[key] = revision
+                completed += 1
+                completed_bytes += size
+
+        def report(detail, *, in_flight=0):
+            write_status('syncing', record['unc'], record['revision'],
+                         detail=detail, folders=len(folders), files=total,
+                         done=completed, pending=total - completed,
+                         bytes_copied=transferred + in_flight,
+                         total_bytes=total_bytes,
+                         completed_bytes=completed_bytes + in_flight)
+
+        report('Bereits vorhandene Dateien wurden geprüft')
+        for key, revision, size, remote, dest in candidates:
+            if key in current:
+                continue
+            if transferred + size > MAX_BYTES_PER_CYCLE and transferred:
+                # No error: defer this file until the next automatic batch.
+                continue
+            if size > MAX_BYTES_PER_CYCLE:
+                raise SMBSetupError('Eine einzelne Datei überschreitet das 4-GiB-Medienlimit')
+            # Stop gracefully if the separate DEV cache is running out of
+            # storage; never fill up the host disk with partial downloads.
+            if shutil.disk_usage(dest.parent).free < size + 256 * 1024 ** 2:
+                raise SMBSetupError('DEV-Speicherplatz reicht nicht aus (256 MiB Reserve)')
+            if not credential_is_current(record):
+                raise SMBSetupError('SMB-Quelle wurde während des Downloads geändert')
+            copied_bytes = _copy_file(
+                smbclient, remote, dest, record, size,
+                progress=lambda part: report('Datei wird übertragen', in_flight=part))
+            if not credential_is_current(record):
+                raise SMBSetupError('SMB-Quelle wurde während des Downloads geändert')
+            transferred += copied_bytes
+            copied += 1
+            current[key] = revision
+            completed += 1
+            completed_bytes += size
+            # Commit progress *after each finished file*: if the worker is
+            # killed during the next file, completed files survive restart.
+            checkpoint = {'unc': record['unc'], 'revision': record['revision'],
+                          'files': current, 'checked_at': time.time()}
+            _atomic_write(pending_path, json.dumps(checkpoint).encode('utf-8'))
+            report('Dateien kopiert; nächste Dateien werden geprüft')
+
         if not credential_is_current(record):
             raise SMBSetupError('SMB-Zuordnung geändert; Ergebnis nicht übernommen')
-        if new_revision:
-            previous = root / ('.default-previous-' + record['revision'])
-            if previous.exists() or previous.is_symlink():
+        remaining = total - completed
+        if remaining:
+            report('Teilimport gespeichert. Nächster Durchlauf setzt automatisch fort.')
+            return {'folders': len(folders), 'files': total, 'copied': copied,
+                    'pending': remaining, 'bytes': transferred}
+
+        if needs_swap and not swapped:
+            if previous.exists():
                 raise SMBSetupError('Alter DEV-Zwischenspeicher muss geprüft werden')
             renamed = False
             try:
                 if mirror.exists():
-                    if mirror.is_symlink():
-                        raise SMBSetupError('Unsicherer DEV-Medienspiegel')
                     mirror.rename(previous)
                     renamed = True
                 stage.rename(mirror)
@@ -377,19 +449,23 @@ def mirror_cycle(root=None):
         manifest = {'unc': record['unc'], 'revision': record['revision'],
                     'files': current, 'checked_at': time.time()}
         _atomic_write(manifest_path, json.dumps(manifest).encode('utf-8'))
+        pending_path.unlink(missing_ok=True)
         write_status('connected', record['unc'], record['revision'],
-                     detail='SMB-Ordner geprüft, lokaler DEV-Spiegel aktualisiert',
-                     folders=len(folders), files=files, done=copied,
-                     bytes_copied=transferred)
-        return {'folders': len(folders), 'files': files, 'copied': copied,
-                'bytes': transferred}
+                     detail='Alle Medien geprüft – DEV-Spiegel vollständig',
+                     folders=len(folders), files=total, done=completed,
+                     pending=0, bytes_copied=transferred,
+                     total_bytes=total_bytes, completed_bytes=completed_bytes)
+        return {'folders': len(folders), 'files': total, 'copied': copied,
+                'pending': 0, 'bytes': transferred}
     except Exception as exc:
         if credential_is_current(record):
             write_status('error', record['unc'], record['revision'],
                          detail=(str(exc)[:160] if isinstance(exc, SMBSetupError)
                                  else _error_description(exc)),
-                         folders=len(folders), files=files,
-                         done=copied, bytes_copied=transferred)
+                         folders=len(folders), files=len(candidates),
+                         done=completed, pending=max(0, len(candidates) - completed),
+                         bytes_copied=transferred,
+                         total_bytes=total_bytes, completed_bytes=completed_bytes)
         return {'error': 'SMB-Ordner konnte nicht vollständig eingelesen werden'}
     finally:
         try:
