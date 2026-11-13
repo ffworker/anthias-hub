@@ -24,9 +24,30 @@
         <input name="unc" maxlength="650" placeholder="//10.0.0.5/media$/Marketing/Bildschirme"
                value="{{ default_source.unc if default_source else '' }}" required>
       </label>
-      <button class="primary" type="submit">{{ 'Pfad aktualisieren' if default_source else 'Pfad speichern' }}</button>
+      {% if dev_smb_ui %}
+        <div class="source-v2-credentials">
+          <label>SMB-Benutzername
+            <input name="username" autocomplete="username" maxlength="128" required
+                   placeholder="z. B. service-smb">
+          </label>
+          <label>SMB-Kennwort
+            <input name="password" type="password" autocomplete="new-password"
+                   maxlength="512" required placeholder="Kennwort der SMB-Freigabe">
+          </label>
+          <label>Domäne (optional)
+            <input name="domain" maxlength="128" placeholder="z. B. FIRMA">
+          </label>
+        </div>
+        <button class="primary" type="submit">Verbinden &amp; prüfen →</button>
+      {% else %}
+        <button class="primary" type="submit">{{ 'Pfad aktualisieren' if default_source else 'Pfad speichern' }}</button>
+      {% endif %}
     </form>
-    <p class="source-v2-note">Speichern merkt sich nur den Pfad. Ein Host-Mountdienst stellt die tatsächliche SMB-Verbindung her. Ohne diesen Dienst wird <strong>kein</strong> Scan gestartet.</p>
+    {% if dev_smb_ui %}
+      <p class="source-v2-note">Der DEV-Hub prüft die SMB-Verbindung <strong>sofort</strong> und speichert die Zugangsdaten verschlüsselt in seinem separaten DEV-Speicher. Er liest die Dateien direkt über SMB3 – ohne Linux-Mount und ohne Zugriff auf Produktion. Verwende möglichst ein eigenes SMB-Konto mit ausschließlich Leserechten.</p>
+    {% else %}
+      <p class="source-v2-note">Speichern merkt sich nur den Pfad. Ein Host-Mountdienst stellt die tatsächliche SMB-Verbindung her. Ohne diesen Dienst wird <strong>kein</strong> Scan gestartet.</p>
+    {% endif %}
   </section>
 
   <section class="source-v2-mode" aria-label="Einrichtungs- und Synchronisierungsstatus">
@@ -39,8 +60,20 @@
       <ol class="source-v2-steps" data-progress-stages></ol>
       <p class="muted" data-progress-check>Letzte Hostprüfung: noch nicht bekannt</p>
     </div>
-    <button type="button" class="button" data-source-check-now>Aktuellen Status prüfen</button>
-    <p class="source-v2-note">Diese Ansicht aktualisiert den Status automatisch etwa alle 10 Sekunden. „Prüfen“ liest den momentanen Zustand erneut; der Browser kann keinen Root-Mount starten. Ohne Host-Dienst gibt es deshalb keinen laufenden Verbindungsvorgang.</p>
+    <div class="source-v2-actions">
+      <button type="button" class="button" data-source-check-now>Status aktualisieren</button>
+      {% if dev_smb_ui and default_source %}
+      <form method="post" action="{{ url_for('media_sources_sync_now') }}">
+        <input type="hidden" name="csrf" value="{{ csrf() }}">
+        <button type="submit" class="button primary">Jetzt synchronisieren ↻</button>
+      </form>
+      {% endif %}
+    </div>
+    {% if dev_smb_ui %}
+      <p class="source-v2-note">Verbindung und Dateikopien werden durch den eigenen DEV-Importer ausgeführt. Die Anzeige aktualisiert sich alle 3 Sekunden mit tatsächlich erledigten Dateien. Wenn der SMB-Server ausfällt, bleiben die zuletzt importierten Medien erhalten.</p>
+    {% else %}
+      <p class="source-v2-note">Diese Ansicht aktualisiert den Status automatisch etwa alle 10 Sekunden. „Prüfen“ liest den momentanen Zustand erneut; der Browser kann keinen Root-Mount starten.</p>
+    {% endif %}
   </section>
 
   <section class="source-v2-mode">
