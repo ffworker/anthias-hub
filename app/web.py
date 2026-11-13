@@ -414,6 +414,13 @@ def create_app(config=None):
                 registered = {item['alias'] for item in load_sources(app.config['MEDIA_SOURCES_FILE'])}
                 if alias in registered:
                     remove_source(alias, path=app.config['MEDIA_SOURCES_FILE'])
+                    if (alias == 'default' and app.config['HUB_WORKFLOW_V2']
+                            and os.environ.get('DEV_SMB_UI', '0') == '1'):
+                        # Never leave a password behind when the browser-only
+                        # source is intentionally unregistered. The importer
+                        # will fail closed on the missing registry/credentials.
+                        from .smb_ui import credentials_file
+                        credentials_file().unlink(missing_ok=True)
                 elif alias in {a for a in available_sources() if '/' not in a}:
                     # Only a genuinely visible, non-registered legacy directory
                     # may be hidden. Never accept arbitrary tombstone requests.
@@ -421,9 +428,13 @@ def create_app(config=None):
                 else:
                     raise SourceError('Keine registrierte oder bekannte alte Quelle mit diesem Alias')
             audit('media-source.retired', asset_id=alias)
-            flash('Quelle „' + alias + '“ im Hub ausgetragen. Kein SMB-Mount wurde '
-                  'ausgehängt und keine Dateien wurden gelöscht. Den alten Host-Mount '
-                  'nach Prüfung separat kontrolliert entfernen.', 'success')
+            flash(('Quelle „' + alias + '“ im DEV-Hub ausgetragen. '
+                   'Gespeicherte SMB-Zugangsdaten entfernt. Kopierte Medien bleiben erhalten.'
+                   if app.config['HUB_WORKFLOW_V2'] and os.environ.get('DEV_SMB_UI') == '1'
+                      and alias == 'default'
+                   else 'Quelle „' + alias + '“ im Hub ausgetragen. Kein SMB-Mount wurde '
+                        'ausgehängt und keine Dateien wurden gelöscht. Den alten Host-Mount '
+                        'nach Prüfung separat kontrolliert entfernen.'), 'success')
         except (SourceError, LibraryError, OSError) as exc:
             flash(str(exc), 'error')
         return redirect(url_for('media_sources_page'))
