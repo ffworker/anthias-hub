@@ -8,6 +8,7 @@ services:
       HUB_WORKFLOW_V2: "1"
       DEV_SMB_UI: "1"
       MEDIA_MOUNT_STATUS_FILE: /data/smb-sync-status.json
+      FOLDER_REQUIRE_VERIFIED: "1"
       FOLDER_AUTO_PUBLISH: "0"
       MEDIA_SOURCE_ROOT: /sources
     volumes:
