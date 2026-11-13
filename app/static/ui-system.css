@@ -3367,10 +3367,13 @@ body.hub-compact-v2 .site-foot{margin-top:16px}
 }
 .site-main .source-v2-expand>summary::-webkit-details-marker{display:none}
 .site-main .source-v2-expand>summary::after{
-  content:'⌄';font-size:17px;font-weight:500;color:var(--ui-muted);
-  margin-left:auto;line-height:1
+  content:'';box-sizing:border-box;display:inline-block;flex:0 0 9px;
+  width:9px;height:9px;margin:0 3px 4px auto;
+  border-right:1.7px solid currentColor;border-bottom:1.7px solid currentColor;
+  border-radius:0;color:var(--ui-muted);transform:rotate(45deg);
+  transition:transform .16s ease,color .16s ease
 }
-.site-main .source-v2-expand[open]>summary::after{content:'⌃'}
+.site-main .source-v2-expand[open]>summary::after{transform:rotate(225deg);margin-bottom:-4px}
 .site-main .source-v2-expand>summary:hover,
 .site-main .source-v2-expand>summary:focus-visible{background:var(--ui-subtle)}
 .site-main .source-v2-expand[open]>summary{
@@ -3542,4 +3545,113 @@ body.hub-compact-v2 .site-foot{margin-top:16px}
   }
   .site-main .source-v2-compact .source-v2-list-row{padding:10px 11px}
   .site-main .source-v2-compact .source-v2-list-meta{font-size:11px}
+}
+
+/* One disclosure language across schedules, devices, sources and playlists.
+   Native <details>/<summary> remains functional without JavaScript. */
+.site-main details > summary {
+  list-style:none;
+}
+.site-main details > summary::-webkit-details-marker {
+  display:none;
+}
+.site-main details > summary::marker {content:"";}
+
+/* Shared hand-drawn-like 2-stroke chevron, not a font-dependent arrow glyph.
+   Existing legacy summary boxes no longer draw their own square arrow frames. */
+.site-main .ui-chevron {
+  box-sizing:border-box!important;
+  display:inline-block!important;
+  flex:0 0 9px!important;
+  width:9px!important;
+  height:9px!important;
+  min-width:9px!important;
+  min-height:9px!important;
+  padding:0!important;
+  margin:0 3px 4px auto!important;
+  border:0!important;
+  border-right:1.7px solid currentColor!important;
+  border-bottom:1.7px solid currentColor!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  font-size:0!important;
+  line-height:0!important;
+  color:var(--ui-muted)!important;
+  opacity:.9;
+  transform:rotate(45deg)!important;
+  transform-origin:center;
+  transition:transform .16s ease,color .16s ease,opacity .16s ease!important;
+}
+.site-main details[open] > summary .ui-chevron,
+.site-main .asset.is-expanded .ui-chevron{
+  transform:rotate(225deg)!important;
+  margin-bottom:-4px!important;
+  opacity:1;
+}
+.site-main details > summary:hover .ui-chevron,
+.site-main details > summary:focus-visible .ui-chevron {
+  color:var(--ui-accent)!important;
+  opacity:1;
+}
+
+/* Unadorned textual disclosures receive the same vector-chevron via CSS.
+   Icon-only triggers with aria-label and explicit .ui-chevron are excluded
+   to avoid double arrows and preserve their existing hit targets. */
+.site-main details > summary:not([aria-label]):not(:has(.ui-chevron)):not(.ui-no-chevron) {
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+.site-main details > summary:not([aria-label]):not(:has(.ui-chevron)):not(.ui-no-chevron)::after {
+  content:"";
+  box-sizing:border-box;
+  display:inline-block;
+  flex:0 0 9px;
+  width:9px;
+  height:9px;
+  margin:0 3px 4px auto;
+  border:0;
+  border-right:1.7px solid currentColor;
+  border-bottom:1.7px solid currentColor;
+  border-radius:0;
+  background:transparent;
+  font-size:0;
+  line-height:0;
+  color:var(--ui-muted);
+  opacity:.9;
+  transform:rotate(45deg);
+  transform-origin:center;
+  transition:transform .16s ease,color .16s ease,opacity .16s ease;
+}
+.site-main details[open] > summary:not([aria-label]):not(:has(.ui-chevron)):not(.ui-no-chevron)::after {
+  transform:rotate(225deg);
+  margin-bottom:-4px;
+  opacity:1;
+}
+.site-main details > summary:not([aria-label]):not(:has(.ui-chevron)):not(.ui-no-chevron):hover::after,
+.site-main details > summary:not([aria-label]):not(:has(.ui-chevron)):not(.ui-no-chevron):focus-visible::after {
+  color:var(--ui-accent);
+  opacity:1;
+}
+
+/* V2 already has its own ::after; keep exactly one, same dimensions/stroke. */
+.site-main details.source-v2-expand > summary::after {
+  width:9px;
+  height:9px;
+  flex:0 0 9px;
+  border-right:1.7px solid currentColor;
+  border-bottom:1.7px solid currentColor;
+  color:var(--ui-muted);
+}
+.site-main details.source-v2-expand[open] > summary::after {
+  transform:rotate(225deg);
+}
+
+/* Accessible: the open/closed state changes immediately when motion is off. */
+@media (prefers-reduced-motion:reduce) {
+  .site-main .ui-chevron,
+  .site-main details > summary::after {
+    transition:none!important;
+  }
 }
