@@ -3272,6 +3272,18 @@ def test_dev_smb_can_be_connected_and_rechecked_entirely_from_it_ui(env, tmp_pat
     from app.media_sources import load_sources
     assert load_sources(app.config['MEDIA_SOURCES_FILE'])[0]['unc'].endswith('/Bildschirme')
 
+    # Compact source editor still exposes the existing guarded retirement
+    # action and removes the encrypted DEV-only credentials.
+    page = client.get('/media-sources').get_data(as_text=True)
+    assert 'Quelle aus dem Hub entfernen' in page
+    removed = client.post('/media-sources/remove', data={
+        'csrf': token(client), 'alias': 'default',
+        'confirm': 'default', 'ack': 'yes',
+    }, follow_redirects=True)
+    assert removed.status_code == 200
+    assert not (Path(tmp) / 'dev-credentials.bin').exists()
+    assert not load_sources(app.config['MEDIA_SOURCES_FILE'])
+
     login(client, 'viewer')
     assert client.get('/media-sources/status').status_code == 403
     assert client.post('/media-sources/sync-now',
@@ -3376,6 +3388,8 @@ def test_v2_compact_pages_keep_playlist_forms_and_privileged_actions(env, monkey
     assert 'data-progress-stages' in sources
     assert 'data-source-check-now' in sources
     assert 'data-source-folders' in sources
+    assert 'Quelle aus dem Hub entfernen' in sources
+    assert '/media-sources/remove' in sources
 
     dashboard = client.get('/').get_data(as_text=True)
     assert 'data-compact-ui="screens"' in dashboard
