@@ -19,9 +19,10 @@ say() { printf '%s\n' "$*"; }
 usage() {
   cat <<'HELP'
 On the existing Docker host, clone into a NEW directory:
-  git clone -b dev/cohosted-staging-isolation-20261113 \
-    https://github.com/ffworker/anthias-hub.git /root/apps/anthias-hub-dev
+  git clone https://github.com/ffworker/anthias-hub.git /root/apps/anthias-hub-dev
   cd /root/apps/anthias-hub-dev
+  git fetch origin dev/screen-source-of-truth-v2-20261113
+  git switch --track origin/dev/screen-source-of-truth-v2-20261113
   bash scripts/dev-cohost.sh init
   bash scripts/dev-cohost.sh start
   bash scripts/dev-cohost.sh status
@@ -128,7 +129,10 @@ EOF
 }
 prod_id() { docker inspect anthias-hub-anthias-hub-1 --format '{{.Id}}' 2>/dev/null || true; }
 start() {
-  [[ -f .env && -s config/users.json ]] || fail 'Run init first.'
+  if [[ -f .env && ! -s config/users.json ]]; then
+    fail 'DEV setup incomplete: run bash scripts/dev-cohost.sh init to finish creating the owner account.'
+  fi
+  [[ -f .env && -s config/users.json ]] || fail 'Run bash scripts/dev-cohost.sh init first.'
   docker info >/dev/null 2>&1 || fail 'Docker daemon unavailable.'
   local before after
   before=$(prod_id)
