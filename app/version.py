@@ -6,7 +6,7 @@ or a moving registry tag: those can differ from the running container.
 import re
 from pathlib import Path
 
-UI_REVISION = "ui-20261113-05"
+UI_REVISION = "ui-20261113-06"
 BUILD_SHA_FILE = Path(__file__).resolve().parent.parent / ".build-revision"
 
 
