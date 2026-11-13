@@ -17,10 +17,13 @@ def describe_sources(registry_path, mount_status_path, library_items, root=None)
     records = load_sources(registry_path)
     verified = mount_statuses(mount_status_path, registry_path)
     root = Path(root or os.environ.get('MEDIA_SOURCE_ROOT', '/sources'))
+    python_smb = os.environ.get('DEV_SMB_UI', '0') == '1'
     report_time = None
     report_stale = False
+    raw_states = {}
     try:
         document = json.loads(Path(mount_status_path).read_text(encoding='utf-8'))
+        raw_states = document.get('sources', {}) if isinstance(document.get('sources'), dict) else {}
         stamp = document.get('checked_at')
         if isinstance(stamp, (float, int)) and stamp <= time.time():
             report_time = datetime.fromtimestamp(stamp, timezone.utc).strftime('%d.%m.%Y %H:%M:%S UTC')
@@ -40,7 +43,20 @@ def describe_sources(registry_path, mount_status_path, library_items, root=None)
         stage = []
         stage.append({'title': 'Pfad gespeichert', 'state': 'done',
                       'detail': 'Gespeichert, aber noch nicht automatisch eingehängt.'})
-        if state in ('mounted', 'already-mounted'):
+        live = raw_states.get(alias, {})
+        if not isinstance(live, dict) or live.get('fingerprint') != __import__('hashlib').sha256(
+                row['unc'].encode('utf-8')).hexdigest() or report_stale:
+            live = {}
+        if python_smb and state in ('tested', 'syncing', 'connected'):
+            mount_state = 'done'
+            mount_detail = (
+                'SMB-Anmeldung und Ordnerliste erfolgreich geprüft.'
+                if state == 'tested' else
+                'SMB verbunden – Medien werden eingelesen.'
+                if state == 'syncing' else
+                'SMB verbunden – DEV-Medienspiegel aktuell.'
+            )
+        elif state in ('mounted', 'already-mounted'):
             mount_state = 'done'
             mount_detail = 'Der Host hat genau diese SMB-Quelle bestätigt.'
         elif state == 'blocked':
@@ -51,22 +67,29 @@ def describe_sources(registry_path, mount_status_path, library_items, root=None)
             mount_detail = 'Am Mountpunkt liegt bereits eine andere Quelle.'
         elif state == 'error':
             mount_state = 'error'
-            mount_detail = 'Verbindungs-/Mountfehler auf dem Host. Dienst-Logs prüfen.'
+            mount_detail = (str(live.get('detail', ''))[:160] or
+                            'SMB-Fehler. Zugangsdaten und Freigabe prüfen.'
+                            if python_smb else
+                            'Verbindungs-/Mountfehler auf dem Host. Dienst-Logs prüfen.')
         elif report_stale:
             mount_state = 'waiting'
             mount_detail = 'Letzte Hostprüfung ist veraltet. Timer oder Mountdienst prüfen.'
         elif not report_time:
             mount_state = 'waiting'
-            mount_detail = 'Kein Host-Mountdienst meldet einen Versuch. Es läuft keine bestätigte SMB-Prüfung.'
+            mount_detail = ('Noch kein SMB-Verbindungsversuch. Bitte Pfad und Anmeldedaten '
+                            'eingeben und „Verbinden & prüfen“ klicken.' if python_smb else
+                            'Kein Host-Mountdienst meldet einen Versuch. '
+                            'Es läuft keine bestätigte SMB-Prüfung.')
         else:
             mount_state = 'waiting'
             mount_detail = 'Host hat noch keine erfolgreiche Prüfung für den gespeicherten Pfad gemeldet.'
-        stage.append({'title': 'SMB am Host bestätigt', 'state': mount_state,
+        stage.append({'title': ('SMB-Verbindung geprüft' if python_smb
+                                else 'SMB am Host bestätigt'), 'state': mount_state,
                       'detail': mount_detail})
 
         discovered = 0
         names = []
-        if mount_state == 'done':
+        if mount_state == 'done' and (not python_smb or state == 'connected'):
             try:
                 from .folder_sync import default_library_folders, available_sources
                 # Only count folders AFTER confirmed source validation.
@@ -75,9 +98,21 @@ def describe_sources(registry_path, mount_status_path, library_items, root=None)
                               else int(alias in available_sources(root)))
             except (OSError, ValueError):
                 discovered = 0
-        if mount_state != 'done':
+        if python_smb and state == 'syncing':
             folder_state = 'waiting'
-            folder_detail = 'Erst nach erfolgreichem Host-Mount möglich.'
+            folder_detail = ('Medien werden kopiert: ' + str(int(live.get('done', 0))) +
+                             ' Datei(en) heruntergeladen, ' +
+                             str(int(live.get('files', 0))) + ' geprüft.')
+        elif python_smb and state == 'tested':
+            folder_state = 'waiting'
+            folder_detail = ('Verbindung erfolgreich – ' +
+                             str(int(live.get('folders', 0))) +
+                             ' Unterordner gefunden. Importer startet die Übernahme.')
+        elif mount_state != 'done':
+            folder_state = 'waiting'
+            folder_detail = ('Erst nach erfolgreicher SMB-Verbindung möglich.'
+                             if python_smb else
+                             'Erst nach erfolgreichem Host-Mount möglich.')
         elif discovered:
             folder_state = 'done'
             folder_detail = (f'{discovered} Unterordner erkannt.' if alias == 'default'
@@ -135,5 +170,12 @@ def describe_sources(registry_path, mount_status_path, library_items, root=None)
             'template_count': len(templates),
             'worker_interval_seconds': next(
                 (s['interval_seconds'] for s in status if s.get('interval_seconds')), None),
+            'provider': 'python-smb' if python_smb else 'host-mount',
+            'copy_progress': {
+                'done': int(live.get('done', 0)),
+                'files': int(live.get('files', 0)),
+                'bytes': int(live.get('bytes', 0)),
+                'state': state,
+            } if python_smb else None,
         })
     return result
