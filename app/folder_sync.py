@@ -291,7 +291,14 @@ def run_cycle(*, root=None, library_dir=None, devices_file=None, state_root=None
 
 def worker():
     interval = max(60, int(os.environ.get('FOLDER_SYNC_INTERVAL', '1800')))
+    trigger = Path(os.environ.get('DEV_SMB_TRIGGER_FILE', '/data/dev-smb-trigger'))
     while True:
+        # Capture before work: a new UI request arriving during a scan must
+        # trigger another scan instead of being swallowed by the sleep timer.
+        try:
+            at_start = trigger.stat().st_mtime_ns
+        except OSError:
+            at_start = 0
         try:
             if os.environ.get('DEV_SMB_UI', '0') == '1':
                 from .smb_ui import mirror_cycle
@@ -319,18 +326,13 @@ def worker():
         if os.environ.get('DEV_SMB_UI', '0') == '1':
             # The UI queues a sync through the shared /data directory. Wake up
             # quickly rather than making the operator wait a full 60 seconds.
-            trigger = Path(os.environ.get('DEV_SMB_TRIGGER_FILE', '/data/dev-smb-trigger'))
-            try:
-                seen = trigger.stat().st_mtime_ns
-            except OSError:
-                seen = 0
             for _ in range(interval):
                 time.sleep(1)
                 try:
                     changed = trigger.stat().st_mtime_ns
                 except OSError:
                     changed = 0
-                if changed != seen:
+                if changed != at_start:
                     break
         else:
             time.sleep(interval)
