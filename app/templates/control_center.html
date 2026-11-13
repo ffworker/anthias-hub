@@ -4,6 +4,7 @@
 {% from '_device_controls.html' import device_control with context %}
 {% block title %}Steuerzentrale · Anthias Hub{% endblock %}
 {% block content %}
+<script defer src="{{ url_for('static', filename='control-storage.js') }}"></script>
 <div class="control-center source-v2-workspace source-v2-compact" data-central-control data-control-tab="{{ control_tab }}">
   <header class="control-center-hero">
     <div>
@@ -92,6 +93,10 @@
       </details>
       {% endif %}
       {{ device_control(device, logged_user.role, return_to_control=true) }}
+      <details class="control-center-action" data-control-storage data-storage-url="{{ url_for('device_storage', device_id=device.id) }}">
+        <summary>Speicher prüfen</summary>
+        <p class="control-center-storage-note" data-storage-feedback role="status">Beim Öffnen wird der aktuelle Pi-Speicher abgefragt.</p>
+      </details>
       {% if logged_user.role in ('it','owner') %}
       <details class="control-center-action control-center-danger">
         <summary>Registrierung entfernen</summary>
@@ -224,12 +229,12 @@
     <span>Nur der Medienimport; Veröffentlichung auf Pis bleibt separat.</span>
   </form>
   {% endif %}
-  {% if sources %}
+  {% if sources or unmanaged %}
   <div class="control-center-stack">
-    {% for source in sources %}
+    {% for source in sources + unmanaged %}
     <article class="control-center-object" id="quelle-{{ source.alias }}">
       <div class="control-center-object-head">
-        <div><strong>{{ source.alias }}</strong><small>{{ source.unc }} · {{ source.dependents|length }} abhängige Playlists</small></div>
+        <div><strong>{{ source.alias }}</strong><small>{{ source.unc|default('Nicht im Hub registrierter Mount', true) }} · {{ source.dependents|length }} abhängige Playlists</small></div>
       </div>
       {{ retire_control(source, return_to_control=true) }}
     </article>
