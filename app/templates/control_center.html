@@ -91,7 +91,7 @@
         </div>
       </details>
       {% endif %}
-      {{ device_control(device, logged_user.role) }}
+      {{ device_control(device, logged_user.role, return_to_control=true) }}
       {% if logged_user.role in ('it','owner') %}
       <details class="control-center-action control-center-danger">
         <summary>Registrierung entfernen</summary>
