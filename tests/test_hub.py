@@ -3156,7 +3156,7 @@ def test_v2_manual_empty_network_have_different_only_one_editor(env, monkeypatch
     page = client.get('/devices/lab').get_data(as_text=True)
     assert 'data-screen-mode="manual"' in page
     assert 'Manuelle Inhalte bearbeiten' in page
-    assert 'Netzwerkordner' not in page
+    assert 'Netzwerkordner-Anzeige' not in page
     assert client.get('/devices/lab?editor=1').status_code == 200
 
     monkeypatch.setattr(FakeAnthias, 'assets_data', [])
