@@ -22,6 +22,7 @@ from .library import _MEDIA, MAX_MEDIA
 
 MAX_FOLDERS = 150
 MAX_FILES = 1500
+# Safety boundary for EACH batch, not for the entire network library.
 MAX_BYTES_PER_CYCLE = 4 * 1024 ** 3
 CHUNK = 256 * 1024
 
@@ -76,7 +77,7 @@ def _fingerprint(unc):
 
 
 def _public_status(state, unc, revision, *, detail='', folders=0, files=0,
-                   done=0, bytes_copied=0):
+                   done=0, bytes_copied=0, pending=0):
     return {
         'checked_at': time.time(),
         'provider': 'python-smb',
@@ -89,6 +90,7 @@ def _public_status(state, unc, revision, *, detail='', folders=0, files=0,
                 'folders': folders,
                 'files': files,
                 'done': done,
+                'pending': pending,
                 'bytes': bytes_copied,
             }
         },
@@ -231,9 +233,10 @@ def _safe_local_dir(base, name):
     return target
 
 
-def _copy_file(smbclient, source, dest, record, expected):
+def _copy_file(smbclient, source, dest, record, expected, progress=None):
     fd = None
     written = 0
+    last_heartbeat = time.monotonic()
     try:
         with tempfile.NamedTemporaryFile(dir=dest.parent, prefix='.download-',
                                          delete=False) as temp:
@@ -247,6 +250,9 @@ def _copy_file(smbclient, source, dest, record, expected):
                     if written > MAX_MEDIA or written > expected:
                         raise SMBSetupError('SMB-Mediendatei überschreitet die erwartete Größe')
                     temp.write(chunk)
+                    if progress is not None and time.monotonic() - last_heartbeat >= 3:
+                        progress(written)
+                        last_heartbeat = time.monotonic()
             temp.flush()
             os.fsync(temp.fileno())
         if written != expected:
