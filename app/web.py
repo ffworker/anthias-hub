@@ -320,6 +320,23 @@ def create_app(config=None):
                                    default_folders=[], default_source=None, retired=[],
                                    mounted_count=0, attention_count=0)
 
+    @app.post('/media-sources/sync-now')
+    @login_required('it')
+    def media_sources_sync_now():
+        """Queue a DEV-only rescan. The isolated worker performs the network IO."""
+        from .smb_ui import enabled, _get_credentials, request_sync, SMBSetupError
+        if not enabled() or not app.config['HUB_WORKFLOW_V2']:
+            abort(404)
+        try:
+            if not _get_credentials():
+                raise SMBSetupError('Bitte zuerst über „Verbinden & prüfen“ anmelden')
+            request_sync()
+            audit('dev-smb.sync-requested')
+            flash('SMB-Abgleich angefordert. Fortschritt erscheint im Statusbereich.', 'success')
+        except (SMBSetupError, OSError) as exc:
+            flash(str(exc), 'error')
+        return redirect(url_for('media_sources_page'))
+
     @app.post('/media-sources')
     @login_required('it')
     def media_sources_save():
@@ -327,6 +344,30 @@ def create_app(config=None):
         try:
             alias = request.form.get('alias', '')
             unc = request.form.get('unc', '')
+            if app.config['HUB_WORKFLOW_V2'] and os.environ.get('DEV_SMB_UI', '0') == '1':
+                # Test BEFORE persistence. SMB secrets never appear in the
+                # source registry, URL, audit or status endpoint.
+                if alias != 'default':
+                    raise SourceError('Im vereinfachten DEV-Workflow gibt es eine Stammquelle')
+                from .smb_ui import (
+                    SMBSetupError, test_connection, store_credentials,
+                    write_status, request_sync,
+                )
+                record, folders = test_connection(
+                    unc, request.form.get('username', ''),
+                    request.form.get('password', ''),
+                    request.form.get('domain', ''))
+                result = save_source(alias, record['unc'],
+                                     path=app.config['MEDIA_SOURCES_FILE'])
+                store_credentials(record)
+                write_status('tested', record['unc'], record['revision'],
+                             detail='Anmeldung und Ordnerliste erfolgreich geprüft',
+                             folders=len(folders))
+                request_sync()
+                audit('dev-smb.connected', asset_id='default')
+                flash(f'SMB verbunden: {len(folders)} Unterordner erkannt. '
+                      'Der DEV-Importer übernimmt jetzt die Medien.', 'success')
+                return redirect(url_for('media_sources_page'))
             result = save_source(alias, unc, path=app.config['MEDIA_SOURCES_FILE'])
             audit('media-source.' + result, asset_id=alias.strip().lower())
             flash(('SMB-Pfad gespeichert. Die Anzeige „Verbindungsstatus“ zeigt, '
@@ -336,7 +377,7 @@ def create_app(config=None):
                         'und bindet neue Ordner automatisch ein; bei einem geänderten '
                         'bereits eingebundenen Pfad ist ein kontrollierter Host-Wechsel nötig.'),
                   'success')
-        except (SourceError, OSError) as exc:
+        except (SourceError, OSError, ValueError) as exc:
             flash(str(exc), 'error')
         return redirect(url_for('media_sources_page'))
 
