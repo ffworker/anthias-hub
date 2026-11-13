@@ -3187,7 +3187,7 @@ def test_v2_source_live_status_endpoint_shows_no_fake_scan(env, monkeypatch):
     app.config['MEDIA_MOUNT_STATUS_FILE'] = str(Path(tmp) / 'mount-status.json')
     login(client, 'it')
     unconfigured = client.get('/media-sources').get_data(as_text=True)
-    assert 'Was passiert gerade?' in unconfigured
+    assert 'Synchronisierung' in unconfigured
     assert 'data-source-monitor' in unconfigured
     assert 'source-progress.js' in unconfigured
     result = client.post('/media-sources', data={
@@ -3314,3 +3314,71 @@ def test_v2_network_folder_playlist_creation_form_supplies_csrf_and_submits(env,
     assert playlists[0]['name'] == 'Service-Center'
     assert playlists[0]['folder_source'] == 'default/demo-screen-01'
     assert client.get(created.headers['Location']).status_code == 200
+
+
+def test_v2_compact_pages_keep_playlist_forms_and_privileged_actions(env, monkeypatch):
+    """Density is presentation-only: existing routes and CSRF stay functional."""
+    app, client, tmp = env
+    from app.library import Library
+    from app.media_sources import save_source
+
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'compact-library')
+    app.config['MEDIA_SOURCES_FILE'] = str(Path(tmp) / 'compact-sources.json')
+    app.config['MEDIA_MOUNT_STATUS_FILE'] = str(Path(tmp) / 'compact-smb-status.json')
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(Path(tmp) / 'sources'))
+    (Path(tmp) / 'sources').mkdir()
+    login(client, 'it')
+
+    overview = client.get('/library').get_data(as_text=True)
+    assert 'data-compact-ui="playlists"' in overview
+    assert 'source-v2-create-panel' in overview
+    assert 'Neue Playlist' in overview
+    assert 'name="csrf" value="' + token(client) + '"' in overview
+    assert 'name="folder_source"' in overview
+
+    new = client.post('/library', data={
+        'csrf': token(client), 'name': 'Test-Playlist', 'folder_source': ''})
+    assert new.status_code == 302
+    library = Library(app.config['LIBRARY_DIR'])
+    item = library.list()[0]
+    assert item['name'] == 'Test-Playlist'
+
+    # These are real POST routes inside the compact UI, not dead buttons.
+    detail = client.get('/library/' + item['id']).get_data(as_text=True)
+    assert 'data-compact-ui="playlist-detail"' in detail
+    assert 'source-v2-targets' in detail
+    assert 'source-v2-add-media' in detail
+    assert 'name="devices"' in detail
+    assert 'name="media"' in detail
+    assert 'name="url"' in detail
+    assert 'csrf' in detail
+
+    # Existing upload/webpage, duration and order actions remain available.
+    created = client.post('/library/' + item['id'] + '/url', data={
+        'csrf': token(client), 'name': 'Infoseite',
+        'url': 'https://example.org', 'duration': '20'})
+    assert created.status_code in (302, 303)
+    detail = client.get('/library/' + item['id']).get_data(as_text=True)
+    assert 'source-v2-item-more' in detail
+    assert 'name="duration"' in detail
+    assert 'name="direction" value="up"' in detail
+    assert 'name="ack" value="yes"' in detail
+
+    # The sources view keeps both user credentials and read-only status.
+    save_source('default', '//10.11.12.13/media$/Screens',
+                path=app.config['MEDIA_SOURCES_FILE'])
+    sources = client.get('/media-sources').get_data(as_text=True)
+    assert 'data-compact-ui="sources"' in sources
+    assert 'source-v2-connection' in sources
+    assert 'name="unc"' in sources
+    assert 'name="csrf"' in sources
+    assert 'data-progress-stages' in sources
+    assert 'data-source-check-now' in sources
+    assert 'data-source-folders' in sources
+
+    dashboard = client.get('/').get_data(as_text=True)
+    assert 'data-compact-ui="screens"' in dashboard
+    assert 'source-v2-secondary-nav' in dashboard
+    assert 'Bildschirm öffnen' in dashboard
+    assert 'device-setup' in dashboard
