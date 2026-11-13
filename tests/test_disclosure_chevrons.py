@@ -63,5 +63,5 @@ def test_icon_only_more_menus_are_not_forced_to_show_a_second_arrow():
     css = UI_CSS.read_text(encoding='utf-8')
     assert 'summary:not([aria-label]):not(:has(.ui-chevron))' in css
     detail = (TEMPLATES / 'library_detail_v2.html').read_text(encoding='utf-8')
-    assert 'summary aria-label="Weitere Aktionen für' in detail
+    assert 'summary aria-label="Einstellungen für' in detail
     assert 'class="source-v2-item-more"' in detail
