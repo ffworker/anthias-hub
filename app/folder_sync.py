@@ -300,9 +300,18 @@ def worker():
         except OSError:
             at_start = 0
         try:
+            smb_result = None
             if os.environ.get('DEV_SMB_UI', '0') == '1':
                 from .smb_ui import mirror_cycle
-                mirror_cycle()
+                smb_result = mirror_cycle()
+                if smb_result and smb_result.get('pending'):
+                    # Never publish a half-built mirror as if the SMB scan
+                    # were complete. Continue with the next bounded batch
+                    # automatically; no extra UI click is required.
+                    print('DEV SMB: ' + str(smb_result['pending']) +
+                          ' Medien verbleiben; nächster Teilimport folgt.', flush=True)
+                    time.sleep(3)
+                    continue
             reports = run_cycle()
             from .folder_status import write_status
             write_status(reports, enabled=os.environ.get('FOLDER_AUTO_PUBLISH', '0') == '1',
