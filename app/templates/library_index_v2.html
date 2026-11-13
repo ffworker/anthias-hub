@@ -58,7 +58,11 @@
         <div class="source-v2-list-meta">
           <strong>{{ source['items']|length }} Medien</strong>
           <small>{{ source.auto_devices|default([])|length }} Bildschirme
-          {% if source.folder_source %} · {{ 'Import OK' if sync.state == 'ok' else 'Import prüfen' }}{% endif %}</small>
+          {% if source.folder_source %}
+            <span class="source-v2-import-state" data-import-state="{{ sync.state|default('pending') }}">
+              · {{ 'Import OK' if sync.state == 'ok' else 'Importfehler' if sync.state == 'error' else 'Import veraltet' if sync.state == 'stale' else 'Import offen' }}
+            </span>
+          {% endif %}</small>
         </div>
         <span class="source-v2-list-arrow" aria-hidden="true">›</span>
       </a>
