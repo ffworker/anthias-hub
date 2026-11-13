@@ -116,6 +116,7 @@
       <div><p class="eyebrow">HINZUFÜGEN</p><h2>Inhalte in Playlist speichern</h2></div>
     </div>
     <form class="source-v2-form" method="post" enctype="multipart/form-data" action="{{ url_for('library_add_media', template_id=template.id) }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
       <label>Bild oder Video<input type="file" name="media" accept=".png,.jpg,.jpeg,.webp,.mp4" required></label>
       <label>Titel (optional)<input name="name" maxlength="100"></label>
       <label>Bilddauer (Sekunden)<input type="number" name="duration" min="5" max="3600" value="15" required></label>
