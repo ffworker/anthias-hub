@@ -98,7 +98,7 @@ test('only canonical UI sheet is loaded; no redundant layered themes', () => {
   assert.ok(template.includes('name="anthias-hub-build" content="{{ hub_build_sha or'));
   assert.ok(template.includes("filename='ui-system.css', v=ui_revision"));
   const release = fs.readFileSync(path.join(__dirname, '../app/version.py'), 'utf8');
-  assert.match(release, /UI_REVISION = "ui-20261113-05"/);
+  assert.match(release, /UI_REVISION = "ui-20261113-06"/);
 });
 
 test('primary page content precedes secondary administration and disclosures', () => {

@@ -2512,10 +2512,10 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
     response = client.get('/login')
     assert response.status_code == 200
     text = response.get_data(as_text=True)
-    assert 'content="ui-20261113-05"' in text
+    assert 'content="ui-20261113-06"' in text
     assert 'ui-system.css' in text
     assert 'data-hub-build-sha="dev"' in text
-    assert 'UI <code>ui-20261113-05</code>' in text
+    assert 'UI <code>ui-20261113-06</code>' in text
     assert all(f"filename='{name}'" not in text for name in (
         'product-ui.css', 'ui-refinements.css', 'workflow-ui.css'))
 
@@ -2526,7 +2526,7 @@ def test_every_user_facing_page_uses_same_ui_revision_and_single_stylesheet(env)
         result = client.get(path)
         assert result.status_code == 200, path
         text = result.get_data(as_text=True)
-        assert 'content="ui-20261113-05"' in text, path
+        assert 'content="ui-20261113-06"' in text, path
         assert text.count('ui-system.css') == 1, path
         assert 'data-product-theme-toggle' in text, path
         assert 'class="site-main"' not in text or 'id="hauptinhalt"' in text
@@ -2565,7 +2565,7 @@ def test_screens_are_the_real_landing_and_playlists_have_consistent_actions(env)
     assert page.index('id="fleet-devices"') < page.index('class="hub-next-steps"')
     assert 'Playlists verwalten' in page
     assert 'Ordner &amp; Quellen' in page
-    assert 'ui-system.css?v=ui-20261113-05' in page
+    assert 'ui-system.css?v=ui-20261113-06' in page
 
     libpage = client.get('/library').get_data(as_text=True)
     assert libpage.index('id="library-page-title"') < libpage.index('class="library-grid library-index-grid"')
@@ -3396,3 +3396,57 @@ def test_v2_compact_pages_keep_playlist_forms_and_privileged_actions(env, monkey
     assert 'source-v2-secondary-nav' in dashboard
     assert 'Bildschirm öffnen' in dashboard
     assert 'device-setup' in dashboard
+
+
+def test_v2_playlist_sequence_is_primary_and_reorders_without_losing_actions(env):
+    """Sequence-first UI keeps CSRF, ordering, duration and safe removal."""
+    app, client, tmp = env
+    from app.library import Library
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'sequence-playlists')
+    store = Library(app.config['LIBRARY_DIR'])
+    template = store.create('Order Testing')
+    store.add_url(template['id'], 'Alpha', 'https://example.org/one', 15)
+    store.add_url(template['id'], 'Beta', 'https://example.org/two', 30)
+    store.add_url(template['id'], 'Gamma', 'https://example.org/three', 45)
+    login(client, 'it')
+
+    url = '/library/' + template['id']
+    html = client.get(url).get_data(as_text=True)
+    assert html.index('id="inhalte"') < html.index('id="quelle-und-status"')
+    assert html.index('id="inhalte"') < html.index('id="zielbildschirme"')
+    assert 'source-v2-sequence-panel' in html
+    assert 'Wiedergabereihenfolge' in html
+    assert html.index('Alpha') < html.index('Beta') < html.index('Gamma')
+    assert 'aria-label="Position 1"' in html
+    assert 'aria-label="Position 2"' in html
+    assert 'source-v2-sequence-move' in html
+    assert 'source-v2-sequence-more' in html
+    assert 'Dauer speichern' in html
+    assert 'Medium entfernen' in html
+    assert 'name="ack" value="yes"' in html
+    assert 'name="duration"' in html
+    assert 'name="csrf" value="' + token(client) + '"' in html
+    assert 'title="Eine Position nach oben"' in html
+    assert 'title="Eine Position nach unten"' in html
+
+    first_two = store.get(template['id'])['items']
+    moved = client.post('/library/' + template['id'] + '/move/' + first_two[1]['id'], data={
+        'csrf': token(client), 'direction': 'up',
+    })
+    assert moved.status_code == 302
+    assert moved.headers['Location'].endswith('#inhalte')
+    ordered = store.get(template['id'])['items']
+    assert [item['name'] for item in ordered] == ['Beta', 'Alpha', 'Gamma']
+
+    # The compact settings still genuinely change the item duration.
+    saved = client.post('/library/' + template['id'] + '/items/' + first_two[1]['id'] + '/duration', data={
+        'csrf': token(client), 'duration': '42',
+    })
+    assert saved.status_code == 302
+    assert store.get(template['id'])['items'][0]['duration'] == 42
+
+    bad = client.post('/library/' + template['id'] + '/move/' + first_two[0]['id'], data={
+        'direction': 'down',
+    })
+    assert bad.status_code == 400  # CSRF remains required.
