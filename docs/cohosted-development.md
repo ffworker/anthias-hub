@@ -10,7 +10,7 @@ their applications, credentials, media or player inventory.
 | Local web port | 127.0.0.1:8765 | 127.0.0.1:8766 |
 | Image | Existing pinned SHA | anthias-hub:dev-cohost |
 | Config / data | Existing production paths | Separate ./config and ./data |
-| Source | Existing verified SMB shares | Local ./dev-sources/demo only |
+| Source | Existing verified SMB shares | Local `./dev-sources/demo` or SMB configured in DEV browser, read-only |
 | Automatic Pi publish | Existing setting | OFF by default |
 
 **Never copy production .env, config, data or SMB mounts into DEV. Never
@@ -21,10 +21,10 @@ commands against the production Compose project.
 ## Installation – on the EXISTING host, in a NEW directory
 
 ```bash
-git clone -b dev/cohosted-staging-isolation-20261113 \
-  https://github.com/ffworker/anthias-hub.git /root/apps/anthias-hub-dev
-
+git clone https://github.com/ffworker/anthias-hub.git /root/apps/anthias-hub-dev
 cd /root/apps/anthias-hub-dev
+git fetch origin dev/screen-source-of-truth-v2-20261113
+git switch --track origin/dev/screen-source-of-truth-v2-20261113
 
 bash scripts/dev-cohost.sh init
 bash scripts/dev-cohost.sh start
@@ -33,7 +33,7 @@ bash scripts/dev-cohost.sh status
 
 The first command prepares a second checkout. The init command creates a
 **new** secret, accounts, data directories and a separate local image,
-prompting for a new test owner password. There is no production restart.
+prompting for a new test owner password. If that prompt fails or passwords do not match, **run `bash scripts/dev-cohost.sh init` again** to safely finish creating the missing owner account; do not delete or copy production data. There is no production restart.
 The development importer scans the local demo source every **60 seconds**;
 production keeps its own configured interval.
 
@@ -53,7 +53,9 @@ Local source-built UI images show `Build lokal/dev`, not a baked GHCR SHA.
 
 Place sample PNG or JPG files into `/root/apps/anthias-hub-dev/dev-sources/demo`.
 Create a folder-backed playlist with source `demo` in the DEV UI and verify
-the periodic Hub import. Direct editing on managed test screens is allowed.
+the periodic Hub import. **Assigned screens are read-only in DEV v2:** edit the
+central playlist, not individual Pi media. Alternatively configure SMB under
+**Ordner & Quellen** in the DEV browser; that needs no host CIFS mount.
 
 Initially the separate DEV .env contains
 `ANTHIAS_ALLOWED_CIDRS=127.0.0.0/8`. This intentionally **blocks
