@@ -3101,3 +3101,104 @@ def test_development_mode_reassigns_already_managed_screen_without_touching_pi(e
     assert store.get(first['id'])['auto_devices'] == []
     assert store.get(second['id'])['auto_devices'] == ['lab']
     assert FakeAnthias.changes == []
+
+
+def test_v2_single_owner_disables_duplicate_device_editing_even_in_dev(env, monkeypatch):
+    app, client, tmp = env
+    from app.library import Library
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    app.config['HUB_DEVELOPMENT_MODE'] = True
+    app.config['HUB_WORKFLOW_V2'] = True
+    store = Library(app.config['LIBRARY_DIR'])
+    one = store.create('Zentrale Playlist')
+    store.set_auto_devices(one['id'], ['lab'], [{'id':'lab'}],
+                           replace_existing=True, allow_manual=True)
+    login(client, 'it')
+    page = client.get('/devices/lab').get_data(as_text=True)
+    assert 'data-screen-mode="playlist"' in page
+    assert 'Zentrale Playlist' in page
+    assert 'data-open-composer' not in page
+    assert 'Einzelne Pi-Inhalte anzeigen' not in page
+
+    guessed = client.get('/devices/lab?editor=1').get_data(as_text=True)
+    assert 'data-screen-mode="playlist"' in guessed
+    assert 'data-open-composer' not in guessed
+    assert 'add-content' not in guessed
+
+    for path, params in [
+        ('/devices/lab/add-url', {'name': 'Verboten', 'url': 'https://example.org',
+                                  'duration': '30'}),
+        ('/devices/lab/schedules/apply', {'profile_id': 'always'}),
+        ('/devices/lab/schedules/default', {'profile_id': 'always'}),
+        ('/devices/lab/reorder', {}),
+        (f"/library/{one['id']}/append-to-device",
+         {'device': 'lab', 'confirm': 'append', 'ack': 'yes'}),
+    ]:
+        assert client.post(path, data={'csrf': token(client), **params}).status_code == 409, path
+    assert not FakeAnthias.changes
+
+    index = client.get('/library').get_data(as_text=True)
+    detail = client.get(f"/library/{one['id']}").get_data(as_text=True)
+    assert 'ZENTRALE INHALTE' in index
+    assert 'Playlist zuordnen' in detail
+    assert 'Einmalige Übertragung' not in detail
+    assert f"/library/{one['id']}/auto-devices" in detail
+
+
+def test_v2_manual_empty_network_have_different_only_one_editor(env, monkeypatch):
+    app, client, tmp = env
+    from app.library import Library
+    app.config['LIBRARY_DIR'] = str(Path(tmp) / 'library')
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['HUB_DEVELOPMENT_MODE'] = True
+    login(client, 'it')
+
+    page = client.get('/devices/lab').get_data(as_text=True)
+    assert 'data-screen-mode="manual"' in page
+    assert 'Manuelle Inhalte bearbeiten' in page
+    assert 'Netzwerkordner' not in page
+    assert client.get('/devices/lab?editor=1').status_code == 200
+
+    monkeypatch.setattr(FakeAnthias, 'assets_data', [])
+    empty = client.get('/devices/lab').get_data(as_text=True)
+    assert 'data-screen-mode="empty"' in empty
+    assert 'Manuellen Inhalt hinzufügen' in empty
+
+    root = Path(tmp) / 'sources'
+    (root / 'bistro').mkdir(parents=True)
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    store = Library(app.config['LIBRARY_DIR'])
+    folder = store.create('Bistro Ordner')
+    store.set_folder_source(folder['id'], 'bistro')
+    store.set_auto_devices(folder['id'], ['lab'], [{'id': 'lab'}],
+                           allow_manual=True)
+    network = client.get('/devices/lab').get_data(as_text=True)
+    assert 'data-screen-mode="network"' in network
+    assert '<code>bistro</code>' in network
+    assert 'Manuellen Inhalt hinzufügen' not in network
+    assert 'data-open-composer' not in network
+    assert 'data-screen-mode="network"' in client.get('/devices/lab?editor=1').get_data(as_text=True)
+
+
+def test_v2_source_live_status_endpoint_shows_no_fake_scan(env, monkeypatch):
+    app, client, tmp = env
+    app.config['HUB_WORKFLOW_V2'] = True
+    app.config['MEDIA_SOURCES_FILE'] = str(Path(tmp) / 'media-sources.json')
+    app.config['MEDIA_MOUNT_STATUS_FILE'] = str(Path(tmp) / 'mount-status.json')
+    login(client, 'it')
+    unconfigured = client.get('/media-sources').get_data(as_text=True)
+    assert 'Was passiert gerade?' in unconfigured
+    assert 'data-source-monitor' in unconfigured
+    assert 'source-progress.js' in unconfigured
+    result = client.post('/media-sources', data={
+        'csrf': token(client), 'alias': 'default',
+        'unc': '//10.12.13.14/media$/Bildschirme',
+    }, follow_redirects=True)
+    assert result.status_code == 200
+    assert 'Speichern allein' in result.get_data(as_text=True)
+    status = client.get('/media-sources/status')
+    assert status.status_code == 200
+    source = status.json['sources'][0]
+    assert source['stages'][0]['state'] == 'done'
+    assert source['stages'][1]['state'] == 'waiting'
+    assert source['discovered'] == 0
