@@ -23,7 +23,9 @@ def test_cohosted_compose_overrides_do_not_change_pilot_defaults():
     assert "DEV_AUTO_PUBLISH=0" in helper
     assert "DEV_PRUNE_MISSING=0" in helper
     assert "FOLDER_SYNC_INTERVAL=60" in helper
-    assert 'docker compose -p "$project" -f compose.yaml -f compose.dev.yaml' in helper
+    assert 'files=(-f compose.yaml -f compose.dev.yaml)' in helper
+    assert 'docker compose -p "$project" "' in helper
+    assert 'compose.dev.smb.yaml' in helper
     assert 'dc up -d --no-build --no-deps --force-recreate anthias-hub anthias-folder-import' in helper
 
 
