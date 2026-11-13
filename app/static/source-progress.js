@@ -105,7 +105,7 @@
           const link = document.createElement('a');
           const ident = folder.template_id;
           link.href = typeof ident === 'string' && /^[a-f0-9]{32}$/.test(ident)
-            ? '/library/' + ident : '/library';
+            ? '/library/' + ident : (root.dataset.controlUrl || '/library');
           link.textContent = ident ? 'Playlist öffnen' : 'Playlist zuordnen';
           item.append(label, link);
           entries.append(item);

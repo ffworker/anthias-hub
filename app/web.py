@@ -312,13 +312,13 @@ def create_app(config=None):
             default_source = next((entry for entry in registered if entry['alias'] == 'default'), None)
             mounted_count = sum(s['status'] in ('mounted', 'already-mounted') for s in registered)
             attention_count = len(registered) - mounted_count
-            return render_template('media_sources.html', sources=registered,
+            return render_template('media_sources_v2.html' if app.config['HUB_WORKFLOW_V2'] else 'media_sources.html', sources=registered,
                                    unmanaged=unmanaged, default_folders=default_folders,
                                    default_source=default_source, retired=retired,
                                    mounted_count=mounted_count, attention_count=attention_count)
         except SourceError as exc:
             flash(str(exc), 'error')
-            return render_template('media_sources.html', sources=[], unmanaged=[],
+            return render_template('media_sources_v2.html' if app.config['HUB_WORKFLOW_V2'] else 'media_sources.html', sources=[], unmanaged=[],
                                    default_folders=[], default_source=None, retired=[],
                                    mounted_count=0, attention_count=0)
 
@@ -462,6 +462,86 @@ def create_app(config=None):
         except LibraryError as exc:
             flash(str(exc), 'error')
             return redirect(url_for('media_sources_page'))
+
+    @app.get('/control')
+    @login_required('marketing')
+    def control_center():
+        """Single DEV-only workspace for changing Hub settings.
+
+        The device, playlist, source and schedule APIs remain the authoritative
+        POST handlers. Switching tabs never writes to a Pi or SMB share.
+        """
+        if not app.config['HUB_WORKFLOW_V2']:
+            abort(404)
+        tab = request.args.get('tab', 'overview')
+        if tab not in ('overview', 'screens', 'playlists', 'sources', 'schedules'):
+            abort(404)
+        role = current_user()['role']
+        if tab == 'sources' and role not in ('it', 'owner'):
+            abort(403)
+        devices = load(app.config['DEVICES_FILE'])
+        templates = library().list()
+        profiles = []
+        sources = []
+        unmanaged = []
+        folder_sources = []
+        try:
+            if tab in ('overview', 'schedules'):
+                profiles = profiles_for(app.config['SCHEDULES_FILE'])
+            if role in ('it', 'owner') and tab in ('overview', 'sources', 'playlists'):
+                from .folder_sync import available_sources
+                folder_sources = available_sources()
+                from .media_sources import load_sources, observed_mount_source
+                sources = load_sources(app.config['MEDIA_SOURCES_FILE'])
+                visible = {alias for alias in folder_sources if '/' not in alias}
+                registered = {row['alias'] for row in sources}
+                unmanaged = [
+                    {'alias': alias, 'observed': observed_mount_source(alias)}
+                    for alias in sorted(visible - registered)
+                ]
+        except (ScheduleError, LibraryError, OSError, ValueError) as exc:
+            flash(str(exc), 'error')
+        for source in sources + unmanaged:
+            source['dependents'] = [
+                {'id': row['id'], 'name': row['name']} for row in templates
+                if row.get('folder_source') == source['alias'] or
+                (source['alias'] == 'default' and
+                 str(row.get('folder_source') or '').startswith('default/'))
+            ]
+        return render_template(
+            'control_center.html', control_tab=tab,
+            templates=templates, devices=devices, profiles=profiles,
+            sources=sources, unmanaged=unmanaged, folder_sources=folder_sources,
+            default_source=next((row for row in sources if row['alias'] == 'default'), None),
+            can_manage_sources=role in ('owner', 'it'),
+        )
+
+    @app.after_request
+    def stay_in_control_center(response):
+        """Form submissions from DEV control return to the same tab.
+
+        This changes the destination of a successful redirect, never the
+        permission checks, CSRF validation or the underlying POST operation.
+        """
+        allowed = {
+            'library_create': 'playlists', 'library_import': 'playlists',
+            'library_delete_template': 'playlists', 'library_auto_devices': 'playlists',
+            'library_folder_source': 'playlists', 'library_add_url': 'playlists',
+            'library_add_media': 'playlists', 'library_bulk_media': 'playlists',
+            'add_device': 'screens', 'edit_device': 'screens',
+            'remove_device': 'screens', 'control_device': 'screens',
+            'media_sources_save': 'sources', 'media_sources_remove': 'sources',
+            'media_sources_sync_now': 'sources',
+            'schedule_library_add': 'schedules',
+            'schedule_library_edit': 'schedules',
+            'schedule_library_delete': 'schedules',
+        }
+        tab = allowed.get(request.endpoint)
+        if (app.config['HUB_WORKFLOW_V2'] and tab and
+                request.method == 'POST' and response.status_code in (302, 303)
+                and request.form.get('control_tab') == tab):
+            return redirect(url_for('control_center', tab=tab))
+        return response
 
     @app.get('/library')
     @login_required()
@@ -1347,7 +1427,7 @@ def create_app(config=None):
             profiles = []
             flash(str(exc), 'error')
         return render_template(
-            'schedule_library.html', profiles=profiles,
+            'schedule_library_v2.html' if app.config['HUB_WORKFLOW_V2'] else 'schedule_library.html', profiles=profiles,
             devices=load(app.config['DEVICES_FILE']),
             can_edit=current_user()['role'] in ('owner', 'it', 'marketing'),
         )

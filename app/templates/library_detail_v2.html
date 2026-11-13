@@ -11,7 +11,11 @@
       <p class="eyebrow">{{ 'NETZWERKORDNER-PLAYLIST' if template.folder_source else 'ZENTRALE PLAYLIST' }}</p>
       <h1>{{ template.name }}</h1>
     </div>
-    <span class="source-v2-head-count">{{ template['items']|length }} Medien · {{ template.auto_devices|default([])|length }} Bildschirme</span>
+    <div class="control-center-header-actions"><span class="source-v2-head-count">{{ template['items']|length }} Medien · {{ template.auto_devices|default([])|length }} Bildschirme</span>
+      {% if logged_user.role in ('marketing','owner','it') %}
+      <a href="{{ url_for('control_center', tab='playlists') }}#playlist-{{ template.id }}">Verwalten</a>
+      {% endif %}
+    </div>
   </header>
   <div class="source-v2-playlist-identity">
     <span class="source-v2-source-chip">{{ 'Netzwerkordner' if template.folder_source else 'Manuelle Playlist' }}</span>
@@ -125,31 +129,6 @@
     </div>
   </details>
 
-  {% if logged_user.role in ('owner','it') %}
-  <details class="source-v2-expand source-v2-targets" id="zielbildschirme"
-           {% if not template.auto_devices %}open{% endif %}>
-    <summary><span class="source-v2-summary-title">Bildschirme zuweisen</span>
-      <span class="source-v2-summary-meta">{{ template.auto_devices|default([])|length }} zugeordnet</span>
-    </summary>
-    <div class="source-v2-expand-body">
-      <p class="source-v2-small-note">Eine feste Playlist pro Bildschirm. Beim Zuweisen wird eine frühere Playlist-Zuordnung ersetzt.</p>
-      <form class="source-v2-form" action="{{ url_for('library_auto_devices', template_id=template.id) }}" method="post">
-      <input type="hidden" name="csrf" value="{{ csrf() }}">
-      {% for d in devices %}
-      <label class="source-v2-checkbox">
-        <input type="checkbox" name="devices" value="{{ d.id }}"
-          {% if d.id in template.auto_devices|default([]) %}checked{% endif %}>
-        <span>{{ d.name }}{% if d.location %} · {{ d.location }}{% endif %}</span>
-      </label>
-      {% else %}
-        <p class="muted">Noch kein Bildschirm registriert. Zuerst unter „Bildschirme“ ein Gerät hinzufügen.</p>
-      {% endfor %}
-      <button type="submit" class="primary" {% if not devices %}disabled{% endif %}>Zuordnung speichern</button>
-      </form>
-    </div>
-  </details>
-  {% endif %}
-
   {% if logged_user.role in ('marketing','owner','it') %}
   {% if not template.folder_source %}
   <details class="source-v2-expand source-v2-add-media" id="neu"
@@ -202,20 +181,6 @@
   </details>
   {% endif %}
   {% endif %}
-  {% if logged_user.role in ('owner','it') and not template['items'] %}
-    <details class="source-v2-optional"><summary>Erweitert: Quelle ändern</summary>
-      <div class="source-v2-optional-body">
-        <form method="post" class="source-v2-form" action="{{ url_for('library_folder_source', template_id=template.id) }}">
-          <input type="hidden" name="csrf" value="{{ csrf() }}">
-          <label>Netzwerkquelle<select name="folder_source">
-            <option value="">Keine – manuelle Playlist</option>
-            {% for source in folder_sources %}
-            <option value="{{ source }}" {% if template.folder_source == source %}selected{% endif %}>{{ source }}</option>
-            {% endfor %}
-          </select></label><button type="submit">Quelle speichern</button>
-        </form>
-      </div>
-    </details>
-  {% endif %}
+
 </div>
 {% endblock %}
