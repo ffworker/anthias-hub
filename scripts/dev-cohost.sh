@@ -33,8 +33,9 @@ HELP
 guard() {
   [[ "$(basename "$root")" == anthias-hub-dev ]] ||
     fail 'Run only from a separate directory named anthias-hub-dev.'
-  [[ "$(git branch --show-current)" == dev/cohosted-staging-isolation-20261113 ]] ||
-    fail 'Wrong branch: use the cohosted dev branch in this separate checkout.'
+  # The DEV checkout may switch feature branches. The real safety boundary
+  # is the dedicated checkout, Compose project, port, image and storage.
+  git rev-parse --is-inside-work-tree >/dev/null 2>&1 || fail 'Missing Git checkout.'
   for file in .env config data dev-sources; do
     [[ ! -L "$file" ]] || fail "Symlink at $file is not permitted."
   done
