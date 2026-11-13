@@ -61,3 +61,40 @@ def test_source_progress_refuses_to_claim_mount_without_host_report(tmp_path, mo
     assert stale['stages'][1]['state'] == 'waiting'
     assert stale['report_stale'] is True
     assert stale['discovered'] == 0
+
+
+def test_publisher_not_labeled_active_without_assigned_pi(tmp_path, monkeypatch):
+    """A live 60-second importer by itself does not synchronize a screen."""
+    from app.folder_status import write_status
+    root = tmp_path / 'sources'
+    (root / 'default' / 'Bistro').mkdir(parents=True)
+    registry = tmp_path / 'registry.json'
+    mount_report = tmp_path / 'mount.json'
+    sync_report = tmp_path / 'import.json'
+    monkeypatch.setenv('MEDIA_SOURCE_ROOT', str(root))
+    monkeypatch.setenv('MEDIA_SOURCES_FILE', str(registry))
+    monkeypatch.setenv('FOLDER_STATUS_FILE', str(sync_report))
+    unc = '//10.11.12.13/files$/Marketing/Bildschirme'
+    save_source('default', unc, path=registry)
+    mount_report.write_text(json.dumps({
+        'checked_at': time.time(), 'sources': {
+            'default': {'state': 'mounted',
+                        'fingerprint': hashlib.sha256(unc.encode()).hexdigest()}
+        }
+    }))
+    template = {'id': 'f' * 32, 'name': 'Bistro',
+                'folder_source': 'default/Bistro', 'auto_devices': []}
+    write_status({template['id']: {'import': {'added': 1},
+                                   'devices': {}}}, True, sync_report,
+                 interval_seconds=60)
+    report = describe_sources(registry, mount_report, [template], root)[0]
+    assert report['stages'][3]['state'] == 'done'  # imported, but no target
+    assert report['stages'][4]['state'] == 'waiting'
+    assert 'Noch kein Zielbildschirm' in report['stages'][4]['detail']
+
+    template['auto_devices'] = ['testpi']
+    write_status({template['id']: {'import': {},
+                                   'devices': {'testpi': {'error': 'offline'}}}},
+                 True, sync_report, interval_seconds=60)
+    failed = describe_sources(registry, mount_report, [template], root)[0]
+    assert failed['stages'][4]['state'] == 'error'
