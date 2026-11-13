@@ -131,7 +131,7 @@
             <strong>Standard für neue Inhalte</strong>
             <small>Aktuell: {{ (profiles | selectattr('id', 'equalto', schedule_default) | map(attribute='name') | first) or 'Ohne Zeitplan' }}</small>
           </span>
-          <span class="schedule-secondary-chevron" aria-hidden="true">⌄</span>
+          <span class="schedule-secondary-chevron ui-chevron" aria-hidden="true"></span>
         </summary>
         <div class="schedule-secondary-body">
     <div class="schedule-default-panel card">
