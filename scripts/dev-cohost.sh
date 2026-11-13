@@ -7,7 +7,13 @@ project=anthias-hub-dev
 image=anthias-hub:dev-cohost
 port=8766
 root=$(pwd -P)
-dc() { docker compose -p "$project" -f compose.yaml -f compose.dev.yaml "$@"; }
+dc() {
+  local -a files=(-f compose.yaml -f compose.dev.yaml)
+  if [[ -f .env ]] && grep -qx 'DEV_SMB_MODE=1' .env; then
+    files+=(-f compose.dev.smb.yaml)
+  fi
+  docker compose -p "$project" "${files[@]}" "$@"
+}
 fail() { printf 'STOP: %s\n' "$*" >&2; exit 1; }
 say() { printf '%s\n' "$*"; }
 usage() {
