@@ -21,8 +21,11 @@ commands against the production Compose project.
 ## Installation – on the EXISTING host, in a NEW directory
 
 ```bash
-git clone -b dev/cohosted-staging-isolation-20261113 \
-  https://github.com/ffworker/anthias-hub.git /root/apps/anthias-hub-dev
+git clone https://github.com/ffworker/anthias-hub.git /root/apps/anthias-hub-dev
+
+# Optional: create a LOCAL development branch for your own changes.
+cd /root/apps/anthias-hub-dev
+git switch -c dev/local-test
 
 cd /root/apps/anthias-hub-dev
 
