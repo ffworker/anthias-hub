@@ -40,8 +40,12 @@ def run(args, timeout=30):
     return subprocess.run(args, check=False, capture_output=True, text=True, timeout=timeout)
 
 
-def allowed_shares(path=DEFAULT_ALLOWLIST):
-    """The allowlist and credential references must be maintained by root."""
+def allowed_shares(path=DEFAULT_ALLOWLIST, credentials_root=Path('/etc/anthias-hub/secrets')):
+    """Allowlist and credential references must be maintained by root.
+
+    DEV can use a separate credentials directory; the production default is
+    unchanged and both directories remain outside the web container.
+    """
     if path.is_symlink() or not path.is_file():
         raise MountError('Root-Freigabeliste fehlt oder ist ein Symlink')
     st = path.stat()
@@ -58,7 +62,7 @@ def allowed_shares(path=DEFAULT_ALLOWLIST):
         credential = Path(rule['credentials'])
         if (not credential.is_absolute() or credential.is_symlink()
                 or not credential.is_file() or
-                not credential.is_relative_to('/etc/anthias-hub/secrets/')):
+                not credential.is_relative_to(credentials_root)):
             raise MountError('Ungültiger Credentials-Dateipfad')
         meta = credential.stat()
         if meta.st_uid != 0 or meta.st_mode & 0o077:
@@ -147,13 +151,14 @@ def main():
     parser.add_argument('--status', default='/srv/anthias-sources/.mount-status.json')
     parser.add_argument('--root', default=str(ROOT))
     parser.add_argument('--allowlist', default=str(DEFAULT_ALLOWLIST))
+    parser.add_argument('--credentials-root', default='/etc/anthias-hub/secrets')
     parser.add_argument('--check', action='store_true', help='Validate only; do not mount')
     args = parser.parse_args()
     if os.geteuid() != 0:
         print('Dieser Dienst muss als Root laufen', file=sys.stderr)
         return 2
     try:
-        allowlist = allowed_shares(Path(args.allowlist))
+        allowlist = allowed_shares(Path(args.allowlist), Path(args.credentials_root))
         sources = load_sources(Path(args.registry))
         results = {src['alias']: reconcile_one(src, allowlist, Path(args.root),
                                                allow_write=not args.check)
